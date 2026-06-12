@@ -30,7 +30,7 @@ timer.subscribe((ms, state) => hud.setTime(ms, state));
 // ─── Gameplay (replace this section) ────────────────────────────────────────
 
 const config: Phaser.Types.Core.GameConfig = {
-  type: Phaser.AUTO, // AUTO chooses WebGL if available, falls back to Canvas
+  type: AUTO, // AUTO chooses WebGL if available, falls back to Canvas
   width: 800,
   height: 600,
   backgroundColor: 0x0b0b10,
