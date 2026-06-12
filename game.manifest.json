@@ -1,13 +1,13 @@
 {
-  "slug": "__SLUG__",
-  "title": "__TITLE__",
-  "description": "__DESCRIPTION__",
-  "framework": "vite",
+  "slug": "shard-dominion",
+  "title": "Shard Dominion",
+  "description": "Classic sci-fi RTS: asymmetric factions, harvester economy, concrete-and-power base building on Aether Prime",
+  "framework": "vite-phaser",
   "category": "arcade",
   "supportsMobile": true,
   "version": "0.1.0",
   "emoji": "🎮",
   "entry": "index.html",
   "buildCommand": "npm run build",
-  "repo": "Brynrg/__SLUG__"
+  "repo": "Brynrg/shard-dominion"
 }
