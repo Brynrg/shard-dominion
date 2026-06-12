@@ -24,7 +24,8 @@ jobs:
       - id: read
         run: |
           SLUG="$(node -p "require('./game.manifest.json').slug")"
-          if [ -z "$SLUG" ] || [ "$SLUG" = "shard-dominion" ]; then
+          PLACEHOLDER="$(printf '__%s__' SLUG)"
+          if [ -z "$SLUG" ] || [ "$SLUG" = "$PLACEHOLDER" ]; then
             echo "::notice::game.manifest.json#slug is still the placeholder — skipping deploy. Set a real slug (or run \`pnpm new:game\`) to enable auto-deploy."
             echo "skip=true" >> "$GITHUB_OUTPUT"
           else
