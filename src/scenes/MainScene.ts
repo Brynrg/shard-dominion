@@ -13,6 +13,8 @@ interface Unit {
   type: keyof typeof UNIT_TYPES;
   selected: boolean;
   path: { x: number; y: number }[];
+  health: number;
+  currentHealth: number;
 }
 
 export class MainScene extends Scene {
@@ -39,7 +41,9 @@ export class MainScene extends Scene {
   private powerUsage: number = 0;
   private powerDisplay!: any;
   private constructionQueue: { type: string; progress: number }[] = [];
+  private productionQueue: { type: string; progress: number }[] = [];
   private constructionDisplay!: any;
+  private productionDisplay!: any;
 
   constructor() {
     super({ key: 'MainScene' });
@@ -90,9 +94,16 @@ export class MainScene extends Scene {
     });
 
     // Instructions
-    this.add.text(10, this.mapHeight * this.tileSize - 30, 'Click units to select, click to move', {
+    this.add.text(10, this.mapHeight * this.tileSize - 30, 'Click units to select, right-click to move, space to build', {
       color: '#cccccc',
       fontSize: '14px'
+    });
+
+    // Production queue display
+    this.productionDisplay = this.add.text(10, 50, 'Production: infantry (50)', {
+      color: '#00ffff',
+      fontSize: '16px',
+      fontStyle: 'bold'
     });
   }
 
@@ -116,9 +127,9 @@ export class MainScene extends Scene {
     
     // Create a few units
     this.units = [
-      { id: 'unit1', x: 5, y: 5, type: 'infantry', selected: false, path: [] },
-      { id: 'unit2', x: 8, y: 3, type: 'scout', selected: false, path: [] },
-      { id: 'unit3', x: 12, y: 8, type: 'tank', selected: false, path: [] }
+      { id: 'unit1', x: 5, y: 5, type: 'infantry', selected: false, path: [], health: UNIT_TYPES['infantry'].health, currentHealth: UNIT_TYPES['infantry'].health },
+      { id: 'unit2', x: 8, y: 3, type: 'scout', selected: false, path: [], health: UNIT_TYPES['scout'].health, currentHealth: UNIT_TYPES['scout'].health },
+      { id: 'unit3', x: 12, y: 8, type: 'tank', selected: false, path: [], health: UNIT_TYPES['tank'].health, currentHealth: UNIT_TYPES['tank'].health }
     ];
     
     this.updateUnits();
@@ -140,7 +151,16 @@ export class MainScene extends Scene {
     this.silos.push({ x: 5, y: 3 });
 
     // Add a harvester
-    this.harvesters.push({ id: 'harvester1', x: 4, y: 4, type: 'harvester', selected: false, path: [] });
+    this.harvesters.push({ 
+      id: 'harvester1', 
+      x: 4, 
+      y: 4, 
+      type: 'harvester', 
+      selected: false, 
+      path: [], 
+      health: UNIT_TYPES['harvester'].health, 
+      currentHealth: UNIT_TYPES['harvester'].health 
+    });
 
     // Create credit display
     this.creditDisplay = this.add.text(10, 30, 'Credits: 0', {
@@ -190,6 +210,20 @@ export class MainScene extends Scene {
         unitType.name.charAt(0),
         { color: '#000000', fontSize: '12px', align: 'center' }
       ).setOrigin(0.5);
+      
+      // Draw health bar
+      const healthPercent = unit.currentHealth / unit.health;
+      const healthBarWidth = this.tileSize - 10;
+      const healthBarHeight = 3;
+      const healthBarY = unit.y * this.tileSize - 5;
+      
+      // Background
+      graphics.fillStyle(0x333333, 1);
+      graphics.fillRect(unit.x * this.tileSize + 5, healthBarY, healthBarWidth, healthBarHeight);
+      
+      // Health
+      graphics.fillStyle(0x00ff00, 1);
+      graphics.fillRect(unit.x * this.tileSize + 5, healthBarY, healthBarWidth * healthPercent, healthBarHeight);
     }
   }
   
@@ -204,6 +238,58 @@ export class MainScene extends Scene {
   updateConstructionQueue(): void {
     const queueCount = this.constructionQueue.length;
     this.constructionDisplay.setText(`Queue: ${queueCount}`);
+  }
+
+  updateProductionQueue(): void {
+    // Complete production units
+    for (let i = this.productionQueue.length - 1; i >= 0; i--) {
+      const item = this.productionQueue[i];
+      item.progress += 0.01; // Production speed
+      
+      if (item.progress >= 1) {
+        // Complete the unit
+        const unitType = item.type as keyof typeof UNIT_TYPES;
+        const unitData = UNIT_TYPES[unitType];
+        
+        if (this.credits >= unitData.cost) {
+          this.credits -= unitData.cost;
+          
+          // Find a free spot near the starting area
+          let spawnX = 2, spawnY = 2;
+          let found = false;
+          
+          for (let y = 0; y < this.mapHeight && !found; y++) {
+            for (let x = 0; x < this.mapWidth && !found; x++) {
+              if (!this.units.some(u => u.x === x && u.y === y) && 
+                  !this.buildings.some(b => b.x === x && b.y === y)) {
+                spawnX = x;
+                spawnY = y;
+                found = true;
+              }
+            }
+          }
+          
+          if (found) {
+            this.units.push({
+              id: `unit${Date.now()}`,
+              x: spawnX,
+              y: spawnY,
+              type: unitType,
+              selected: false,
+              path: [],
+              health: unitData.health,
+              currentHealth: unitData.health
+            });
+          }
+          
+          this.productionQueue.splice(i, 1);
+        }
+      }
+    }
+    
+    // Update display
+    const queueCount = this.productionQueue.length;
+    this.productionDisplay.setText(`Production: ${queueCount} units`);
   }
 
   updateFog(): void {
@@ -282,6 +368,19 @@ export class MainScene extends Scene {
         this.tryPlaceBuilding(tileX, tileY);
       }
     });
+
+    // Keyboard input for unit production
+    if (this.input.keyboard) {
+      this.input.keyboard.on('keydown', (event: KeyboardEvent) => {
+        if (event.key === ' ') {
+          // Cycle through unit types and add to queue
+          const unitTypes = Object.keys(UNIT_TYPES);
+          const randomType = unitTypes[Math.floor(Math.random() * unitTypes.length)];
+          this.productionQueue.push({ type: randomType, progress: 0 });
+          this.updateProductionQueue();
+        }
+      });
+    }
   }
 
   update(): void {
@@ -313,11 +412,17 @@ export class MainScene extends Scene {
     // Update construction queue
     this.updateConstructionQueue();
 
+    // Update production queue
+    this.updateProductionQueue();
+
     // Update power
     this.updatePower();
 
     // Update buildings
     this.updateBuildings();
+
+    // Combat system
+    this.updateCombat();
   }
   
   updateHarvesters(): void {
@@ -493,6 +598,43 @@ export class MainScene extends Scene {
   handleClick(_pointer: any = {}): void {
     if (this.gameState === GameState.MENU) {
       this.gameState = GameState.PLAYING;
+    }
+  }
+
+  updateCombat(): void {
+    // Simple combat: check if units are in range and attack
+    for (let i = 0; i < this.units.length; i++) {
+      const unit1 = this.units[i];
+      const unitType1 = UNIT_TYPES[unit1.type];
+      
+      // Find enemies in range
+      for (let j = 0; j < this.units.length; j++) {
+        if (i === j) continue; // Skip self
+        
+        const unit2 = this.units[j];
+        if (unit1.type === unit2.type) continue; // Skip same type for now
+        
+        const unitType2 = UNIT_TYPES[unit2.type];
+        const distance = Math.abs(unit1.x - unit2.x) + Math.abs(unit1.y - unit2.y);
+        
+        // Check if in range
+        if (distance <= unitType1.range) {
+          // Attack!
+          const damage = Math.max(1, unitType1.attack - unitType2.armor);
+          unit2.currentHealth = Math.max(0, unit2.currentHealth - damage);
+          
+          // Show damage briefly
+          if (unit2.currentHealth < unitType2.health) {
+            this.updateUnits(); // Redraw to show health changes
+          }
+          
+          // Check if unit died
+          if (unit2.currentHealth <= 0) {
+            this.units.splice(j, 1);
+            j--; // Adjust index since we removed an element
+          }
+        }
+      }
     }
   }
 }

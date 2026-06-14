@@ -29,8 +29,11 @@ export interface UnitType {
   size: number;
   speed: number;
   health: number;
+  maxHealth: number;
   attack: number;
   range: number;
+  armor: number;
+  attackType?: 'melee' | 'ranged' | 'splash';
   cost: number;
 }
 

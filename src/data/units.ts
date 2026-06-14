@@ -10,8 +10,11 @@ export const UNIT_TYPES: Record<string, UnitType> = {
     size: 1,
     speed: 1.2,
     health: 100,
+    maxHealth: 100,
     attack: 20,
     range: 1,
+    armor: 0,
+    attackType: 'melee',
     cost: 50
   },
   scout: {
@@ -21,8 +24,11 @@ export const UNIT_TYPES: Record<string, UnitType> = {
     size: 1,
     speed: 2.0,
     health: 80,
+    maxHealth: 80,
     attack: 10,
     range: 2,
+    armor: 0,
+    attackType: 'ranged',
     cost: 75
   },
   tank: {
@@ -32,8 +38,11 @@ export const UNIT_TYPES: Record<string, UnitType> = {
     size: 2,
     speed: 0.8,
     health: 200,
+    maxHealth: 200,
     attack: 25,
     range: 3,
+    armor: 2,
+    attackType: 'ranged',
     cost: 150
   },
   
@@ -45,8 +54,11 @@ export const UNIT_TYPES: Record<string, UnitType> = {
     size: 1,
     speed: 1.0,
     health: 150,
+    maxHealth: 150,
     attack: 25,
     range: 1,
+    armor: 1,
+    attackType: 'melee',
     cost: 60
   },
   siege: {
@@ -56,8 +68,11 @@ export const UNIT_TYPES: Record<string, UnitType> = {
     size: 2,
     speed: 0.6,
     health: 250,
+    maxHealth: 250,
     attack: 35,
     range: 4,
+    armor: 3,
+    attackType: 'ranged',
     cost: 180
   },
   behemoth: {
@@ -67,8 +82,11 @@ export const UNIT_TYPES: Record<string, UnitType> = {
     size: 3,
     speed: 0.4,
     health: 400,
+    maxHealth: 400,
     attack: 40,
     range: 2,
+    armor: 5,
+    attackType: 'melee',
     cost: 250
   },
   
@@ -80,8 +98,11 @@ export const UNIT_TYPES: Record<string, UnitType> = {
     size: 1,
     speed: 1.5,
     health: 90,
+    maxHealth: 90,
     attack: 18,
     range: 1,
+    armor: 0,
+    attackType: 'melee',
     cost: 55
   },
   stealth: {
@@ -91,8 +112,11 @@ export const UNIT_TYPES: Record<string, UnitType> = {
     size: 1,
     speed: 1.8,
     health: 100,
+    maxHealth: 100,
     attack: 22,
     range: 1,
+    armor: 1,
+    attackType: 'melee',
     cost: 80
   },
   // Economy
@@ -103,8 +127,11 @@ export const UNIT_TYPES: Record<string, UnitType> = {
     size: 1,
     speed: 1.0,
     health: 120,
+    maxHealth: 120,
     attack: 10,
     range: 1,
+    armor: 1,
+    attackType: 'melee',
     cost: 100
   }
 };
