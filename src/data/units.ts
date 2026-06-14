@@ -179,6 +179,14 @@ export const BUILDING_TYPES: Record<string, BuildingType> = {
     health: 100,
     cost: 25
   },
+  repair: {
+    id: 'repair',
+    name: 'Repair Pad',
+    faction: Faction.VANGUARD,
+    size: 2,
+    health: 150,
+    cost: 100
+  },
   
   // Faction-specific
   starport: {

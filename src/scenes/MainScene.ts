@@ -37,6 +37,7 @@ export class MainScene extends Scene {
 
   // Base Building
   private buildings: { x: number; y: number; type: string; health: number; maxHealth: number; foundation: boolean; power: number; selected: boolean; size: number }[] = [];
+  private repairPads: { x: number; y: number; type: string; health: number; maxHealth: number; size: number }[] = [];
   private power: number = 0;
   private powerUsage: number = 0;
   private powerDisplay!: any;
@@ -44,6 +45,9 @@ export class MainScene extends Scene {
   private productionQueue: { type: string; progress: number }[] = [];
   private constructionDisplay!: any;
   private productionDisplay!: any;
+  private uiContainer!: Phaser.GameObjects.Container;
+  private sidebar!: Phaser.GameObjects.Container;
+  private minimap!: Phaser.GameObjects.Container;
 
   constructor() {
     super({ key: 'MainScene' });
@@ -80,31 +84,56 @@ export class MainScene extends Scene {
   }
 
   createUI(): void {
+    // Create container for UI
+    this.uiContainer = this.add.container(0, 0);
+    
     // Title
-    this.add.text(10, 10, 'Shard Dominion', {
+    const title = this.add.text(10, 10, 'Shard Dominion', {
       color: '#ffffff',
-      fontSize: '20px'
+      fontSize: '20px',
+      fontFamily: 'Arial'
     });
+    this.uiContainer.add(title);
 
     // Credits display
-    this.creditDisplay = this.add.text(10, 30, 'Credits: 0', {
+    const creditDisplay = this.add.text(10, 30, 'Credits: 0', {
       color: '#ffff00',
       fontSize: '16px',
       fontStyle: 'bold'
     });
+    this.uiContainer.add(creditDisplay);
+    this.creditDisplay = creditDisplay;
 
-    // Instructions
-    this.add.text(10, this.mapHeight * this.tileSize - 30, 'Click units to select, right-click to move, space to build', {
-      color: '#cccccc',
-      fontSize: '14px'
+    // Power display
+    const powerDisplay = this.add.text(10, 50, 'Power: 0/0', {
+      color: '#00ff00',
+      fontSize: '16px',
+      fontStyle: 'bold'
     });
+    this.uiContainer.add(powerDisplay);
+    this.powerDisplay = powerDisplay;
 
     // Production queue display
-    this.productionDisplay = this.add.text(10, 50, 'Production: infantry (50)', {
+    const productionDisplay = this.add.text(10, 70, 'Production: none', {
       color: '#00ffff',
       fontSize: '16px',
       fontStyle: 'bold'
     });
+    this.uiContainer.add(productionDisplay);
+    this.productionDisplay = productionDisplay;
+
+    // Instructions
+    const instructions = this.add.text(10, this.mapHeight * this.tileSize - 50, 'Click: select/move | Right-click: move | Space: produce | B: build mode', {
+      color: '#cccccc',
+      fontSize: '14px'
+    });
+    this.uiContainer.add(instructions);
+
+    // Create sidebar
+    this.createSidebar();
+
+    // Create minimap
+    this.createMinimap();
   }
 
   createTerrain(): void {
@@ -150,6 +179,9 @@ export class MainScene extends Scene {
     this.processors.push({ x: 3, y: 3 });
     this.silos.push({ x: 5, y: 3 });
 
+    // Add a repair pad
+    this.repairPads.push({ x: 7, y: 3, type: 'repair', health: 150, maxHealth: 150, size: 2 });
+
     // Add a harvester
     this.harvesters.push({ 
       id: 'harvester1', 
@@ -186,6 +218,109 @@ export class MainScene extends Scene {
     this.updateCredits();
     this.updatePower();
     this.updateConstructionQueue();
+  }
+
+  createSidebar(): void {
+    this.sidebar = this.add.container(this.mapWidth * this.tileSize + 10, 10);
+
+    // Sidebar background
+    const sidebarWidth = 200;
+    const sidebarHeight = this.mapHeight * this.tileSize;
+    const graphics = this.add.graphics();
+    graphics.fillStyle(0x1a1a1a, 0.8);
+    graphics.fillRect(0, 0, sidebarWidth, sidebarHeight);
+    this.sidebar.add(graphics);
+
+    // Title
+    this.add.text(10, 10, 'Build Menu', {
+      color: '#ffffff',
+      fontSize: '16px',
+      fontStyle: 'bold'
+    }).setOrigin(0);
+
+    // Building buttons
+    let yOffset = 40;
+    const buildingTypes = ['construction', 'processor', 'power', 'foundation'];
+    
+    for (const buildingType of buildingTypes) {
+      const buildingData = BUILDING_TYPES[buildingType];
+      if (buildingData) {
+        // Button background
+        const buttonBg = this.add.graphics();
+        buttonBg.fillStyle(0x333333);
+        buttonBg.fillRect(10, yOffset, sidebarWidth - 20, 30);
+        this.sidebar.add(buttonBg);
+
+        // Building name and cost
+        this.add.text(15, yOffset + 8, `${buildingData.name}: ${buildingData.cost}`, {
+          color: '#ffffff',
+          fontSize: '14px'
+        }).setOrigin(0);
+
+        // Hotkey
+        this.add.text(sidebarWidth - 25, yOffset + 8, String.fromCharCode(65 + buildingTypes.indexOf(buildingType)), {
+          color: '#ffff00',
+          fontSize: '12px'
+        }).setOrigin(1);
+
+        yOffset += 35;
+      }
+    }
+
+    // Add some unit buttons too
+    this.add.text(10, yOffset + 20, 'Units:', {
+      color: '#ffffff',
+      fontSize: '16px',
+      fontStyle: 'bold'
+    }).setOrigin(0);
+
+    yOffset += 45;
+    const unitTypes = ['infantry', 'scout', 'tank'];
+    
+    for (const unitType of unitTypes) {
+      const unitData = UNIT_TYPES[unitType];
+      if (unitData) {
+        // Button background
+        const buttonBg = this.add.graphics();
+        buttonBg.fillStyle(0x333333);
+        buttonBg.fillRect(10, yOffset, sidebarWidth - 20, 30);
+        this.sidebar.add(buttonBg);
+
+        // Unit name and cost
+        this.add.text(15, yOffset + 8, `${unitData.name}: ${unitData.cost}`, {
+          color: '#ffffff',
+          fontSize: '14px'
+        }).setOrigin(0);
+
+        // Hotkey
+        this.add.text(sidebarWidth - 25, yOffset + 8, String.fromCharCode(65 + unitTypes.indexOf(unitType)), {
+          color: '#ffff00',
+          fontSize: '12px'
+        }).setOrigin(1);
+
+        yOffset += 35;
+      }
+    }
+  }
+
+  createMinimap(): void {
+    this.minimap = this.add.container(this.mapWidth * this.tileSize + 220, 10);
+
+    // Minimap background
+    const minimapSize = 150;
+    const graphics = this.add.graphics();
+    graphics.fillStyle(0x2a2a2a);
+    graphics.fillRect(0, 0, minimapSize, minimapSize);
+    this.minimap.add(graphics);
+
+    // Title
+    this.add.text(minimapSize / 2, 5, 'Map', {
+      color: '#ffffff',
+      fontSize: '12px',
+      align: 'center'
+    }).setOrigin(0.5);
+
+    // Minimap will be updated in updateFog()
   }
 
   updateUnits(): void {
@@ -306,6 +441,66 @@ export class MainScene extends Scene {
         }
       }
     }
+
+    // Update minimap
+    this.updateMinimap();
+  }
+
+  updateMinimap(): void {
+    if (!this.minimap) return;
+
+    // Clear previous minimap content (keep background and title)
+    const children = this.minimap.list.slice(); // Copy array to avoid modification during iteration
+    for (let i = children.length - 1; i >= 0; i--) {
+      const child = children[i];
+      if (child instanceof Phaser.GameObjects.Graphics || child instanceof Phaser.GameObjects.Text) {
+        if (child.y > 15) { // Keep title (y <= 15)
+          this.minimap.remove(child);
+        }
+      }
+    }
+
+    const minimapSize = 150;
+    const tileSize = minimapSize / Math.max(this.mapWidth, this.mapHeight);
+
+    // Draw fog of war on minimap
+    const fogGraphics = this.add.graphics();
+    for (let y = 0; y < this.mapHeight; y++) {
+      for (let x = 0; x < this.mapWidth; x++) {
+        const alpha = this.fogOfWar.getFogAlpha(x, y);
+        if (alpha > 0) {
+          fogGraphics.fillStyle(0x000000, alpha);
+          fogGraphics.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+        }
+      }
+    }
+    this.minimap.add(fogGraphics);
+
+    // Draw units on minimap
+    const unitGraphics = this.add.graphics();
+    for (const unit of this.units) {
+      unitGraphics.fillStyle(0xffffff);
+      unitGraphics.fillRect(
+        unit.x * tileSize + tileSize/4,
+        unit.y * tileSize + tileSize/4,
+        tileSize/2,
+        tileSize/2
+      );
+    }
+    this.minimap.add(unitGraphics);
+
+    // Draw buildings on minimap
+    const buildingGraphics = this.add.graphics();
+    for (const building of this.buildings) {
+      buildingGraphics.fillStyle(0x00ff00);
+      buildingGraphics.fillRect(
+        building.x * tileSize + tileSize/3,
+        building.y * tileSize + tileSize/3,
+        tileSize/3,
+        tileSize/3
+      );
+    }
+    this.minimap.add(buildingGraphics);
   }
 
   setupInput(): void {
@@ -346,38 +541,40 @@ export class MainScene extends Scene {
       this.updateFog();
     });
 
-    // Building placement input
+    // Right-click for context menus
     this.input.on('pointerup', (pointer: any) => {
-      if (this.gameState !== GameState.PLAYING) return;
+      if (pointer.rightButtonDown && this.gameState === GameState.PLAYING) {
+        const worldPos = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+        const tileX = Math.floor(worldPos.x / this.tileSize);
+        const tileY = Math.floor(worldPos.y / this.tileSize);
 
-      const worldPos = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
-      const tileX = Math.floor(worldPos.x / this.tileSize);
-      const tileY = Math.floor(worldPos.y / this.tileSize);
+        if (tileX < 0 || tileX >= this.mapWidth || tileY < 0 || tileY >= this.mapHeight) return;
 
-      if (tileX < 0 || tileX >= this.mapWidth || tileY < 0 || tileY >= this.mapHeight) return;
-
-      // Check if clicking on a building
-      const clickedBuilding = this.buildings.find(b => b.x === tileX && b.y === tileY);
-
-      if (clickedBuilding) {
-        // Select/deselect building
-        this.buildings.forEach(b => b.selected = false);
-        clickedBuilding.selected = true;
-      } else {
-        // Try to place a building
-        this.tryPlaceBuilding(tileX, tileY);
+        // Find unit at position
+        const unitAtPos = this.units.find(unit => unit.x === tileX && unit.y === tileY);
+        if (unitAtPos) {
+          // Show context menu for unit
+          this.showContextMenu(unitAtPos, worldPos.x, worldPos.y);
+        }
       }
     });
 
-    // Keyboard input for unit production
+    // Keyboard input for unit production and groups
     if (this.input.keyboard) {
       this.input.keyboard.on('keydown', (event: KeyboardEvent) => {
+        // Space for unit production
         if (event.key === ' ') {
           // Cycle through unit types and add to queue
           const unitTypes = Object.keys(UNIT_TYPES);
           const randomType = unitTypes[Math.floor(Math.random() * unitTypes.length)];
           this.productionQueue.push({ type: randomType, progress: 0 });
           this.updateProductionQueue();
+        }
+        
+        // Ctrl+number for groups
+        if (event.ctrlKey && event.key >= '1' && event.key <= '9') {
+          const groupId = parseInt(event.key) - 1;
+          this.selectGroup(groupId);
         }
       });
     }
@@ -423,6 +620,9 @@ export class MainScene extends Scene {
 
     // Combat system
     this.updateCombat();
+
+    // Repair system
+    this.updateRepair();
   }
   
   updateHarvesters(): void {
@@ -636,5 +836,109 @@ export class MainScene extends Scene {
         }
       }
     }
+  }
+
+  showContextMenu(unit: Unit, x: number, y: number): void {
+    const menuWidth = 120;
+    const menuHeight = 100;
+    const menuX = Math.min(x, this.cameras.main.width - menuWidth - 10);
+    const menuY = Math.min(y, this.cameras.main.height - menuHeight - 10);
+    
+    const menuGraphics = this.add.graphics();
+    menuGraphics.fillStyle(0x333333);
+    menuGraphics.lineStyle(2, 0xffffff);
+    menuGraphics.strokeRect(menuX, menuY, menuWidth, menuHeight);
+    menuGraphics.fillRect(menuX, menuY, menuWidth, menuHeight);
+    
+    const unitType = UNIT_TYPES[unit.type];
+    
+    // Unit name and HP
+    this.add.text(menuX + 5, menuY + 5, unitType.name, {
+      color: '#ffffff',
+      fontSize: '14px'
+    });
+    
+    this.add.text(menuX + 5, menuY + 25, `HP: ${unit.currentHealth}/${unit.health}`, {
+      color: '#00ff00',
+      fontSize: '12px'
+    });
+    
+    // Order buttons
+    const orders = ['Move', 'Attack', 'Stop'];
+    let yOffset = 45;
+    
+    for (const order of orders) {
+      // Button background
+      const buttonBg = this.add.graphics();
+      buttonBg.fillStyle(0x444444);
+      buttonBg.fillRect(menuX + 5, menuY + yOffset, menuWidth - 10, 20);
+      
+      // Order text
+      this.add.text(menuX + 10, menuY + yOffset + 6, order, {
+        color: '#ffffff',
+        fontSize: '12px'
+      });
+      
+      yOffset += 22;
+    }
+    
+    // Store the menu graphics for interaction
+    (menuGraphics as any).orders = orders;
+    (menuGraphics as any).unit = unit;
+    (menuGraphics as any).menuX = menuX;
+    (menuGraphics as any).menuY = menuY;
+    
+    // Auto-hide after 4 seconds
+    setTimeout(() => {
+      menuGraphics.destroy();
+    }, 4000);
+  }
+
+  updateRepair(): void {
+    // Simple repair system: damaged units near repair pads get healed
+    for (const unit of this.units) {
+      if (unit.currentHealth < unit.health) {
+        // Find nearest repair pad
+        let nearestRepairPad = null;
+        let nearestDist = Infinity;
+        
+        for (const pad of this.repairPads) {
+          const dist = Math.abs(pad.x - unit.x) + Math.abs(pad.y - unit.y);
+          if (dist < nearestDist) {
+            nearestDist = dist;
+            nearestRepairPad = pad;
+          }
+        }
+        
+        // If near repair pad, heal
+        if (nearestRepairPad && nearestDist <= 1) {
+          unit.currentHealth = Math.min(unit.health, unit.currentHealth + 1);
+        }
+      }
+    }
+    
+    this.updateUnits(); // Redraw to show health changes
+  }
+
+  selectGroup(groupId: number): void {
+    // Select units in the specified group (simple implementation)
+    // For now, just select/deselect based on current selection state
+    if (this.units.some(unit => unit.selected)) {
+      // If any unit is selected, deselect all
+      this.units.forEach(unit => unit.selected = false);
+    } else {
+      // If no units are selected, select all units of the same type as the first unit
+      if (this.units.length > 0) {
+        const firstUnitType = this.units[0].type;
+        this.units.forEach(unit => {
+          if (unit.type === firstUnitType) {
+            unit.selected = true;
+          }
+        });
+      }
+    }
+    // Store the group ID for future use
+    console.log(`Selected group ${groupId + 1}`);
+    this.updateUnits();
   }
 }
