@@ -7,7 +7,7 @@ import { Game, AUTO } from "phaser";
 import { SpeedrunTimer } from "speedrungames-sdk/timer";
 import { createHUD } from "speedrungames-sdk/hud";
 import { createStorage } from "speedrungames-sdk/storage";
-import { MainScene } from "./scenes/MainScene";
+import { GameScene } from "./scenes/GameScene";
 import "./styles.css";
 
 // Must match game.manifest.json#slug. `pnpm new:game` substitutes this.
@@ -39,22 +39,7 @@ const config: Phaser.Types.Core.GameConfig = {
     pixelArt: true, // Pixel art style
     antialias: false, // Disable antialiasing for sharper pixel art
   },
-  scene: [{
-    key: 'GameScene',
-    preload: function() {
-      this.add.text(400, 300, "Loading...", { color: "#ffffff", fontSize: "24px" }).setOrigin(0.5);
-    },
-    create: function() {
-      this.add.text(400, 300, "Shard Dominion", { color: "#ffffff", fontSize: "32px" }).setOrigin(0.5);
-      this.add.text(400, 400, "Click to start", { color: "#888888", fontSize: "16px" }).setOrigin(0.5);
-      
-      // Add MainScene
-      this.scene.add('MainScene', new MainScene(), true);
-    },
-    update: function() {
-      // Game loop
-    }
-  }]
+  scene: [GameScene]
 };
 
 const game = new Game(config);

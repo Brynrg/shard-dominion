@@ -217,5 +217,30 @@ export const BUILDING_TYPES: Record<string, BuildingType> = {
     health: 400,
     cost: 350,
     produces: ['stealth']
+  },
+  researchLab: {
+    id: 'researchLab',
+    name: 'Research Lab',
+    faction: Faction.PHANTOM,
+    size: 2,
+    health: 300,
+    cost: 250
+  },
+  titanWorm: {
+    id: 'titanWorm',
+    name: 'Titan Worm',
+    faction: Faction.PHANTOM,
+    size: 4,
+    health: 600,
+    cost: 400,
+    produces: ['titanWorm']
+  },
+  volatileBloom: {
+    id: 'volatileBloom',
+    name: 'Volatile Bloom',
+    faction: Faction.PHANTOM,
+    size: 2,
+    health: 200,
+    cost: 150
   }
 };

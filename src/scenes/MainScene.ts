@@ -6,7 +6,7 @@ import { PathFinder } from '../utils/pathfinding';
 import { FogOfWar } from '../utils/fog';
 import { UNIT_TYPES, BUILDING_TYPES } from '../data';
 import type { AIConfig } from '../utils/ai';
-import { AIManager } from '../utils/ai';
+import { SkirmishAI } from '../utils/ai';
 import { Faction } from '../types';
 
 interface Unit {
@@ -38,7 +38,7 @@ export class MainScene extends Scene {
   private silos: { x: number; y: number }[] = [];
   
   // AI
-  private ai: AIManager | null = null;
+  private ai: SkirmishAI | null = null;
   private aiFaction: Faction = Faction.VANGUARD;
   private aiDifficulty: 'easy' | 'medium' | 'hard' = 'easy';
   private aiCredits: number = 200;
@@ -880,14 +880,12 @@ export class MainScene extends Scene {
       faction: this.aiFaction,
       difficulty: this.aiDifficulty,
       startingResources: this.aiCredits,
-      personality: {
-        economyWeight: 0.6,
-        aggressionWeight: 0.4,
-        techWeight: 0.5
-      }
+      aggression: 0.5,
+      economyFocus: 0.5,
+      techFocus: 0.3
     };
-    
-    this.ai = new AIManager(aiConfig);
+
+    this.ai = new SkirmishAI(aiConfig);
     
     // Add AI construction yard
     this.buildings.push({
@@ -1065,7 +1063,7 @@ export class MainScene extends Scene {
         health: u.health,
         currentHealth: u.currentHealth
       }));
-      
+
       const playerUnits = this.units.filter(u => !u.id.startsWith('ai_')).map(u => ({
         id: u.id,
         x: u.x,
@@ -1076,10 +1074,10 @@ export class MainScene extends Scene {
         health: u.health,
         currentHealth: u.currentHealth
       }));
-      
-      this.ai.update(playerUnits, [], aiUnits, this.credits);
+
+      this.ai.update(this.credits, playerUnits.map(u => u.type), aiUnits.map(u => u.type));
     }
-    
+
     // Check win condition
     this.checkWinCondition();
   }

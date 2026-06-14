@@ -19,7 +19,8 @@ export interface GameConfig {
 export enum Faction {
   VANGUARD = 'vanguard',
   FORGE = 'forge',
-  PHANTOM = 'phantom'
+  PHANTOM = 'phantom',
+  NEUTRAL = 'neutral'
 }
 
 export interface UnitType {
@@ -46,6 +47,25 @@ export interface BuildingType {
   cost: number;
   power?: number;
   produces?: string[];
+}
+
+export interface UnitSpecial {
+  id: string;
+  name: string;
+  description: string;
+  damage: number;
+  range: number;
+  radius?: number;
+  cooldown: number;
+}
+
+export interface BuildingSpecial {
+  id: string;
+  name: string;
+  description: string;
+  cost: number;
+  power: number;
+  produces: string[];
 }
 
 export interface Resource {
@@ -77,6 +97,42 @@ export enum GameState {
 export enum CameraMode {
   FOLLOW = 'follow',
   FREE = 'free'
+}
+
+// Campaign types
+export interface MissionObjective {
+  id: string;
+  type: 'destroy' | 'capture' | 'survive' | 'collect' | 'defend';
+  target: string;
+  description: string;
+  required: number;
+  current: number;
+  completed: boolean;
+}
+
+export interface MissionBriefing {
+  title: string;
+  description: string;
+  objectives: MissionObjective[];
+  startingFaction: Faction;
+  startingResources: number;
+  startingUnits: string[];
+  startingBuildings: string[];
+  victoryCondition: string;
+  defeatCondition: string;
+  timeLimit?: number;
+}
+
+export interface Mission {
+  id: string;
+  name: string;
+  description: string;
+  briefing: MissionBriefing;
+  difficulty: 'easy' | 'medium' | 'hard';
+  unlocks?: string[];
+  prerequisites?: string[];
+  isTutorial?: boolean;
+  isFinal?: boolean;
 }
 
 // Aliases for backwards compatibility
