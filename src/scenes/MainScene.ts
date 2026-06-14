@@ -5,6 +5,9 @@ import { TerrainGenerator } from '../utils/terrain';
 import { PathFinder } from '../utils/pathfinding';
 import { FogOfWar } from '../utils/fog';
 import { UNIT_TYPES, BUILDING_TYPES } from '../data';
+import type { AIConfig } from '../utils/ai';
+import { AIManager } from '../utils/ai';
+import { Faction } from '../types';
 
 interface Unit {
   id: string;
@@ -33,10 +36,16 @@ export class MainScene extends Scene {
   private resourceFields: { x: number; y: number }[] = [];
   private processors: { x: number; y: number }[] = [];
   private silos: { x: number; y: number }[] = [];
+  
+  // AI
+  private ai: AIManager | null = null;
+  private aiFaction: Faction = Faction.VANGUARD;
+  private aiDifficulty: 'easy' | 'medium' | 'hard' = 'easy';
+  private aiCredits: number = 200;
   private creditDisplay!: any;
 
   // Base Building
-  private buildings: { x: number; y: number; type: string; health: number; maxHealth: number; foundation: boolean; power: number; selected: boolean; size: number }[] = [];
+  private buildings: { x: number; y: number; type: string; health: number; maxHealth: number; foundation: boolean; power: number; selected: boolean; size: number; id?: string }[] = [];
   private repairPads: { x: number; y: number; type: string; health: number; maxHealth: number; size: number }[] = [];
   private power: number = 0;
   private powerUsage: number = 0;
@@ -73,6 +82,7 @@ export class MainScene extends Scene {
 
   create(): void {
     this.createUI();
+    this.createAI();
     this.createTerrain();
     this.createUnits();
     this.createEconomy();
@@ -194,6 +204,46 @@ export class MainScene extends Scene {
       currentHealth: UNIT_TYPES['harvester'].health 
     });
 
+    // Add initial construction yard for player
+    this.buildings.push({
+      x: 3,
+      y: 5,
+      type: 'construction',
+      health: BUILDING_TYPES['construction'].health,
+      maxHealth: BUILDING_TYPES['construction'].health,
+      foundation: true,
+      power: BUILDING_TYPES['construction'].power || 0,
+      selected: false,
+      size: BUILDING_TYPES['construction'].size
+    });
+
+    // Add initial processor for player
+    this.buildings.push({
+      x: 4,
+      y: 5,
+      type: 'processor',
+      health: BUILDING_TYPES['processor'].health,
+      maxHealth: BUILDING_TYPES['processor'].health,
+      foundation: true,
+      power: BUILDING_TYPES['processor'].power || 0,
+      selected: false,
+      size: BUILDING_TYPES['processor'].size
+    });
+
+    // Add initial power node for player
+    this.buildings.push({
+      x: 5,
+      y: 5,
+      type: 'power',
+      health: BUILDING_TYPES['power'].health,
+      maxHealth: BUILDING_TYPES['power'].health,
+      foundation: true,
+      power: BUILDING_TYPES['power'].power || 50, // generates power
+      selected: false,
+      size: BUILDING_TYPES['power'].size,
+      id: 'player_construction'
+    });
+
     // Create credit display
     this.creditDisplay = this.add.text(10, 30, 'Credits: 0', {
       color: '#ffff00',
@@ -218,6 +268,12 @@ export class MainScene extends Scene {
     this.updateCredits();
     this.updatePower();
     this.updateConstructionQueue();
+
+    // Set initial credits
+    this.credits = 200;
+
+    // Calculate initial power
+    this.calculatePower();
   }
 
   createSidebar(): void {
@@ -367,7 +423,21 @@ export class MainScene extends Scene {
   }
 
   updatePower(): void {
+    this.calculatePower();
     this.powerDisplay.setText(`Power: ${this.power}/${this.powerUsage}`);
+  }
+
+  calculatePower(): void {
+    // Calculate total power generated and used
+    this.power = 0;
+    this.powerUsage = this.buildings.length * 10; // Each building uses 10 power
+    
+    // Add power from power nodes
+    for (const building of this.buildings) {
+      if (building.type === 'power') {
+        this.power += 50; // Each power node generates 50 power
+      }
+    }
   }
 
   updateConstructionQueue(): void {
@@ -623,6 +693,9 @@ export class MainScene extends Scene {
 
     // Repair system
     this.updateRepair();
+    
+    // Update AI
+    this.updateAI();
   }
   
   updateHarvesters(): void {
@@ -801,6 +874,65 @@ export class MainScene extends Scene {
     }
   }
 
+  createAI(): void {
+    // Initialize AI manager
+    const aiConfig: AIConfig = {
+      faction: this.aiFaction,
+      difficulty: this.aiDifficulty,
+      startingResources: this.aiCredits,
+      personality: {
+        economyWeight: 0.6,
+        aggressionWeight: 0.4,
+        techWeight: 0.5
+      }
+    };
+    
+    this.ai = new AIManager(aiConfig);
+    
+    // Add AI construction yard
+    this.buildings.push({
+      x: this.mapWidth - 8,
+      y: this.mapHeight - 8,
+      type: 'construction',
+      health: BUILDING_TYPES['construction'].health,
+      maxHealth: BUILDING_TYPES['construction'].health,
+      foundation: true,
+      power: BUILDING_TYPES['construction'].power || 0,
+      selected: false,
+      size: BUILDING_TYPES['construction'].size,
+      id: 'ai_construction'
+    });
+    
+    // Add AI processor
+    this.buildings.push({
+      x: this.mapWidth - 7,
+      y: this.mapHeight - 8,
+      type: 'processor',
+      health: BUILDING_TYPES['processor'].health,
+      maxHealth: BUILDING_TYPES['processor'].health,
+      foundation: true,
+      power: BUILDING_TYPES['processor'].power || 0,
+      selected: false,
+      size: BUILDING_TYPES['processor'].size
+    });
+    
+    // Give AI some starting units
+    this.units.push({ 
+      id: 'ai_unit1', 
+      x: this.mapWidth - 10, 
+      y: this.mapHeight - 8, 
+      type: 'scout', 
+      selected: false, 
+      path: [], 
+      health: UNIT_TYPES['scout'].health, 
+      currentHealth: UNIT_TYPES['scout'].health 
+    });
+    
+    // Give AI credits
+    this.credits += 200; // Start with same resources
+    this.updateCredits();
+  }
+
   updateCombat(): void {
     // Simple combat: check if units are in range and attack
     for (let i = 0; i < this.units.length; i++) {
@@ -918,6 +1050,58 @@ export class MainScene extends Scene {
     }
     
     this.updateUnits(); // Redraw to show health changes
+  }
+
+  updateAI(): void {
+    // Update AI if it exists
+    if (this.ai) {
+      const aiUnits = this.units.filter(u => u.id.startsWith('ai_')).map(u => ({
+        id: u.id,
+        x: u.x,
+        y: u.y,
+        type: u.type,
+        selected: false,
+        path: u.path,
+        health: u.health,
+        currentHealth: u.currentHealth
+      }));
+      
+      const playerUnits = this.units.filter(u => !u.id.startsWith('ai_')).map(u => ({
+        id: u.id,
+        x: u.x,
+        y: u.y,
+        type: u.type,
+        selected: false,
+        path: u.path,
+        health: u.health,
+        currentHealth: u.currentHealth
+      }));
+      
+      this.ai.update(playerUnits, [], aiUnits, this.credits);
+    }
+    
+    // Check win condition
+    this.checkWinCondition();
+  }
+
+  checkWinCondition(): void {
+    // Find all construction yards
+    const playerConYards = this.buildings.filter(b => b.type === 'construction' && !b.id?.startsWith?.('ai_'));
+    const aiConYards = this.buildings.filter(b => b.type === 'construction' && b.id?.startsWith?.('ai_'));
+    
+    // Check if player has no construction yards
+    if (playerConYards.length === 0 && this.buildings.some(b => b.type === 'construction')) {
+      console.log('AI wins!');
+      this.gameState = GameState.GAME_OVER;
+      return;
+    }
+    
+    // Check if AI has no construction yards  
+    if (aiConYards.length === 0 && this.buildings.some(b => b.type === 'construction')) {
+      console.log('Player wins!');
+      this.gameState = GameState.GAME_OVER;
+      return;
+    }
   }
 
   selectGroup(groupId: number): void {
