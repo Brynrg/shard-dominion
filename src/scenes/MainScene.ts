@@ -90,7 +90,7 @@ export class MainScene extends Scene {
     
     this.gameState = GameState.PLAYING;
     // Note: hud is defined in main.ts, so we'll access it through the scene manager
-    this.scene.get('GameScene')?.events.emit('hud-status', 'Game started!');
+    this.scene.get('MainScene')?.events.emit('hud-status', 'Game started!');
   }
 
   createUI(): void {

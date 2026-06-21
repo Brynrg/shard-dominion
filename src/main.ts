@@ -7,7 +7,7 @@ import { Game, AUTO } from "phaser";
 import { SpeedrunTimer } from "speedrungames-sdk/timer";
 import { createHUD } from "speedrungames-sdk/hud";
 import { createStorage } from "speedrungames-sdk/storage";
-import { GameScene } from "./scenes/GameScene";
+import { MainScene } from "./scenes/MainScene";
 import "./styles.css";
 
 // Must match game.manifest.json#slug. `pnpm new:game` substitutes this.
@@ -39,7 +39,7 @@ const config: Phaser.Types.Core.GameConfig = {
     pixelArt: true, // Pixel art style
     antialias: false, // Disable antialiasing for sharper pixel art
   },
-  scene: [GameScene]
+  scene: [MainScene]
 };
 
 const game = new Game(config);
