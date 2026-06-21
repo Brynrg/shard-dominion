@@ -58,3 +58,5 @@ game.canvas.addEventListener("pointerdown", () => {
 // ─── End gameplay ────────────────────────────────────────────────────────────
 
 // Start the game
+// The game loop is now running via Phaser's Game instance
+// The MainScene will handle game state and rendering
