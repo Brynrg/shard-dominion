@@ -18,6 +18,9 @@ interface Unit {
   path: { x: number; y: number }[];
   health: number;
   currentHealth: number;
+  progress: number; // For pixel-lerp movement
+  targetX: number; // Target tile X for lerp
+  targetY: number; // Target tile Y for lerp
 }
 
 export class MainScene extends Scene {
@@ -36,6 +39,7 @@ export class MainScene extends Scene {
   private resourceFields: { x: number; y: number }[] = [];
   private processors: { x: number; y: number }[] = [];
   private silos: { x: number; y: number }[] = [];
+  private buildings: { x: number; y: number; type: string }[] = [];
   
   // AI
   private ai: SkirmishAI | null = null;
@@ -57,6 +61,14 @@ export class MainScene extends Scene {
   private uiContainer!: Phaser.GameObjects.Container;
   private sidebar!: Phaser.GameObjects.Container;
   private minimap!: Phaser.GameObjects.Container;
+  
+  // Persistent objects for render leak fix
+  private unitGraphicsMap: Map<string, Phaser.GameObjects.Graphics> = new Map();
+  private buildingGraphicsMap: Map<string, Phaser.GameObjects.Graphics> = new Map();
+  private fogGraphics!: Phaser.GameObjects.Graphics;
+  private minimapFogGraphics!: Phaser.GameObjects.Graphics;
+  private minimapUnitGraphics!: Phaser.GameObjects.Graphics;
+  private minimapBuildingGraphics!: Phaser.GameObjects.Graphics;
 
   constructor() {
     super({ key: 'MainScene' });
@@ -87,6 +99,26 @@ export class MainScene extends Scene {
     this.createUnits();
     this.createEconomy();
     this.setupInput();
+    
+    // Initialize persistent graphics objects
+    console.log('Creating graphics objects...');
+    this.fogGraphics = this.add.graphics();
+    this.minimapFogGraphics = this.add.graphics();
+    this.minimapUnitGraphics = this.add.graphics();
+    this.minimapBuildingGraphics = this.add.graphics();
+    console.log('Graphics objects created:', {
+      fogGraphics: this.fogGraphics,
+      minimapFogGraphics: this.minimapFogGraphics,
+      minimapUnitGraphics: this.minimapUnitGraphics,
+      minimapBuildingGraphics: this.minimapBuildingGraphics
+    });
+    
+    // Add graphics to the scene
+    this.add.existing(this.fogGraphics);
+    this.add.existing(this.minimapFogGraphics);
+    this.add.existing(this.minimapUnitGraphics);
+    this.add.existing(this.minimapBuildingGraphics);
+    console.log('Graphics objects added to scene');
     
     this.gameState = GameState.PLAYING;
     // Note: hud is defined in main.ts, so we'll access it through the scene manager
@@ -157,20 +189,20 @@ export class MainScene extends Scene {
       }
     }
 
-    // Create fog overlay
+    // Create fog overlay using persistent graphics
     this.updateFog();
   }
 
   createUnits(): void {
     // No longer using class property for unit graphics
-    
+
     // Create a few units
     this.units = [
-      { id: 'unit1', x: 5, y: 5, type: 'infantry', selected: false, path: [], health: UNIT_TYPES['infantry'].health, currentHealth: UNIT_TYPES['infantry'].health },
-      { id: 'unit2', x: 8, y: 3, type: 'scout', selected: false, path: [], health: UNIT_TYPES['scout'].health, currentHealth: UNIT_TYPES['scout'].health },
-      { id: 'unit3', x: 12, y: 8, type: 'tank', selected: false, path: [], health: UNIT_TYPES['tank'].health, currentHealth: UNIT_TYPES['tank'].health }
+      { id: 'unit1', x: 5, y: 5, type: 'infantry', selected: false, path: [], health: UNIT_TYPES['infantry'].health, currentHealth: UNIT_TYPES['infantry'].health, progress: 0, targetX: undefined, targetY: undefined },
+      { id: 'unit2', x: 8, y: 3, type: 'scout', selected: false, path: [], health: UNIT_TYPES['scout'].health, currentHealth: UNIT_TYPES['scout'].health, progress: 0, targetX: undefined, targetY: undefined },
+      { id: 'unit3', x: 12, y: 8, type: 'tank', selected: false, path: [], health: UNIT_TYPES['tank'].health, currentHealth: UNIT_TYPES['tank'].health, progress: 0, targetX: undefined, targetY: undefined }
     ];
-    
+
     this.updateUnits();
     this.updateFog();
   }
@@ -193,15 +225,18 @@ export class MainScene extends Scene {
     this.repairPads.push({ x: 7, y: 3, type: 'repair', health: 150, maxHealth: 150, size: 2 });
 
     // Add a harvester
-    this.harvesters.push({ 
-      id: 'harvester1', 
-      x: 4, 
-      y: 4, 
-      type: 'harvester', 
-      selected: false, 
-      path: [], 
-      health: UNIT_TYPES['harvester'].health, 
-      currentHealth: UNIT_TYPES['harvester'].health 
+    this.harvesters.push({
+      id: 'harvester1',
+      x: 4,
+      y: 4,
+      type: 'harvester',
+      selected: false,
+      path: [],
+      health: UNIT_TYPES['harvester'].health,
+      currentHealth: UNIT_TYPES['harvester'].health,
+      progress: 0,
+      targetX: undefined,
+      targetY: undefined
     });
 
     // Add initial construction yard for player
@@ -380,41 +415,57 @@ export class MainScene extends Scene {
   }
 
   updateUnits(): void {
-    // Clear and redraw units
+    // Clear and redraw units using persistent graphics
     for (const unit of this.units) {
-      const color = unit.selected ? 0xffcc00 : 0xffffff;
-      const graphics = this.add.graphics();
-      graphics.clear();
-      graphics.fillStyle(color, 1);
-      graphics.fillRect(
-        unit.x * this.tileSize + 5,
-        unit.y * this.tileSize + 5,
-        this.tileSize - 10,
-        this.tileSize - 10
-      );
+      // Get or create persistent graphics for this unit
+      let unitGraphics = this.unitGraphicsMap.get(unit.id);
+      if (!unitGraphics) {
+        unitGraphics = this.add.graphics();
+        this.unitGraphicsMap.set(unit.id, unitGraphics);
+        this.add.existing(unitGraphics);
+      }
       
-      // Draw unit type
-      const unitType = UNIT_TYPES[unit.type];
-      this.add.text(
-        unit.x * this.tileSize + this.tileSize / 2,
-        unit.y * this.tileSize + this.tileSize / 2,
-        unitType.name.charAt(0),
-        { color: '#000000', fontSize: '12px', align: 'center' }
-      ).setOrigin(0.5);
-      
-      // Draw health bar
-      const healthPercent = unit.currentHealth / unit.health;
-      const healthBarWidth = this.tileSize - 10;
-      const healthBarHeight = 3;
-      const healthBarY = unit.y * this.tileSize - 5;
-      
-      // Background
-      graphics.fillStyle(0x333333, 1);
-      graphics.fillRect(unit.x * this.tileSize + 5, healthBarY, healthBarWidth, healthBarHeight);
-      
-      // Health
-      graphics.fillStyle(0x00ff00, 1);
-      graphics.fillRect(unit.x * this.tileSize + 5, healthBarY, healthBarWidth * healthPercent, healthBarHeight);
+      if (unitGraphics) {
+        unitGraphics.clear();
+        const color = unit.selected ? 0xffcc00 : 0xffffff;
+        unitGraphics.fillStyle(color, 1);
+        unitGraphics.fillRect(
+          unit.x * this.tileSize + 5,
+          unit.y * this.tileSize + 5,
+          this.tileSize - 10,
+          this.tileSize - 10
+        );
+        
+        // Draw unit type
+        unitGraphics.fillStyle(0x000000, 1);
+        unitGraphics.fillRect(
+          unit.x * this.tileSize + this.tileSize / 2 - 6,
+          unit.y * this.tileSize + this.tileSize / 2 - 6,
+          12,
+          12
+        );
+        unitGraphics.fillStyle(0xffffff, 1);
+        unitGraphics.fillRect(
+          unit.x * this.tileSize + this.tileSize / 2 - 4,
+          unit.y * this.tileSize + this.tileSize / 2 - 4,
+          8,
+          8
+        );
+        
+        // Draw health bar
+        const healthPercent = unit.currentHealth / unit.health;
+        const healthBarWidth = this.tileSize - 10;
+        const healthBarHeight = 3;
+        const healthBarY = unit.y * this.tileSize - 5;
+        
+        // Background
+        unitGraphics.fillStyle(0x333333, 1);
+        unitGraphics.fillRect(unit.x * this.tileSize + 5, healthBarY, healthBarWidth, healthBarHeight);
+        
+        // Health
+        unitGraphics.fillStyle(0x00ff00, 1);
+        unitGraphics.fillRect(unit.x * this.tileSize + 5, healthBarY, healthBarWidth * healthPercent, healthBarHeight);
+      }
     }
   }
   
@@ -483,7 +534,10 @@ export class MainScene extends Scene {
               selected: false,
               path: [],
               health: unitData.health,
-              currentHealth: unitData.health
+              currentHealth: unitData.health,
+              progress: 0,
+              targetX: undefined,
+              targetY: undefined
             });
           }
           
@@ -498,16 +552,19 @@ export class MainScene extends Scene {
   }
 
   updateFog(): void {
-    const fogGraphics = this.add.graphics();
-    fogGraphics.clear();
-    
-    // Reveal fog
-    for (let y = 0; y < this.mapHeight; y++) {
-      for (let x = 0; x < this.mapWidth; x++) {
-        const alpha = this.fogOfWar.getFogAlpha(x, y);
-        if (alpha > 0) {
-          fogGraphics.fillStyle(0x000000, alpha);
-          fogGraphics.fillRect(x * this.tileSize, y * this.tileSize, this.tileSize, this.tileSize);
+    // Clear and redraw fog using persistent graphics
+    console.log('updateFog called, fogGraphics:', this.fogGraphics);
+    if (this.fogGraphics) {
+      this.fogGraphics.clear();
+      
+      // Reveal fog
+      for (let y = 0; y < this.mapHeight; y++) {
+        for (let x = 0; x < this.mapWidth; x++) {
+          const alpha = this.fogOfWar.getFogAlpha(x, y);
+          if (alpha > 0) {
+            this.fogGraphics.fillStyle(0x000000, alpha);
+            this.fogGraphics.fillRect(x * this.tileSize, y * this.tileSize, this.tileSize, this.tileSize);
+          }
         }
       }
     }
@@ -533,44 +590,50 @@ export class MainScene extends Scene {
     const minimapSize = 150;
     const tileSize = minimapSize / Math.max(this.mapWidth, this.mapHeight);
 
-    // Draw fog of war on minimap
-    const fogGraphics = this.add.graphics();
-    for (let y = 0; y < this.mapHeight; y++) {
-      for (let x = 0; x < this.mapWidth; x++) {
-        const alpha = this.fogOfWar.getFogAlpha(x, y);
-        if (alpha > 0) {
-          fogGraphics.fillStyle(0x000000, alpha);
-          fogGraphics.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+    // Draw fog of war on minimap using persistent graphics
+    if (this.minimapFogGraphics) {
+      this.minimapFogGraphics.clear();
+      for (let y = 0; y < this.mapHeight; y++) {
+        for (let x = 0; x < this.mapWidth; x++) {
+          const alpha = this.fogOfWar.getFogAlpha(x, y);
+          if (alpha > 0) {
+            this.minimapFogGraphics.fillStyle(0x000000, alpha);
+            this.minimapFogGraphics.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+          }
         }
       }
+      this.minimap.add(this.minimapFogGraphics);
     }
-    this.minimap.add(fogGraphics);
 
-    // Draw units on minimap
-    const unitGraphics = this.add.graphics();
-    for (const unit of this.units) {
-      unitGraphics.fillStyle(0xffffff);
-      unitGraphics.fillRect(
-        unit.x * tileSize + tileSize/4,
-        unit.y * tileSize + tileSize/4,
-        tileSize/2,
-        tileSize/2
-      );
+    // Draw units on minimap using persistent graphics
+    if (this.minimapUnitGraphics) {
+      this.minimapUnitGraphics.clear();
+      for (const unit of this.units) {
+        this.minimapUnitGraphics.fillStyle(0xffffff);
+        this.minimapUnitGraphics.fillRect(
+          unit.x * tileSize + tileSize/4,
+          unit.y * tileSize + tileSize/4,
+          tileSize/2,
+          tileSize/2
+        );
+      }
+      this.minimap.add(this.minimapUnitGraphics);
     }
-    this.minimap.add(unitGraphics);
 
-    // Draw buildings on minimap
-    const buildingGraphics = this.add.graphics();
-    for (const building of this.buildings) {
-      buildingGraphics.fillStyle(0x00ff00);
-      buildingGraphics.fillRect(
-        building.x * tileSize + tileSize/3,
-        building.y * tileSize + tileSize/3,
-        tileSize/3,
-        tileSize/3
-      );
+    // Draw buildings on minimap using persistent graphics
+    if (this.minimapBuildingGraphics) {
+      this.minimapBuildingGraphics.clear();
+      for (const building of this.buildings) {
+        this.minimapBuildingGraphics.fillStyle(0x00ff00);
+        this.minimapBuildingGraphics.fillRect(
+          building.x * tileSize + tileSize/3,
+          building.y * tileSize + tileSize/3,
+          tileSize/3,
+          tileSize/3
+        );
+      }
+      this.minimap.add(this.minimapBuildingGraphics);
     }
-    this.minimap.add(buildingGraphics);
   }
 
   setupInput(): void {
@@ -598,9 +661,9 @@ export class MainScene extends Scene {
           this.selectedUnit.y,
           tileX,
           tileY,
-          this.terrain
+          this.terrain,
+          this.buildings
         );
-
         if (path.length > 0) {
           this.selectedUnit.path = path.slice(1); // Remove starting position
         }
@@ -653,13 +716,46 @@ export class MainScene extends Scene {
   update(): void {
     if (this.gameState !== GameState.PLAYING) return;
 
-    // Move units along their paths
+    // Move units along their paths with pixel-lerp
     for (const unit of this.units) {
       if (unit.path.length > 0) {
         const nextPos = unit.path[0];
-        unit.x = nextPos.x;
-        unit.y = nextPos.y;
-        unit.path.shift();
+        const targetTileX = nextPos.x;
+        const targetTileY = nextPos.y;
+
+        // Initialize target if not set
+        if (unit.targetX === undefined || unit.targetY === undefined) {
+          unit.targetX = targetTileX;
+          unit.targetY = targetTileY;
+        }
+
+        // Get unit speed from data
+        const unitData = UNIT_TYPES[unit.type];
+        const speed = unitData ? unitData.speed : 1;
+
+        // Calculate pixel distance
+        const pixelX = unit.x * this.tileSize;
+        const pixelY = unit.y * this.tileSize;
+        const targetPixelX = targetTileX * this.tileSize;
+        const targetPixelY = targetTileY * this.tileSize;
+
+        const dx = targetPixelX - pixelX;
+        const dy = targetPixelY - pixelY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        // Move towards target using lerp
+        if (distance > 1) {
+          const moveAmount = speed * 0.5; // 0.5 is lerp factor
+          unit.x += (dx / distance) * moveAmount;
+          unit.y += (dy / distance) * moveAmount;
+        } else {
+          // Arrived at tile
+          unit.x = targetTileX;
+          unit.y = targetTileY;
+          unit.path.shift();
+          unit.targetX = undefined;
+          unit.targetY = undefined;
+        }
       }
     }
 
@@ -770,21 +866,20 @@ export class MainScene extends Scene {
 
     // Get the next building to build
     const buildingType = this.constructionQueue[0].type;
-    const buildingData = BUILDING_TYPES[buildingType];
 
-    if (!buildingData) {
+    if (!BUILDING_TYPES[buildingType]) {
       console.error(`Unknown building type: ${buildingType}`);
       return;
     }
 
     // Check if we have enough credits
-    if (this.credits < buildingData.cost) {
+    if (this.credits < BUILDING_TYPES[buildingType].cost) {
       console.log('Not enough credits to build');
       return;
     }
 
     // Check if the tile is valid for placement
-    if (!this.isValidPlacement(tileX, tileY, buildingData.size)) {
+    if (!this.isValidPlacement(tileX, tileY, BUILDING_TYPES[buildingType].size)) {
       console.log('Invalid placement');
       return;
     }
@@ -801,19 +896,20 @@ export class MainScene extends Scene {
     }
 
     // Deduct credits
-    this.credits -= buildingData.cost;
+    this.credits -= BUILDING_TYPES[buildingType].cost;
 
     // Add the building
     this.buildings.push({
       x: tileX,
       y: tileY,
       type: buildingType,
-      health: buildingData.health,
-      maxHealth: buildingData.health,
+      health: BUILDING_TYPES[buildingType].health,
+      maxHealth: BUILDING_TYPES[buildingType].health,
       foundation: false,
-      power: buildingData.power || 0,
+      power: BUILDING_TYPES[buildingType].power || 0,
       selected: false,
-      size: buildingData.size
+      size: BUILDING_TYPES[buildingType].size,
+      id: `building_${Date.now()}_${tileX}_${tileY}`
     });
 
     // Update displays
@@ -844,27 +940,43 @@ export class MainScene extends Scene {
   }
 
   updateBuildings(): void {
-    // Clear and redraw buildings
+    // Clear and redraw buildings using persistent graphics
     for (const building of this.buildings) {
-      const color = building.selected ? 0xffcc00 : 0x00ff00;
-      const graphics = this.add.graphics();
-      graphics.clear();
-      graphics.fillStyle(color, 1);
-      graphics.fillRect(
-        building.x * this.tileSize,
-        building.y * this.tileSize,
-        this.tileSize * building.size,
-        this.tileSize * building.size
-      );
-
-      // Draw building name
-      const buildingType = BUILDING_TYPES[building.type];
-      this.add.text(
-        building.x * this.tileSize + (this.tileSize * building.size) / 2,
-        building.y * this.tileSize + (this.tileSize * building.size) / 2,
-        buildingType.name.charAt(0),
-        { color: '#000000', fontSize: '12px', align: 'center' }
-      ).setOrigin(0.5);
+      // Get or create persistent graphics for this building
+      let buildingGraphics = this.buildingGraphicsMap.get(building.id || '');
+      if (!buildingGraphics) {
+        buildingGraphics = this.add.graphics();
+        this.buildingGraphicsMap.set(building.id || '', buildingGraphics);
+        this.add.existing(buildingGraphics);
+      }
+      
+      if (buildingGraphics) {
+        buildingGraphics.clear();
+        const color = building.selected ? 0xffcc00 : 0x00ff00;
+        buildingGraphics.fillStyle(color, 1);
+        buildingGraphics.fillRect(
+          building.x * this.tileSize,
+          building.y * this.tileSize,
+          this.tileSize * building.size,
+          this.tileSize * building.size
+        );
+        
+        // Draw building name
+        buildingGraphics.fillStyle(0x000000, 1);
+        buildingGraphics.fillRect(
+          building.x * this.tileSize + (this.tileSize * building.size) / 2 - 6,
+          building.y * this.tileSize + (this.tileSize * building.size) / 2 - 6,
+          12,
+          12
+        );
+        buildingGraphics.fillStyle(0xffffff, 1);
+        buildingGraphics.fillRect(
+          building.x * this.tileSize + (this.tileSize * building.size) / 2 - 4,
+          building.y * this.tileSize + (this.tileSize * building.size) / 2 - 4,
+          8,
+          8
+        );
+      }
     }
   }
 
@@ -915,15 +1027,18 @@ export class MainScene extends Scene {
     });
     
     // Give AI some starting units
-    this.units.push({ 
-      id: 'ai_unit1', 
-      x: this.mapWidth - 10, 
-      y: this.mapHeight - 8, 
-      type: 'scout', 
-      selected: false, 
-      path: [], 
-      health: UNIT_TYPES['scout'].health, 
-      currentHealth: UNIT_TYPES['scout'].health 
+    this.units.push({
+      id: 'ai_unit1',
+      x: this.mapWidth - 10,
+      y: this.mapHeight - 8,
+      type: 'scout',
+      selected: false,
+      path: [],
+      health: UNIT_TYPES['scout'].health,
+      currentHealth: UNIT_TYPES['scout'].health,
+      progress: 0,
+      targetX: undefined,
+      targetY: undefined
     });
     
     // Give AI credits
@@ -960,7 +1075,16 @@ export class MainScene extends Scene {
           
           // Check if unit died
           if (unit2.currentHealth <= 0) {
+            // Remove unit
             this.units.splice(j, 1);
+            
+            // Destroy persistent graphics
+            const unitGraphics = this.unitGraphicsMap.get(unit2.id);
+            if (unitGraphics) {
+              unitGraphics.destroy();
+              this.unitGraphicsMap.delete(unit2.id);
+            }
+            
             j--; // Adjust index since we removed an element
           }
         }

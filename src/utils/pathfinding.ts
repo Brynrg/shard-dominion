@@ -111,7 +111,8 @@ export class PathFinder {
     startY: number,
     endX: number,
     endY: number,
-    terrain: number[][]
+    terrain: number[][],
+    buildings: { x: number; y: number; type: string }[]
   ): { x: number; y: number }[] {
     const start = { x: startX, y: startY };
     const end = { x: endX, y: endY };
@@ -120,8 +121,15 @@ export class PathFinder {
       if (x < 0 || x >= terrain[0].length || y < 0 || y >= terrain.length) {
         return false;
       }
-      // For now, all terrain is walkable except water
-      return terrain[y][x] !== 3; // 3 = WATER
+      // Block water and mountains
+      if (terrain[y][x] === 3 || terrain[y][x] === 4) {
+        return false;
+      }
+      // Block buildings
+      if (buildings.some(b => b.x === x && b.y === y)) {
+        return false;
+      }
+      return true;
     });
   }
 }

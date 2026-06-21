@@ -38,6 +38,20 @@ export interface UnitType {
   cost: number;
 }
 
+export interface Unit {
+  id: string;
+  x: number;
+  y: number;
+  type: keyof typeof UNIT_TYPES;
+  selected: boolean;
+  path: { x: number; y: number }[];
+  health: number;
+  currentHealth: number;
+  progress: number; // For pixel-lerp movement
+  targetX?: number; // Target tile X for lerp
+  targetY?: number; // Target tile Y for lerp
+}
+
 export interface BuildingType {
   id: string;
   name: string;
