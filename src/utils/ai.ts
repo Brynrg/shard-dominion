@@ -23,9 +23,11 @@ export class SkirmishAI {
   private config: AIConfig;
   private state: AIState;
   private readonly DECISION_INTERVAL = 2000; // ms
+  private scene: any; // Scene reference for spawning units
 
-  constructor(config: AIConfig) {
+  constructor(config: AIConfig, scene?: any) {
     this.config = config;
+    this.scene = scene;
     this.state = {
       resources: config.startingResources,
       units: [],
@@ -207,12 +209,68 @@ export class SkirmishAI {
     }
   }
 
+  // Methods to execute AI decisions in the scene
+  produceUnit(scene: any, unitType: string, spawnX: number, spawnY: number): void {
+    if (!this.scene) return;
+    if (this.state.resources < UNIT_TYPES[unitType].cost) return;
+
+    // Deduct cost
+    this.state.resources -= UNIT_TYPES[unitType].cost;
+
+    // Spawn AI-owned unit
+    const unit = {
+      id: `ai_${unitType}_${Date.now()}`,
+      x: spawnX,
+      y: spawnY,
+      type: unitType,
+      selected: false,
+      path: [],
+      health: UNIT_TYPES[unitType].health,
+      currentHealth: UNIT_TYPES[unitType].health,
+      progress: 0,
+      targetX: spawnX,
+      targetY: spawnY,
+      owner: 'ai',
+      faction: UNIT_TYPES[unitType].faction,
+      lastAttackTime: 0
+    };
+
+    this.state.units.push(unitType);
+    scene.units.push(unit);
+  }
+
+  attackUnit(scene: any, unitId: string, targetX: number, targetY: number): void {
+    if (!this.scene) return;
+
+    // Find the unit
+    const unit = scene.units.find((u: any) => u.id === unitId);
+    if (!unit || unit.owner !== 'ai') return;
+
+    // Set path to target
+    const path = scene.PathFinder.findPathTo(
+      unit.x,
+      unit.y,
+      targetX,
+      targetY,
+      scene.terrain,
+      scene.buildings
+    );
+
+    if (path.length > 0) {
+      unit.path = path.slice(1);
+    }
+  }
+
   getDecision(): string {
     return this.state.lastAction;
   }
 
   getState(): AIState {
     return { ...this.state };
+  }
+
+  getResources(): number {
+    return this.state.resources;
   }
 }
 

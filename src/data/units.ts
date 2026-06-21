@@ -15,7 +15,8 @@ export const UNIT_TYPES: Record<string, UnitType> = {
     range: 1,
     armor: 0,
     attackType: 'melee',
-    cost: 50
+    cost: 50,
+    cooldown: 1000
   },
   scout: {
     id: 'scout',
@@ -29,7 +30,8 @@ export const UNIT_TYPES: Record<string, UnitType> = {
     range: 2,
     armor: 0,
     attackType: 'ranged',
-    cost: 75
+    cost: 75,
+    cooldown: 1500
   },
   tank: {
     id: 'tank',
@@ -43,7 +45,8 @@ export const UNIT_TYPES: Record<string, UnitType> = {
     range: 3,
     armor: 2,
     attackType: 'ranged',
-    cost: 150
+    cost: 150,
+    cooldown: 2000
   },
   
   // Forge Dominion - heavy/brute

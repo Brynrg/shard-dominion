@@ -1,3 +1,5 @@
+import { UNIT_TYPES } from '../data/units';
+
 export interface Position {
   x: number;
   y: number;
@@ -36,6 +38,8 @@ export interface UnitType {
   armor: number;
   attackType?: 'melee' | 'ranged' | 'splash';
   cost: number;
+  cooldown?: number; // Attack cooldown in milliseconds
+  unlocked?: boolean; // Whether this unit is unlocked
 }
 
 export interface Unit {
@@ -50,6 +54,9 @@ export interface Unit {
   progress: number; // For pixel-lerp movement
   targetX?: number; // Target tile X for lerp
   targetY?: number; // Target tile Y for lerp
+  owner: 'player' | 'ai';
+  faction: Faction;
+  lastAttackTime: number; // Cooldown tracking
 }
 
 export interface BuildingType {

@@ -82,10 +82,10 @@ export class GameScene extends Scene {
     this.createAI();
 
     // Initialize titan worm manager
-    this.titanWormManager = new TitanWormManager(this.mapWidth, this.mapHeight);
+    this.titanWormManager = new TitanWormManager(this, this.units, this.buildings);
 
     // Initialize volatile bloom manager
-    this.volatileBloomManager = new VolatileBloomManager();
+    this.volatileBloomManager = new VolatileBloomManager(this, this.units, this.buildings);
 
     // Create UI
     this.createUI();
@@ -249,10 +249,10 @@ export class GameScene extends Scene {
     this.updateAI();
 
     // Update titan worms
-    this.titanWormManager?.update();
+    this.titanWormManager?.update(0);
 
     // Update volatile blooms
-    this.volatileBloomManager?.update();
+    this.volatileBloomManager?.update(0);
 
     // Check for spawns
     this.titanWormManager?.checkSpawn();

@@ -11,8 +11,8 @@ import { MainScene } from "./scenes/MainScene";
 import "./styles.css";
 
 // Must match game.manifest.json#slug. `pnpm new:game` substitutes this.
-const SLUG: string = "__SLUG__";
-const UNSET_SLUG = "__SLUG__";
+const SLUG: string = "shard-dominion";
+const UNSET_SLUG = "shard-dominion";
 
 const root = document.getElementById("app");
 if (!root) throw new Error("#app element missing in index.html");
