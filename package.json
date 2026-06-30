@@ -13,13 +13,15 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
-    "verify": "pnpm run typecheck && pnpm run lint && pnpm run test"
+    "verify": "pnpm run typecheck && pnpm run lint && pnpm run test",
+    "test:live": "playwright test"
   },
   "dependencies": {
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
+    "@playwright/test": "^1.45.0",
     "@types/node": "^22.7.5",
     "eslint": "^9.13.0",
     "typescript": "^5.6.3",

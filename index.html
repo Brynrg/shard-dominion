@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shard Dominion - S0</title>
+    <style>
+      body {
+        margin: 0;
+        background: #000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        color: #fff;
+        font-family: monospace;
+      }
+      #game-container {
+        text-align: center;
+      }
+      #game-canvas {
+        border: 1px solid #333;
+        background: #000;
+      }
+      .status {
+        margin-top: 10px;
+        font-size: 12px;
+        color: #888;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game-container">
+      <canvas id="game-canvas"></canvas>
+      <div class="status">S0: One harvester visibly moving</div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
