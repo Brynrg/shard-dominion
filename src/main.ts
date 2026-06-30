@@ -4,7 +4,7 @@ import { makeSimState } from './sim/state.js';
 import { orderSystems } from './sim/loop.js';
 import { makeMovementSystem } from './sim/systems/movement.js';
 import { makeView } from './view/index.js';
-import { tileToWorldCenter } from './sim/coords.js';
+import { tileToWorldCenter, worldToScreen } from './sim/coords.js';
 
 // Map configuration
 const MAP_WIDTH = 32;
@@ -61,20 +61,12 @@ export function bootstrap(): void {
   });
   view.start();
 
-  // Expose debug hook
+  // Expose debug hook — a locator that reads post-render state through the SAME
+  // contract transform the renderer uses (not a re-derived one).
   window.__debugHarvesterScreenPos = () => {
     const harvester = state.store.all().find(e => e.components.movement);
     if (!harvester || !harvester.components.position) return null;
-    const cam = view.getCamera();
-    const { x, y } = cam;
-    const zoom = cam.zoom;
-    const wx = harvester.components.position.wx;
-    const wy = harvester.components.position.wy;
-    const TILE_SUBUNITS = 256;
-    const TILE_SIZE_PX = 32;
-    const WORLD_PER_PX = TILE_SUBUNITS / TILE_SIZE_PX;
-    const sx = ((wx - x) / WORLD_PER_PX) * zoom;
-    const sy = ((wy - y) / WORLD_PER_PX) * zoom;
+    const { sx, sy } = worldToScreen(harvester.components.position, view.getCamera());
     return { x: sx, y: sy };
   };
 }

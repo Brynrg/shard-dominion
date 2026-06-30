@@ -4,7 +4,7 @@ import type { SimState } from '../sim/state.js';
 import type { Camera, WorldPos } from '../sim/coords.js';
 import { worldToScreen, tileToWorldCenter } from '../sim/coords.js';
 import { TILE_SIZE_PX, TILE_SUBUNITS } from '../sim/coords.js';
-import { asTick } from '../sim/ids.js';
+import { accumulate, runTick, STEP_MS, type SimSystem } from '../sim/loop.js';
 
 // Terrain colors (simple palette)
 const TERRAIN_COLORS: Record<string, string> = {
@@ -25,7 +25,7 @@ const ENTITY_COLORS: Record<string, string> = {
 export interface ViewConfig {
   canvas: HTMLCanvasElement;
   simState: SimState;
-  systems: readonly { name: string; run: (s: SimState) => void }[];
+  systems: readonly SimSystem[];
   mapWidth: number;
   mapHeight: number;
 }
@@ -83,7 +83,7 @@ export function makeView(cfg: ViewConfig): View {
 
       // Interpolate between prev and current for smooth movement
       const prevPos = simState.prevPositions.get(e.id);
-      const alpha = Math.min(1, accMs / 50); // 50ms = 1 tick
+      const alpha = Math.min(1, accMs / STEP_MS);
       const interpPos: WorldPos = prevPos
         ? {
             wx: prevPos.wx + (pos.wx - prevPos.wx) * alpha,
@@ -130,27 +130,12 @@ export function makeView(cfg: ViewConfig): View {
     const dt = now - lastTime;
     lastTime = now;
 
-    // Accumulate time and run ticks
-    accMs += dt;
-    let steps = 0;
-    while (accMs >= 50 && steps < 5) {
-      accMs -= 50;
-      steps += 1;
-    }
-    if (steps > 0) {
-      // Snapshot prev positions before mutation
-      simState.prevPositions.clear();
-      for (const e of simState.store.all()) {
-        if (e.components.position) {
-          simState.prevPositions.set(e.id, e.components.position);
-        }
-      }
-      // Run systems
-      for (const sys of systems) {
-        sys.run(simState);
-      }
-      simState.tick = asTick(Number(simState.tick) + 1);
-    }
+    // Contract fixed-timestep: accumulate() decides how many whole ticks to run;
+    // runTick() snapshots prev positions, runs systems in SYSTEM_ORDER, and bumps
+    // the tick. The leftover remainder is the interpolation alpha for render().
+    const { steps, remainderMs } = accumulate(accMs, dt);
+    for (let i = 0; i < steps; i += 1) runTick(simState, systems);
+    accMs = remainderMs;
 
     render();
     requestAnimationFrame(loop);

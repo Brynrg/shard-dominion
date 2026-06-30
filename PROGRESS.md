@@ -17,9 +17,13 @@
   `index.html`, `tests/liveness/s0.spec.ts` + `playwright.config.ts` (build+preview gate), `test:live` script,
   `@playwright/test` devDep. Contract layer untouched; guardrails held. Orchestrator finish-line fixes were
   mechanical only (CI-green): ESM `__dirname`, missing `page.goto('/')`, `noUncheckedIndexedAccess` guard,
-  unused-symbol removal. **Flagged for review (NOT fixed — builder's lane):** the renderer reimplements the tick
-  loop inline instead of using the contract `runTick`/`accumulate`; `__debugHarvesterScreenPos` hand-rolls the
-  world→screen transform instead of reusing `worldToScreen`.
+  unused-symbol removal.
+- **S0 contract-compliance pass (2026-06-30, operator-approved):** the two flagged deviations are now FIXED.
+  The renderer drives the sim through the contract `accumulate()` + `runTick()` (was an inline reimplemented
+  loop — a BUILD_CONSTITUTION §51-55 anti-pattern; also fixed a latent bug where multi-tick catch-up counted
+  steps but only ran systems once, so the sim under-advanced on slow frames). `__debugHarvesterScreenPos` now
+  reuses `worldToScreen` instead of a hand-rolled transform. SYSTEM_ORDER + determinism are now owned by the
+  contract loop — the foundation S1's `harvest`-after-`movement` ordering depends on. Both gates still green.
 - **Immutable contract layer** written, compiled, and contract-tested (see `BUILD_CONSTITUTION.md` for the list):
   coords (3-space fixed-point), ids, components (one entity shape), store, grid (single spatial index), map
   (seeded), rng (mulberry32), hash (FNV-1a), state, loop (fixed-timestep + canonical SYSTEM_ORDER + **blocking
