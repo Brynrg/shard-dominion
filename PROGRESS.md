@@ -25,8 +25,13 @@
 - **S4B-2 read-from-shape (2026-07-01):** renderer draws combat units by WEAPON TYPE glyph (BULLET=circle,
   ROCKET=triangle, SHELL=square) + team tint; `weapons` passed into ViewConfig. Verified on screen (rifle unit
   now a circle). All 6 liveness gates + 72 unit tests green. (orchestrator fixed 1 prefer-const lint.)
-- **Next:** `packets/S4B-3.md` — the RPS counter-fight liveness gate (a rocket squad beats an armored vehicle that
-  shrugs off rifles → 'win a counter-based fight read from shape'). Orchestrator authors the gate + tunes the demo.
+- **S4B-3 RPS decides the battle (2026-07-01, orchestrator-authored):** `tests/unit/rps_battle.test.ts` runs the
+  full combat stack (targeting→damage→victory) on the SAME MEDIUM-armor vehicle vs two squads: 2 anti-vehicle
+  ROCKETs BEAT it (winner player); 2 anti-infantry RIFLEs LOSE to it (winner enemy). The counter triangle decides
+  the fight. **S4B core gate MET: win a counter-based fight (RPS proven) + read from shape (S4B-2 glyphs).**
+  DEFERRED S4B extras (fold into a later slice): travel-time projectiles, attack-move, weapon-role cards, paused-
+  queue text — none needed for the gate.
+- **Next:** S5 (fog of war + control groups + minimap) per MASTER_PLAN §10, OR S4C (faction tanks + roster). TBD.
 
 ## Done so far
 - Repo scaffolded: TS + Canvas2D + Vite + Vitest + zod + ESLint, single package, pnpm. `pnpm run verify` green.
