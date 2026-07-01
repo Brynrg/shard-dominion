@@ -16,6 +16,7 @@ import { loadWeapons } from './loaders/loader.js';
 import { makeCombatTargetingSystem } from './sim/systems/combatTargeting.js';
 import { makeDamageSystem } from './sim/systems/damage.js';
 import { makeVictorySystem } from './sim/systems/victory.js';
+import { makeFogSystem } from './sim/systems/fog.js';
 import economyConstantsData from '../data/economyConstants.json' with { type: 'json' };
 import structuresData from '../data/structures.json' with { type: 'json' };
 import weaponsData from '../data/weapons.json' with { type: 'json' };
@@ -135,6 +136,7 @@ export function bootstrap(): void {
     makeCombatTargetingSystem(weapons),
     makeDamageSystem(weapons),
     victorySystem,
+    makeFogSystem(),
   ]);
 
   // Get canvas

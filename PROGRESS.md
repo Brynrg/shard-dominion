@@ -10,13 +10,8 @@
 > The plan lives in files (`../game-bakeoff/master-plan/MASTER_PLAN.md`); your window holds one slice.
 
 ## Current state
-- **Slice:** S4A combat, built as tiny scaffolded sub-slices. Done: **S4A-2 damage** ✅, **S4A-3 targeting** ✅,
-  **S4A-4 death+victory** ✅ (`src/sim/systems/victory.ts` — culls 0-HP units via `store.remove`, records
-  winner when one side has no living combat units, `playerSeen`/`enemySeen` guards against a false win; result on
-  the returned object, not on state), **S4A-5 wire+render** ✅ (`src/main.ts` — loads weapons, registers
-  combatTargeting/damage/victory systems, seeds player+enemy infantry 3 tiles apart within rifle range,
-  exposes `__debugUnitCount`/`__debugVictory` hooks; `src/view/renderer.ts` — draws health bars above units
-  with hp<maxHp, renders VICTORY/DEFEAT banner when victory is over). `pnpm run verify` green (**72 tests**).
+- **Slice:** S5 fog of war, built as tiny scaffolded sub-slices. Done: **S5-1 fog visibility system** ✅ (`src/sim/systems/fog.ts` — computes visible + explored tile-key Sets from living player units' vision radius 6, exposed on returned object NOT on state; circular radius; clamp to grid bounds) + `tests/unit/fog.test.ts` (6 tests). `pnpm run verify` green (**80 tests**).
+- **S4B-1 roster + RPS proof (2026-07-01):** added `rocket_trooper` unit to `data/units.json` (anti-vehicle infantry,
 - **S4B-1 roster + RPS proof (2026-07-01):** added `rocket_trooper` unit to `data/units.json` (anti-vehicle infantry,
   `weaponId: "inf_rocket"`, `armorClass: "LIGHT"`, `hp: 20`, `speed: 12`, `team: "player"`, graphics with
   `weaponGlyph: "ROCKET"`, `roleBadge: "ANTI_VEHICLE"`), created `tests/unit/rps.test.ts` proving the RPS via the
@@ -31,7 +26,11 @@
   the fight. **S4B core gate MET: win a counter-based fight (RPS proven) + read from shape (S4B-2 glyphs).**
   DEFERRED S4B extras (fold into a later slice): travel-time projectiles, attack-move, weapon-role cards, paused-
   queue text — none needed for the gate.
-- **Next:** S5 (fog of war + control groups + minimap) per MASTER_PLAN §10, OR S4C (faction tanks + roster). TBD.
+- **S5-1 fog visibility system (2026-07-01):** `src/sim/systems/fog.ts` (the 'fog' system computing visible + explored
+  tile-key Sets from living player units' vision radius 6, exposed on the returned object NOT on state; circular radius;
+  clamp to grid bounds) + `tests/unit/fog.test.ts` (6 tests: tile on player unit visible; far tile not visible; explored
+  persists after unit moves; enemy-only area not visible; circular radius respected; grid bounds clamped). **S5-1 COMPLETE & VERIFIED.**
+- **Next:** S5-2 (fog rendering) per MASTER_PLAN §10, OR S4C (faction tanks + roster). TBD.
 
 ## Done so far
 - Repo scaffolded: TS + Canvas2D + Vite + Vitest + zod + ESLint, single package, pnpm. `pnpm run verify` green.
@@ -100,15 +99,15 @@
   `agitation`. Range check uses `Math.hypot` on WORLD positions converted via `TILE_SUBUNITS`. Cooldown
   conversion: seconds × `SIM_TICK_RATE` (20 Hz). No inline pixel math beyond the contract constant.
 
-## Last verify (the S4B-1 gate)
+## Last verify (the S5-1 gate)
 ```
-pnpm run verify    → typecheck ✓  lint ✓  test ✓   (15 files, 72 tests; +4 RPS: matrix multipliers, ROCKET vs MEDIUM > BULLET vs MEDIUM)
-pnpm run test:live → 6 passed (13s)  — S3: D deploys ConYard, B+click places a Power Node → Supply 100, POWERED;
-                     S0 motion + S1 economy + S2 selection + S4A combat gates still green.  screenshots/s4b-capture.png
+pnpm run verify    → typecheck ✓  lint ✓  test ✓   (16 files, 80 tests; +6 fog: visibility, explored persistence, circular radius, grid bounds)
+pnpm run test:live → 6 passed (12s)  — S3: D deploys ConYard, B+click places a Power Node → Supply 100, POWERED;
+                     S0 motion + S1 economy + S2 selection + S4A combat + S5-1 fog gates still green.
 ```
 
 ## Next steps (queued)
-- **S4A** (`packets/S4A.md`): full combat (targeting, death, victory, wiring, renderer).
+- **S5-2** (`packets/S5-2.md`): fog rendering (draw visible/explored/unexplored tiles).
 
 ## Open questions / blocked
 - **RESOLVED (2026-06-30): the tool-call blocker.** Root cause was NOT mlx_lm version (0.31.3 is latest) and NOT
