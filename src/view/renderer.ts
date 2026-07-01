@@ -5,6 +5,7 @@ import type { Camera, WorldPos } from '../sim/coords.js';
 import { worldToScreen, tileToWorldCenter } from '../sim/coords.js';
 import { TILE_SIZE_PX, TILE_SUBUNITS } from '../sim/coords.js';
 import { accumulate, runTick, STEP_MS, type SimSystem } from '../sim/loop.js';
+import { makeHUD } from './hud.js';
 
 // Terrain colors (simple palette)
 const TERRAIN_COLORS: Record<string, string> = {
@@ -56,6 +57,9 @@ export function makeView(cfg: ViewConfig): View {
 
   // Use ctx as non-null after the check
   const context = ctx as CanvasRenderingContext2D;
+
+  // Create HUD
+  const hud = makeHUD({ canvas, simState, camera });
 
   function drawTerrain() {
     const { width, height } = simState.grid;
@@ -122,6 +126,9 @@ export function makeView(cfg: ViewConfig): View {
 
     drawTerrain();
     drawEntities();
+
+    // Draw HUD
+    hud.draw();
   }
 
   function loop(now: number) {

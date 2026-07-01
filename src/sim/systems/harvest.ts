@@ -1,0 +1,259 @@
+// ── Harvest system: harvester FSM (SEEK→HARVEST→RETURN→DOCK) ──────────────────
+// Runs after movement per SYSTEM_ORDER. Reads state only; does NOT construct anything.
+import type { SimState } from '../state.js';
+import type { EconomyConstants } from '../../loaders/economyConstants.js';
+import { worldToTile, tileToWorldCenter } from '../coords.js';
+import { SIM_TICK_RATE } from '../loop.js';
+import type { EntityId } from '../ids.js';
+import type { HarvestComponent, EconomyComponent, PositionComponent, MovementComponent, FactionComponent } from '../components.js';
+
+// Dock slots per refinery (one per refinery for simplicity)
+const DOCK_SLOTS_PER_REFINERY = 1;
+
+export function makeHarvestSystem(economy: EconomyConstants): { name: 'harvest'; run(state: SimState): void } {
+  // Derived constants from economy config
+  const DOCK_RATE_PER_TICK = economy.dockRate / SIM_TICK_RATE; // 100/s ÷ 20Hz = 5 credits/tick
+
+  return {
+    name: 'harvest' as const,
+    run(state: SimState): void {
+      // Track dock usage per refinery to prevent deadlock
+      const dockUsage = new Map<EntityId, number>();
+
+      // First pass: count dock usage by harvesters in DOCK state
+      for (const e of state.store.all()) {
+        const harvest = e.components.harvest;
+        const faction = e.components.faction;
+        if (!harvest || faction?.faction !== 'harvester') continue;
+        if (harvest.state === 'DOCK' && harvest.targetRefinery) {
+          dockUsage.set(harvest.targetRefinery, (dockUsage.get(harvest.targetRefinery) || 0) + 1);
+        }
+      }
+
+      // Second pass: run FSM for each harvester
+      for (const e of state.store.all()) {
+        const pos = e.components.position;
+        const movement = e.components.movement;
+        const harvest = e.components.harvest;
+        const faction = e.components.faction;
+
+        if (!pos || !movement || !harvest || faction?.faction !== 'harvester') continue;
+
+        switch (harvest.state) {
+          case 'SEEK':
+            runSeek(state, e, pos, movement, harvest);
+            break;
+          case 'HARVEST':
+            runHarvest(state, e, pos, movement, harvest, economy);
+            break;
+          case 'RETURN':
+            runReturn(state, e, pos, movement, harvest, dockUsage);
+            break;
+          case 'DOCK':
+            runDock(state, e, pos, movement, harvest, dockUsage, economy, DOCK_RATE_PER_TICK);
+            break;
+        }
+      }
+    },
+  };
+}
+
+function runSeek(
+  state: SimState,
+  entity: { id: EntityId; components: { position?: PositionComponent; movement?: MovementComponent; harvest?: HarvestComponent; faction?: FactionComponent } },
+  pos: PositionComponent,
+  movement: MovementComponent,
+  harvest: HarvestComponent,
+): void {
+  // Find the densest reachable shard tile
+  const targetTile = findDensestShardTile(state, pos);
+  if (targetTile) {
+    const targetPos = tileToWorldCenter(targetTile);
+    movement.target = targetPos;
+    harvest.targetTile = targetTile;
+    // Transition to HARVEST when we reach the tile
+    harvest.state = 'HARVEST';
+  } else {
+    // No shard tiles available - stay idle
+    movement.target = null;
+  }
+}
+
+function runHarvest(
+  state: SimState,
+  entity: { id: EntityId; components: { position?: PositionComponent; movement?: MovementComponent; harvest?: HarvestComponent; faction?: FactionComponent } },
+  pos: PositionComponent,
+  movement: MovementComponent,
+  harvest: HarvestComponent,
+  economy: EconomyConstants,
+): void {
+  // Check if we've reached the target tile
+  if (harvest.targetTile) {
+    const tilePos = worldToTile(pos);
+    if (tilePos.tx === harvest.targetTile.tx && tilePos.ty === harvest.targetTile.ty) {
+      // We're at the tile - harvest
+      const densityKey = `${harvest.targetTile.tx},${harvest.targetTile.ty}`;
+      const density = state.shardDensity.get(densityKey) ?? 0;
+
+      if (density > 0 && harvest.cargo < economy.cargoCapacity) {
+        // Harvest from tile
+        const amount = Math.min(economy.harvestRate, density, economy.cargoCapacity - harvest.cargo);
+        state.shardDensity.set(densityKey, density - amount);
+        harvest.cargo += amount;
+      } else {
+        // Tile depleted or cargo full - return to refinery
+        harvest.state = 'RETURN';
+        movement.target = null;
+      }
+    } else {
+      // Still moving toward tile - do nothing (movement system handles it)
+    }
+  } else {
+    // No target - go back to SEEK
+    harvest.state = 'SEEK';
+  }
+}
+
+function runReturn(
+  state: SimState,
+  entity: { id: EntityId; components: { position?: PositionComponent; movement?: MovementComponent; harvest?: HarvestComponent; faction?: FactionComponent } },
+  pos: PositionComponent,
+  movement: MovementComponent,
+  harvest: HarvestComponent,
+  dockUsage: Map<EntityId, number>,
+): void {
+  // Find nearest refinery with free dock
+  const refinery = findNearestFreeRefinery(state, pos, dockUsage);
+  if (refinery) {
+    const refineryPos = refinery.components.position;
+    if (refineryPos) {
+      movement.target = refineryPos;
+      harvest.targetRefinery = refinery.id;
+      // Transition to DOCK when we reach the refinery
+      harvest.state = 'DOCK';
+    }
+  } else {
+    // No free refinery - stay in RETURN state, keep looking
+    movement.target = null;
+  }
+}
+
+function runDock(
+  state: SimState,
+  entity: { id: EntityId; components: { position?: PositionComponent; movement?: MovementComponent; harvest?: HarvestComponent; faction?: FactionComponent } },
+  pos: PositionComponent,
+  movement: MovementComponent,
+  harvest: HarvestComponent,
+  dockUsage: Map<EntityId, number>,
+  economy: EconomyConstants,
+  dockRatePerTick: number,
+): void {
+  const refineryId = harvest.targetRefinery;
+  if (!refineryId) {
+    harvest.state = 'RETURN';
+    movement.target = null;
+    return;
+  }
+
+  const refinery = state.store.get(refineryId);
+  if (!refinery || !refinery.components.position || !refinery.components.economy) {
+    harvest.state = 'RETURN';
+    movement.target = null;
+    return;
+  }
+
+  // Check if we're at the refinery
+  const refineryPos = refinery.components.position;
+  const dx = refineryPos.wx - pos.wx;
+  const dy = refineryPos.wy - pos.wy;
+  const distSq = dx * dx + dy * dy;
+
+  // Use a generous threshold for docking (1 tile = 256^2 = 65536)
+  const DOCK_THRESHOLD_SQ = 256 * 256;
+
+  if (distSq <= DOCK_THRESHOLD_SQ) {
+    // At the refinery — drip cargo into credits at dockRatePerTick (100 cr/s), 1 cargo = 1 credit,
+    // capped at maxStorage. Once the cap is reached, the rest of the load is LOST (overflow) so the
+    // harvester never deadlocks waiting on a full refinery.
+    const economyComp = refinery.components.economy as EconomyComponent;
+    const maxStorage = economyComp.maxStorage || economy.refineryStorageCapacity;
+    const room = maxStorage - economyComp.credits;
+
+    if (room <= 0) {
+      // Storage full: the remaining cargo is lost.
+      harvest.cargo = 0;
+    } else {
+      const deposit = Math.min(dockRatePerTick, room, harvest.cargo);
+      economyComp.credits += deposit;
+      harvest.cargo -= deposit;
+    }
+
+    // Mirror credits to refineryStorage so the HUD storage bar reads the single credits pool.
+    economyComp.refineryStorage = economyComp.credits;
+
+    // Load done (emptied or overflowed) → seek the next field.
+    if (harvest.cargo <= 0) {
+      harvest.state = 'SEEK';
+      harvest.targetRefinery = null;
+      movement.target = null;
+    }
+  }
+  // else: Still moving toward refinery - do nothing, let movement system handle it
+}
+
+function findDensestShardTile(state: SimState, pos: PositionComponent): { tx: number; ty: number } | null {
+  const tilePos = worldToTile(pos);
+  let bestTile: { tx: number; ty: number } | null = null;
+  let bestDensity = 0;
+
+  // Search a reasonable radius around the harvester
+  const searchRadius = 10;
+  for (let dy = -searchRadius; dy <= searchRadius; dy++) {
+    for (let dx = -searchRadius; dx <= searchRadius; dx++) {
+      const tx = tilePos.tx + dx;
+      const ty = tilePos.ty + dy;
+      const densityKey = `${tx},${ty}`;
+      const density = state.shardDensity.get(densityKey) ?? 0;
+
+      if (density > bestDensity) {
+        bestDensity = density;
+        bestTile = { tx, ty };
+      }
+    }
+  }
+
+  return bestTile;
+}
+
+function findNearestFreeRefinery(
+  state: SimState,
+  pos: PositionComponent,
+  dockUsage: Map<EntityId, number>,
+): { id: EntityId; components: { position?: PositionComponent; economy?: EconomyComponent } } | null {
+  let nearest: { id: EntityId; components: { position?: PositionComponent; economy?: EconomyComponent } } | null = null;
+  let nearestDistSq = Infinity;
+
+  for (const e of state.store.all()) {
+    const faction = e.components.faction;
+    const building = e.components.building;
+    const economy = e.components.economy;
+
+    if (!faction || faction.faction !== 'refinery' || !building || !economy) continue;
+
+    const refineryPos = e.components.position;
+    if (!refineryPos) continue;
+
+    const dx = refineryPos.wx - pos.wx;
+    const dy = refineryPos.wy - pos.wy;
+    const distSq = dx * dx + dy * dy;
+
+    // Check if refinery has free dock
+    const currentUsage = dockUsage.get(e.id) || 0;
+    if (currentUsage < DOCK_SLOTS_PER_REFINERY && distSq < nearestDistSq) {
+      nearestDistSq = distSq;
+      nearest = { id: e.id, components: { position: refineryPos, economy } };
+    }
+  }
+
+  return nearest;
+}

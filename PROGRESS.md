@@ -4,10 +4,11 @@
 > The plan lives in files (`../game-bakeoff/master-plan/MASTER_PLAN.md`); your window holds one slice.
 
 ## Current state
-- **Slice:** S0 "blank→alive" — ✅ **DONE & VERIFIED** (built by alex-builder; finished-line by the orchestrator).
-  The deployed bundle renders the map and one harvester that visibly moves; the S0 Playwright liveness gate is
-  green with saved before/after screenshots (`screenshots/s0-capture{1,2}.png`).
-- **Next packet:** `packets/S1.md` — harvester FSM economy + credits HUD + overflow readout.
+- **Slice:** S1 "economy visible" — ✅ **DONE & VERIFIED**. The deployed bundle shows a harvester running the
+  SEEK→HARVEST→RETURN→DOCK cycle, a credits HUD that visibly rises on deposit (500→590 in-gate), a cargo bar,
+  and a storage bar; overflow beyond 2000 is lost. Gates green (`screenshots/s1-capture{1,2}.png`).
+- **Next packet:** `packets/S2.md` — selection + command bus + camera/minimap + occupancy + selection rings +
+  order-confirmation markers (per MASTER_PLAN §10 / §5.8).
 
 ## Done so far
 - Repo scaffolded: TS + Canvas2D + Vite + Vitest + zod + ESLint, single package, pnpm. `pnpm run verify` green.
@@ -31,12 +32,27 @@
   loader (fail-fast + cross-ref), and locked `data/weapons.json` (matrix + values).
 - **Both guardrails proven red-on-violation:** sim-purity (`Date`/`Math.random` in `src/sim`), and
   no-second-spatial-index (a system importing `makeGridManager`).
+- **S1 economy visible (2026-06-30):** `src/sim/systems/harvest.ts` (harvester FSM SEEK→HARVEST→RETURN→DOCK),
+  `src/view/hud.ts` (credits + cargo + storage bars, overflow warning), `src/loaders/economyConstants.ts` + zod
+  schema + `data/economyConstants.json` (harvest 25, cap 700, dock 100/s, store 2000 — a NEW loader file, the
+  pinned `schemas.ts`/`loader.ts` untouched), `tests/unit/economy.test.ts` (7 FSM tests incl. magnitude +
+  overflow), `tests/liveness/s1.spec.ts`. Additive-only edits to pinned `components.ts` (EconomyComponent,
+  HarvestComponent) + `state.ts` (`shardDensity` map) — accepted as necessary ECS growth (the bag is additive;
+  see BUILD_CONSTITUTION note). **History:** built by alex-builder across two rounds; round-1 had 2 missing FSM
+  transitions + a wrong economy model, bounced as `packets/S1-FIX1.md`; round-2 nailed the design + the magnitude
+  tests but left finish-line defects (dock drip `/60`→should be `/SIM_TICK_RATE`, an overflow deadlock, a
+  self-defeating demo seed, an unwired gate assertion, drip-vs-window test mismatch) which the orchestrator
+  finish-lined. Economy semantics: single credits pool, docking drips cargo→credits at 100 cr/s (1:1), capped at
+  2000, overflow LOST. (Harvest fill rate is per-tick/provisional for a snappy demo; final balance is S6D's job.)
+- **Known minor follow-ups (non-blocking):** shard density isn't rendered as visual depletion yet (mechanic is
+  unit-tested + HUD-readable, not tile-colored); `shardDensity` isn't in `stateHash` yet (a determinism gap that
+  matters at S5, not now).
 
-## Last verify (the S0 gate)
+## Last verify (the S1 gate)
 ```
-pnpm run verify    → typecheck ✓  lint ✓  test ✓   (7 files, 32 tests passing)
-pnpm run test:live → 1 passed (7.2s)  — canvas exists, non-bg pixels > 5%, harvester moved >5px t≈1s→t≈3s
-                     screenshots/s0-capture1.png (harvester right-of-center) + s0-capture2.png (moved left)
+pnpm run verify    → typecheck ✓  lint ✓  test ✓   (8 files, 39 tests; 7 economy FSM incl. 700→700cr + overflow)
+pnpm run test:live → 2 passed (11s)  — S1: HUD renders, credits rose 500→590 on deposit, harvester moved;
+                     S0 motion gate still green.  screenshots/s1-capture{1,2}.png
 ```
 
 ## Next steps (queued)

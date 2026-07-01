@@ -24,6 +24,8 @@ export interface SimState {
   readonly rng: Rng;
   /** Previous-tick positions, for render interpolation (read by the renderer only). */
   readonly prevPositions: Map<number, WorldPos>;
+  /** Shard tile density map (mutable; tracks remaining resources per tile). */
+  readonly shardDensity: Map<string, number>;
 }
 
 export function makeSimState(cfg: SimConfig): SimState {
@@ -35,6 +37,7 @@ export function makeSimState(cfg: SimConfig): SimState {
     grid: makeGridManager(terrain),
     rng: makeRng(cfg.seed),
     prevPositions: new Map<number, WorldPos>(),
+    shardDensity: new Map<string, number>(),
   };
 }
 

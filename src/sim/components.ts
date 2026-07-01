@@ -23,6 +23,21 @@ export interface RenderableComponent { spriteId: string }
 export interface BuildingComponent { onSlab: boolean; buildProgress: number; powered: boolean }
 export interface ProductionComponent { queue: readonly string[]; progress: number }
 
+/** Economy component for credits and storage. */
+export interface EconomyComponent {
+  credits: number;
+  refineryStorage: number;
+  maxStorage: number;
+}
+
+/** Harvest component for FSM state. */
+export interface HarvestComponent {
+  state: 'SEEK' | 'HARVEST' | 'RETURN' | 'DOCK';
+  targetTile: { tx: number; ty: number } | null;
+  targetRefinery: EntityId | null;
+  cargo: number;
+}
+
 /** The component bag. All optional: an entity has only the components it needs. */
 export interface Components {
   position?: PositionComponent;
@@ -36,6 +51,8 @@ export interface Components {
   renderable?: RenderableComponent;
   building?: BuildingComponent;
   production?: ProductionComponent;
+  economy?: EconomyComponent;
+  harvest?: HarvestComponent;
 }
 
 export type ComponentKey = keyof Components;
