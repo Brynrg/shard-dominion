@@ -10,11 +10,12 @@
 > The plan lives in files (`../game-bakeoff/master-plan/MASTER_PLAN.md`); your window holds one slice.
 
 ## Current state
-- **Slice:** S4A-2 "damage system" (tiny, scaffolded) — ✅ **DONE & VERIFIED**. `src/sim/systems/damage.ts` (damage
-  resolution: weapon.damage × matrix[type][armorClass], cooldown tick, range check), additive `ArmorComponent`
-  to `components.ts`, `tests/unit/combat.test.ts` (5 tests: damage multiplier, cooldown decrement, out-of-range
-  no damage, cooldown reset, NONE armor fallback). Gates green (`pnpm run verify`).
-- **Next packet:** `packets/S4A.md` — full combat (targeting, death, victory, wiring, renderer).
+- **Slice:** S4A combat, built as tiny scaffolded sub-slices. Done so far: **S4A-2 damage** ✅ (builder self-completed
+  first run) + **S4A-3 targeting** ✅ (`src/sim/systems/combatTargeting.ts` — nearest living enemy in range; 8 tests:
+  nearest, ignore allies, out-of-range null, picks nearer, skips dead; orchestrator fixed 2 unused-var lints +
+  finish-lined the commit). `pnpm run verify` green (63 tests).
+- **Next packet:** `packets/S4A-4.md` — death + victory (cull 0-HP units; set a win/lose result when a team is empty).
+  Then S4A-5: main wiring + health bars + the s4a liveness gate.
 
 ## Done so far
 - Repo scaffolded: TS + Canvas2D + Vite + Vitest + zod + ESLint, single package, pnpm. `pnpm run verify` green.
