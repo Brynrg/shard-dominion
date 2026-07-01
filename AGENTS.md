@@ -52,6 +52,9 @@ instruction to move THIS one). Git is your safety net; leave the tree layout alo
 - Get **relative import paths** right: a system in `src/sim/systems/` importing `src/loaders/` is
   `../../loaders/…` (two levels). Verify it resolves.
 - Remove unused imports/vars/params. **Delete any debug/scratch files** before finishing (no `debug-*.ts`).
+- **In tests, don't capture an entity id you won't assert on** — write `state.store.create({...})`, NOT
+  `const fooId = state.store.create({...})`, unless you later reference `fooId`. An unused capture is a lint error
+  (this has blocked multiple sub-slices). Only bind the ids you actually use in `get(...)`/assertions.
 
 ## 5. Tests & liveness gates — the gate must prove the slice's PROMISE
 - **Model the liveness spec on the previous slice's spec** (`tests/liveness/s{n-1}.spec.ts`). It already has the

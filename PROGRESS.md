@@ -10,12 +10,15 @@
 > The plan lives in files (`../game-bakeoff/master-plan/MASTER_PLAN.md`); your window holds one slice.
 
 ## Current state
-- **Slice:** S4A combat, built as tiny scaffolded sub-slices. Done so far: **S4A-2 damage** ✅ (builder self-completed
-  first run) + **S4A-3 targeting** ✅ (`src/sim/systems/combatTargeting.ts` — nearest living enemy in range; 8 tests:
-  nearest, ignore allies, out-of-range null, picks nearer, skips dead; orchestrator fixed 2 unused-var lints +
-  finish-lined the commit). `pnpm run verify` green (63 tests).
-- **Next packet:** `packets/S4A-4.md` — death + victory (cull 0-HP units; set a win/lose result when a team is empty).
-  Then S4A-5: main wiring + health bars + the s4a liveness gate.
+- **Slice:** S4A combat, built as tiny scaffolded sub-slices. Done: **S4A-2 damage** ✅, **S4A-3 targeting** ✅,
+  **S4A-4 death+victory** ✅ (`src/sim/systems/victory.ts` — culls 0-HP units via `store.remove`, records
+  winner when one side has no living combat units, `playerSeen`/`enemySeen` guards against a false win; result on
+  the returned object, not on state). Orchestrator finish-lined: fixed unused-test-id lints + a logic bug (the
+  census counted dead-not-yet-culled units → changed to count LIVING hp>0 units) + added the both-alive setup tick.
+  `pnpm run verify` green (**68 tests**).
+- **Next packet:** `packets/S4A-5.md` — WIRE combat into the game: seed a player + enemy combat unit in main.ts,
+  register combatTargeting/damage/victory systems, render health bars + a VICTORY/DEFEAT banner, and the s4a
+  liveness gate (two units fight → one dies → banner). This is the slice that makes combat visible on screen.
 
 ## Done so far
 - Repo scaffolded: TS + Canvas2D + Vite + Vitest + zod + ESLint, single package, pnpm. `pnpm run verify` green.
