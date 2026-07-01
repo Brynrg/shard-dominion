@@ -17,7 +17,11 @@
   combatTargeting/damage/victory systems, seeds player+enemy infantry 3 tiles apart within rifle range,
   exposes `__debugUnitCount`/`__debugVictory` hooks; `src/view/renderer.ts` — draws health bars above units
   with hp<maxHp, renders VICTORY/DEFEAT banner when victory is over). `pnpm run verify` green (**68 tests**).
-- **Next packet:** none — S4A complete.
+- **S4A-5 finish-line (orchestrator):** made the demo decisive (enemy 20→12 HP so the player wins rather than a
+  mutual-kill draw) and AUTHORED `tests/liveness/s4a.spec.ts` (two units fight → enemy dies → player wins → VICTORY
+  banner + health bar; verified on screen, `screenshots/s4a-capture.png`). **S4A COMPLETE & VERIFIED.**
+- **Next packet:** `packets/S4B.md` — the RPS triangle on the locked weapons.json (travel-time projectiles,
+  attack-move, weapon-role cards, paused-queue text) per MASTER_PLAN §10/§5.4. NOT YET WRITTEN.
 
 ## Done so far
 - Repo scaffolded: TS + Canvas2D + Vite + Vitest + zod + ESLint, single package, pnpm. `pnpm run verify` green.

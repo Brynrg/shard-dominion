@@ -105,9 +105,11 @@ export function bootstrap(): void {
     combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
     faction: { team: 'player', faction: 'infantry' },
   });
+  // Enemy starts weaker so the demo resolves decisively (player wins) rather than a
+  // mutual-kill draw — makes the VICTORY banner testable.
   state.store.create({
     position: tileToWorldCenter({ tx: cx - 1, ty: cy + 4 }),
-    health: { hp: 20, maxHp: 20 },
+    health: { hp: 12, maxHp: 12 },
     armor: { armorClass: 'LIGHT' },
     combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
     faction: { team: 'enemy', faction: 'infantry' },
