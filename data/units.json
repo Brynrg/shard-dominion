@@ -45,6 +45,29 @@
           "factionStripe": "enemy"
         }
       }
+    },
+    {
+      "id": "rocket_trooper",
+      "name": "Rocket Trooper",
+      "cost": 200,
+      "hp": 20,
+      "armorClass": "LIGHT",
+      "weaponId": "inf_rocket",
+      "speed": 12,
+      "team": "player",
+      "graphics": {
+        "sprite_id": "rocket_trooper",
+        "fallback_geometry": {
+          "chassis": "INFANTRY",
+          "chassisMod": "NONE",
+          "weaponGlyph": "ROCKET",
+          "barrelClass": "NONE",
+          "roleBadge": "ANTI_VEHICLE",
+          "rangeMarks": 2,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      }
     }
   ]
 }

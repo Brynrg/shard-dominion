@@ -16,10 +16,12 @@
   the returned object, not on state), **S4A-5 wire+render** ✅ (`src/main.ts` — loads weapons, registers
   combatTargeting/damage/victory systems, seeds player+enemy infantry 3 tiles apart within rifle range,
   exposes `__debugUnitCount`/`__debugVictory` hooks; `src/view/renderer.ts` — draws health bars above units
-  with hp<maxHp, renders VICTORY/DEFEAT banner when victory is over). `pnpm run verify` green (**68 tests**).
-- **S4A-5 finish-line (orchestrator):** made the demo decisive (enemy 20→12 HP so the player wins rather than a
-  mutual-kill draw) and AUTHORED `tests/liveness/s4a.spec.ts` (two units fight → enemy dies → player wins → VICTORY
-  banner + health bar; verified on screen, `screenshots/s4a-capture.png`). **S4A COMPLETE & VERIFIED.**
+  with hp<maxHp, renders VICTORY/DEFEAT banner when victory is over). `pnpm run verify` green (**72 tests**).
+- **S4B-1 roster + RPS proof (2026-07-01):** added `rocket_trooper` unit to `data/units.json` (anti-vehicle infantry,
+  `weaponId: "inf_rocket"`, `armorClass: "LIGHT"`, `hp: 20`, `speed: 12`, `team: "player"`, graphics with
+  `weaponGlyph: "ROCKET"`, `roleBadge: "ANTI_VEHICLE"`), created `tests/unit/rps.test.ts` proving the RPS via the
+  real damage system + matrix: ROCKET vs MEDIUM (18 dmg) > BULLET vs MEDIUM (2.4 dmg); matrix assertions
+  `BULLET.NONE > BULLET.MEDIUM` and `ROCKET.MEDIUM > ROCKET.NONE`. **S4B-1 COMPLETE & VERIFIED.**
 - **Next packet:** `packets/S4B.md` — the RPS triangle on the locked weapons.json (travel-time projectiles,
   attack-move, weapon-role cards, paused-queue text) per MASTER_PLAN §10/§5.4. NOT YET WRITTEN.
 
@@ -90,11 +92,11 @@
   `agitation`. Range check uses `Math.hypot` on WORLD positions converted via `TILE_SUBUNITS`. Cooldown
   conversion: seconds × `SIM_TICK_RATE` (20 Hz). No inline pixel math beyond the contract constant.
 
-## Last verify (the S4A-2 gate)
+## Last verify (the S4B-1 gate)
 ```
-pnpm run verify    → typecheck ✓  lint ✓  test ✓   (11 files, 55 tests; +5 combat: damage multiplier, cooldown, range)
-pnpm run test:live → 5 passed (11s)  — S3: D deploys ConYard, B+click places a Power Node → Supply 100, POWERED;
-                     S0 motion + S1 economy + S2 selection gates still green.  screenshots/s3-capture.png
+pnpm run verify    → typecheck ✓  lint ✓  test ✓   (15 files, 72 tests; +4 RPS: matrix multipliers, ROCKET vs MEDIUM > BULLET vs MEDIUM)
+pnpm run test:live → 6 passed (13s)  — S3: D deploys ConYard, B+click places a Power Node → Supply 100, POWERED;
+                     S0 motion + S1 economy + S2 selection + S4A combat gates still green.  screenshots/s4b-capture.png
 ```
 
 ## Next steps (queued)
