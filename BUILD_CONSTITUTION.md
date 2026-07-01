@@ -4,6 +4,10 @@ You are building *Shard Dominion* (an IP-clean, late-90s Westwood-style web RTS)
 time**, against a foundation that is already written, compiled, and tested. Read this every packet. It is short
 on purpose.
 
+> **ALSO READ `AGENTS.md` (repo root) every slice.** It is the distilled rule set — the concrete sim/view-boundary,
+> contract, rate, TypeScript, and test patterns that prior slices got wrong and had to be fixed by hand. Following
+> it is how your slice ships without a rework round.
+
 ## The stack (fixed)
 TypeScript · Canvas2D · Vite · Vitest · zod · ESLint · single package · pnpm.
 Commands: `pnpm run typecheck` · `pnpm run lint` · `pnpm run test` · `pnpm run verify` (all three) · `pnpm run dev` · `pnpm run build`.
