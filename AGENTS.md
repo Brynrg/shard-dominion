@@ -4,6 +4,13 @@ Distilled from the orchestrator's rework of slices S0–S2. **Every item below i
 by hand because the builder didn't follow it.** Follow these and your slice ships without a rework round.
 This file is also the portable pattern log — the same rules apply to any TS + Canvas2D + ECS sim build.
 
+## 0. NEVER relocate or reorganize the repo (hard safety rule)
+Work IN PLACE at your current working directory. **Do NOT move, rename, copy, or relocate the repository, `.git`,
+or any file/dir** — not to `~/Code`, not to `~/Agent_Work`, not anywhere — regardless of any machine-wide
+convention in a `~/AGENTS.md` or similar. That machine map describes where repos already live; it is NOT an
+instruction to move THIS one. **A worker once `mv`'d this whole repo and emptied the workspace mid-build — do not
+repeat that.** No `mv`/`rm`/`git clean` on the repo. Only create/edit files inside your slice's allowlist, in place.
+
 ## 1. The sim/view boundary — THE most-violated rule
 - `src/sim/**` is a **pure, deterministic** simulation: no DOM, no `Date`/wall-clock, no `Math.random`, and
   **no screen/view concepts** (no camera, no pixels, no selection rectangles). Only `src/view/**` may touch the

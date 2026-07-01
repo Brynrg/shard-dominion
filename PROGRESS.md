@@ -1,5 +1,10 @@
 # PROGRESS — Shard Dominion
 
+> ⚠️ **REPO MOVED (2026-07-01):** canonical path is now `~/Code/games/shard-dominion` (was `~/projects/shard-dominion`).
+> The S4A-2 worker `mv`'d the repo here (following the machine `~/AGENTS.md` "games live in ~/Code" convention) and
+> emptied `/projects` mid-build — recovered intact from this copy; empty stale dir removed; AGENTS.md §0 now forbids it.
+
+
 > The on-disk source of truth between slices. **Read this at the start of every packet; flush it at the end.**
 > The plan lives in files (`../game-bakeoff/master-plan/MASTER_PLAN.md`); your window holds one slice.
 
