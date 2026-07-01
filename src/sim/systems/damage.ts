@@ -1,0 +1,57 @@
+// ── Damage system: resolve weapon damage against targets ──────────────────────
+// Runs in SYSTEM_ORDER after combatTargeting (so targets are set) and before
+// agitation/planetEvent. Pure sim: no DOM, no wall-clock, no screen concepts.
+import type { SimState } from '../state.js';
+import type { WeaponsFile } from '../../loaders/schemas.js';
+import { SIM_TICK_RATE } from '../loop.js';
+import { TILE_SUBUNITS } from '../coords.js';
+import type { WorldPos } from '../coords.js';
+
+/** Distance between two world positions. */
+function distance(a: WorldPos, b: WorldPos): number {
+  return Math.hypot(a.wx - b.wx, a.wy - b.wy);
+}
+
+// The 'damage' system: for each unit with a weapon, a target, and a ready cooldown,
+// deal weapon.damage × matrix[weapon.type][targetArmor] to the target's hp, then
+// reset the cooldown. Range is checked in WORLD units. Sim-pure (state only).
+export function makeDamageSystem(weapons: WeaponsFile): { name: 'damage'; run(state: SimState): void } {
+  return {
+    name: 'damage' as const,
+    run(state: SimState): void {
+      for (const e of state.store.all()) {
+        const combat = e.components.combat;
+        const pos = e.components.position;
+        if (!combat || !pos || combat.weaponId === null) continue;
+
+        // 1) tick the cooldown down (min 0)
+        if (combat.cooldownRemaining > 0) {
+          combat.cooldownRemaining -= 1;
+          continue;
+        }
+
+        // 2) resolve target + its health/armor/pos; skip if gone
+        const target = combat.targetId !== null ? state.store.get(combat.targetId) : undefined;
+        const th = target?.components.health;
+        const tpos = target?.components.position;
+        if (!target || !th || !tpos) continue;
+
+        // 3) range check (WORLD units): weapon.range tiles → world = range * TILE_SUBUNITS
+        const weapon = weapons.weapons[combat.weaponId];
+        if (!weapon) continue;
+
+        const dist = distance(pos, tpos);
+        const rangeWorld = weapon.range * TILE_SUBUNITS;
+        if (dist > rangeWorld) continue;
+
+        // 4) damage = weapon.damage * matrix[weapon.type][targetArmorClass]
+        const armor = target.components.armor?.armorClass ?? 'NONE';
+        const mult = weapons.matrix[weapon.type]?.[armor] ?? 0;
+        th.hp -= weapon.damage * mult;
+
+        // 5) reset cooldown: weapon.cooldown seconds → ticks
+        combat.cooldownRemaining = Math.round(weapon.cooldown * SIM_TICK_RATE);
+      }
+    },
+  };
+}

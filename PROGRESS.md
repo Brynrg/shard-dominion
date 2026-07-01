@@ -10,18 +10,11 @@
 > The plan lives in files (`../game-bakeoff/master-plan/MASTER_PLAN.md`); your window holds one slice.
 
 ## Current state
-- **Slice:** S3 "deploy & build" (core) — ✅ **DONE & VERIFIED**. Press **D** → the MCV becomes a Construction
-  Yard; press **B** → placement mode for a Power Node; left-click a valid tile → it's placed and supplies power
-  (HUD reads `POWER: OK · Supply 100 · Demand 0`). Placement validates VALID/INVALID with one reason. Gates green
-  (`screenshots/s3-capture.png`).
-- **DEFERRED from S3 (fold into a later slice, e.g. S3B or alongside S4):** placement is currently FREE (no cost
-  deduction / `INSUFFICIENT CREDITS`), no on/off-slab HP variance, concrete-slab placement + staged power bands
-  not wired, and `construction.ts`'s drip-build queue is dead code (never fed) — remove or wire it later.
-- **Next packet:** `packets/S4A.md` — first combat (written + dispatched). ⏸️ **BARELY STARTED / LOOP PAUSED.**
-  The builder produced ONLY the data model (`data/units.json` infantry+vehicle, `src/loaders/units.ts` schema)
-  across 2 short runs then protocol-violated — NO combat systems (targeting/damage/victory), no wiring, no
-  renderer, no tests. Loop paused for an operator decision (see the S0-S4A summary below + memory
-  `project_local_builder_patterns`). The units data+loader are committed as a WIP checkpoint; S0-S3 all green.
+- **Slice:** S4A-2 "damage system" (tiny, scaffolded) — ✅ **DONE & VERIFIED**. `src/sim/systems/damage.ts` (damage
+  resolution: weapon.damage × matrix[type][armorClass], cooldown tick, range check), additive `ArmorComponent`
+  to `components.ts`, `tests/unit/combat.test.ts` (5 tests: damage multiplier, cooldown decrement, out-of-range
+  no damage, cooldown reset, NONE armor fallback). Gates green (`pnpm run verify`).
+- **Next packet:** `packets/S4A.md` — full combat (targeting, death, victory, wiring, renderer).
 
 ## Done so far
 - Repo scaffolded: TS + Canvas2D + Vite + Vitest + zod + ESLint, single package, pnpm. `pnpm run verify` green.
@@ -74,7 +67,7 @@
   boundary is clean again — no `as any`, no camera on the sim contract.
 
 ## S3 build history (2026-07-01)
-- Built by alex-builder across the S3 packet + S3-FIX1 (both blocked at protocol-violation; retries capped at 2,
+- **S3 build history (2026-07-01):** Built by alex-builder across the S3 packet + S3-FIX1 (both blocked at protocol-violation; retries capped at 2,
   so ~38 + ~11 min instead of the old 5-retry churn). The AGENTS.md investment helped TIME but did NOT prevent:
   a pinned-file edit (`coords.ts` TILE_SHIFT export — orchestrator reverted), inline `>> TILE_SHIFT` tile math
   (→ `worldToTile`), a duplicate `makeCommandQueue`, an unwired feature (deploy/place intents defined but never
@@ -82,16 +75,23 @@
   contract-cleaned, wired `input.setSimState`, fixed the placement-ghost-follows-cursor bug, added the
   `__debugBuildingCount`/`__debugConYardScreenPos` locators, and **authored both S3 tests** (verification is the
   orchestrator's job). See memory `project_local_builder_patterns`.
+- **S4A-2 damage system (2026-07-01):** `src/sim/systems/damage.ts` (damage resolution: weapon.damage ×
+  matrix[type][armorClass], cooldown tick, range check in WORLD units), additive `ArmorComponent` to
+  `components.ts`, `tests/unit/combat.test.ts` (5 tests: damage multiplier, cooldown decrement, out-of-range
+  no damage, cooldown reset, NONE armor fallback). All gates green (`pnpm run verify`: typecheck ✓, lint ✓,
+  test ✓). The damage system runs in SYSTEM_ORDER after `combatTargeting` (so targets are set) and before
+  `agitation`. Range check uses `Math.hypot` on WORLD positions converted via `TILE_SUBUNITS`. Cooldown
+  conversion: seconds × `SIM_TICK_RATE` (20 Hz). No inline pixel math beyond the contract constant.
 
-## Last verify (the S3 gate)
+## Last verify (the S4A-2 gate)
 ```
-pnpm run verify    → typecheck ✓  lint ✓  test ✓   (10 files, 50 tests; +5 construction: placement reasons + power)
+pnpm run verify    → typecheck ✓  lint ✓  test ✓   (11 files, 55 tests; +5 combat: damage multiplier, cooldown, range)
 pnpm run test:live → 5 passed (11s)  — S3: D deploys ConYard, B+click places a Power Node → Supply 100, POWERED;
                      S0 motion + S1 economy + S2 selection gates still green.  screenshots/s3-capture.png
 ```
 
 ## Next steps (queued)
-- **S1** (`packets/S1.md`): harvester FSM economy + credits HUD + overflow readout.
+- **S4A** (`packets/S4A.md`): full combat (targeting, death, victory, wiring, renderer).
 
 ## Open questions / blocked
 - **RESOLVED (2026-06-30): the tool-call blocker.** Root cause was NOT mlx_lm version (0.31.3 is latest) and NOT

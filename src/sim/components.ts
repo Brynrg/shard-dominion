@@ -43,6 +43,11 @@ export interface SelectionComponent {
   selected: boolean;
 }
 
+/** Armor component - additive field on entities. */
+export interface ArmorComponent {
+  armorClass: import('./combat-types.js').ArmorClass;
+}
+
 /** Construction component for build queue and progress. */
 export interface ConstructionComponent {
   queue: readonly string[]; // structure IDs to build
@@ -73,6 +78,7 @@ export interface Components {
   economy?: EconomyComponent;
   harvest?: HarvestComponent;
   selection?: SelectionComponent;
+  armor?: ArmorComponent;
   construction?: ConstructionComponent;
   power?: PowerComponent;
 }
