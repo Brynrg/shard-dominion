@@ -22,8 +22,11 @@
   `weaponGlyph: "ROCKET"`, `roleBadge: "ANTI_VEHICLE"`), created `tests/unit/rps.test.ts` proving the RPS via the
   real damage system + matrix: ROCKET vs MEDIUM (18 dmg) > BULLET vs MEDIUM (2.4 dmg); matrix assertions
   `BULLET.NONE > BULLET.MEDIUM` and `ROCKET.MEDIUM > ROCKET.NONE`. **S4B-1 COMPLETE & VERIFIED.**
-- **Next packet:** `packets/S4B.md` — the RPS triangle on the locked weapons.json (travel-time projectiles,
-  attack-move, weapon-role cards, paused-queue text) per MASTER_PLAN §10/§5.4. NOT YET WRITTEN.
+- **S4B-2 read-from-shape (2026-07-01):** renderer draws combat units by WEAPON TYPE glyph (BULLET=circle,
+  ROCKET=triangle, SHELL=square) + team tint; `weapons` passed into ViewConfig. Verified on screen (rifle unit
+  now a circle). All 6 liveness gates + 72 unit tests green. (orchestrator fixed 1 prefer-const lint.)
+- **Next:** `packets/S4B-3.md` — the RPS counter-fight liveness gate (a rocket squad beats an armored vehicle that
+  shrugs off rifles → 'win a counter-based fight read from shape'). Orchestrator authors the gate + tunes the demo.
 
 ## Done so far
 - Repo scaffolded: TS + Canvas2D + Vite + Vitest + zod + ESLint, single package, pnpm. `pnpm run verify` green.

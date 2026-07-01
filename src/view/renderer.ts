@@ -8,6 +8,7 @@ import { accumulate, runTick, STEP_MS, type SimSystem } from '../sim/loop.js';
 import { makeHUD } from './hud.js';
 import { validatePlacement, type ConfirmationMarker } from '../sim/systems/command.js';
 import type { StructureDef } from '../loaders/structures.js';
+import type { WeaponsFile } from '../loaders/schemas.js';
 
 // Terrain colors (simple palette)
 const TERRAIN_COLORS: Record<string, string> = {
@@ -54,6 +55,8 @@ export interface ViewConfig {
   structures?: StructureDef[];
   /** Victory result accessor for rendering VICTORY/DEFEAT banner. */
   getVictory?: () => { over: boolean; winner: 'player' | 'enemy' | null } | null;
+  /** Weapons lookup for combat unit glyph rendering. */
+  weapons?: WeaponsFile;
 }
 
 export interface View {
@@ -64,7 +67,7 @@ export interface View {
 }
 
 export function makeView(cfg: ViewConfig): View {
-  const { canvas, simState, systems, mapWidth, mapHeight, confirmationMarkers, getSelectionBox, getPlacementMode, structures = [], getVictory } = cfg;
+  const { canvas, simState, systems, mapWidth, mapHeight, confirmationMarkers, getSelectionBox, getPlacementMode, structures = [], getVictory, weapons = { matrix: {}, weapons: {} } } = cfg;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D context not available');
 
@@ -299,10 +302,73 @@ export function makeView(cfg: ViewConfig): View {
         : pos;
 
       const screenPos = worldToScreen(interpPos, camera);
+      
+      // Determine glyph shape and color based on weapon type for combat units
       let color = ENTITY_COLORS['harvester'];
       if (e.components.building) color = ENTITY_COLORS['refinery'];
-      context.fillStyle = color ?? '#ffffff';
+      
+      let strokeColor = '#ffffff';
       const size = TILE_SIZE_PX * 0.8;
+      
+      // Check if this is a combat unit
+      const combat = e.components.combat;
+      if (combat && combat.weaponId) {
+        const weaponType = weapons?.weapons[combat.weaponId]?.type;
+        const team = e.components.faction?.team;
+        
+        // Team tint via outline (player cyan, enemy red)
+        if (team === 'player') {
+          strokeColor = '#00ffff'; // cyan
+        } else if (team === 'enemy') {
+          strokeColor = '#ff0000'; // red
+        }
+        
+        // Shape + fill by weapon type (role reads from shape)
+        // BULLET -> small filled CIRCLE (anti-infantry)
+        // ROCKET -> upward TRIANGLE (anti-vehicle)
+        // SHELL -> filled SQUARE w/ a bar (anti-armor)
+        // default -> keep the existing square
+        if (weaponType === 'BULLET') {
+          // Circle for BULLET (anti-infantry)
+          context.fillStyle = color ?? '#ffffff';
+          const radius = size * 0.35;
+          context.beginPath();
+          context.arc(screenPos.sx, screenPos.sy, radius, 0, Math.PI * 2);
+          context.fill();
+          context.strokeStyle = strokeColor;
+          context.lineWidth = 2;
+          context.stroke();
+          continue;
+        } else if (weaponType === 'ROCKET') {
+          // Triangle for ROCKET (anti-vehicle)
+          context.fillStyle = color ?? '#ffffff';
+          const radius = size * 0.4;
+          context.beginPath();
+          context.moveTo(screenPos.sx, screenPos.sy - radius); // top
+          context.lineTo(screenPos.sx - radius, screenPos.sy + radius); // bottom left
+          context.lineTo(screenPos.sx + radius, screenPos.sy + radius); // bottom right
+          context.closePath();
+          context.fill();
+          context.strokeStyle = strokeColor;
+          context.lineWidth = 2;
+          context.stroke();
+          continue;
+        } else if (weaponType === 'SHELL') {
+          // Square with bar for SHELL (anti-armor)
+          const half = size * 0.4;
+          context.fillStyle = color ?? '#ffffff';
+          context.fillRect(screenPos.sx - half, screenPos.sy - half, size * 0.8, size * 0.8);
+          // Add horizontal bar
+          context.fillRect(screenPos.sx - half, screenPos.sy - half * 0.5, size * 0.8, half);
+          context.strokeStyle = strokeColor;
+          context.lineWidth = 2;
+          context.strokeRect(screenPos.sx - half, screenPos.sy - half, size * 0.8, size * 0.8);
+          continue;
+        }
+      }
+      
+      // Default square for non-combat units
+      context.fillStyle = color ?? '#ffffff';
       context.fillRect(
         Math.floor(screenPos.sx - size / 2),
         Math.floor(screenPos.sy - size / 2),
@@ -311,7 +377,7 @@ export function makeView(cfg: ViewConfig): View {
       );
 
       // Draw a border
-      context.strokeStyle = '#ffffff';
+      context.strokeStyle = strokeColor;
       context.lineWidth = 2;
       context.strokeRect(
         Math.floor(screenPos.sx - size / 2),

@@ -156,6 +156,7 @@ export function bootstrap(): void {
     getPlacementMode: () => input.getPlacementMode(),
     structures,
     getVictory: () => victorySystem.result,
+    weapons,
   });
 
   // Camera panning is a pure view action — never a sim command.
