@@ -57,6 +57,8 @@ export interface ViewConfig {
   getVictory?: () => { over: boolean; winner: 'player' | 'enemy' | null } | null;
   /** Weapons lookup for combat unit glyph rendering. */
   weapons?: WeaponsFile;
+  /** Fog accessor: returns visible and explored tile sets. If undefined, treat all visible (no regression). */
+  getFog?: () => { visible: Set<string>; explored: Set<string> };
 }
 
 export interface View {
@@ -67,7 +69,7 @@ export interface View {
 }
 
 export function makeView(cfg: ViewConfig): View {
-  const { canvas, simState, systems, mapWidth, mapHeight, confirmationMarkers, getSelectionBox, getPlacementMode, structures = [], getVictory, weapons = { matrix: {}, weapons: {} } } = cfg;
+  const { canvas, simState, systems, mapWidth, mapHeight, confirmationMarkers, getSelectionBox, getPlacementMode, structures = [], getVictory, getFog, weapons = { matrix: {}, weapons: {} } } = cfg;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D context not available');
 
@@ -269,10 +271,25 @@ export function makeView(cfg: ViewConfig): View {
 
   function drawTerrain() {
     const { width, height } = simState.grid;
+    const fog = getFog?.();
     for (let ty = 0; ty < height; ty++) {
       for (let tx = 0; tx < width; tx++) {
         const type = simState.grid.terrainAt({ tx, ty });
-        const color = TERRAIN_COLORS[type] ?? '#888888';
+        const tileKey = `${tx},${ty}`;
+        const isVisible = fog ? fog.visible.has(tileKey) : true;
+        const isExplored = fog ? fog.explored.has(tileKey) : true;
+
+        // Pick fill color based on fog state
+        let color = TERRAIN_COLORS[type] ?? '#888888';
+        if (!isExplored) {
+          // Unexplored: near-black
+          color = '#050505';
+        } else if (!isVisible) {
+          // Explored but not visible: dimmed (~55% black overlay, multiply brightness ~0.45)
+          // We simulate this by darkening the terrain color significantly
+          color = darkenColor(color, 0.45);
+        }
+
         const tilePos = tileToWorldCenter({ tx, ty });
         const screenPos = worldToScreen(tilePos, camera);
         context.fillStyle = color;
@@ -286,10 +303,42 @@ export function makeView(cfg: ViewConfig): View {
     }
   }
 
+  // Helper to darken a color by a factor (0.0 = black, 1.0 = original)
+  function darkenColor(hex: string, factor: number): string {
+    // Parse hex to RGB
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+
+    // Apply factor (multiply brightness)
+    const newR = Math.round(r * factor);
+    const newG = Math.round(g * factor);
+    const newB = Math.round(b * factor);
+
+    // Convert back to hex
+    const toHex = (n: number) => {
+      const clamped = Math.max(0, Math.min(255, n));
+      return clamped.toString(16).padStart(2, '0');
+    };
+
+    return `#${toHex(newR)}${toHex(newG)}${toHex(newB)}`;
+  }
+
   function drawEntities() {
+    const fog = getFog?.();
     for (const e of simState.store.all()) {
       const pos = e.components.position;
       if (!pos) continue;
+
+      // Skip entities whose tile is not in fog.visible (hide enemies in fog)
+      // Player units are always visible (their tiles are always in fog.visible)
+      if (fog) {
+        const entityTile = worldToTile(pos);
+        const tileKey = `${entityTile.tx},${entityTile.ty}`;
+        if (!fog.visible.has(tileKey)) {
+          continue;
+        }
+      }
 
       // Interpolate between prev and current for smooth movement
       const prevPos = simState.prevPositions.get(e.id);

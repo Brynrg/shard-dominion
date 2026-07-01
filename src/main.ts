@@ -127,6 +127,7 @@ export function bootstrap(): void {
   const powerSystem = makePowerSystem();
 
   // Register systems (command runs FIRST per SYSTEM_ORDER)
+  const fogSystem = makeFogSystem();
   const systems = orderSystems([
     commandSystem,
     makeMovementSystem(),
@@ -136,7 +137,7 @@ export function bootstrap(): void {
     makeCombatTargetingSystem(weapons),
     makeDamageSystem(weapons),
     victorySystem,
-    makeFogSystem(),
+    fogSystem,
   ]);
 
   // Get canvas
@@ -159,6 +160,7 @@ export function bootstrap(): void {
     structures,
     getVictory: () => victorySystem.result,
     weapons,
+    getFog: () => ({ visible: fogSystem.visible, explored: fogSystem.explored }),
   });
 
   // Camera panning is a pure view action — never a sim command.
