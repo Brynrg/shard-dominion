@@ -26,6 +26,8 @@ declare global {
     __debugEconomy?: () => { credits: number };
     __debugSelection?: () => number;
     __debugPower?: () => { supply: number; demand: number; powered: boolean };
+    __debugBuildingCount?: () => { mcv: number; conyard: number; power_node: number };
+    __debugConYardScreenPos?: () => { x: number; y: number } | null;
   }
 }
 
@@ -130,6 +132,7 @@ export function bootstrap(): void {
 
   // Wire input, then start rendering (input must exist before the first render frame).
   const input = makeInputHandlers(canvas, view.getCamera(), commandQueue, panCamera, structures);
+  input.setSimState(state); // wire the sim-state ref used by the ConYard check (for 'B' placement)
   input.start();
   view.start();
 
@@ -172,6 +175,24 @@ export function bootstrap(): void {
     }
 
     return { supply, demand, powered: supply >= demand };
+  };
+
+  // Building-count + ConYard locator hooks for the S3 liveness gate.
+  window.__debugBuildingCount = () => {
+    const count = { mcv: 0, conyard: 0, power_node: 0 };
+    for (const e of state.store.all()) {
+      const f = e.components.faction?.faction;
+      if (f === 'mcv') count.mcv += 1;
+      else if (f === 'construction_yard') count.conyard += 1;
+      else if (f === 'power_node') count.power_node += 1;
+    }
+    return count;
+  };
+  window.__debugConYardScreenPos = () => {
+    const cy = state.store.all().find(e => e.components.faction?.faction === 'construction_yard');
+    if (!cy || !cy.components.position) return null;
+    const { sx, sy } = worldToScreen(cy.components.position, view.getCamera());
+    return { x: sx, y: sy };
   };
 }
 

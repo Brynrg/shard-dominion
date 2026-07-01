@@ -7,6 +7,7 @@
 import type { Camera, WorldPos, ScreenPos, TilePos } from '../sim/coords.js';
 import { screenToWorld, screenToTile } from '../sim/coords.js';
 import type { StructureDef } from '../loaders/structures.js';
+import type { SimState } from '../sim/state.js';
 
 /** Command intents queued from input. All coordinates are WORLD space. */
 export type CommandIntent =
@@ -45,6 +46,10 @@ export interface InputHandlers {
   getPlacementMode(): { structureId: string; tile: TilePos } | null;
   /** Set placement mode for a structure (or null to cancel). */
   setPlacementMode(structureId: string | null): void;
+  /** Check if a ConYard exists in the sim. */
+  hasConYard(): boolean;
+  /** Set the sim state reference for hasConYard check. */
+  setSimState(state: SimState): void;
 }
 
 export function makeInputHandlers(
@@ -57,10 +62,27 @@ export function makeInputHandlers(
   let selectStart: ScreenPos | null = null;
   let selectCurrent: ScreenPos | null = null;
   let placementMode: { structureId: string; tile: TilePos } | null = null;
+  let simStateRef: SimState | null = null;
 
   function getMousePos(e: MouseEvent): ScreenPos {
     const rect = canvas.getBoundingClientRect();
     return { sx: e.clientX - rect.left, sy: e.clientY - rect.top };
+  }
+
+  // Expose a way to set sim state reference for hasConYard check
+  function setSimState(state: SimState): void {
+    simStateRef = state;
+  }
+
+  function hasConYard(): boolean {
+    if (!simStateRef) return false;
+    for (const e of simStateRef.store.all()) {
+      const faction = e.components.faction;
+      if (faction?.faction === 'construction_yard') {
+        return true;
+      }
+    }
+    return false;
   }
 
   function onMouseDown(e: MouseEvent): void {
@@ -69,17 +91,16 @@ export function makeInputHandlers(
     const pos = getMousePos(e);
     selectStart = pos;
     selectCurrent = pos;
+    // Snap the placement tile to the click point (so click-to-place lands where clicked).
+    if (placementMode) placementMode.tile = screenToTile(pos, camera);
   }
 
   function onMouseMove(e: MouseEvent): void {
+    const pos = getMousePos(e);
+    // The placement ghost follows the cursor on hover (no button required).
+    if (placementMode) placementMode.tile = screenToTile(pos, camera);
     if (!selectStart) return;
-    selectCurrent = getMousePos(e);
-
-    // Update placement mode cursor
-    if (placementMode) {
-      const tile = screenToTile(getMousePos(e), camera);
-      placementMode.tile = tile;
-    }
+    selectCurrent = pos;
   }
 
   function onMouseUp(e: MouseEvent): void {
@@ -92,8 +113,15 @@ export function makeInputHandlers(
 
     const dragDistance = Math.sqrt((end.sx - start.sx) ** 2 + (end.sy - start.sy) ** 2);
     if (dragDistance < 5) {
-      // Single click → select at a world point.
-      queue.push({ type: 'select', target: screenToWorld(start, camera) });
+      // Single click → check if in placement mode
+      if (placementMode) {
+        // Place structure intent (NOT select)
+        queue.push({ type: 'place-structure', structureId: placementMode.structureId, tile: placementMode.tile });
+        setPlacementMode(null); // Exit placement mode after placing
+      } else {
+        // Single click → select at a world point.
+        queue.push({ type: 'select', target: screenToWorld(start, camera) });
+      }
     } else {
       // Box drag → convert BOTH corners to world (the view owns the camera) and
       // select inside the resulting world rect. The command system stays screen-blind.
@@ -113,7 +141,12 @@ export function makeInputHandlers(
 
   function onContextMenu(e: MouseEvent): void {
     e.preventDefault();
-    queue.push({ type: 'move', target: screenToWorld(getMousePos(e), camera) });
+    // If in placement mode, cancel it; otherwise issue move order
+    if (placementMode) {
+      setPlacementMode(null);
+    } else {
+      queue.push({ type: 'move', target: screenToWorld(getMousePos(e), camera) });
+    }
   }
 
   function onKeyDown(e: KeyboardEvent): void {
@@ -125,6 +158,26 @@ export function makeInputHandlers(
       case 'ArrowRight': dx = pan; break;
       case 'ArrowUp': dy = -pan; break;
       case 'ArrowDown': dy = pan; break;
+      case 'd': // Deploy MCV to Construction Yard
+        e.preventDefault();
+        queue.push({ type: 'deploy' });
+        return;
+      case 'D': // Deploy MCV to Construction Yard (case-insensitive)
+        e.preventDefault();
+        queue.push({ type: 'deploy' });
+        return;
+      case 'b': // Enter placement mode for power_node (if ConYard exists)
+      case 'B': // Enter placement mode for power_node (case-insensitive)
+        e.preventDefault();
+        // Check if a ConYard exists via the sim state reference
+        if (hasConYard()) {
+          setPlacementMode('power_node');
+        }
+        return;
+      case 'Escape': // Cancel placement mode
+        e.preventDefault();
+        setPlacementMode(null);
+        return;
       default: return;
     }
     e.preventDefault();
@@ -177,5 +230,7 @@ export function makeInputHandlers(
     },
     setPlacementMode,
     getPlacementMode,
+    hasConYard,
+    setSimState,
   };
 }

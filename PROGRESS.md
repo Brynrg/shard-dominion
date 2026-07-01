@@ -4,15 +4,15 @@
 > The plan lives in files (`../game-bakeoff/master-plan/MASTER_PLAN.md`); your window holds one slice.
 
 ## Current state
-- **Slice:** S3 "deploy & build" — ⏳ **IN PROGRESS (INCOMPLETE)**. The builder wrote the back-end
-  (`construction`/`power` systems, `structures` loader+data, deploy/place-structure command handling, placement
-  ghost + slab rendering, `__debugPower`) and it compiles + lints; **S0/S1/S2 gates still pass**. The orchestrator
-  contract-cleaned it (reverted a pinned `coords.ts` edit that exported `TILE_SHIFT`; renderer now uses
-  `worldToTile`; renderer reuses the single `validatePlacement`; removed a duplicate `makeCommandQueue`; lint).
-  **BUT S3 is not functional or verified:** the `deploy`/`place-structure` intents are defined but **never emitted**
-  (no input wiring — `onMouseUp` always selects, nothing enters placement mode or queues a build), and **both
-  required tests are missing** (`construction.test.ts`, `s3.spec.ts`). → bounced as `packets/S3-FIX1.md`.
-- **Next:** finish S3 via S3-FIX1 (input wiring + the two tests), verify, then S4A (combat).
+- **Slice:** S3 "deploy & build" (core) — ✅ **DONE & VERIFIED**. Press **D** → the MCV becomes a Construction
+  Yard; press **B** → placement mode for a Power Node; left-click a valid tile → it's placed and supplies power
+  (HUD reads `POWER: OK · Supply 100 · Demand 0`). Placement validates VALID/INVALID with one reason. Gates green
+  (`screenshots/s3-capture.png`).
+- **DEFERRED from S3 (fold into a later slice, e.g. S3B or alongside S4):** placement is currently FREE (no cost
+  deduction / `INSUFFICIENT CREDITS`), no on/off-slab HP variance, concrete-slab placement + staged power bands
+  not wired, and `construction.ts`'s drip-build queue is dead code (never fed) — remove or wire it later.
+- **Next packet:** `packets/S4A.md` — first combat: one infantry + one vehicle, targeting/damage/death/victory +
+  health bars (per MASTER_PLAN §10 / §5.4). NOT YET WRITTEN.
 
 ## Done so far
 - Repo scaffolded: TS + Canvas2D + Vite + Vitest + zod + ESLint, single package, pnpm. `pnpm run verify` green.
@@ -64,11 +64,21 @@
   removed; syntax error + a marker double-decrement fixed; Playwright clicks offset by the canvas box. The sim/view
   boundary is clean again — no `as any`, no camera on the sim contract.
 
-## Last verify (the S2 gate)
+## S3 build history (2026-07-01)
+- Built by alex-builder across the S3 packet + S3-FIX1 (both blocked at protocol-violation; retries capped at 2,
+  so ~38 + ~11 min instead of the old 5-retry churn). The AGENTS.md investment helped TIME but did NOT prevent:
+  a pinned-file edit (`coords.ts` TILE_SHIFT export — orchestrator reverted), inline `>> TILE_SHIFT` tile math
+  (→ `worldToTile`), a duplicate `makeCommandQueue`, an unwired feature (deploy/place intents defined but never
+  emitted), and BOTH tests skipped. S3-FIX1 wired the input but still skipped the tests. Orchestrator finish-lined:
+  contract-cleaned, wired `input.setSimState`, fixed the placement-ghost-follows-cursor bug, added the
+  `__debugBuildingCount`/`__debugConYardScreenPos` locators, and **authored both S3 tests** (verification is the
+  orchestrator's job). See memory `project_local_builder_patterns`.
+
+## Last verify (the S3 gate)
 ```
-pnpm run verify    → typecheck ✓  lint ✓  test ✓   (9 files, 45 tests; +6 command: select/move/deselect/markers)
-pnpm run test:live → 4 passed (11s)  — S2: click-select ring, box-select, right-click move + confirmation marker;
-                     S0 motion + S1 economy gates still green.  screenshots/s2-capture{1,2,3}.png
+pnpm run verify    → typecheck ✓  lint ✓  test ✓   (10 files, 50 tests; +5 construction: placement reasons + power)
+pnpm run test:live → 5 passed (11s)  — S3: D deploys ConYard, B+click places a Power Node → Supply 100, POWERED;
+                     S0 motion + S1 economy + S2 selection gates still green.  screenshots/s3-capture.png
 ```
 
 ## Next steps (queued)
