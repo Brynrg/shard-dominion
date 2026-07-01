@@ -15,7 +15,9 @@ export type CommandIntent =
   | { type: 'deselect' }
   | { type: 'move'; target: WorldPos }
   | { type: 'deploy' }
-  | { type: 'place-structure'; structureId: string; tile: TilePos };
+  | { type: 'place-structure'; structureId: string; tile: TilePos }
+  | { type: 'assign-group'; group: number }
+  | { type: 'recall-group'; group: number };
 
 /** The command queue (view writes, command system reads). */
 export interface CommandQueue {
@@ -178,6 +180,22 @@ export function makeInputHandlers(
         e.preventDefault();
         setPlacementMode(null);
         return;
+      case '1':
+      case '2':
+      case '3': {
+        const group = parseInt(e.key, 10);
+        if (e.ctrlKey || e.metaKey) {
+          // Ctrl/Meta+1/2/3 → assign-group
+          e.preventDefault();
+          queue.push({ type: 'assign-group', group });
+          return;
+        } else {
+          // 1/2/3 → recall-group
+          e.preventDefault();
+          queue.push({ type: 'recall-group', group });
+          return;
+        }
+      }
       default: return;
     }
     e.preventDefault();

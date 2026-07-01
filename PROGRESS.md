@@ -10,7 +10,8 @@
 > The plan lives in files (`../game-bakeoff/master-plan/MASTER_PLAN.md`); your window holds one slice.
 
 ## Current state
-- **Slice:** S5 fog of war, built as tiny scaffolded sub-slices. Done: **S5-1 fog visibility system** ✅ (`src/sim/systems/fog.ts` — computes visible + explored tile-key Sets from living player units' vision radius 6, exposed on returned object NOT on state; circular radius; clamp to grid bounds) + `tests/unit/fog.test.ts` (6 tests). `pnpm run verify` green (**80 tests**).
+- **Slice:** S5 fog of war, built as tiny scaffolded sub-slices. Done: **S5-1 fog visibility system** ✅ (`src/sim/systems/fog.ts` — computes visible + explored tile-key Sets from living player units' vision radius 6, exposed on returned object NOT on state; circular radius; clamp to grid bounds) + `tests/unit/fog.test.ts` (6 tests). `pnpm run verify` green (**84 tests**).
+- **S5-3 control groups (2026-07-01):** `src/sim/systems/command.ts` extended with `groups: Map<number, EntityId[]>` closure (like markers pattern, exposed on returned object NOT on state); `src/view/input.ts` already had assign-group/recall-group intents; `tests/unit/controlGroups.test.ts` (4 tests: assign both, recall both, dead-member recall selects only survivor, empty-group recall no crash). **S5-3 COMPLETE & VERIFIED.**
 - **S4B-1 roster + RPS proof (2026-07-01):** added `rocket_trooper` unit to `data/units.json` (anti-vehicle infantry,
 - **S4B-1 roster + RPS proof (2026-07-01):** added `rocket_trooper` unit to `data/units.json` (anti-vehicle infantry,
   `weaponId: "inf_rocket"`, `armorClass: "LIGHT"`, `hp: 20`, `speed: 12`, `team: "player"`, graphics with
@@ -99,9 +100,9 @@
   `agitation`. Range check uses `Math.hypot` on WORLD positions converted via `TILE_SUBUNITS`. Cooldown
   conversion: seconds × `SIM_TICK_RATE` (20 Hz). No inline pixel math beyond the contract constant.
 
-## Last verify (the S5-1 gate)
+## Last verify (the S5-3 gate)
 ```
-pnpm run verify    → typecheck ✓  lint ✓  test ✓   (16 files, 80 tests; +6 fog: visibility, explored persistence, circular radius, grid bounds)
+pnpm run verify    → typecheck ✓  lint ✓  test ✓   (17 files, 84 tests; +4 control groups: assign, recall, dead-member skip, empty-group)
 pnpm run test:live → 6 passed (12s)  — S3: D deploys ConYard, B+click places a Power Node → Supply 100, POWERED;
                      S0 motion + S1 economy + S2 selection + S4A combat + S5-1 fog gates still green.
 ```

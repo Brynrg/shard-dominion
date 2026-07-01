@@ -7,6 +7,7 @@ import type { SimState } from '../state.js';
 import type { CommandIntent } from '../../view/input.js';
 import { TILE_SUBUNITS, tileToWorldCenter, worldToTile } from '../coords.js';
 import type { StructureDef } from '../../loaders/structures.js';
+import type { EntityId } from '../ids.js';
 
 /** Confirmation marker: a short-lived visual at a target location (view reads this). */
 export interface ConfirmationMarker {
@@ -73,16 +74,20 @@ export interface CommandSystem {
   run(state: SimState): void;
   /** Live confirmation markers, for the renderer. */
   readonly markers: ConfirmationMarker[];
+  /** Control groups: Map<groupNumber, EntityId[]> */
+  readonly groups: Map<number, EntityId[]>;
 }
 
 const MARKER_LIFETIME = 10 as const; // ~0.5s at 20Hz
 
 export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structures: StructureDef[]): CommandSystem {
   const markers: ConfirmationMarker[] = [];
+  const groups = new Map<number, EntityId[]>();
 
   return {
     name: 'command' as const,
     markers,
+    groups,
     run(state: SimState): void {
       // Age out markers from PRIOR ticks first, so a marker created by this tick's
       // move order still shows for its full lifetime.
@@ -191,6 +196,37 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
                 },
               });
               markers.push({ target: tileCenter, remaining: MARKER_LIFETIME });
+            }
+            break;
+          }
+
+          case 'assign-group': {
+            const selectedIds: EntityId[] = [];
+            for (const e of state.store.all()) {
+              if (e.components.selection?.selected) {
+                selectedIds.push(e.id);
+              }
+            }
+            groups.set(intent.group, selectedIds);
+            break;
+          }
+
+          case 'recall-group': {
+            // Deselect all first
+            for (const e of state.store.all()) {
+              if (e.components.selection) {
+                e.components.selection.selected = false;
+              }
+            }
+            // Recall the stored group (skip dead/removed entities)
+            const stored = groups.get(intent.group);
+            if (stored) {
+              for (const id of stored) {
+                const e = state.store.get(id);
+                if (e && e.components.selection) {
+                  e.components.selection.selected = true;
+                }
+              }
             }
             break;
           }
