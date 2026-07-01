@@ -13,12 +13,11 @@
 - **Slice:** S4A combat, built as tiny scaffolded sub-slices. Done: **S4A-2 damage** ✅, **S4A-3 targeting** ✅,
   **S4A-4 death+victory** ✅ (`src/sim/systems/victory.ts` — culls 0-HP units via `store.remove`, records
   winner when one side has no living combat units, `playerSeen`/`enemySeen` guards against a false win; result on
-  the returned object, not on state). Orchestrator finish-lined: fixed unused-test-id lints + a logic bug (the
-  census counted dead-not-yet-culled units → changed to count LIVING hp>0 units) + added the both-alive setup tick.
-  `pnpm run verify` green (**68 tests**).
-- **Next packet:** `packets/S4A-5.md` — WIRE combat into the game: seed a player + enemy combat unit in main.ts,
-  register combatTargeting/damage/victory systems, render health bars + a VICTORY/DEFEAT banner, and the s4a
-  liveness gate (two units fight → one dies → banner). This is the slice that makes combat visible on screen.
+  the returned object, not on state), **S4A-5 wire+render** ✅ (`src/main.ts` — loads weapons, registers
+  combatTargeting/damage/victory systems, seeds player+enemy infantry 3 tiles apart within rifle range,
+  exposes `__debugUnitCount`/`__debugVictory` hooks; `src/view/renderer.ts` — draws health bars above units
+  with hp<maxHp, renders VICTORY/DEFEAT banner when victory is over). `pnpm run verify` green (**68 tests**).
+- **Next packet:** none — S4A complete.
 
 ## Done so far
 - Repo scaffolded: TS + Canvas2D + Vite + Vitest + zod + ESLint, single package, pnpm. `pnpm run verify` green.

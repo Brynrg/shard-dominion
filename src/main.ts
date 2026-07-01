@@ -12,8 +12,13 @@ import { makeInputHandlers, makeCommandQueue } from './view/input.js';
 import { tileToWorldCenter, worldToScreen } from './sim/coords.js';
 import { loadEconomyConstants } from './loaders/economyConstants.js';
 import { loadStructures } from './loaders/structures.js';
+import { loadWeapons } from './loaders/loader.js';
+import { makeCombatTargetingSystem } from './sim/systems/combatTargeting.js';
+import { makeDamageSystem } from './sim/systems/damage.js';
+import { makeVictorySystem } from './sim/systems/victory.js';
 import economyConstantsData from '../data/economyConstants.json' with { type: 'json' };
 import structuresData from '../data/structures.json' with { type: 'json' };
+import weaponsData from '../data/weapons.json' with { type: 'json' };
 
 // Map configuration
 const MAP_WIDTH = 32;
@@ -28,6 +33,8 @@ declare global {
     __debugPower?: () => { supply: number; demand: number; powered: boolean };
     __debugBuildingCount?: () => { mcv: number; conyard: number; power_node: number };
     __debugConYardScreenPos?: () => { x: number; y: number } | null;
+    __debugUnitCount?: () => { player: number; enemy: number };
+    __debugVictory?: () => { over: boolean; winner: 'player' | 'enemy' | null };
   }
 }
 
@@ -36,6 +43,10 @@ const economy = loadEconomyConstants(economyConstantsData);
 
 // Load structures
 const structures = loadStructures(structuresData);
+
+// Load weapons
+const weapons = loadWeapons(weaponsData);
+const victorySystem = makeVictorySystem();
 
 export function bootstrap(): void {
   // Create sim state
@@ -85,6 +96,23 @@ export function bootstrap(): void {
     faction: { team: 'player', faction: 'mcv' },
   });
 
+  // ── Demo seeding (S4A-5): player + enemy combat units that fight on load ──
+  // Rifle range is 4.0 tiles → 64 world units. Seed 3 tiles apart so they're in range.
+  state.store.create({
+    position: tileToWorldCenter({ tx: cx - 4, ty: cy + 4 }),
+    health: { hp: 20, maxHp: 20 },
+    armor: { armorClass: 'LIGHT' },
+    combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
+    faction: { team: 'player', faction: 'infantry' },
+  });
+  state.store.create({
+    position: tileToWorldCenter({ tx: cx - 1, ty: cy + 4 }),
+    health: { hp: 20, maxHp: 20 },
+    armor: { armorClass: 'LIGHT' },
+    combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
+    faction: { team: 'enemy', faction: 'infantry' },
+  });
+
   // Create command queue (view writes, command system reads) + the command system.
   const commandQueue = makeCommandQueue();
   const commandSystem = makeCommandSystem(commandQueue, structures);
@@ -102,6 +130,9 @@ export function bootstrap(): void {
     makeHarvestSystem(economy),
     constructionSystem,
     powerSystem,
+    makeCombatTargetingSystem(weapons),
+    makeDamageSystem(weapons),
+    victorySystem,
   ]);
 
   // Get canvas
@@ -122,6 +153,7 @@ export function bootstrap(): void {
     getSelectionBox: () => input.getSelectionBox(),
     getPlacementMode: () => input.getPlacementMode(),
     structures,
+    getVictory: () => victorySystem.result,
   });
 
   // Camera panning is a pure view action — never a sim command.
@@ -194,6 +226,23 @@ export function bootstrap(): void {
     const { sx, sy } = worldToScreen(cy.components.position, view.getCamera());
     return { x: sx, y: sy };
   };
+
+  // Expose unit count debug hook for S4A-5 liveness test
+  window.__debugUnitCount = () => {
+    let player = 0, enemy = 0;
+    for (const e of state.store.all()) {
+      if (!e.components.combat) continue;
+      const h = e.components.health;
+      if (!h || h.hp <= 0) continue;
+      const t = e.components.faction?.team;
+      if (t === 'player') player++;
+      else if (t === 'enemy') enemy++;
+    }
+    return { player, enemy };
+  };
+
+  // Expose victory debug hook for S4A-5 liveness test
+  window.__debugVictory = () => ({ over: victorySystem.result.over, winner: victorySystem.result.winner });
 }
 
 // Auto-bootstrap on load

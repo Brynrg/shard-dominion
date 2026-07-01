@@ -52,6 +52,8 @@ export interface ViewConfig {
   getPlacementMode?: () => { structureId: string; tile: TilePos } | null;
   /** Structures lookup for placement validation. */
   structures?: StructureDef[];
+  /** Victory result accessor for rendering VICTORY/DEFEAT banner. */
+  getVictory?: () => { over: boolean; winner: 'player' | 'enemy' | null } | null;
 }
 
 export interface View {
@@ -62,7 +64,7 @@ export interface View {
 }
 
 export function makeView(cfg: ViewConfig): View {
-  const { canvas, simState, systems, mapWidth, mapHeight, confirmationMarkers, getSelectionBox, getPlacementMode, structures = [] } = cfg;
+  const { canvas, simState, systems, mapWidth, mapHeight, confirmationMarkers, getSelectionBox, getPlacementMode, structures = [], getVictory } = cfg;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D context not available');
 
@@ -135,6 +137,31 @@ export function makeView(cfg: ViewConfig): View {
       context.arc(screenPos.sx, screenPos.sy, 10, 0, Math.PI * 2);
       context.stroke();
       context.globalAlpha = 1;
+    }
+  }
+
+  // Draw health bars above units with hp < maxHp
+  function drawHealthBars() {
+    for (const e of simState.store.all()) {
+      const health = e.components.health;
+      if (!health || health.hp >= health.maxHp) continue;
+      const pos = e.components.position;
+      if (!pos) continue;
+
+      const screenPos = worldToScreen(pos, camera);
+      const barWidth = TILE_SIZE_PX * 0.8;
+      const barHeight = 4;
+      const barX = screenPos.sx - barWidth / 2;
+      const barY = screenPos.sy - TILE_SIZE_PX * 0.5;
+
+      // Red background
+      context.fillStyle = '#ff0000';
+      context.fillRect(barX, barY, barWidth, barHeight);
+
+      // Green fill based on hp/maxHp
+      const hpRatio = Math.max(0, Math.min(1, health.hp / health.maxHp));
+      context.fillStyle = '#00ff00';
+      context.fillRect(barX, barY, barWidth * hpRatio, barHeight);
     }
   }
 
@@ -219,6 +246,24 @@ export function makeView(cfg: ViewConfig): View {
     }
   }
 
+  // Draw VICTORY/DEFEAT banner
+  function drawVictoryBanner() {
+    const victory = getVictory?.();
+    if (!victory || !victory.over) return;
+
+    const bannerText = victory.winner === 'player' ? 'VICTORY' : 'DEFEAT';
+    const bannerColor = victory.winner === 'player' ? '#00ff00' : '#ff0000';
+
+    context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    context.fillStyle = bannerColor;
+    context.font = 'bold 60px monospace';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText(bannerText, canvas.width / 2, canvas.height / 2);
+  }
+
   function drawTerrain() {
     const { width, height } = simState.grid;
     for (let ty = 0; ty < height; ty++) {
@@ -288,6 +333,8 @@ export function makeView(cfg: ViewConfig): View {
     drawSelectionRings();
     drawBoxSelection();
     drawConfirmationMarkers();
+    drawHealthBars();
+    drawVictoryBanner();
     drawPlacementGhost();
 
     // Draw HUD
