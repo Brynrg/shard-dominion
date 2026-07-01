@@ -1,0 +1,50 @@
+{
+  "units": [
+    {
+      "id": "infantry",
+      "name": "Infantry",
+      "cost": 100,
+      "hp": 20,
+      "armorClass": "LIGHT",
+      "weaponId": "rifle",
+      "speed": 12,
+      "team": "player",
+      "graphics": {
+        "sprite_id": "infantry",
+        "fallback_geometry": {
+          "chassis": "INFANTRY",
+          "chassisMod": "NONE",
+          "weaponGlyph": "ANTI_INFANTRY",
+          "barrelClass": "NONE",
+          "roleBadge": "ANTI_INFANTRY",
+          "rangeMarks": 2,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      }
+    },
+    {
+      "id": "vehicle",
+      "name": "Vehicle",
+      "cost": 300,
+      "hp": 60,
+      "armorClass": "MEDIUM",
+      "weaponId": "scout_gun",
+      "speed": 15,
+      "team": "enemy",
+      "graphics": {
+        "sprite_id": "vehicle",
+        "fallback_geometry": {
+          "chassis": "LIGHT_VEHICLE",
+          "chassisMod": "CHAMFER",
+          "weaponGlyph": "ANTI_INFANTRY",
+          "barrelClass": "NONE",
+          "roleBadge": "SCOUT",
+          "rangeMarks": 2,
+          "hazard": "NONE",
+          "factionStripe": "enemy"
+        }
+      }
+    }
+  ]
+}

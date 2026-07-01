@@ -11,8 +11,11 @@
 - **DEFERRED from S3 (fold into a later slice, e.g. S3B or alongside S4):** placement is currently FREE (no cost
   deduction / `INSUFFICIENT CREDITS`), no on/off-slab HP variance, concrete-slab placement + staged power bands
   not wired, and `construction.ts`'s drip-build queue is dead code (never fed) — remove or wire it later.
-- **Next packet:** `packets/S4A.md` — first combat: one infantry + one vehicle, targeting/damage/death/victory +
-  health bars (per MASTER_PLAN §10 / §5.4). NOT YET WRITTEN.
+- **Next packet:** `packets/S4A.md` — first combat (written + dispatched). ⏸️ **BARELY STARTED / LOOP PAUSED.**
+  The builder produced ONLY the data model (`data/units.json` infantry+vehicle, `src/loaders/units.ts` schema)
+  across 2 short runs then protocol-violated — NO combat systems (targeting/damage/victory), no wiring, no
+  renderer, no tests. Loop paused for an operator decision (see the S0-S4A summary below + memory
+  `project_local_builder_patterns`). The units data+loader are committed as a WIP checkpoint; S0-S3 all green.
 
 ## Done so far
 - Repo scaffolded: TS + Canvas2D + Vite + Vitest + zod + ESLint, single package, pnpm. `pnpm run verify` green.
