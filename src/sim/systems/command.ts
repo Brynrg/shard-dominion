@@ -5,12 +5,67 @@
 // renderer to draw — they are NOT stashed on SimState.
 import type { SimState } from '../state.js';
 import type { CommandIntent } from '../../view/input.js';
-import { TILE_SUBUNITS } from '../coords.js';
+import { TILE_SUBUNITS, tileToWorldCenter, worldToTile } from '../coords.js';
+import type { StructureDef } from '../../loaders/structures.js';
 
 /** Confirmation marker: a short-lived visual at a target location (view reads this). */
 export interface ConfirmationMarker {
   target: { wx: number; wy: number };
   remaining: number; // ticks left of its ~0.5s life
+}
+
+/** Placement validation result. */
+export interface PlacementResult {
+  valid: boolean;
+  reason?: string;
+}
+
+export function validatePlacement(
+  state: SimState,
+  structure: StructureDef,
+  tile: { tx: number; ty: number },
+): PlacementResult {
+  // Check terrain is buildable (not impassable)
+  const terrain = state.grid.terrainAt(tile);
+  if (terrain === 'IMPASSABLE') {
+    return { valid: false, reason: 'INVALID TERRAIN' };
+  }
+
+  // Check if tile is blocked by another entity
+  for (const e of state.store.all()) {
+    const pos = e.components.position;
+    if (!pos) continue;
+    const entityTile = worldToTile(pos);
+    if (entityTile.tx === tile.tx && entityTile.ty === tile.ty) {
+      return { valid: false, reason: 'BLOCKED' };
+    }
+  }
+
+  // Check build radius from a ConYard (simplified: any ConYard within 10 tiles)
+  let hasConYardRadius = false;
+  for (const e of state.store.all()) {
+    const faction = e.components.faction;
+    if (faction?.faction === 'construction_yard') {
+      const pos = e.components.position;
+      if (pos) {
+        const conYardTile = worldToTile(pos);
+        const dist = Math.abs(conYardTile.tx - tile.tx) + Math.abs(conYardTile.ty - tile.ty);
+        if (dist <= 10) {
+          hasConYardRadius = true;
+          break;
+        }
+      }
+    }
+  }
+
+  if (!hasConYardRadius) {
+    return { valid: false, reason: 'OUTSIDE BUILD RADIUS' };
+  }
+
+  // Check credits (simplified: assume we have enough if we're placing)
+  // Full credit check happens in construction system
+
+  return { valid: true };
 }
 
 export interface CommandSystem {
@@ -22,7 +77,7 @@ export interface CommandSystem {
 
 const MARKER_LIFETIME = 10 as const; // ~0.5s at 20Hz
 
-export function makeCommandSystem(queue: { drain(): CommandIntent[] }): CommandSystem {
+export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structures: StructureDef[]): CommandSystem {
   const markers: ConfirmationMarker[] = [];
 
   return {
@@ -97,6 +152,45 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }): CommandS
                 e.components.harvest.targetRefinery = null;
               }
               markers.push({ target: intent.target, remaining: MARKER_LIFETIME });
+            }
+            break;
+          }
+
+          case 'deploy': {
+            // Deploy MCV to Construction Yard
+            for (const e of state.store.all()) {
+              const faction = e.components.faction;
+              if (faction?.faction === 'mcv') {
+                e.components.faction = { team: 'player', faction: 'construction_yard' };
+                e.components.building = { onSlab: true, buildProgress: 100, powered: true };
+                e.components.construction = { queue: [], progress: 0, currentStructureId: null };
+                e.components.power = { powerSupply: 0, powerDemand: 0, powered: true };
+                markers.push({ target: e.components.position!, remaining: MARKER_LIFETIME });
+                break;
+              }
+            }
+            break;
+          }
+
+          case 'place-structure': {
+            const structure = structures.find((s) => s.id === intent.structureId);
+            if (!structure) break;
+
+            const result = validatePlacement(state, structure, intent.tile);
+            if (result.valid) {
+              // Spawn the structure at the tile centre (contract fn, no inline math).
+              const tileCenter = tileToWorldCenter(intent.tile);
+              state.store.create({
+                position: tileCenter,
+                building: { onSlab: false, buildProgress: 100, powered: false },
+                faction: { team: 'player', faction: intent.structureId },
+                power: {
+                  powerSupply: structure.powerSupply,
+                  powerDemand: structure.powerDemand,
+                  powered: false,
+                },
+              });
+              markers.push({ target: tileCenter, remaining: MARKER_LIFETIME });
             }
             break;
           }

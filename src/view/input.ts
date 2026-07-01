@@ -4,14 +4,17 @@
 // the command SimSystem then works purely in world space (it never sees the camera
 // or the screen). Camera panning is a pure view action applied straight to the view
 // camera — it never enters the sim.
-import type { Camera, WorldPos, ScreenPos } from '../sim/coords.js';
-import { screenToWorld } from '../sim/coords.js';
+import type { Camera, WorldPos, ScreenPos, TilePos } from '../sim/coords.js';
+import { screenToWorld, screenToTile } from '../sim/coords.js';
+import type { StructureDef } from '../loaders/structures.js';
 
 /** Command intents queued from input. All coordinates are WORLD space. */
 export type CommandIntent =
   | { type: 'select'; worldRect?: { minWx: number; minWy: number; maxWx: number; maxWy: number }; target?: WorldPos }
   | { type: 'deselect' }
-  | { type: 'move'; target: WorldPos };
+  | { type: 'move'; target: WorldPos }
+  | { type: 'deploy' }
+  | { type: 'place-structure'; structureId: string; tile: TilePos };
 
 /** The command queue (view writes, command system reads). */
 export interface CommandQueue {
@@ -38,6 +41,10 @@ export interface InputHandlers {
   stop(): void;
   /** The live drag rectangle in SCREEN pixels, for the renderer to draw (null when idle). */
   getSelectionBox(): { x: number; y: number; width: number; height: number } | null;
+  /** Get the current placement mode (structureId + tile) or null if not in placement mode. */
+  getPlacementMode(): { structureId: string; tile: TilePos } | null;
+  /** Set placement mode for a structure (or null to cancel). */
+  setPlacementMode(structureId: string | null): void;
 }
 
 export function makeInputHandlers(
@@ -45,9 +52,11 @@ export function makeInputHandlers(
   camera: Camera,
   queue: CommandQueue,
   panCamera: (dx: number, dy: number) => void,
+  structures: StructureDef[],
 ): InputHandlers {
   let selectStart: ScreenPos | null = null;
   let selectCurrent: ScreenPos | null = null;
+  let placementMode: { structureId: string; tile: TilePos } | null = null;
 
   function getMousePos(e: MouseEvent): ScreenPos {
     const rect = canvas.getBoundingClientRect();
@@ -65,6 +74,12 @@ export function makeInputHandlers(
   function onMouseMove(e: MouseEvent): void {
     if (!selectStart) return;
     selectCurrent = getMousePos(e);
+
+    // Update placement mode cursor
+    if (placementMode) {
+      const tile = screenToTile(getMousePos(e), camera);
+      placementMode.tile = tile;
+    }
   }
 
   function onMouseUp(e: MouseEvent): void {
@@ -116,6 +131,26 @@ export function makeInputHandlers(
     panCamera(dx, dy); // pure view action — never enters the sim
   }
 
+  // Expose placement mode control
+  function setPlacementMode(structureId: string | null): void {
+    if (structureId) {
+      // Find the structure definition
+      const structure = structures.find((s) => s.id === structureId);
+      if (structure) {
+        // Start placement mode at center of screen
+        const centerScreen: ScreenPos = { sx: canvas.width / 2, sy: canvas.height / 2 };
+        const tile = screenToTile(centerScreen, camera);
+        placementMode = { structureId, tile };
+      }
+    } else {
+      placementMode = null;
+    }
+  }
+
+  function getPlacementMode(): { structureId: string; tile: TilePos } | null {
+    return placementMode;
+  }
+
   return {
     start(): void {
       canvas.addEventListener('mousedown', onMouseDown);
@@ -140,5 +175,7 @@ export function makeInputHandlers(
         height: Math.abs(selectCurrent.sy - selectStart.sy),
       };
     },
+    setPlacementMode,
+    getPlacementMode,
   };
 }

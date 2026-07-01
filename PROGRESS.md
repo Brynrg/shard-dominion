@@ -4,11 +4,15 @@
 > The plan lives in files (`../game-bakeoff/master-plan/MASTER_PLAN.md`); your window holds one slice.
 
 ## Current state
-- **Slice:** S2 "select & command" — ✅ **DONE & VERIFIED**. Click AND box-select the harvester (yellow selection
-  ring), right-click to issue a move order (a green confirmation marker flashes + a manual move suspends the
-  harvest FSM via `IDLE`), arrow-keys pan the camera. Gates green (`screenshots/s2-capture{1,2,3}.png`).
-- **Next packet:** `packets/S3.md` — MCV deploy, build queue, placement preview, concrete (slab vs raw), staged
-  power, off-slab tells (per MASTER_PLAN §10 / §5.2 / §5.3). NOT YET WRITTEN.
+- **Slice:** S3 "deploy & build" — ⏳ **IN PROGRESS (INCOMPLETE)**. The builder wrote the back-end
+  (`construction`/`power` systems, `structures` loader+data, deploy/place-structure command handling, placement
+  ghost + slab rendering, `__debugPower`) and it compiles + lints; **S0/S1/S2 gates still pass**. The orchestrator
+  contract-cleaned it (reverted a pinned `coords.ts` edit that exported `TILE_SHIFT`; renderer now uses
+  `worldToTile`; renderer reuses the single `validatePlacement`; removed a duplicate `makeCommandQueue`; lint).
+  **BUT S3 is not functional or verified:** the `deploy`/`place-structure` intents are defined but **never emitted**
+  (no input wiring — `onMouseUp` always selects, nothing enters placement mode or queues a build), and **both
+  required tests are missing** (`construction.test.ts`, `s3.spec.ts`). → bounced as `packets/S3-FIX1.md`.
+- **Next:** finish S3 via S3-FIX1 (input wiring + the two tests), verify, then S4A (combat).
 
 ## Done so far
 - Repo scaffolded: TS + Canvas2D + Vite + Vitest + zod + ESLint, single package, pnpm. `pnpm run verify` green.

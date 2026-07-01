@@ -16,7 +16,7 @@ describe('command system', () => {
   beforeEach(() => {
     state = makeSimState({ seed: 42, mapWidth: 32, mapHeight: 32 });
     queue = makeCommandQueue();
-    commandSystem = makeCommandSystem(queue);
+    commandSystem = makeCommandSystem(queue, []);
     systems = orderSystems([commandSystem, makeMovementSystem()]);
   });
 

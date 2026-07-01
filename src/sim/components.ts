@@ -43,6 +43,20 @@ export interface SelectionComponent {
   selected: boolean;
 }
 
+/** Construction component for build queue and progress. */
+export interface ConstructionComponent {
+  queue: readonly string[]; // structure IDs to build
+  progress: number; // 0 to 100
+  currentStructureId: string | null;
+}
+
+/** Power component for supply/demand tracking. */
+export interface PowerComponent {
+  powerSupply: number;
+  powerDemand: number;
+  powered: boolean;
+}
+
 /** The component bag. All optional: an entity has only the components it needs. */
 export interface Components {
   position?: PositionComponent;
@@ -59,6 +73,8 @@ export interface Components {
   economy?: EconomyComponent;
   harvest?: HarvestComponent;
   selection?: SelectionComponent;
+  construction?: ConstructionComponent;
+  power?: PowerComponent;
 }
 
 export type ComponentKey = keyof Components;

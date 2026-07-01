@@ -5,11 +5,15 @@ import { orderSystems } from './sim/loop.js';
 import { makeMovementSystem } from './sim/systems/movement.js';
 import { makeHarvestSystem } from './sim/systems/harvest.js';
 import { makeCommandSystem } from './sim/systems/command.js';
+import { makeConstructionSystem } from './sim/systems/construction.js';
+import { makePowerSystem } from './sim/systems/power.js';
 import { makeView } from './view/index.js';
 import { makeInputHandlers, makeCommandQueue } from './view/input.js';
 import { tileToWorldCenter, worldToScreen } from './sim/coords.js';
 import { loadEconomyConstants } from './loaders/economyConstants.js';
+import { loadStructures } from './loaders/structures.js';
 import economyConstantsData from '../data/economyConstants.json' with { type: 'json' };
+import structuresData from '../data/structures.json' with { type: 'json' };
 
 // Map configuration
 const MAP_WIDTH = 32;
@@ -21,11 +25,15 @@ declare global {
     __debugHarvesterScreenPos?: () => { x: number; y: number } | null;
     __debugEconomy?: () => { credits: number };
     __debugSelection?: () => number;
+    __debugPower?: () => { supply: number; demand: number; powered: boolean };
   }
 }
 
 // Load economy constants
 const economy = loadEconomyConstants(economyConstantsData);
+
+// Load structures
+const structures = loadStructures(structuresData);
 
 export function bootstrap(): void {
   // Create sim state
@@ -69,15 +77,29 @@ export function bootstrap(): void {
     harvest: { state: 'SEEK', targetTile: null, targetRefinery: null, cargo: 0 },
   });
 
+  // MCV at center (deployable to Construction Yard)
+  state.store.create({
+    position: tileToWorldCenter({ tx: cx - 2, ty: cy }),
+    faction: { team: 'player', faction: 'mcv' },
+  });
+
   // Create command queue (view writes, command system reads) + the command system.
   const commandQueue = makeCommandQueue();
-  const commandSystem = makeCommandSystem(commandQueue);
+  const commandSystem = makeCommandSystem(commandQueue, structures);
+
+  // Create construction system
+  const constructionSystem = makeConstructionSystem(structures, commandQueue);
+
+  // Create power system
+  const powerSystem = makePowerSystem();
 
   // Register systems (command runs FIRST per SYSTEM_ORDER)
   const systems = orderSystems([
     commandSystem,
     makeMovementSystem(),
     makeHarvestSystem(economy),
+    constructionSystem,
+    powerSystem,
   ]);
 
   // Get canvas
@@ -96,6 +118,8 @@ export function bootstrap(): void {
     mapHeight: MAP_HEIGHT,
     confirmationMarkers: commandSystem.markers,
     getSelectionBox: () => input.getSelectionBox(),
+    getPlacementMode: () => input.getPlacementMode(),
+    structures,
   });
 
   // Camera panning is a pure view action — never a sim command.
@@ -105,7 +129,7 @@ export function bootstrap(): void {
   };
 
   // Wire input, then start rendering (input must exist before the first render frame).
-  const input = makeInputHandlers(canvas, view.getCamera(), commandQueue, panCamera);
+  const input = makeInputHandlers(canvas, view.getCamera(), commandQueue, panCamera, structures);
   input.start();
   view.start();
 
@@ -132,6 +156,22 @@ export function bootstrap(): void {
       if (e.components.selection?.selected) count++;
     }
     return count;
+  };
+
+  // Expose power debug hook for S3 liveness test
+  window.__debugPower = () => {
+    let supply = 0;
+    let demand = 0;
+
+    for (const e of state.store.all()) {
+      const power = e.components.power;
+      if (power) {
+        supply += power.powerSupply;
+        demand += power.powerDemand;
+      }
+    }
+
+    return { supply, demand, powered: supply >= demand };
   };
 }
 

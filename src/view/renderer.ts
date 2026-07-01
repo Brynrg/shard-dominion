@@ -1,12 +1,13 @@
 // ── View: canvas renderer, camera, rAF driver ─────────────────────────────────
 // Wall-clock + rAF live here; the sim itself never reads wall-clock.
 import type { SimState } from '../sim/state.js';
-import type { Camera, WorldPos } from '../sim/coords.js';
-import { worldToScreen, tileToWorldCenter } from '../sim/coords.js';
+import type { Camera, WorldPos, TilePos } from '../sim/coords.js';
+import { worldToScreen, tileToWorldCenter, worldToTile } from '../sim/coords.js';
 import { TILE_SIZE_PX, TILE_SUBUNITS } from '../sim/coords.js';
 import { accumulate, runTick, STEP_MS, type SimSystem } from '../sim/loop.js';
 import { makeHUD } from './hud.js';
-import type { ConfirmationMarker } from '../sim/systems/command.js';
+import { validatePlacement, type ConfirmationMarker } from '../sim/systems/command.js';
+import type { StructureDef } from '../loaders/structures.js';
 
 // Terrain colors (simple palette)
 const TERRAIN_COLORS: Record<string, string> = {
@@ -17,6 +18,9 @@ const TERRAIN_COLORS: Record<string, string> = {
   SHARD: '#a67c52',
   IMPASSABLE: '#555555',
 };
+
+// Slab color
+const SLAB_COLOR = '#808080';
 
 // Entity colors
 const ENTITY_COLORS: Record<string, string> = {
@@ -30,6 +34,10 @@ const SELECTION_COLOR = '#ffff00';
 // Confirmation marker color
 const CONFIRMATION_COLOR = '#00ff00';
 
+// Placement ghost colors
+const VALID_GHOST_COLOR = 'rgba(0, 255, 0, 0.5)';
+const INVALID_GHOST_COLOR = 'rgba(255, 0, 0, 0.5)';
+
 export interface ViewConfig {
   canvas: HTMLCanvasElement;
   simState: SimState;
@@ -40,6 +48,10 @@ export interface ViewConfig {
   confirmationMarkers?: readonly ConfirmationMarker[];
   /** The live drag rectangle in SCREEN pixels from input (view draws it). */
   getSelectionBox?: () => { x: number; y: number; width: number; height: number } | null;
+  /** Placement mode info from input (structureId + tile). */
+  getPlacementMode?: () => { structureId: string; tile: TilePos } | null;
+  /** Structures lookup for placement validation. */
+  structures?: StructureDef[];
 }
 
 export interface View {
@@ -50,7 +62,7 @@ export interface View {
 }
 
 export function makeView(cfg: ViewConfig): View {
-  const { canvas, simState, systems, mapWidth, mapHeight, confirmationMarkers, getSelectionBox } = cfg;
+  const { canvas, simState, systems, mapWidth, mapHeight, confirmationMarkers, getSelectionBox, getPlacementMode, structures = [] } = cfg;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D context not available');
 
@@ -126,6 +138,87 @@ export function makeView(cfg: ViewConfig): View {
     }
   }
 
+  // Draw slab tiles
+  function drawSlabs() {
+    const { width, height } = simState.grid;
+    for (let ty = 0; ty < height; ty++) {
+      for (let tx = 0; tx < width; tx++) {
+        // Check if this tile has a slab entity
+        let hasSlab = false;
+        for (const e of simState.store.all()) {
+          const pos = e.components.position;
+          if (!pos) continue;
+          const entityTile = worldToTile(pos);
+          if (entityTile.tx === tx && entityTile.ty === ty) {
+            const faction = e.components.faction;
+            if (faction?.faction === 'concrete_slab') {
+              hasSlab = true;
+              break;
+            }
+          }
+        }
+
+        if (hasSlab) {
+          const tilePos = tileToWorldCenter({ tx, ty });
+          const screenPos = worldToScreen(tilePos, camera);
+          context.fillStyle = SLAB_COLOR;
+          context.fillRect(
+            Math.floor(screenPos.sx - TILE_SIZE_PX / 2),
+            Math.floor(screenPos.sy - TILE_SIZE_PX / 2),
+            TILE_SIZE_PX,
+            TILE_SIZE_PX,
+          );
+        }
+      }
+    }
+  }
+
+  // Draw placement ghost
+  function drawPlacementGhost() {
+    const placement = getPlacementMode?.();
+    if (!placement || !structures) return;
+
+    const structure = structures.find((s) => s.id === placement.structureId);
+    if (!structure) return;
+
+    // Validity + reason come from the ONE contract validator (no duplicated rules).
+    const result = validatePlacement(simState, structure, placement.tile);
+    const valid = result.valid;
+    const reason = result.reason ?? '';
+
+    // Draw ghost
+    const ghostColor = valid ? VALID_GHOST_COLOR : INVALID_GHOST_COLOR;
+    const tilePos = tileToWorldCenter(placement.tile);
+    const screenPos = worldToScreen(tilePos, camera);
+    const size = TILE_SIZE_PX * structure.footprint.w;
+
+    context.fillStyle = ghostColor;
+    context.fillRect(
+      Math.floor(screenPos.sx - size / 2),
+      Math.floor(screenPos.sy - size / 2),
+      size,
+      size,
+    );
+
+    // Draw border
+    context.strokeStyle = valid ? '#00ff00' : '#ff0000';
+    context.lineWidth = 2;
+    context.strokeRect(
+      Math.floor(screenPos.sx - size / 2),
+      Math.floor(screenPos.sy - size / 2),
+      size,
+      size,
+    );
+
+    // Draw reason text if invalid
+    if (!valid && reason) {
+      context.fillStyle = '#ffffff';
+      context.font = '12px monospace';
+      context.textBaseline = 'top';
+      context.fillText(reason, screenPos.sx - size / 2, screenPos.sy - size / 2 - 15);
+    }
+  }
+
   function drawTerrain() {
     const { width, height } = simState.grid;
     for (let ty = 0; ty < height; ty++) {
@@ -190,10 +283,12 @@ export function makeView(cfg: ViewConfig): View {
     context.fillRect(0, 0, canvas.width, canvas.height);
 
     drawTerrain();
+    drawSlabs();
     drawEntities();
     drawSelectionRings();
     drawBoxSelection();
     drawConfirmationMarkers();
+    drawPlacementGhost();
 
     // Draw HUD
     hud.draw();

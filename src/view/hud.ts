@@ -1,16 +1,18 @@
-// ── HUD: credits + cargo + storage readout ─────────────────────────────────────
-// Renders economy HUD on top of the game canvas.
+// ── HUD: credits + cargo + storage + build queue + power readout ────────────────
+// Renders economy and build queue HUD on top of the game canvas.
 import type { SimState } from '../sim/state.js';
 import type { Camera } from '../sim/coords.js';
+import type { ConstructionOutput } from '../sim/systems/construction.js';
 
 export interface HUDConfig {
   canvas: HTMLCanvasElement;
   simState: SimState;
   camera: Camera; // unused in current implementation
+  constructionOutput?: ConstructionOutput;
 }
 
 export function makeHUD(cfg: HUDConfig): { draw(): void } {
-  const { canvas, simState } = cfg;
+  const { canvas, simState, constructionOutput = { buildQueue: [], readyStructures: [] } } = cfg;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D context not available');
 
@@ -24,6 +26,8 @@ export function makeHUD(cfg: HUDConfig): { draw(): void } {
     highlight: '#4a90e2',
     warning: '#e24a4a',
     success: '#4caf50',
+    powerOk: '#4caf50',
+    powerLow: '#e24a4a',
   };
 
   function getHarvester(): { cargo: number; capacity: number } | null {
@@ -46,6 +50,21 @@ export function makeHUD(cfg: HUDConfig): { draw(): void } {
       }
     }
     return null;
+  }
+
+  function getPowerStatus(): { supply: number; demand: number; powered: boolean } {
+    let supply = 0;
+    let demand = 0;
+
+    for (const e of simState.store.all()) {
+      const power = e.components.power;
+      if (power) {
+        supply += power.powerSupply;
+        demand += power.powerDemand;
+      }
+    }
+
+    return { supply, demand, powered: supply >= demand };
   }
 
   function drawBox(x: number, y: number, width: number, height: number, color: string): void {
@@ -83,9 +102,10 @@ export function makeHUD(cfg: HUDConfig): { draw(): void } {
     draw() {
       const harvester = getHarvester();
       const refinery = getRefinery();
+      const power = getPowerStatus();
 
       // Draw HUD background
-      const hudHeight = 120;
+      const hudHeight = 160;
       drawBox(10, canvas.height - hudHeight - 10, 220, hudHeight, COLORS.background);
 
       // Credits
@@ -107,9 +127,24 @@ export function makeHUD(cfg: HUDConfig): { draw(): void } {
         drawProgressBar(70, canvas.height - hudHeight + 48, 130, refinery.storage, refinery.maxStorage, storageColor);
       }
 
+      // Power status
+      const powerColor = power.powered ? COLORS.powerOk : COLORS.powerLow;
+      drawText(`POWER: ${power.powered ? 'OK' : 'LOW'}`, 20, canvas.height - hudHeight + 85, powerColor);
+      drawText(`Supply: ${power.supply} | Demand: ${power.demand}`, 20, canvas.height - hudHeight + 105, COLORS.text);
+
+      // Build queue
+      if (constructionOutput.buildQueue.length > 0) {
+        drawText('Build Queue:', 20, canvas.height - hudHeight + 130, COLORS.highlight);
+        let yOffset = 145;
+        for (const item of constructionOutput.buildQueue) {
+          drawText(`${item.structureId}: ${Math.floor(item.progress)}%`, 20, canvas.height - hudHeight + yOffset, COLORS.text);
+          yOffset += 15;
+        }
+      }
+
       // Overflow warning
       if (refinery && refinery.storage >= refinery.maxStorage) {
-        drawText('OVERFLOW!', 20, canvas.height - hudHeight + 75, COLORS.warning);
+        drawText('OVERFLOW!', 20, canvas.height - hudHeight + 175, COLORS.warning);
       }
     },
   };
