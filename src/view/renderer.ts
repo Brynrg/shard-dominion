@@ -6,6 +6,7 @@ import { worldToScreen, tileToWorldCenter } from '../sim/coords.js';
 import { TILE_SIZE_PX, TILE_SUBUNITS } from '../sim/coords.js';
 import { accumulate, runTick, STEP_MS, type SimSystem } from '../sim/loop.js';
 import { makeHUD } from './hud.js';
+import type { ConfirmationMarker } from '../sim/systems/command.js';
 
 // Terrain colors (simple palette)
 const TERRAIN_COLORS: Record<string, string> = {
@@ -23,12 +24,22 @@ const ENTITY_COLORS: Record<string, string> = {
   refinery: '#e24a4a',
 };
 
+// Selection ring color
+const SELECTION_COLOR = '#ffff00';
+
+// Confirmation marker color
+const CONFIRMATION_COLOR = '#00ff00';
+
 export interface ViewConfig {
   canvas: HTMLCanvasElement;
   simState: SimState;
   systems: readonly SimSystem[];
   mapWidth: number;
   mapHeight: number;
+  /** Live confirmation markers owned by the command system (view draws them). */
+  confirmationMarkers?: readonly ConfirmationMarker[];
+  /** The live drag rectangle in SCREEN pixels from input (view draws it). */
+  getSelectionBox?: () => { x: number; y: number; width: number; height: number } | null;
 }
 
 export interface View {
@@ -39,7 +50,7 @@ export interface View {
 }
 
 export function makeView(cfg: ViewConfig): View {
-  const { canvas, simState, systems, mapWidth, mapHeight } = cfg;
+  const { canvas, simState, systems, mapWidth, mapHeight, confirmationMarkers, getSelectionBox } = cfg;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D context not available');
 
@@ -60,6 +71,60 @@ export function makeView(cfg: ViewConfig): View {
 
   // Create HUD
   const hud = makeHUD({ canvas, simState, camera });
+
+  // Draw selection rings around selected entities
+  function drawSelectionRings() {
+    for (const e of simState.store.all()) {
+      if (!e.components.selection?.selected) continue;
+      const pos = e.components.position;
+      if (!pos) continue;
+
+      const screenPos = worldToScreen(pos, camera);
+      const size = TILE_SIZE_PX * 0.8;
+
+      // Draw selection ring
+      context.strokeStyle = SELECTION_COLOR;
+      context.lineWidth = 3;
+      context.beginPath();
+      context.arc(screenPos.sx, screenPos.sy, size / 2 + 4, 0, Math.PI * 2);
+      context.stroke();
+    }
+  }
+
+  // Draw the live box-selection rectangle (screen pixels, provided by input).
+  function drawBoxSelection() {
+    const box = getSelectionBox?.();
+    if (!box || (box.width === 0 && box.height === 0)) return;
+    const { x, y, width, height } = box;
+
+    context.strokeStyle = SELECTION_COLOR;
+    context.lineWidth = 2;
+    context.setLineDash([5, 5]);
+    context.strokeRect(x, y, width, height);
+    context.setLineDash([]);
+
+    // Fill with semi-transparent color
+    context.fillStyle = 'rgba(255, 255, 0, 0.2)';
+    context.fillRect(x, y, width, height);
+  }
+
+  // Draw confirmation markers (owned by the command system, passed in via cfg).
+  function drawConfirmationMarkers() {
+    if (!confirmationMarkers || confirmationMarkers.length === 0) return;
+
+    for (const marker of confirmationMarkers) {
+      const screenPos = worldToScreen(marker.target, camera);
+      const progress = marker.remaining / 10; // 10 ticks lifetime
+
+      context.strokeStyle = CONFIRMATION_COLOR;
+      context.lineWidth = 2;
+      context.globalAlpha = progress;
+      context.beginPath();
+      context.arc(screenPos.sx, screenPos.sy, 10, 0, Math.PI * 2);
+      context.stroke();
+      context.globalAlpha = 1;
+    }
+  }
 
   function drawTerrain() {
     const { width, height } = simState.grid;
@@ -126,6 +191,9 @@ export function makeView(cfg: ViewConfig): View {
 
     drawTerrain();
     drawEntities();
+    drawSelectionRings();
+    drawBoxSelection();
+    drawConfirmationMarkers();
 
     // Draw HUD
     hud.draw();

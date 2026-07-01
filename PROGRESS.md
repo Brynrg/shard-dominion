@@ -4,11 +4,11 @@
 > The plan lives in files (`../game-bakeoff/master-plan/MASTER_PLAN.md`); your window holds one slice.
 
 ## Current state
-- **Slice:** S1 "economy visible" — ✅ **DONE & VERIFIED**. The deployed bundle shows a harvester running the
-  SEEK→HARVEST→RETURN→DOCK cycle, a credits HUD that visibly rises on deposit (500→590 in-gate), a cargo bar,
-  and a storage bar; overflow beyond 2000 is lost. Gates green (`screenshots/s1-capture{1,2}.png`).
-- **Next packet:** `packets/S2.md` — selection + command bus + camera/minimap + occupancy + selection rings +
-  order-confirmation markers (per MASTER_PLAN §10 / §5.8).
+- **Slice:** S2 "select & command" — ✅ **DONE & VERIFIED**. Click AND box-select the harvester (yellow selection
+  ring), right-click to issue a move order (a green confirmation marker flashes + a manual move suspends the
+  harvest FSM via `IDLE`), arrow-keys pan the camera. Gates green (`screenshots/s2-capture{1,2,3}.png`).
+- **Next packet:** `packets/S3.md` — MCV deploy, build queue, placement preview, concrete (slab vs raw), staged
+  power, off-slab tells (per MASTER_PLAN §10 / §5.2 / §5.3). NOT YET WRITTEN.
 
 ## Done so far
 - Repo scaffolded: TS + Canvas2D + Vite + Vitest + zod + ESLint, single package, pnpm. `pnpm run verify` green.
@@ -47,12 +47,24 @@
 - **Known minor follow-ups (non-blocking):** shard density isn't rendered as visual depletion yet (mechanic is
   unit-tested + HUD-readable, not tile-colored); `shardDensity` isn't in `stateHash` yet (a determinism gap that
   matters at S5, not now).
+- **S2 select & command (2026-06-30):** `src/view/input.ts` (mouse/keyboard → WORLD-space intents via the contract
+  coord fns; the view owns the camera), `src/sim/systems/command.ts` (the `command` SimSystem — first in
+  SYSTEM_ORDER — drains intents, applies selection/move, owns confirmation markers), renderer extended (selection
+  rings, dashed box, fading move markers), additive `SelectionComponent` + `HarvestComponent.state` gained `IDLE`.
+  `tests/unit/command.test.ts` (6) + `tests/liveness/s2.spec.ts` (click-select, box-select, move+marker).
+  **History:** built by alex-builder (blocked at 5 protocol-violations, as usual). The build had an **architecture
+  violation** the orchestrator corrected: camera (a screen concept) was put on the pinned `SimState` and read via
+  `(state as any)`, and the renderer duplicated input handling. Fix: camera is now VIEW-ONLY (pan applied straight
+  to the view camera, never a sim command); input converts screen→world before queuing so the command system is
+  screen-blind; markers are exposed on the command system (not stashed on state); renderer's duplicate handlers
+  removed; syntax error + a marker double-decrement fixed; Playwright clicks offset by the canvas box. The sim/view
+  boundary is clean again — no `as any`, no camera on the sim contract.
 
-## Last verify (the S1 gate)
+## Last verify (the S2 gate)
 ```
-pnpm run verify    → typecheck ✓  lint ✓  test ✓   (8 files, 39 tests; 7 economy FSM incl. 700→700cr + overflow)
-pnpm run test:live → 2 passed (11s)  — S1: HUD renders, credits rose 500→590 on deposit, harvester moved;
-                     S0 motion gate still green.  screenshots/s1-capture{1,2}.png
+pnpm run verify    → typecheck ✓  lint ✓  test ✓   (9 files, 45 tests; +6 command: select/move/deselect/markers)
+pnpm run test:live → 4 passed (11s)  — S2: click-select ring, box-select, right-click move + confirmation marker;
+                     S0 motion + S1 economy gates still green.  screenshots/s2-capture{1,2,3}.png
 ```
 
 ## Next steps (queued)

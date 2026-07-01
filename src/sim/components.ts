@@ -30,12 +30,17 @@ export interface EconomyComponent {
   maxStorage: number;
 }
 
-/** Harvest component for FSM state. */
+/** Harvest component for FSM state. IDLE = FSM suspended (e.g. by a manual move order). */
 export interface HarvestComponent {
-  state: 'SEEK' | 'HARVEST' | 'RETURN' | 'DOCK';
+  state: 'SEEK' | 'HARVEST' | 'RETURN' | 'DOCK' | 'IDLE';
   targetTile: { tx: number; ty: number } | null;
   targetRefinery: EntityId | null;
   cargo: number;
+}
+
+/** Selection component - additive field on entities. */
+export interface SelectionComponent {
+  selected: boolean;
 }
 
 /** The component bag. All optional: an entity has only the components it needs. */
@@ -53,6 +58,7 @@ export interface Components {
   production?: ProductionComponent;
   economy?: EconomyComponent;
   harvest?: HarvestComponent;
+  selection?: SelectionComponent;
 }
 
 export type ComponentKey = keyof Components;

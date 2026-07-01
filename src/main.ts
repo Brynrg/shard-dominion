@@ -4,7 +4,9 @@ import { makeSimState } from './sim/state.js';
 import { orderSystems } from './sim/loop.js';
 import { makeMovementSystem } from './sim/systems/movement.js';
 import { makeHarvestSystem } from './sim/systems/harvest.js';
+import { makeCommandSystem } from './sim/systems/command.js';
 import { makeView } from './view/index.js';
+import { makeInputHandlers, makeCommandQueue } from './view/input.js';
 import { tileToWorldCenter, worldToScreen } from './sim/coords.js';
 import { loadEconomyConstants } from './loaders/economyConstants.js';
 import economyConstantsData from '../data/economyConstants.json' with { type: 'json' };
@@ -18,6 +20,7 @@ declare global {
   interface Window {
     __debugHarvesterScreenPos?: () => { x: number; y: number } | null;
     __debugEconomy?: () => { credits: number };
+    __debugSelection?: () => number;
   }
 }
 
@@ -66,8 +69,16 @@ export function bootstrap(): void {
     harvest: { state: 'SEEK', targetTile: null, targetRefinery: null, cargo: 0 },
   });
 
-  // Register systems (harvest runs after movement per SYSTEM_ORDER)
-  const systems = orderSystems([makeMovementSystem(), makeHarvestSystem(economy)]);
+  // Create command queue (view writes, command system reads) + the command system.
+  const commandQueue = makeCommandQueue();
+  const commandSystem = makeCommandSystem(commandQueue);
+
+  // Register systems (command runs FIRST per SYSTEM_ORDER)
+  const systems = orderSystems([
+    commandSystem,
+    makeMovementSystem(),
+    makeHarvestSystem(economy),
+  ]);
 
   // Get canvas
   const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
@@ -75,14 +86,27 @@ export function bootstrap(): void {
   canvas.width = 800;
   canvas.height = 600;
 
-  // Create and start view
+  // Create the view — it reads the command system's confirmation markers and the
+  // live selection box from input (both view-side; the sim stays screen-blind).
   const view = makeView({
     canvas,
     simState: state,
     systems,
     mapWidth: MAP_WIDTH,
     mapHeight: MAP_HEIGHT,
+    confirmationMarkers: commandSystem.markers,
+    getSelectionBox: () => input.getSelectionBox(),
   });
+
+  // Camera panning is a pure view action — never a sim command.
+  const panCamera = (dx: number, dy: number): void => {
+    const c = view.getCamera();
+    view.setCamera({ x: c.x + dx, y: c.y + dy, zoom: c.zoom });
+  };
+
+  // Wire input, then start rendering (input must exist before the first render frame).
+  const input = makeInputHandlers(canvas, view.getCamera(), commandQueue, panCamera);
+  input.start();
   view.start();
 
   // Expose debug hook — a locator that reads post-render state through the SAME
@@ -99,6 +123,15 @@ export function bootstrap(): void {
     const refinery = state.store.all().find(e => e.components.building && e.components.economy);
     if (!refinery || !refinery.components.economy) return { credits: 0 };
     return { credits: refinery.components.economy.credits || 0 };
+  };
+
+  // Expose selection debug hook for S2 liveness test
+  window.__debugSelection = () => {
+    let count = 0;
+    for (const e of state.store.all()) {
+      if (e.components.selection?.selected) count++;
+    }
+    return count;
   };
 }
 
