@@ -158,4 +158,47 @@ describe('victory system', () => {
     expect(victorySystem.result.over).toBe(false);
     expect(victorySystem.result.winner).toBeNull();
   });
+
+  it('producer alive = not defeated', () => {
+    // Seed player combat unit and a producer (barracks)
+    const playerPos = tileToWorldCenter({ tx: 5, ty: 5 });
+    state.store.create({
+      position: playerPos,
+      health: { hp: 100, maxHp: 100 },
+      combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
+      faction: { team: 'player', faction: 'infantry' },
+    });
+    const producerPos = tileToWorldCenter({ tx: 6, ty: 5 });
+    state.store.create({
+      position: producerPos,
+      building: { onSlab: true, buildProgress: 100, powered: true },
+      faction: { team: 'player', faction: 'barracks' },
+      production: { queue: [], progress: 0 },
+    });
+
+    // Seed enemy combat unit
+    const enemyPos = tileToWorldCenter({ tx: 7, ty: 5 });
+    state.store.create({
+      position: enemyPos,
+      health: { hp: 100, maxHp: 100 },
+      combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
+      faction: { team: 'enemy', faction: 'infantry' },
+    });
+
+    // Tick once with both sides seen (combat units exist)
+    runTick(state, systems);
+
+    // Kill the player's combat unit
+    const playerUnit = state.store.all().find(e => e.components.faction?.team === 'player' && e.components.combat);
+    if (playerUnit?.components.health) {
+      playerUnit.components.health.hp = 0;
+    }
+
+    // Run tick
+    runTick(state, systems);
+
+    // Player should still not be defeated because they have a producer
+    expect(victorySystem.result.over).toBe(false);
+    expect(victorySystem.result.winner).toBeNull();
+  });
 });

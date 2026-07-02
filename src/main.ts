@@ -13,13 +13,17 @@ import { tileToWorldCenter, worldToScreen } from './sim/coords.js';
 import { loadEconomyConstants } from './loaders/economyConstants.js';
 import { loadStructures } from './loaders/structures.js';
 import { loadWeapons } from './loaders/loader.js';
+import { loadUnits } from './loaders/units.js';
 import { makeCombatTargetingSystem } from './sim/systems/combatTargeting.js';
 import { makeDamageSystem } from './sim/systems/damage.js';
 import { makeVictorySystem } from './sim/systems/victory.js';
 import { makeFogSystem } from './sim/systems/fog.js';
+import { makeProductionSystem } from './sim/systems/production.js';
+import { makeAiSystem } from './sim/systems/ai.js';
 import economyConstantsData from '../data/economyConstants.json' with { type: 'json' };
 import structuresData from '../data/structures.json' with { type: 'json' };
 import weaponsData from '../data/weapons.json' with { type: 'json' };
+import unitsData from '../data/units.json' with { type: 'json' };
 
 // Map configuration
 const MAP_WIDTH = 32;
@@ -36,6 +40,7 @@ declare global {
     __debugConYardScreenPos?: () => { x: number; y: number } | null;
     __debugUnitCount?: () => { player: number; enemy: number };
     __debugVictory?: () => { over: boolean; winner: 'player' | 'enemy' | null };
+    __debugMatch?: () => { enemyUnits: number; playerUnits: number; enemyCredits: number };
   }
 }
 
@@ -47,6 +52,8 @@ const structures = loadStructures(structuresData);
 
 // Load weapons
 const weapons = loadWeapons(weaponsData);
+// Load units
+const units = loadUnits(unitsData);
 const victorySystem = makeVictorySystem();
 
 export function bootstrap(): void {
@@ -97,24 +104,24 @@ export function bootstrap(): void {
     faction: { team: 'player', faction: 'mcv' },
   });
 
-  // ── Demo seeding (S4A-5): player + enemy combat units that fight on load ──
-  // Rifle range is 4.0 tiles → 64 world units. Seed 3 tiles apart so they're in range.
-  state.store.create({
-    position: tileToWorldCenter({ tx: cx - 4, ty: cy + 4 }),
-    health: { hp: 20, maxHp: 20 },
-    armor: { armorClass: 'LIGHT' },
-    combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
-    faction: { team: 'player', faction: 'infantry' },
-  });
-  // Enemy starts weaker so the demo resolves decisively (player wins) rather than a
-  // mutual-kill draw — makes the VICTORY banner testable.
-  state.store.create({
-    position: tileToWorldCenter({ tx: cx - 1, ty: cy + 4 }),
-    health: { hp: 12, maxHp: 12 },
-    armor: { armorClass: 'LIGHT' },
-    combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
-    faction: { team: 'enemy', faction: 'infantry' },
-  });
+  // ── Match scene (S6A-3): player base (existing refinery/harvester/MCV) vs an AI base ──
+  // Player defenders (2 infantry near the base):
+  for (const dx of [-3, -2]) {
+    state.store.create({ position: tileToWorldCenter({ tx: cx + dx, ty: cy + 2 }),
+      health: { hp: 20, maxHp: 20 }, armor: { armorClass: 'LIGHT' },
+      movement: { target: null, path: [], speed: 12 },
+      combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
+      faction: { team: 'player', faction: 'infantry' } });
+  }
+  // AI base ~10 tiles NE: bank (refinery w/ credits) + barracks (producer):
+  state.store.create({ position: tileToWorldCenter({ tx: cx + 10, ty: cy - 8 }),
+    building: { onSlab: true, buildProgress: 100, powered: true },
+    faction: { team: 'enemy', faction: 'refinery' },
+    economy: { credits: 600, refineryStorage: 600, maxStorage: 2000 } });
+  state.store.create({ position: tileToWorldCenter({ tx: cx + 11, ty: cy - 7 }),
+    building: { onSlab: true, buildProgress: 100, powered: true },
+    faction: { team: 'enemy', faction: 'barracks' },
+    production: { queue: [], progress: 0 } });
 
   // Create command queue (view writes, command system reads) + the command system.
   const commandQueue = makeCommandQueue();
@@ -136,6 +143,8 @@ export function bootstrap(): void {
     powerSystem,
     makeCombatTargetingSystem(weapons),
     makeDamageSystem(weapons),
+    makeProductionSystem(units),
+    makeAiSystem(units, { team: 'enemy', unitId: 'infantry', armySize: 2, attackTile: { tx: cx, ty: cy } }),
     victorySystem,
     fogSystem,
   ]);
@@ -250,6 +259,23 @@ export function bootstrap(): void {
 
   // Expose victory debug hook for S4A-5 liveness test
   window.__debugVictory = () => ({ over: victorySystem.result.over, winner: victorySystem.result.winner });
+
+  // Expose match debug hook for S6A-3
+  window.__debugMatch = () => {
+    let enemyUnits = 0, playerUnits = 0;
+    let enemyCredits = 0;
+    for (const e of state.store.all()) {
+      if (e.components.combat && (e.components.health?.hp ?? 0) > 0) {
+        const t = e.components.faction?.team;
+        if (t === 'player') playerUnits++;
+        else if (t === 'enemy') enemyUnits++;
+      }
+      if (e.components.faction?.team === 'enemy' && e.components.economy) {
+        enemyCredits = e.components.economy.credits || 0;
+      }
+    }
+    return { enemyUnits, playerUnits, enemyCredits };
+  };
 }
 
 // Auto-bootstrap on load
