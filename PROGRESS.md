@@ -11,8 +11,19 @@
 
 ## Current state
 
-**PLAYABLE END-TO-END. S0→S6A + P0a/P0b complete.** `pnpm run verify`: **105 unit tests** · `pnpm run test:live`:
-**8 Playwright gates** (s0, s1, s2, s3, s5, s6a match, p0b train) — all green.
+**PLAYABLE + LEGIBLE. S0→S6A + P0a/P0b/P0c + P1 complete.** `pnpm run verify`: **105 unit tests** ·
+`pnpm run test:live`: **8 Playwright gates** (s0, s1, s2, s3, s5, s6a match, p0b train) — all green.
+
+- **P1 visual-grammar pass (2026-07-02):** the "not even Dune-2000 level" fix — **view-only**
+  (`renderer.ts` + `hud.ts`, zero sim/contract change). Units now draw as **oriented chassis
+  silhouettes** (infantry torso+rifle/launcher, wedge vehicle w/ turret, chunky harvester, MCV crawler)
+  with weapon tells + team stripe + contact shadows, facing their move/combat target. Terrain gets
+  **deterministic per-tile texture** (sand grain, rock facets/cracks, dune ridges, glowing crystalline
+  **shard flecks**) honoring all 3 fog states. Buildings are **grounded** (drop shadow + beveled body +
+  type detail: refinery silos, barracks door, con-yard crane, power pylon). HUD is a framed **COMMAND
+  panel** (credits ◈, power lamp, cargo/store bars, T/R build roster w/ affordability + live progress,
+  hotkey legend). Done directly by Claude (aesthetic judgement + the builder can't see its output);
+  verified via gate screenshots. **Deployed live v0.8.0.** Screenshots in `screenshots/`.
 
 - **The full player loop now works:** harvest → bank credits → **T/R train infantry/rocket troopers from a
   barracks** → select/move (control groups) → RPS combat with fog → **destroy the enemy's units + producers to
