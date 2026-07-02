@@ -12,7 +12,7 @@ export interface HUDConfig {
 }
 
 export function makeHUD(cfg: HUDConfig): { draw(): void } {
-  const { canvas, simState, constructionOutput = { buildQueue: [], readyStructures: [] } } = cfg;
+  const { canvas, simState } = cfg;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D context not available');
 
@@ -67,6 +67,18 @@ export function makeHUD(cfg: HUDConfig): { draw(): void } {
     return { supply, demand, powered: supply >= demand };
   }
 
+  function getPlayerBarracks(): { queue: readonly string[]; progress: number } | null {
+    for (const e of simState.store.all()) {
+      if (e.components.faction?.team === 'player' && e.components.production) {
+        return {
+          queue: e.components.production.queue ?? [],
+          progress: e.components.production.progress ?? 0,
+        };
+      }
+    }
+    return null;
+  }
+
   function drawBox(x: number, y: number, width: number, height: number, color: string): void {
     context.fillStyle = color;
     context.fillRect(x, y, width, height);
@@ -103,6 +115,7 @@ export function makeHUD(cfg: HUDConfig): { draw(): void } {
       const harvester = getHarvester();
       const refinery = getRefinery();
       const power = getPowerStatus();
+      const barracks = getPlayerBarracks();
 
       // Draw HUD background
       const hudHeight = 160;
@@ -132,13 +145,19 @@ export function makeHUD(cfg: HUDConfig): { draw(): void } {
       drawText(`POWER: ${power.powered ? 'OK' : 'LOW'}`, 20, canvas.height - hudHeight + 85, powerColor);
       drawText(`Supply: ${power.supply} | Demand: ${power.demand}`, 20, canvas.height - hudHeight + 105, COLORS.text);
 
-      // Build queue
-      if (constructionOutput.buildQueue.length > 0) {
-        drawText('Build Queue:', 20, canvas.height - hudHeight + 130, COLORS.highlight);
-        let yOffset = 145;
-        for (const item of constructionOutput.buildQueue) {
-          drawText(`${item.structureId}: ${Math.floor(item.progress)}%`, 20, canvas.height - hudHeight + yOffset, COLORS.text);
+      // Build hint line
+      drawText('T: Infantry (100)   R: Rocket (200)', 20, canvas.height - hudHeight + 130, COLORS.highlight);
+
+      // Player build queue
+      if (barracks && barracks.queue.length > 0) {
+        drawText('Building:', 20, canvas.height - hudHeight + 145, COLORS.text);
+        let yOffset = 160;
+        for (const unitId of barracks.queue) {
+          drawText(unitId, 20, canvas.height - hudHeight + yOffset, COLORS.text);
           yOffset += 15;
+        }
+        if (barracks.progress > 0) {
+          drawText(`Progress: ${barracks.progress}%`, 20, canvas.height - hudHeight + yOffset, COLORS.text);
         }
       }
 

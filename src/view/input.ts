@@ -17,7 +17,8 @@ export type CommandIntent =
   | { type: 'deploy' }
   | { type: 'place-structure'; structureId: string; tile: TilePos }
   | { type: 'assign-group'; group: number }
-  | { type: 'recall-group'; group: number };
+  | { type: 'recall-group'; group: number }
+  | { type: 'train'; unitId: string };
 
 /** The command queue (view writes, command system reads). */
 export interface CommandQueue {
@@ -179,6 +180,16 @@ export function makeInputHandlers(
       case 'Escape': // Cancel placement mode
         e.preventDefault();
         setPlacementMode(null);
+        return;
+      case 't': // Train infantry
+      case 'T': // Train infantry (case-insensitive)
+        e.preventDefault();
+        queue.push({ type: 'train', unitId: 'infantry' });
+        return;
+      case 'r': // Train rocket trooper
+      case 'R': // Train rocket trooper (case-insensitive)
+        e.preventDefault();
+        queue.push({ type: 'train', unitId: 'rocket_trooper' });
         return;
       case '1':
       case '2':

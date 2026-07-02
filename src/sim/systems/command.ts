@@ -236,6 +236,16 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             }
             break;
           }
+          case 'train': {
+            // Append to the player's barracks queue (first player entity with a production component)
+            const barracks = state.store.all().find(e =>
+              e.components.faction?.team === 'player' && e.components.production);
+            if (barracks && barracks.components.production) {
+              const p = barracks.components.production;
+              barracks.components.production = { ...p, queue: [...p.queue, intent.unitId] };
+            }
+            break;
+          }
         }
       }
     },

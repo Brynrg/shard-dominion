@@ -41,6 +41,7 @@ declare global {
     __debugUnitCount?: () => { player: number; enemy: number };
     __debugVictory?: () => { over: boolean; winner: 'player' | 'enemy' | null };
     __debugMatch?: () => { enemyUnits: number; playerUnits: number; enemyCredits: number };
+    __debugPlayerQueue?: () => number;
   }
 }
 
@@ -105,6 +106,14 @@ export function bootstrap(): void {
     position: tileToWorldCenter({ tx: cx - 2, ty: cy }),
     faction: { team: 'player', faction: 'mcv' },
   });
+
+  // Player barracks near the base (producer, destructible, health 800 armor BUILDING)
+  state.store.create({ position: tileToWorldCenter({ tx: cx - 1, ty: cy + 3 }),
+    building: { onSlab: true, buildProgress: 100, powered: true },
+    faction: { team: 'player', faction: 'barracks' },
+    production: { queue: [], progress: 0 },
+    health: { hp: 800, maxHp: 800 },
+    armor: { armorClass: 'BUILDING' } });
 
   // ── Match scene (S6A-3): player base (existing refinery/harvester/MCV) vs an AI base ──
   // Player defenders (2 infantry near the base):
@@ -281,6 +290,13 @@ export function bootstrap(): void {
       }
     }
     return { enemyUnits, playerUnits, enemyCredits };
+  };
+
+  // Expose player queue debug hook for P0b
+  window.__debugPlayerQueue = () => {
+    const barracks = state.store.all().find(e =>
+      e.components.faction?.team === 'player' && e.components.production);
+    return barracks?.components.production?.queue.length ?? 0;
   };
 }
 
