@@ -23,7 +23,14 @@
   trooper (200)**; HUD build hint; `__debugPlayerQueue` hook. Orchestrator finish-lined a readonly-queue type, an
   unused destructure, and 3 test-timing bugs (production drains the queue same-tick; wrong credit math; rocket
   needs 80 ticks not 65). Verified on screen (p0b gate: pressing T grows the player force).
-- **NEXT (P0c): sustaining economy** — shard fields are currently token demo density (~30s of income); give the
+- **P0c sustaining economy (2026-07-02):** replaced token demo seeding with a real field (natural shard 300 +
+  a 3×3 home field at 800) — a single harvester banks 500→1900 in 30s then refills toward the 2000 cap. Fixed two
+  fragile S2 gates the faster harvester exposed (move-test Y tolerance; box-select now targets the stationary base).
+- **🌐 REDEPLOYED (2026-07-02): the PLAYABLE build is live at speedrungames.net/games/shard-dominion/** (v0.7.0,
+  sourceCommit updated; manifest restored after an rm -rf dropped it). Verified live (95KB bundle 200, train caption).
+- **AWAITING: operator play-test round 2** — the full loop now exists (train an army, fund it, destroy the enemy
+  base to win). Then P1: §11.1 visual-grammar pass (the art complaint).
+- **(done) P0c: sustaining economy** — shard fields are currently token demo density (~30s of income); give the
   player real, larger/regenerating fields so a full match is fundable. THEN redeploy to speedrungames.net +
   operator play-test round 2. THEN the §11.1 visual-grammar pass (the art complaint).
 - **Not yet:** real sprites (S7 art pipeline), AI expand/rebuild (S6B), First Match Guidance (§5.9).
