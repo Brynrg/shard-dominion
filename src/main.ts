@@ -65,20 +65,27 @@ export function bootstrap(): void {
     mapHeight: MAP_HEIGHT,
   });
 
-  // ── Demo seeding (S1): make one full harvest→deposit cycle visible fast ──
-  // Blanket every shard tile with a LOW density so none dominates the harvester's
-  // "densest reachable" search, then plant one rich source tile right next to the
-  // harvester so it harvests, returns, and deposits within the liveness window.
+  const cx = Math.floor(MAP_WIDTH / 2);
+  const cy = Math.floor(MAP_HEIGHT / 2);
+
+  // ── Economy seeding (P0c): a real, MATCH-SUSTAINING shard field ──
+  // Every natural SHARD tile carries a workable base density, and a dense field is
+  // planted next to the player base (east of the harvester) so continuous harvesting
+  // funds a full match — enough credits to train an army, not just the S1 demo.
   for (let ty = 0; ty < state.grid.height; ty++) {
     for (let tx = 0; tx < state.grid.width; tx++) {
       if (state.grid.terrainAt({ tx, ty }) === 'SHARD') {
-        state.shardDensity.set(`${tx},${ty}`, 20);
+        state.shardDensity.set(`${tx},${ty}`, 300);
       }
     }
   }
-
-  const cx = Math.floor(MAP_WIDTH / 2);
-  const cy = Math.floor(MAP_HEIGHT / 2);
+  // A rich home field: a 3×3 cluster ~2 tiles east of the harvester (the densest
+  // reachable, so the harvester works it first). ~9 × 800 ≈ 7,200 credits of income.
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = 0; dx <= 2; dx++) {
+      state.shardDensity.set(`${cx + 2 + dx},${cy + dy}`, 800);
+    }
+  }
 
   // Refinery at center (starts with 500 credits; storage mirrors the credits pool).
   state.store.create({
@@ -90,8 +97,6 @@ export function bootstrap(): void {
     armor: { armorClass: 'BUILDING' },
   });
 
-  // Rich source tile two tiles east → the densest reachable, so the harvester picks it.
-  state.shardDensity.set(`${cx + 2},${cy}`, 200);
 
   // Harvester one tile east of the refinery, seeking.
   state.store.create({
