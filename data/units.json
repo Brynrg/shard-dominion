@@ -8,6 +8,7 @@
       "armorClass": "LIGHT",
       "weaponId": "rifle",
       "speed": 12,
+      "buildTimeSeconds": 3,
       "team": "player",
       "graphics": {
         "sprite_id": "infantry",
@@ -31,6 +32,7 @@
       "armorClass": "MEDIUM",
       "weaponId": "scout_gun",
       "speed": 15,
+      "buildTimeSeconds": 6,
       "team": "enemy",
       "graphics": {
         "sprite_id": "vehicle",
@@ -54,13 +56,14 @@
       "armorClass": "LIGHT",
       "weaponId": "inf_rocket",
       "speed": 12,
+      "buildTimeSeconds": 4,
       "team": "player",
       "graphics": {
         "sprite_id": "rocket_trooper",
         "fallback_geometry": {
           "chassis": "INFANTRY",
           "chassisMod": "NONE",
-          "weaponGlyph": "ROCKET",
+          "weaponGlyph": "ANTI_VEHICLE",
           "barrelClass": "NONE",
           "roleBadge": "ANTI_VEHICLE",
           "rangeMarks": 2,

@@ -10,6 +10,7 @@ export const UnitSchema = z.object({
   armorClass: z.enum(['NONE', 'LIGHT', 'MEDIUM', 'HEAVY', 'BUILDING']),
   weaponId: z.string().min(1),
   speed: z.number().positive(),
+  buildTimeSeconds: z.number().positive(),
   team: z.enum(['player', 'enemy', 'neutral']),
   graphics: z.object({
     sprite_id: z.string().min(1),
