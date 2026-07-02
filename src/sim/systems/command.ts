@@ -163,6 +163,8 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
 
           case 'deploy': {
             // Deploy MCV to Construction Yard
+            const conYardDef = structures.find(s => s.id === 'construction_yard');
+            const conYardHp = conYardDef?.hp ?? 2000;
             for (const e of state.store.all()) {
               const faction = e.components.faction;
               if (faction?.faction === 'mcv') {
@@ -170,6 +172,8 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
                 e.components.building = { onSlab: true, buildProgress: 100, powered: true };
                 e.components.construction = { queue: [], progress: 0, currentStructureId: null };
                 e.components.power = { powerSupply: 0, powerDemand: 0, powered: true };
+                e.components.health = { hp: conYardHp, maxHp: conYardHp };
+                e.components.armor = { armorClass: 'BUILDING' };
                 markers.push({ target: e.components.position!, remaining: MARKER_LIFETIME });
                 break;
               }
@@ -194,6 +198,8 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
                   powerDemand: structure.powerDemand,
                   powered: false,
                 },
+                health: { hp: structure.hp, maxHp: structure.hp },
+                armor: { armorClass: 'BUILDING' },
               });
               markers.push({ target: tileCenter, remaining: MARKER_LIFETIME });
             }

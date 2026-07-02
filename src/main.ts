@@ -85,6 +85,8 @@ export function bootstrap(): void {
     building: { onSlab: true, buildProgress: 100, powered: true },
     faction: { team: 'player', faction: 'refinery' },
     economy: { credits: 500, refineryStorage: 500, maxStorage: economy.refineryStorageCapacity },
+    health: { hp: 1500, maxHp: 1500 },
+    armor: { armorClass: 'BUILDING' },
   });
 
   // Rich source tile two tiles east → the densest reachable, so the harvester picks it.
@@ -117,11 +119,15 @@ export function bootstrap(): void {
   state.store.create({ position: tileToWorldCenter({ tx: cx + 10, ty: cy - 8 }),
     building: { onSlab: true, buildProgress: 100, powered: true },
     faction: { team: 'enemy', faction: 'refinery' },
-    economy: { credits: 600, refineryStorage: 600, maxStorage: 2000 } });
+    economy: { credits: 600, refineryStorage: 600, maxStorage: 2000 },
+    health: { hp: 1500, maxHp: 1500 },
+    armor: { armorClass: 'BUILDING' } });
   state.store.create({ position: tileToWorldCenter({ tx: cx + 11, ty: cy - 7 }),
     building: { onSlab: true, buildProgress: 100, powered: true },
     faction: { team: 'enemy', faction: 'barracks' },
-    production: { queue: [], progress: 0 } });
+    production: { queue: [], progress: 0 },
+    health: { hp: 800, maxHp: 800 },
+    armor: { armorClass: 'BUILDING' } });
 
   // Create command queue (view writes, command system reads) + the command system.
   const commandQueue = makeCommandQueue();

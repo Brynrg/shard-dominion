@@ -17,7 +17,26 @@ export function makeVictorySystem(): VictorySystem {
     name: 'victory' as const,
     result,
     run(state: SimState): void {
-      // 2) census: LIVING combat units per side, and whether each side still owns a
+      // 1) SEEN — by EXISTENCE, BEFORE the cull. A side counts as having been in the
+      //    match if it has any combat unit or producer present, even one at 0 HP that
+      //    is about to be culled this tick. (Culling first, then reading "seen" from
+      //    the living census, misses a unit that dies on its very first tick.)
+      for (const e of state.store.all()) {
+        const team = e.components.faction?.team;
+        if (team !== 'player' && team !== 'enemy') continue;
+        if (!e.components.combat && !e.components.production) continue;
+        if (team === 'player') playerSeen = true;
+        else enemySeen = true;
+      }
+
+      // 2) DEATH: cull entities whose health has hit 0.
+      for (const e of state.store.all()) {
+        const h = e.components.health;
+        if (h && h.hp <= 0) state.store.remove(e.id);
+      }
+      if (result.over) return; // decision is sticky
+
+      // 3) census: LIVING combat units per side, and whether each side still owns a
       //    producer. Producers are usually buildings with NO combat component, so
       //    this check must NOT be gated behind the combat check.
       let player = 0, enemy = 0;
@@ -38,18 +57,6 @@ export function makeVictorySystem(): VictorySystem {
         if (team === 'player') player += 1;
         else enemy += 1;
       }
-
-      // Track "both seen" across ticks (before death phase to capture units that exist)
-      // A side is "seen" if it has either combat units OR producers
-      if (player > 0 || playerHasProducer) playerSeen = true;
-      if (enemy > 0 || enemyHasProducer) enemySeen = true;
-
-      // 1) DEATH: cull entities whose health has hit 0.
-      for (const e of state.store.all()) {
-        const h = e.components.health;
-        if (h && h.hp <= 0) state.store.remove(e.id);
-      }
-      if (result.over) return; // decision is sticky
 
       // 3) decide ONLY once both sides have existed in the match (avoid a false win
       //    when only one side was ever seeded). Track "both seen" across ticks.
