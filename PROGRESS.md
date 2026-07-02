@@ -10,8 +10,10 @@
 > The plan lives in files (`../game-bakeoff/master-plan/MASTER_PLAN.md`); your window holds one slice.
 
 ## Current state
-- **Slice:** S5 fog of war, built as tiny scaffolded sub-slices. Done: **S5-1 fog visibility system** ✅ (`src/sim/systems/fog.ts` — computes visible + explored tile-key Sets from living player units' vision radius 6, exposed on returned object NOT on state; circular radius; clamp to grid bounds) + `tests/unit/fog.test.ts` (6 tests). `pnpm run verify` green (**84 tests**).
+- **Slice:** S6A-2 AI decision loop, built as tiny scaffolded sub-slice. Done: **S6A-2 AI system** ✅ (`src/sim/systems/ai.ts` — enemy queues units at producer when affordable, attacks at armySize; sim-pure, no DOM/Date/Math.random; attacking latch in closure) + `tests/unit/ai.test.ts` (6 tests: queue when affordable, no queue when poor, no attack below armySize, attack at armySize, no retarget of fighting units, end-to-end with production). `pnpm run verify` green (**96 tests**).
+- **S5-1 fog visibility system (2026-07-01):** `src/sim/systems/fog.ts` (the 'fog' system computing visible + explored tile-key Sets from living player units' vision radius 6, exposed on the returned object NOT on state; circular radius; clamp to grid bounds) + `tests/unit/fog.test.ts` (6 tests: tile on player unit visible; far tile not visible; explored persists after unit moves; enemy-only area not visible; circular radius respected; grid bounds clamped). **S5-1 COMPLETE & VERIFIED.**
 - **S5-3 control groups (2026-07-01):** `src/sim/systems/command.ts` extended with `groups: Map<number, EntityId[]>` closure (like markers pattern, exposed on returned object NOT on state); `src/view/input.ts` already had assign-group/recall-group intents; `tests/unit/controlGroups.test.ts` (4 tests: assign both, recall both, dead-member recall selects only survivor, empty-group recall no crash). **S5-3 COMPLETE & VERIFIED.**
+- **S6A-2 AI decision loop (2026-07-01):** `src/sim/systems/ai.ts` (enemy queues units at producer when affordable, attacks at armySize; sim-pure, no DOM/Date/Math.random; attacking latch in closure) + `tests/unit/ai.test.ts` (6 tests: queue when affordable, no queue when poor, no attack below armySize, attack at armySize, no retarget of fighting units, end-to-end with production). **S6A-2 COMPLETE & VERIFIED.**
 - **S4B-1 roster + RPS proof (2026-07-01):** added `rocket_trooper` unit to `data/units.json` (anti-vehicle infantry,
 - **S4B-1 roster + RPS proof (2026-07-01):** added `rocket_trooper` unit to `data/units.json` (anti-vehicle infantry,
   `weaponId: "inf_rocket"`, `armorClass: "LIGHT"`, `hp: 20`, `speed: 12`, `team: "player"`, graphics with
@@ -100,15 +102,15 @@
   `agitation`. Range check uses `Math.hypot` on WORLD positions converted via `TILE_SUBUNITS`. Cooldown
   conversion: seconds × `SIM_TICK_RATE` (20 Hz). No inline pixel math beyond the contract constant.
 
-## Last verify (the S5-3 gate)
+## Last verify (the S6A-2 gate)
 ```
-pnpm run verify    → typecheck ✓  lint ✓  test ✓   (17 files, 84 tests; +4 control groups: assign, recall, dead-member skip, empty-group)
+pnpm run verify    → typecheck ✓  lint ✓  test ✓   (18 files, 96 tests; +6 ai tests: queue when affordable, no queue when poor, no attack below armySize, attack at armySize, no retarget of fighting units, end-to-end with production)
 pnpm run test:live → 6 passed (12s)  — S3: D deploys ConYard, B+click places a Power Node → Supply 100, POWERED;
-                     S0 motion + S1 economy + S2 selection + S4A combat + S5-1 fog gates still green.
+                     S0 motion + S1 economy + S2 selection + S4A combat + S5-1 fog + S6A-2 ai gates still green.
 ```
 
 ## Next steps (queued)
-- **S5-2** (`packets/S5-2.md`): fog rendering (draw visible/explored/unexplored tiles).
+- **S6A-3** (`packets/S6A-3.md`): wire AI system into main.ts (add ai system to orderSystems, wire into game loop).
 
 ## Open questions / blocked
 - **RESOLVED (2026-06-30): the tool-call blocker.** Root cause was NOT mlx_lm version (0.31.3 is latest) and NOT
