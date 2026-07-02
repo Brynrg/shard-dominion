@@ -10,30 +10,33 @@
 > The plan lives in files (`../game-bakeoff/master-plan/MASTER_PLAN.md`); your window holds one slice.
 
 ## Current state
-- **Slice:** S6A-2 AI decision loop, built as tiny scaffolded sub-slice. Done: **S6A-2 AI system** ✅ (`src/sim/systems/ai.ts` — enemy queues units at producer when affordable, attacks at armySize; sim-pure, no DOM/Date/Math.random; attacking latch in closure) + `tests/unit/ai.test.ts` (6 tests: queue when affordable, no queue when poor, no attack below armySize, attack at armySize, no retarget of fighting units, end-to-end with production). `pnpm run verify` green (**96 tests**).
-- **S5-1 fog visibility system (2026-07-01):** `src/sim/systems/fog.ts` (the 'fog' system computing visible + explored tile-key Sets from living player units' vision radius 6, exposed on the returned object NOT on state; circular radius; clamp to grid bounds) + `tests/unit/fog.test.ts` (6 tests: tile on player unit visible; far tile not visible; explored persists after unit moves; enemy-only area not visible; circular radius respected; grid bounds clamped). **S5-1 COMPLETE & VERIFIED.**
-- **S5-3 control groups (2026-07-01):** `src/sim/systems/command.ts` extended with `groups: Map<number, EntityId[]>` closure (like markers pattern, exposed on returned object NOT on state); `src/view/input.ts` already had assign-group/recall-group intents; `tests/unit/controlGroups.test.ts` (4 tests: assign both, recall both, dead-member recall selects only survivor, empty-group recall no crash). **S5-3 COMPLETE & VERIFIED.**
-- **S6A-2 AI decision loop (2026-07-01):** `src/sim/systems/ai.ts` (enemy queues units at producer when affordable, attacks at armySize; sim-pure, no DOM/Date/Math.random; attacking latch in closure) + `tests/unit/ai.test.ts` (6 tests: queue when affordable, no queue when poor, no attack below armySize, attack at armySize, no retarget of fighting units, end-to-end with production). **S6A-2 COMPLETE & VERIFIED.**
-- **S4B-1 roster + RPS proof (2026-07-01):** added `rocket_trooper` unit to `data/units.json` (anti-vehicle infantry,
-- **S4B-1 roster + RPS proof (2026-07-01):** added `rocket_trooper` unit to `data/units.json` (anti-vehicle infantry,
-  `weaponId: "inf_rocket"`, `armorClass: "LIGHT"`, `hp: 20`, `speed: 12`, `team: "player"`, graphics with
-  `weaponGlyph: "ROCKET"`, `roleBadge: "ANTI_VEHICLE"`), created `tests/unit/rps.test.ts` proving the RPS via the
-  real damage system + matrix: ROCKET vs MEDIUM (18 dmg) > BULLET vs MEDIUM (2.4 dmg); matrix assertions
-  `BULLET.NONE > BULLET.MEDIUM` and `ROCKET.MEDIUM > ROCKET.NONE`. **S4B-1 COMPLETE & VERIFIED.**
-- **S4B-2 read-from-shape (2026-07-01):** renderer draws combat units by WEAPON TYPE glyph (BULLET=circle,
-  ROCKET=triangle, SHELL=square) + team tint; `weapons` passed into ViewConfig. Verified on screen (rifle unit
-  now a circle). All 6 liveness gates + 72 unit tests green. (orchestrator fixed 1 prefer-const lint.)
-- **S4B-3 RPS decides the battle (2026-07-01, orchestrator-authored):** `tests/unit/rps_battle.test.ts` runs the
-  full combat stack (targeting→damage→victory) on the SAME MEDIUM-armor vehicle vs two squads: 2 anti-vehicle
-  ROCKETs BEAT it (winner player); 2 anti-infantry RIFLEs LOSE to it (winner enemy). The counter triangle decides
-  the fight. **S4B core gate MET: win a counter-based fight (RPS proven) + read from shape (S4B-2 glyphs).**
-  DEFERRED S4B extras (fold into a later slice): travel-time projectiles, attack-move, weapon-role cards, paused-
-  queue text — none needed for the gate.
-- **S5-1 fog visibility system (2026-07-01):** `src/sim/systems/fog.ts` (the 'fog' system computing visible + explored
-  tile-key Sets from living player units' vision radius 6, exposed on the returned object NOT on state; circular radius;
-  clamp to grid bounds) + `tests/unit/fog.test.ts` (6 tests: tile on player unit visible; far tile not visible; explored
-  persists after unit moves; enemy-only area not visible; circular radius respected; grid bounds clamped). **S5-1 COMPLETE & VERIFIED.**
-- **Next:** S5-2 (fog rendering) per MASTER_PLAN §10, OR S4C (faction tanks + roster). TBD.
+
+**ALL SLICES S0 → S6A COMPLETE & VERIFIED — and the game is LIVE.**
+`pnpm run verify`: **97 unit tests** green · `pnpm run test:live`: **7 Playwright gates** green (s0 motion, s1
+economy, s2 selection, s3 deploy/build/power, s5 fog, s6a match; the pre-AI s4a gate was retired into s6a).
+
+- **What the game is now:** a playable RTS — rendered world, harvester economy (credits/cargo/overflow),
+  click/box selection + move orders + control groups (Ctrl+1..3), MCV deploy → ConYard, Power Node placement
+  with one-reason validation, RPS combat (locked weapons matrix; roles read from shape), health bars,
+  VICTORY/DEFEAT, fog of war (3 states, units hidden in fog), and an **AI opponent** that banks credits, buys
+  units at its barracks (real cost + build time — fairness law), musters, and assaults the player's base.
+- **S6A completion detail (2026-07-01):** production system (S6A-1), AI decision loop (S6A-2), match wiring +
+  victory-rule evolution — defeat = no combat units AND no producers (S6A-3). Orchestrator finish-line on S6A-3:
+  wrong loader import (pinned vs builder units loader), a branded-EntityId misuse, and a REAL census bug (the
+  producer check was gated behind the combat check → a barracks never counted). Orchestrator authored the s6a
+  match gate: AI pays real credits → produces → marches ~10 tiles → fight breaks out (casualties observed).
+  `screenshots/s6a-match-capture.png`.
+- **🌐 DEPLOYED (2026-07-01, operator-approved):** LIVE at **speedrungames.net/games/shard-dominion/** —
+  replaced the old bake-off game on the main slug. Pathway: `vite build` → bundle + updated manifest.json
+  (sourceCommit a4fa9dc) into `speedrungames/apps/web/public/games/shard-dominion/` → push main (ccbec51) →
+  Netlify. Verified live (new 93,482-byte bundle serves 200; S6A caption renders). Deploys are
+  orchestrator-lane, operator-gated.
+- **NEXT — the §12 human-learnability gate = OPERATOR PLAY-TEST** (a real cold player completes the core loop
+  unaided). Escalated; awaiting the operator. Meanwhile the build queue (non-gated): destructible enemy
+  buildings (make the match WINNABLE — buildings need health), then S6B (AI expand/rebuild/raid/anti-stall).
+- **Known gaps:** enemy buildings indestructible (can't win yet, only survive); AI is one wave-loop; no
+  onboarding nudges (First Match Guidance §5.9 — pending the play-test findings); minimap + stateHash
+  determinism wiring deferred to S6D polish.
 
 ## Done so far
 - Repo scaffolded: TS + Canvas2D + Vite + Vitest + zod + ESLint, single package, pnpm. `pnpm run verify` green.
