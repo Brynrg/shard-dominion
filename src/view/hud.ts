@@ -32,16 +32,18 @@ export function makeHUD(cfg: HUDConfig): { draw(): void } {
 
   function getHarvester(): { cargo: number; capacity: number } | null {
     for (const e of simState.store.all()) {
-      if (e.components.faction?.faction === 'harvester' && e.components.harvest) {
+      if (e.components.faction?.team === 'player' &&
+          e.components.faction?.faction === 'harvester' && e.components.harvest) {
         return { cargo: e.components.harvest.cargo || 0, capacity: 700 };
       }
     }
     return null;
   }
 
+  // The player's economy (never the enemy's — scope by team so affordability is correct).
   function getRefinery(): { credits: number; storage: number; maxStorage: number } | null {
     for (const e of simState.store.all()) {
-      if (e.components.building && e.components.economy) {
+      if (e.components.faction?.team === 'player' && e.components.building && e.components.economy) {
         return {
           credits: e.components.economy.credits || 0,
           storage: e.components.economy.refineryStorage || 0,
@@ -110,60 +112,109 @@ export function makeHUD(cfg: HUDConfig): { draw(): void } {
     context.fillText(`${Math.floor(value)} / ${max}`, x + 5, y + 1);
   }
 
+  // Beveled panel frame (Westwood command-bar look: dark fill, light top edge, dark base).
+  function drawPanel(x: number, y: number, w: number, h: number): void {
+    context.fillStyle = 'rgba(14,16,20,0.88)';
+    context.fillRect(x, y, w, h);
+    context.strokeStyle = '#5a6472';
+    context.lineWidth = 1;
+    context.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    context.fillStyle = 'rgba(255,255,255,0.10)';   // top highlight
+    context.fillRect(x + 1, y + 1, w - 2, 1);
+    context.fillStyle = 'rgba(0,0,0,0.35)';          // bottom shadow
+    context.fillRect(x + 1, y + h - 2, w - 2, 1);
+  }
+
+  // One roster row: hotkey chip + name + cost, greyed when unaffordable, ⏳ when building.
+  function drawBuildRow(x: number, y: number, w: number, key: string, name: string, cost: number, credits: number, building: boolean): void {
+    const affordable = credits >= cost;
+    drawBox(x, y, w, 22, affordable ? 'rgba(74,144,226,0.18)' : 'rgba(80,80,80,0.15)');
+    // hotkey chip
+    context.fillStyle = affordable ? COLORS.highlight : '#555';
+    context.fillRect(x + 4, y + 4, 15, 14);
+    context.fillStyle = '#0e1014';
+    context.font = 'bold 12px monospace';
+    context.textBaseline = 'top';
+    context.fillText(key, x + 8, y + 5);
+    // name + cost
+    const textColor = affordable ? COLORS.text : '#7c7c7c';
+    drawText(name, x + 26, y + 5, textColor);
+    context.fillStyle = affordable ? COLORS.success : '#7c7c7c';
+    context.font = '12px monospace';
+    context.fillText(`${cost}`, x + w - 34, y + 5);
+    if (building) drawText('▶', x + w - 14, y + 5, COLORS.highlight);
+  }
+
   return {
     draw() {
       const harvester = getHarvester();
       const refinery = getRefinery();
       const power = getPowerStatus();
       const barracks = getPlayerBarracks();
+      const credits = refinery ? Math.floor(refinery.credits) : 0;
 
-      // Draw HUD background
-      const hudHeight = 160;
-      drawBox(10, canvas.height - hudHeight - 10, 220, hudHeight, COLORS.background);
+      // ── Right-edge command panel ────────────────────────────────────────────
+      const pw = 176;
+      const px = canvas.width - pw - 8;
+      const py = 8;
+      const ph = 262;
+      drawPanel(px, py, pw, ph);
 
-      // Credits
-      if (refinery) {
-        drawText(`Credits: ${Math.floor(refinery.credits)}`, 20, canvas.height - hudHeight - 5, COLORS.highlight);
-      }
+      // Title bar.
+      drawBox(px + 1, py + 1, pw - 2, 20, 'rgba(74,144,226,0.35)');
+      context.fillStyle = COLORS.text;
+      context.font = 'bold 13px monospace';
+      context.textBaseline = 'top';
+      context.fillText('COMMAND', px + 10, py + 5);
 
-      // Harvester cargo
-      if (harvester) {
-        const cargoColor = harvester.cargo >= harvester.capacity ? COLORS.warning : COLORS.success;
-        drawText('Cargo:', 20, canvas.height - hudHeight + 20);
-        drawProgressBar(70, canvas.height - hudHeight + 18, 130, harvester.cargo, harvester.capacity, cargoColor);
-      }
+      // Credits (large).
+      context.fillStyle = '#ffd34a';
+      context.font = 'bold 20px monospace';
+      context.fillText(`◈ ${credits}`, px + 10, py + 28);
 
-      // Refinery storage
-      if (refinery) {
-        const storageColor = refinery.storage >= refinery.maxStorage ? COLORS.warning : COLORS.success;
-        drawText('Storage:', 20, canvas.height - hudHeight + 50);
-        drawProgressBar(70, canvas.height - hudHeight + 48, 130, refinery.storage, refinery.maxStorage, storageColor);
-      }
-
-      // Power status
+      // Power lamp.
       const powerColor = power.powered ? COLORS.powerOk : COLORS.powerLow;
-      drawText(`POWER: ${power.powered ? 'OK' : 'LOW'}`, 20, canvas.height - hudHeight + 85, powerColor);
-      drawText(`Supply: ${power.supply} | Demand: ${power.demand}`, 20, canvas.height - hudHeight + 105, COLORS.text);
+      context.fillStyle = powerColor;
+      context.beginPath();
+      context.arc(px + 16, py + 62, 5, 0, Math.PI * 2);
+      context.fill();
+      drawText(`POWER ${power.powered ? 'OK' : 'LOW'}  ${power.supply}/${power.demand}`, px + 28, py + 56, powerColor);
 
-      // Build hint line
-      drawText('T: Infantry (100)   R: Rocket (200)', 20, canvas.height - hudHeight + 130, COLORS.highlight);
-
-      // Player build queue
-      if (barracks && barracks.queue.length > 0) {
-        drawText('Building:', 20, canvas.height - hudHeight + 145, COLORS.text);
-        let yOffset = 160;
-        for (const unitId of barracks.queue) {
-          drawText(unitId, 20, canvas.height - hudHeight + yOffset, COLORS.text);
-          yOffset += 15;
-        }
-        if (barracks.progress > 0) {
-          drawText(`Progress: ${barracks.progress}%`, 20, canvas.height - hudHeight + yOffset, COLORS.text);
-        }
+      // Cargo + storage bars.
+      if (harvester) {
+        drawText('Cargo', px + 10, py + 78);
+        drawProgressBar(px + 60, py + 76, 106, harvester.cargo, harvester.capacity,
+          harvester.cargo >= harvester.capacity ? COLORS.warning : COLORS.success);
+      }
+      if (refinery) {
+        drawText('Store', px + 10, py + 98);
+        drawProgressBar(px + 60, py + 96, 106, refinery.storage, refinery.maxStorage,
+          refinery.storage >= refinery.maxStorage ? COLORS.warning : COLORS.success);
       }
 
-      // Overflow warning
+      // Build roster.
+      drawText('BUILD', px + 10, py + 120, '#9fb4cc');
+      const buildingUnit = (id: string) => (barracks?.progress ?? 0) > 0 && barracks?.queue[0] === id;
+      drawBuildRow(px + 8, py + 138, pw - 16, 'T', 'Infantry', 100, credits, buildingUnit('infantry'));
+      drawBuildRow(px + 8, py + 164, pw - 16, 'R', 'Rocket', 200, credits, buildingUnit('rocket_trooper'));
+
+      // Queue depth + build progress.
+      if (barracks && (barracks.queue.length > 0 || barracks.progress > 0)) {
+        drawText(`Queue ${barracks.queue.length}`, px + 10, py + 192, COLORS.text);
+        if (barracks.progress > 0) drawProgressBar(px + 70, py + 190, 96, barracks.progress, 100, COLORS.highlight);
+      }
+
+      // Hotkey legend (footer) — kept within panel width (10px monospace, ~26 chars).
+      context.fillStyle = '#8894a4';
+      context.font = '10px monospace';
+      context.fillText('D deploy   B power', px + 10, py + 214);
+      context.fillText('Ctrl+1-3 set  1-3 recall', px + 10, py + 226);
+      context.fillText('drag select  R-clk move', px + 10, py + 238);
+
+      // Overflow warning (below panel, hard to miss).
       if (refinery && refinery.storage >= refinery.maxStorage) {
-        drawText('OVERFLOW!', 20, canvas.height - hudHeight + 175, COLORS.warning);
+        drawBox(px, py + ph + 4, pw, 20, 'rgba(226,74,74,0.8)');
+        drawText('STORAGE FULL', px + 10, py + ph + 8, '#ffffff');
       }
     },
   };
