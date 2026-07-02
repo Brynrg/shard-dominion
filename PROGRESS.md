@@ -31,7 +31,14 @@ economy, s2 selection, s3 deploy/build/power, s5 fog, s6a match; the pre-AI s4a 
   (sourceCommit a4fa9dc) into `speedrungames/apps/web/public/games/shard-dominion/` → push main (ccbec51) →
   Netlify. Verified live (new 93,482-byte bundle serves 200; S6A caption renders). Deploys are
   orchestrator-lane, operator-gated.
-- **NEXT — the §12 human-learnability gate = OPERATOR PLAY-TEST** (a real cold player completes the core loop
+- **🎮 OPERATOR PLAY-TEST FINDINGS (2026-07-01, first learnability-gate pass):** "The AI plays. But I can't."
+  VERDICT: correct — the player has NO production loop (no barracks, no train-unit UI), the economy stalls in
+  ~30s (token demo seeding), and the match is unwinnable (indestructible buildings). ALSO: "art not even Dune
+  2000 level" — current visuals are below even the plan's OWN placeholder grammar (§11.1); real sprites remain
+  S7 (§11.3) but the placeholder contract + terrain + sidebar can close most of the gap now.
+  **P0 QUEUE (playability first): P0a destructible buildings → P0b player barracks + unit production UI →
+  P0c sustaining economy → then the §11.1 visual-grammar pass.**
+- **(superseded) the §12 human-learnability gate = OPERATOR PLAY-TEST** (a real cold player completes the core loop
   unaided). Escalated; awaiting the operator. Meanwhile the build queue (non-gated): destructible enemy
   buildings (make the match WINNABLE — buildings need health), then S6B (AI expand/rebuild/raid/anti-stall).
 - **Known gaps:** enemy buildings indestructible (can't win yet, only survive); AI is one wave-loop; no
