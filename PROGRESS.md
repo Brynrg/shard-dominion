@@ -37,7 +37,13 @@
 - **P0c sustaining economy (2026-07-02):** replaced token demo seeding with a real field (natural shard 300 +
   a 3×3 home field at 800) — a single harvester banks 500→1900 in 30s then refills toward the 2000 cap. Fixed two
   fragile S2 gates the faster harvester exposed (move-test Y tolerance; box-select now targets the stationary base).
-- **🌐 REDEPLOYED (2026-07-02): the PLAYABLE build is live at speedrungames.net/games/shard-dominion/** (v0.7.0,
+- **🌐 P1 VISUAL-GRAMMAR BUILD LIVE (2026-07-03):** speedrungames.net/games/shard-dominion/ now serves the P1
+  bundle (index-D_7piw3Y.js, deploy e5081bb ready). **Deploy postmortem:** a hand-rewritten manifest.json (after an
+  rm -rf dropped the original) omitted buildHash/buildTimestamp/lastUpdated → the prebuild registry validator failed
+  every deploy for ~15h (exit 2), so the site silently kept serving the older P0 build. Lesson: never hand-write a
+  game manifest (validator-required provenance fields); verify deploys by Netlify deploy-STATE (error vs ready), not
+  by URL polling (a never-200 URL is indistinguishable from 'still building').
+- **🌐 (2026-07-02): the PLAYABLE build was live at speedrungames.net/games/shard-dominion/** (v0.7.0,
   sourceCommit updated; manifest restored after an rm -rf dropped it). Verified live (95KB bundle 200, train caption).
 - **AWAITING: operator play-test round 2** — the full loop now exists (train an army, fund it, destroy the enemy
   base to win). Then P1: §11.1 visual-grammar pass (the art complaint).
