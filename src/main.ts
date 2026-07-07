@@ -208,6 +208,8 @@ export function bootstrap(): void {
   const input = makeInputHandlers(canvas, view.getCamera(), commandQueue, panCamera, structures, {
     active: () => onboarding.briefingActive(),
     dismiss: () => onboarding.dismissBriefing(),
+  }, {
+    jump: (sx, sy) => view.minimapJump(sx, sy),
   });
   input.setSimState(state); // wire the sim-state ref used by the ConYard check (for 'B' placement)
   input.start();

@@ -65,6 +65,9 @@ export function makeInputHandlers(
    *  (and grabs focus so keyboard works, incl. inside a portal iframe) instead of
    *  issuing a select/move order. */
   briefing?: { active(): boolean; dismiss(): void },
+  /** Optional radar minimap: a left-click inside it recentres the camera and is
+   *  swallowed (does not select/move units on the field). */
+  minimap?: { jump(sx: number, sy: number): boolean },
 ): InputHandlers {
   let selectStart: ScreenPos | null = null;
   let selectCurrent: ScreenPos | null = null;
@@ -111,6 +114,12 @@ export function makeInputHandlers(
       return;
     }
     const pos = getMousePos(e);
+    // Radar click → jump the camera; swallow so it doesn't select/move on the field.
+    if (minimap?.jump(pos.sx, pos.sy)) {
+      selectStart = null;
+      selectCurrent = null;
+      return;
+    }
     selectStart = pos;
     selectCurrent = pos;
     // Snap the placement tile to the click point (so click-to-place lands where clicked).

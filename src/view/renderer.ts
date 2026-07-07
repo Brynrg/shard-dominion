@@ -80,6 +80,10 @@ export interface View {
   stop(): void;
   getCamera(): Camera;
   setCamera(cam: Camera): void;
+  /** The radar minimap rect in canvas pixels (for input hit-testing). */
+  minimapRect(): { x: number; y: number; w: number; h: number };
+  /** If (sx,sy) is inside the minimap, recentre the camera there and return true. */
+  minimapJump(sx: number, sy: number): boolean;
 }
 
 export function makeView(cfg: ViewConfig): View {
@@ -109,6 +113,93 @@ export function makeView(cfg: ViewConfig): View {
   // Pre-bake the directional sprite bank once (S7-2). Units get DIRS fixed-lit
   // facings; buildings get a lit body. Animated accents are drawn live on top.
   const sprites = makeSpriteBank(TEAM, NEUTRAL_TEAM, weapons);
+
+  // ── Radar minimap (bottom-left) ─────────────────────────────────────────────
+  const MM = { size: 168, margin: 12 };
+  const worldW = mapWidth * TILE_SUBUNITS, worldH = mapHeight * TILE_SUBUNITS;
+  let mmTerrain: HTMLCanvasElement | null = null; // cached terrain layer (baked once)
+
+  function minimapRect(): { x: number; y: number; w: number; h: number } {
+    return { x: MM.margin, y: canvas.height - MM.size - MM.margin, w: MM.size, h: MM.size };
+  }
+
+  // Bake the static terrain into an off-screen canvas at map resolution once; the
+  // live layer (fog + blips + viewport) is drawn over a scaled blit each frame.
+  function bakeMinimapTerrain(): HTMLCanvasElement {
+    const cv = document.createElement('canvas');
+    cv.width = mapWidth; cv.height = mapHeight;
+    const c = cv.getContext('2d') as CanvasRenderingContext2D;
+    for (let ty = 0; ty < mapHeight; ty++) {
+      for (let tx = 0; tx < mapWidth; tx++) {
+        const style = TERRAIN[simState.grid.terrainAt({ tx, ty })] ?? TERRAIN_FALLBACK;
+        c.fillStyle = style.base;
+        c.fillRect(tx, ty, 1, 1);
+      }
+    }
+    return cv;
+  }
+
+  function drawMinimap(): void {
+    if (!mmTerrain) mmTerrain = bakeMinimapTerrain();
+    const { x, y, w, h } = minimapRect();
+    const fog = getFog?.();
+
+    // Frame + backing.
+    context.fillStyle = '#0a0d12';
+    context.fillRect(x - 3, y - 16, w + 6, h + 19);
+    context.fillStyle = '#8fb7c9'; context.font = '11px monospace'; context.textAlign = 'left';
+    context.textBaseline = 'alphabetic';
+    context.fillText('RADAR', x, y - 5);
+
+    // Terrain (nearest-neighbour scale so tiles stay crisp).
+    const smooth = context.imageSmoothingEnabled;
+    context.imageSmoothingEnabled = false;
+    context.drawImage(mmTerrain, x, y, w, h);
+    context.imageSmoothingEnabled = smooth;
+
+    // Fog: darken explored, black-out unexplored.
+    if (fog) {
+      const cw = w / mapWidth, ch = h / mapHeight;
+      for (let ty = 0; ty < mapHeight; ty++) {
+        for (let tx = 0; tx < mapWidth; tx++) {
+          const key = `${tx},${ty}`;
+          if (fog.explored.has(key)) { if (fog.visible.has(key)) continue; context.fillStyle = 'rgba(0,0,0,0.45)'; }
+          else context.fillStyle = '#05070a';
+          context.fillRect(x + tx * cw, y + ty * ch, Math.ceil(cw), Math.ceil(ch));
+        }
+      }
+    }
+
+    // Entity blips (skip anything the player can't see).
+    for (const e of simState.store.all()) {
+      const pos = e.components.position;
+      if (!pos) continue;
+      const t = worldToTile(pos);
+      if (fog && !fog.visible.has(`${t.tx},${t.ty}`)) continue;
+      const team = e.components.faction?.team;
+      const isBldg = !!e.components.building;
+      context.fillStyle = team === 'player' ? '#5fd0ff' : team === 'enemy' ? '#ff5a4a' : '#d8d8d8';
+      const bx = x + (pos.wx / worldW) * w, by = y + (pos.wy / worldH) * h;
+      const s = isBldg ? 3 : 2;
+      context.fillRect(bx - s / 2, by - s / 2, s, s);
+    }
+
+    // Viewport rectangle (where the main camera is looking).
+    const vx = x + (camera.x / worldW) * w;
+    const vy = y + (camera.y / worldH) * h;
+    const vw = (canvas.width * (TILE_SUBUNITS / TILE_SIZE_PX) / worldW) * w;
+    const vh = (canvas.height * (TILE_SUBUNITS / TILE_SIZE_PX) / worldH) * h;
+    context.strokeStyle = '#ffffff'; context.lineWidth = 1;
+    context.strokeRect(x + Math.max(0, vx - x), y + Math.max(0, vy - y), Math.min(w, vw), Math.min(h, vh));
+    context.strokeStyle = '#00e5ff'; context.strokeRect(x - 0.5, y - 0.5, w + 1, h + 1);
+  }
+
+  // Recentre the camera on a world point (clamped so the view stays on the map).
+  function centerOn(wx: number, wy: number): void {
+    const halfW = (canvas.width / 2) * (TILE_SUBUNITS / TILE_SIZE_PX);
+    const halfH = (canvas.height / 2) * (TILE_SUBUNITS / TILE_SIZE_PX);
+    Object.assign(camera, { x: wx - halfW, y: wy - halfH, zoom: camera.zoom });
+  }
 
   // ── Combat FX (view-only juice) ─────────────────────────────────────────────
   // Muzzle flashes when a unit fires and explosions when one dies. Detected by
@@ -668,7 +759,7 @@ export function makeView(cfg: ViewConfig): View {
     // The mission briefing owns the whole screen — hide the HUD behind it so the
     // COMMAND panel doesn't bleed past the briefing frame.
     const briefing = onboarding?.briefingActive() ?? false;
-    if (!briefing) hud.draw();
+    if (!briefing) { hud.draw(); drawMinimap(); }
 
     // Onboarding overlays (briefing + objective banner) sit on top of everything.
     if (onboarding) {
@@ -721,6 +812,14 @@ export function makeView(cfg: ViewConfig): View {
     },
     setCamera(cam: Camera) {
       Object.assign(camera, cam);
+    },
+    minimapRect,
+    minimapJump(sx: number, sy: number): boolean {
+      if (onboarding?.briefingActive()) return false;
+      const r = minimapRect();
+      if (sx < r.x || sx > r.x + r.w || sy < r.y || sy > r.y + r.h) return false;
+      centerOn(((sx - r.x) / r.w) * worldW, ((sy - r.y) / r.h) * worldH);
+      return true;
     },
   };
 }

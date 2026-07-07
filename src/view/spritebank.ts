@@ -10,8 +10,8 @@ export interface TeamStyle { hull: string; hullDark: string; accent: string; str
 
 const SS = 2;      // supersample factor (bake at 2×, blit down → crisp edges)
 const DIRS = 16;   // baked facings per mobile unit
-const U = 40;      // unit sprite cell (logical px)
-const BLDG = 60;   // building sprite cell (logical px)
+const U = 44;      // unit sprite cell (logical px)
+const BLDG = 64;   // building sprite cell (logical px)
 
 // ── tiny colour helpers (local; keep this module self-contained) ────────────────
 function rgb(hex: string): [number, number, number] {
@@ -62,58 +62,87 @@ function paintUnit(c: CanvasRenderingContext2D, kind: string, style: TeamStyle, 
   const cx = U / 2, cy = U / 2, S = U * 0.8;
   c.save();
   c.translate(cx, cy);
-  const outline = 'rgba(0,0,0,0.6)';
+  const outline = 'rgba(0,0,0,0.65)';
+  const steel = '#5b5f66', steelDark = '#33363b';
 
   if (kind === 'infantry' || kind === 'rocket_trooper') {
     const r = S * 0.2;
-    c.fillStyle = style.hullDark;                                   // torso
-    rr(c, -r * 0.95, -r * 0.85, r * 1.9, r * 1.7, r * 0.6); c.fill();
-    c.fillStyle = mix(style.hull, '#3a3a3a', 0.15);                 // helmet
-    c.beginPath(); c.arc(r * 0.15, 0, r * 0.66, 0, Math.PI * 2); c.fill();
+    // backpack behind the torso
+    c.fillStyle = mix(style.hullDark, '#000', 0.2);
+    rr(c, -r * 1.15, -r * 0.6, r * 0.6, r * 1.2, r * 0.3); c.fill();
+    // torso + legs
+    c.fillStyle = style.hullDark;
+    rr(c, -r * 0.9, -r * 0.8, r * 1.8, r * 1.6, r * 0.55); c.fill();
+    c.fillStyle = mix(style.hull, '#000', 0.1);                     // shoulders
+    rr(c, -r * 0.55, -r * 0.85, r * 1.1, r * 0.5, r * 0.25); c.fill();
+    // helmet
+    c.fillStyle = mix(style.hull, '#2f2f2f', 0.2);
+    c.beginPath(); c.arc(r * 0.15, 0, r * 0.6, 0, Math.PI * 2); c.fill();
     c.strokeStyle = outline; c.lineWidth = 1; c.stroke();
     if (weaponType === 'ROCKET') {
-      c.fillStyle = '#2b2620'; c.fillRect(-r * 0.2, -r * 1.1, r * 2.0, r * 0.55);
-      c.fillStyle = '#ffce54'; c.fillRect(r * 1.55, -r * 1.1, r * 0.3, r * 0.55);
+      c.fillStyle = '#2b2620'; rr(c, -r * 0.2, -r * 1.15, r * 2.0, r * 0.5, 1); c.fill(); // launcher
+      c.fillStyle = '#ffce54'; c.fillRect(r * 1.6, -r * 1.15, r * 0.28, r * 0.5);         // warhead
+      c.fillStyle = steelDark; c.fillRect(r * 0.2, -r * 1.3, r * 0.5, r * 0.2);           // sight
     } else {
-      c.fillStyle = '#1c1913'; c.fillRect(0, -r * 0.16, r * 1.8, r * 0.32);
+      c.fillStyle = '#15120d'; c.fillRect(0, -r * 0.16, r * 1.9, r * 0.3);                // rifle
+      c.fillStyle = steel; c.fillRect(r * 0.5, -r * 0.1, r * 0.4, r * 0.2);               // receiver
     }
   } else if (kind === 'vehicle') {
-    const l = S * 0.36, w = S * 0.2;
-    treads(c, l * 0.94, w, S * 0.15);
-    c.fillStyle = style.hull;                                       // hull wedge
-    c.beginPath();
-    c.moveTo(l, 0); c.lineTo(l * 0.55, -w); c.lineTo(-l * 0.9, -w);
-    c.lineTo(-l, 0); c.lineTo(-l * 0.9, w); c.lineTo(l * 0.55, w);
-    c.closePath(); c.fill();
-    c.strokeStyle = outline; c.lineWidth = 1.2; c.stroke();
-    c.fillStyle = style.hullDark;                                   // turret
-    c.beginPath(); c.arc(-l * 0.08, 0, w * 0.9, 0, Math.PI * 2); c.fill();
-    c.strokeStyle = outline; c.stroke();
-    c.fillStyle = '#1c1913'; c.fillRect(-l * 0.08, -2.2, l * 1.2, 4.4); // barrel
-    c.fillStyle = style.stripe; c.fillRect(l * 1.05, -2.2, 3, 4.4);     // muzzle band
-  } else if (kind === 'harvester') {
-    const l = S * 0.44, w = S * 0.28;
-    treads(c, l * 0.96, w, S * 0.17);
-    c.fillStyle = mix(style.hull, '#8a7a53', 0.5);
-    c.beginPath();
-    c.moveTo(l, -w * 0.8); c.lineTo(l, w * 0.8); c.lineTo(-l, w); c.lineTo(-l, -w);
-    c.closePath(); c.fill();
-    c.strokeStyle = outline; c.lineWidth = 1.2; c.stroke();
-    c.fillStyle = '#2c2418';                                        // hopper ribs
-    for (let x = -l * 0.6; x < l * 0.7; x += 5) c.fillRect(x, -w * 0.55, 2, w * 1.1);
-    c.fillStyle = '#3a2f1c'; c.fillRect(l * 0.5, -w * 0.55, l * 0.5, w * 1.1); // intake
-  } else if (kind === 'mcv') {
-    const l = S * 0.46, w = S * 0.3;
-    treads(c, l * 0.96, w, S * 0.18);
+    const l = S * 0.38, w = S * 0.2;
+    treads(c, l * 0.98, w * 1.15, S * 0.15);
+    // side skirts over treads
+    c.fillStyle = steelDark;
+    c.fillRect(-l * 0.8, -w * 1.15, l * 1.5, S * 0.05);
+    c.fillRect(-l * 0.8, w * 1.1, l * 1.5, S * 0.05);
+    // glacis + hull
     c.fillStyle = style.hull;
     c.beginPath();
-    c.moveTo(l, 0); c.lineTo(l * 0.55, -w); c.lineTo(-l * 0.6, -w);
-    c.lineTo(-l, 0); c.lineTo(-l * 0.6, w); c.lineTo(l * 0.55, w);
+    c.moveTo(l, 0); c.lineTo(l * 0.6, -w); c.lineTo(-l * 0.9, -w);
+    c.lineTo(-l, 0); c.lineTo(-l * 0.9, w); c.lineTo(l * 0.6, w);
+    c.closePath(); c.fill();
+    c.strokeStyle = outline; c.lineWidth = 1.2; c.stroke();
+    c.fillStyle = mix(style.hull, '#000', 0.22);                    // rear engine deck + louvres
+    c.fillRect(-l * 0.9, -w * 0.7, l * 0.35, w * 1.4);
+    c.fillStyle = steelDark;
+    for (let y = -w * 0.6; y < w * 0.6; y += 3) c.fillRect(-l * 0.85, y, l * 0.25, 1.4);
+    // turret + hatch + barrel
+    c.fillStyle = style.hullDark; c.beginPath(); c.arc(-l * 0.05, 0, w * 0.92, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = outline; c.stroke();
+    c.fillStyle = mix(style.hullDark, '#000', 0.25); c.beginPath(); c.arc(-l * 0.25, -w * 0.15, w * 0.32, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#15120d'; c.fillRect(-l * 0.05, -2.4, l * 1.25, 4.8);
+    c.fillStyle = steel; c.fillRect(l * 0.5, -2.4, l * 0.2, 4.8);   // barrel collar
+    c.fillStyle = style.stripe; c.fillRect(l * 1.12, -2.4, 3, 4.8); // muzzle band
+  } else if (kind === 'harvester') {
+    const l = S * 0.46, w = S * 0.28;
+    treads(c, l * 0.98, w * 1.1, S * 0.18);
+    c.fillStyle = mix(style.hull, '#8a7a53', 0.5);                  // dusty ore-hauler body
+    c.beginPath();
+    c.moveTo(l, -w * 0.75); c.lineTo(l, w * 0.75); c.lineTo(-l, w); c.lineTo(-l, -w);
+    c.closePath(); c.fill();
+    c.strokeStyle = outline; c.lineWidth = 1.2; c.stroke();
+    // hazard stripes on the hopper lip
+    for (let x = -l * 0.7; x < l * 0.7; x += 6) { c.fillStyle = ((x / 6) | 0) % 2 ? '#e8b100' : '#171310'; c.fillRect(x, -w, 6, w * 0.28); }
+    c.fillStyle = '#2c2418';                                        // hopper ribs
+    for (let x = -l * 0.55; x < l * 0.7; x += 5) c.fillRect(x, -w * 0.45, 2, w * 0.9);
+    c.fillStyle = steelDark; c.fillRect(l * 0.55, -w * 0.6, l * 0.5, w * 1.2); // intake scoop
+    c.fillStyle = steel; c.fillRect(l * 0.98, -w * 0.5, l * 0.12, w);          // scoop blade
+    c.fillStyle = '#241d12'; c.fillRect(-l * 0.95, -w * 0.25, l * 0.18, w * 0.5); // exhaust stack
+  } else if (kind === 'mcv') {
+    const l = S * 0.48, w = S * 0.3;
+    treads(c, l * 0.98, w * 1.05, S * 0.19);
+    c.fillStyle = style.hull;
+    c.beginPath();
+    c.moveTo(l, 0); c.lineTo(l * 0.6, -w); c.lineTo(-l * 0.65, -w);
+    c.lineTo(-l, 0); c.lineTo(-l * 0.65, w); c.lineTo(l * 0.6, w);
     c.closePath(); c.fill();
     c.strokeStyle = outline; c.lineWidth = 1.3; c.stroke();
-    c.fillStyle = style.accent; rr(c, -l * 0.34, -w * 0.46, l * 0.68, w * 0.92, 2); c.fill();
-    c.fillStyle = style.hullDark; rr(c, -l * 0.2, -w * 0.28, l * 0.4, w * 0.56, 2); c.fill();
-    c.fillStyle = '#ffd36b'; c.beginPath(); c.arc(l * 0.36, 0, 2.4, 0, Math.PI * 2); c.fill();
+    c.fillStyle = steelDark;                                        // fold-out panel seams
+    c.fillRect(-l * 0.5, -w, l, 1.6); c.fillRect(-l * 0.5, w - 1.6, l, 1.6);
+    c.fillStyle = style.accent; rr(c, -l * 0.36, -w * 0.48, l * 0.72, w * 0.96, 2); c.fill();
+    c.fillStyle = mix(style.accent, '#000', 0.15);
+    for (let x = -l * 0.28; x < l * 0.3; x += 4) c.fillRect(x, -w * 0.4, 1.6, w * 0.8); // core vents
+    c.fillStyle = style.hullDark; rr(c, -l * 0.18, -w * 0.24, l * 0.36, w * 0.48, 2); c.fill();
+    c.fillStyle = '#ffd36b'; c.beginPath(); c.arc(l * 0.4, 0, 2.6, 0, Math.PI * 2); c.fill();
   } else {
     const h = S * 0.26;
     c.fillStyle = style.hull; rr(c, -h, -h, h * 2, h * 2, 3); c.fill();
