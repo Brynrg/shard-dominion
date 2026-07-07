@@ -211,24 +211,66 @@ function paintBuildingBody(c: CanvasRenderingContext2D, kind: string, style: Tea
 // sidecar carries the layout + pivot. Loaded sheets OVERRIDE the procedural bake
 // per (assetId, team); anything not delivered keeps rendering procedurally.
 export interface SpriteMeta {
-  frameWidth: number; frameHeight: number;
-  facings: number; frames: number;
+  frameWidth?: number; frameHeight?: number;   // omit → derived from the image size
+  facings?: number; frames?: number;
   facing0?: 'north' | 'east'; facingOrder?: 'cw' | 'ccw';
   fps?: number; pivotX?: number; pivotY?: number; inGameWidthPx?: number;
+  /** Hex bg colour to knock out to transparent at load (e.g. "#ff00ff" chroma key)
+   *  — needed because image generators output opaque PNG/JPG, not real alpha. */
+  chromaKey?: string;
+  /** Present ⇒ this is a SINGLE top-down sprite (not a facing atlas); the engine
+   *  rotates it to the unit heading. Value = the direction the art faces. */
+  rotateFrom?: 'north' | 'east';
 }
-interface RealSprite { img: CanvasImageSource; meta: Required<SpriteMeta> }
+interface ResolvedMeta {
+  frameWidth: number; frameHeight: number; facings: number; frames: number;
+  facing0: 'north' | 'east'; facingOrder: 'cw' | 'ccw'; fps: number;
+  pivotX: number; pivotY: number; inGameWidthPx: number; rotateFrom?: 'north' | 'east';
+}
+interface RealSprite { img: CanvasImageSource; meta: ResolvedMeta }
 
 const UNIT_IDS = new Set(['infantry', 'rocket_trooper', 'vehicle', 'harvester', 'mcv', 'generic']);
 
-function withDefaults(m: SpriteMeta): Required<SpriteMeta> {
+function srcSize(s: CanvasImageSource): { w: number; h: number } {
+  if (typeof HTMLCanvasElement !== 'undefined' && s instanceof HTMLCanvasElement) return { w: s.width, h: s.height };
+  if (typeof HTMLImageElement !== 'undefined' && s instanceof HTMLImageElement) return { w: s.naturalWidth, h: s.naturalHeight };
+  const b = s as { width?: number; height?: number };
+  return { w: b.width ?? 0, h: b.height ?? 0 };
+}
+
+function withDefaults(m: SpriteMeta, imgW: number, imgH: number): ResolvedMeta {
+  const facings = Math.max(1, m.facings ?? 1);
+  const frames = Math.max(1, m.frames ?? 1);
+  const fw = m.frameWidth ?? Math.floor(imgW / frames);
+  const fh = m.frameHeight ?? Math.floor(imgH / facings);
   return {
-    frameWidth: m.frameWidth, frameHeight: m.frameHeight,
-    facings: Math.max(1, m.facings), frames: Math.max(1, m.frames),
+    frameWidth: fw, frameHeight: fh, facings, frames,
     facing0: m.facing0 ?? 'north', facingOrder: m.facingOrder ?? 'cw',
     fps: m.fps ?? 0,
-    pivotX: m.pivotX ?? m.frameWidth / 2, pivotY: m.pivotY ?? m.frameHeight / 2,
+    pivotX: m.pivotX ?? fw / 2, pivotY: m.pivotY ?? fh / 2,
     inGameWidthPx: m.inGameWidthPx ?? 44,
+    rotateFrom: m.rotateFrom,
   };
+}
+
+// Knock a flat background colour out to transparent (chroma key). Image generators
+// can't emit real alpha, so we render on a pure key colour and remove it here.
+function chromaKeyOut(src: CanvasImageSource, hex: string, tol = 60): HTMLCanvasElement {
+  const { w, h } = srcSize(src);
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const c = cv.getContext('2d') as CanvasRenderingContext2D;
+  c.drawImage(src, 0, 0);
+  const [tr, tg, tb] = [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+  const data = c.getImageData(0, 0, w, h);
+  const p = data.data;
+  for (let i = 0; i < p.length; i += 4) {
+    const dr = (p[i] ?? 0) - tr, dg = (p[i + 1] ?? 0) - tg, db = (p[i + 2] ?? 0) - tb;
+    const dist = Math.sqrt(dr * dr + dg * dg + db * db);
+    if (dist < tol) p[i + 3] = 0;                       // full key → transparent
+    else if (dist < tol * 1.8) p[i + 3] = Math.round(((dist - tol) / (tol * 0.8)) * 255); // feather edge
+  }
+  c.putImageData(data, 0, 0);
+  return cv;
 }
 
 // Map an engine heading (radians; 0 = East, +CW because screen-Y is down) to the
@@ -281,10 +323,27 @@ export function makeSpriteBank(teams: Record<string, TeamStyle>, neutral: TeamSt
   // Draw one frame of a delivered sheet centred on its pivot at (sx,sy).
   function drawReal(ctx: CanvasRenderingContext2D, rs: RealSprite, angle: number, sx: number, sy: number, frame: number): void {
     const m = rs.meta;
-    const row = facingToRow(angle, m.facings, m.facing0, m.facingOrder);
     const col = m.fps > 0 && m.frames > 1 ? Math.floor((frame * m.fps) / 60) % m.frames : 0;
     const dw = m.inGameWidthPx;
     const dh = dw * (m.frameHeight / m.frameWidth);
+
+    // Single top-down sprite: rotate the whole image to the heading (image models
+    // give us one clean sprite, not a precise 16-facing atlas).
+    if (m.rotateFrom) {
+      const refAngle = m.rotateFrom === 'north' ? -Math.PI / 2 : 0; // art's forward, in engine angle
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(angle - refAngle);
+      ctx.drawImage(
+        rs.img, col * m.frameWidth, 0, m.frameWidth, m.frameHeight,
+        -(m.pivotX / m.frameWidth) * dw, -(m.pivotY / m.frameHeight) * dh, dw, dh,
+      );
+      ctx.restore();
+      return;
+    }
+
+    // Facing atlas (rows = facings) or static (facings=1, buildings).
+    const row = facingToRow(angle, m.facings, m.facing0, m.facingOrder);
     ctx.drawImage(
       rs.img,
       col * m.frameWidth, row * m.frameHeight, m.frameWidth, m.frameHeight,
@@ -322,7 +381,11 @@ export function makeSpriteBank(teams: Record<string, TeamStyle>, neutral: TeamSt
     if (!assetId || !team) return;
     // v1 renders a single primary state per asset; ignore fire/deploy/etc for now.
     if (state && state !== 'move' && state !== 'idle') return;
-    const rs: RealSprite = { img, meta: withDefaults(meta) };
+    // Knock out the chroma-key background (image-gen output has no real alpha), then
+    // resolve layout defaults against the actual image size.
+    const src = meta.chromaKey ? chromaKeyOut(img, meta.chromaKey) : img;
+    const { w, h } = srcSize(src);
+    const rs: RealSprite = { img: src, meta: withDefaults(meta, w, h) };
     (UNIT_IDS.has(assetId) ? realUnit : realBldg).set(`${assetId}|${team}`, rs);
   }
 

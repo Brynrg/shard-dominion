@@ -32,6 +32,30 @@ make it plug in; the prompt is just to hit the style.
 
 ---
 
+## 0.5 Two production paths (pick based on your tool)
+
+**PATH A — image generator (Grok / DALL·E / Midjourney). RECOMMENDED, and what the
+loader is tuned for.** AI image tools cannot produce a precise 16-facing sprite *atlas*
+(consistent scale, exact grid, correct per-cell rotation), so **don't ask them to.**
+Instead deliver **ONE clean top-down sprite per unit/building**:
+- **One image per asset**, the unit **facing straight UP (North)**, centred, generous margin.
+- **Background = solid pure magenta `#FF00FF`** filling every non-sprite pixel. The engine
+  **chroma-keys that magenta to transparent** at load, so it doesn't matter that the file
+  is opaque. (Buildings too.)
+- **PNG strongly preferred; JPG tolerated.** JPEG has **no transparency and fuzzes the
+  magenta edges** → slight fringing. PNG keys cleanly. **Never rely on "transparent
+  background" from an image model — use the magenta key instead.**
+- The engine **rotates** each unit sprite to its heading and keeps buildings static, so
+  you get all directions from the single image. Animation frames are optional/later.
+
+**PATH B — pre-rendered/hand-authored atlas (Blender, Aseprite, a 3D pipeline).** If you
+have a real rendering pipeline, deliver the full multi-facing sheets in §3–5 (transparent
+PNG, 16/8 facings, animation rows). Higher fidelity; more work. The loader supports both.
+
+> The rest of this doc is the full PATH-B spec. For PATH A you only need: one magenta-
+> background PNG per asset, named `assetId__team__state.png`, unit facing up. That's it —
+> I generate the JSON + manifest via `scripts/import-art.mjs`.
+
 ## 1. Global technical requirements
 
 | Property | Requirement |
