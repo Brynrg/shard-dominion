@@ -306,12 +306,16 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 }
 
 export interface SpriteBank {
-  drawUnit(ctx: CanvasRenderingContext2D, kind: string, team: string, weaponType: string | undefined, angle: number, sx: number, sy: number, frame: number): void;
-  drawBuildingBody(ctx: CanvasRenderingContext2D, kind: string, team: string, sx: number, sy: number, frame: number): void;
+  drawUnit(ctx: CanvasRenderingContext2D, kind: string, team: string, weaponType: string | undefined, angle: number, sx: number, sy: number, frame: number, scale: number): void;
+  drawBuildingBody(ctx: CanvasRenderingContext2D, kind: string, team: string, sx: number, sy: number, frame: number, scale: number): void;
   /** Fetch a manifest of delivered sheets and install them (async, best-effort). */
   loadManifest(baseUrl?: string): Promise<void>;
   /** Install a decoded sheet directly (used by loadManifest + tests). */
   installSheet(basename: string, img: CanvasImageSource, meta: SpriteMeta): void;
+  /** Load the seamless terrain tileset (best-effort; missing tiles stay procedural). */
+  loadTerrain(baseUrl?: string): Promise<void>;
+  /** The real tile for a sim terrain type (variant/density aware), or null → procedural. */
+  getTerrainTile(type: string, variant: number, density: number): CanvasImageSource | null;
   readonly U: number;
   readonly BLDG: number;
 }
@@ -331,12 +335,13 @@ export function makeSpriteBank(teams: Record<string, TeamStyle>, neutral: TeamSt
   const bldgFrame = new Map<string, HTMLCanvasElement>();      // key `${kind}|${team}`
   const realUnit = new Map<string, RealSprite>();             // delivered unit sheets, key `${assetId}|${team}`
   const realBldg = new Map<string, RealSprite>();             // delivered building sheets
+  const terrainTiles = new Map<string, CanvasImageSource>(); // delivered seamless ground tiles, key = tile name
 
   // Draw one frame of a delivered sheet centred on its pivot at (sx,sy).
-  function drawReal(ctx: CanvasRenderingContext2D, rs: RealSprite, angle: number, sx: number, sy: number, frame: number): void {
+  function drawReal(ctx: CanvasRenderingContext2D, rs: RealSprite, angle: number, sx: number, sy: number, frame: number, scale: number): void {
     const m = rs.meta;
     const col = m.fps > 0 && m.frames > 1 ? Math.floor((frame * m.fps) / 60) % m.frames : 0;
-    const dw = m.inGameWidthPx;
+    const dw = m.inGameWidthPx * scale;
     const dh = dw * (m.frameHeight / m.frameWidth);
 
     // Single top-down sprite: rotate the whole image to the heading (image models
@@ -404,6 +409,26 @@ export function makeSpriteBank(teams: Record<string, TeamStyle>, neutral: TeamSt
   return {
     U, BLDG,
     installSheet,
+    async loadTerrain(baseUrl = 'art') {
+      const names = ['sand', 'sand_2', 'deep_sand', 'dune', 'rock', 'impassable', 'shard_full', 'shard_mid', 'shard_low'];
+      await Promise.all(names.map(async (n) => {
+        try { terrainTiles.set(n, await loadImage(`${baseUrl}/terrain/terrain__${n}.png`)); } catch { /* stays procedural */ }
+      }));
+    },
+    getTerrainTile(type, variant, density) {
+      switch (type) {
+        case 'SAND': return terrainTiles.get(variant % 2 ? 'sand_2' : 'sand') ?? terrainTiles.get('sand') ?? null;
+        case 'DEEP_SAND': return terrainTiles.get('deep_sand') ?? null;
+        case 'DUNE': return terrainTiles.get('dune') ?? null;
+        case 'ROCK': return terrainTiles.get('rock') ?? null;
+        case 'IMPASSABLE': return terrainTiles.get('impassable') ?? null;
+        case 'SHARD': {
+          const n = density >= 500 ? 'shard_full' : density >= 200 ? 'shard_mid' : 'shard_low';
+          return terrainTiles.get(n) ?? terrainTiles.get('shard_full') ?? null;
+        }
+        default: return null;
+      }
+    },
     async loadManifest(baseUrl = 'art') {
       let sheets: string[];
       try {
@@ -420,13 +445,14 @@ export function makeSpriteBank(teams: Record<string, TeamStyle>, neutral: TeamSt
         } catch { /* skip a bad/missing sheet, keep procedural for it */ }
       }));
     },
-    drawUnit(ctx, kind, team, _weaponType, angle, sx, sy, frame) {
+    drawUnit(ctx, kind, team, _weaponType, angle, sx, sy, frame, scale) {
+      const u = U * scale;
       // contact shadow (world-down; shared by real + procedural so units feel grounded)
       ctx.fillStyle = 'rgba(0,0,0,0.32)';
-      ctx.beginPath(); ctx.ellipse(sx + 2, sy + U * 0.22, U * 0.28, U * 0.13, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(sx + 2, sy + u * 0.22, u * 0.28, u * 0.13, 0, 0, Math.PI * 2); ctx.fill();
 
       const real = realUnit.get(`${kind}|${team}`) ?? realUnit.get(`${kind}|neutral`);
-      if (real) { drawReal(ctx, real, angle, sx, sy, frame); return; }
+      if (real) { drawReal(ctx, real, angle, sx, sy, frame, scale); return; }
 
       const k = unitFrames.has(`${kind}|${team}`) ? kind : 'generic';
       const t = unitFrames.has(`${k}|${team}`) ? team : 'neutral';
@@ -435,20 +461,21 @@ export function makeSpriteBank(teams: Record<string, TeamStyle>, neutral: TeamSt
       let d = Math.round((angle / (Math.PI * 2)) * DIRS) % DIRS;
       if (d < 0) d += DIRS;
       const f = frames[d] ?? frames[0];
-      if (f) ctx.drawImage(f, sx - U / 2, sy - U / 2, U, U);
+      if (f) ctx.drawImage(f, sx - u / 2, sy - u / 2, u, u);
     },
-    drawBuildingBody(ctx, kind, team, sx, sy, frame) {
+    drawBuildingBody(ctx, kind, team, sx, sy, frame, scale) {
+      const b = BLDG * scale;
       // grounding shadow
       ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      ctx.fillRect(sx - BLDG * 0.3, sy + BLDG * 0.18, BLDG * 0.6, 6);
+      ctx.fillRect(sx - b * 0.3, sy + b * 0.18, b * 0.6, 6 * scale);
 
       const real = realBldg.get(`${kind}|${team}`) ?? realBldg.get(`${kind}|neutral`);
-      if (real) { drawReal(ctx, real, 0, sx, sy, frame); return; }
+      if (real) { drawReal(ctx, real, 0, sx, sy, frame, scale); return; }
 
       const k = bldgFrame.has(`${kind}|${team}`) ? kind : 'generic';
       const t = bldgFrame.has(`${k}|${team}`) ? team : 'neutral';
       const f = bldgFrame.get(`${k}|${t}`);
-      if (f) ctx.drawImage(f, sx - BLDG / 2, sy - BLDG / 2, BLDG, BLDG);
+      if (f) ctx.drawImage(f, sx - b / 2, sy - b / 2, b, b);
     },
   };
 }

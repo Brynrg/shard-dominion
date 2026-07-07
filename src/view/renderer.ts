@@ -125,6 +125,7 @@ export function makeView(cfg: ViewConfig): View {
   // Best-effort: swap in any delivered real sprite sheets (docs/ART_ASSETS_SPEC.md).
   // No manifest / missing sheets → silently stays procedural. Exposed for testing.
   void sprites.loadManifest('art');
+  void sprites.loadTerrain('art'); // seamless ground tileset (procedural fallback per-tile)
 
   // ── Radar minimap (bottom-left) ─────────────────────────────────────────────
   const MM = { size: 168, margin: 12 };
@@ -399,7 +400,7 @@ export function makeView(cfg: ViewConfig): View {
       if (!pos) continue;
 
       const screenPos = worldToScreen(pos, camera);
-      const size = TILE_SIZE_PX * 0.8;
+      const size = TILE_SIZE_PX * 0.8 * camera.zoom;
 
       // Draw selection ring
       context.strokeStyle = SELECTION_COLOR;
@@ -454,10 +455,10 @@ export function makeView(cfg: ViewConfig): View {
       if (!pos) continue;
 
       const screenPos = worldToScreen(pos, camera);
-      const barWidth = TILE_SIZE_PX * 0.8;
+      const barWidth = TILE_SIZE_PX * 0.8 * camera.zoom;
       const barHeight = 4;
       const barX = screenPos.sx - barWidth / 2;
-      const barY = screenPos.sy - TILE_SIZE_PX * 0.5;
+      const barY = screenPos.sy - TILE_SIZE_PX * 0.5 * camera.zoom;
 
       // Red background
       context.fillStyle = '#ff0000';
@@ -493,12 +494,13 @@ export function makeView(cfg: ViewConfig): View {
         if (hasSlab) {
           const tilePos = tileToWorldCenter({ tx, ty });
           const screenPos = worldToScreen(tilePos, camera);
+          const ss = TILE_SIZE_PX * camera.zoom;
           context.fillStyle = SLAB_COLOR;
           context.fillRect(
-            Math.floor(screenPos.sx - TILE_SIZE_PX / 2),
-            Math.floor(screenPos.sy - TILE_SIZE_PX / 2),
-            TILE_SIZE_PX,
-            TILE_SIZE_PX,
+            Math.floor(screenPos.sx - ss / 2),
+            Math.floor(screenPos.sy - ss / 2),
+            Math.ceil(ss) + 1,
+            Math.ceil(ss) + 1,
           );
         }
       }
@@ -522,7 +524,7 @@ export function makeView(cfg: ViewConfig): View {
     const ghostColor = valid ? VALID_GHOST_COLOR : INVALID_GHOST_COLOR;
     const tilePos = tileToWorldCenter(placement.tile);
     const screenPos = worldToScreen(tilePos, camera);
-    const size = TILE_SIZE_PX * structure.footprint.w;
+    const size = TILE_SIZE_PX * structure.footprint.w * camera.zoom;
 
     context.fillStyle = ghostColor;
     context.fillRect(
@@ -589,13 +591,16 @@ export function makeView(cfg: ViewConfig): View {
 
         const tilePos = tileToWorldCenter({ tx, ty });
         const screenPos = worldToScreen(tilePos, camera);
-        const px = Math.floor(screenPos.sx - TILE_SIZE_PX / 2);
-        const py = Math.floor(screenPos.sy - TILE_SIZE_PX / 2);
+        // Tile size scales with zoom (+1 overdraw avoids seam gaps from rounding).
+        const TS = TILE_SIZE_PX * camera.zoom;
+        const px = Math.floor(screenPos.sx - TS / 2);
+        const py = Math.floor(screenPos.sy - TS / 2);
+        const DS = Math.ceil(TS) + 1;
 
         if (!isExplored) {
           // Unexplored: solid near-black (no detail leaks the map shape).
           context.fillStyle = '#070707';
-          context.fillRect(px, py, TILE_SIZE_PX, TILE_SIZE_PX);
+          context.fillRect(px, py, DS, DS);
           continue;
         }
 
@@ -603,16 +608,23 @@ export function makeView(cfg: ViewConfig): View {
         // Explored-but-not-visible tiles are drawn dimmed (fog memory).
         const dim = isVisible ? 1 : 0.42;
 
-        // Base fill, slightly varied per tile so large fields aren't a flat wash.
+        // Real seamless tile if delivered; else procedural texture (fallback).
+        const density = simState.shardDensity.get(tileKey) ?? 0;
+        const tile = sprites.getTerrainTile(type, tileHash(tx, ty, 7) < 0.5 ? 0 : 1, density);
+        if (tile) {
+          context.drawImage(tile, px, py, DS, DS);
+          if (dim < 1) { // fog-memory dim overlay
+            context.fillStyle = `rgba(6,8,11,${((1 - dim) * 0.62).toFixed(3)})`;
+            context.fillRect(px, py, DS, DS);
+          }
+          continue;
+        }
+
+        // Procedural fallback: varied base fill + per-terrain detail + soft edges.
         const v = tileHash(tx, ty, 1);
         context.fillStyle = shade(mix(style.base, v < 0.5 ? style.dark : style.light, 0.22), dim);
-        context.fillRect(px, py, TILE_SIZE_PX, TILE_SIZE_PX);
-
-        // Per-terrain texture detail.
+        context.fillRect(px, py, DS, DS);
         drawTerrainDetail(type, style, tx, ty, px, py, dim);
-
-        // Soft edges: blend toward differing neighbours so hard grid seams dissolve,
-        // and drop an ambient shadow where a RAISED neighbour (rock/cliff) abuts.
         drawTerrainEdges(type, style, tx, ty, px, py, dim, width, height, fog);
       }
     }
@@ -759,19 +771,19 @@ export function makeView(cfg: ViewConfig): View {
 
       if (e.components.building) {
         // Baked lit body (S7-2) + live animated accents on top.
-        sprites.drawBuildingBody(context, kind, teamKey, sx, sy, frame);
-        drawBuildingAccents(kind, sx, sy, style);
+        sprites.drawBuildingBody(context, kind, teamKey, sx, sy, frame, camera.zoom);
+        drawBuildingAccents(kind, sx, sy, style, camera.zoom);
       } else {
         // Cargo glow (harvester) draws under the baked sprite, then the sprite.
-        drawUnitUnderlay(e, kind, sx, sy);
-        sprites.drawUnit(context, kind, teamKey, undefined, facingAngle(e, interp), sx, sy, frame);
+        drawUnitUnderlay(e, kind, sx, sy, camera.zoom);
+        sprites.drawUnit(context, kind, teamKey, undefined, facingAngle(e, interp), sx, sy, frame, camera.zoom);
       }
     }
   }
 
   // Harvester ore-load glow, drawn UNDER the baked sprite so the crystal cargo
   // reads through the hopper (the only per-instance unit state we surface visually).
-  function drawUnitUnderlay(e: ReturnType<typeof simState.store.all>[number], kind: string, sx: number, sy: number): void {
+  function drawUnitUnderlay(e: ReturnType<typeof simState.store.all>[number], kind: string, sx: number, sy: number, scale: number): void {
     if (kind !== 'harvester') return;
     const cargo = e.components.harvest?.cargo ?? 0;
     if (cargo <= 0) return;
@@ -779,15 +791,15 @@ export function makeView(cfg: ViewConfig): View {
     context.globalAlpha = Math.min(0.85, 0.3 + cargo / 700);
     context.fillStyle = '#c9a6ff';
     context.beginPath();
-    context.ellipse(sx, sy - 2, TILE_SIZE_PX * 0.26, TILE_SIZE_PX * 0.2, 0, 0, Math.PI * 2);
+    context.ellipse(sx, sy - 2, TILE_SIZE_PX * 0.26 * scale, TILE_SIZE_PX * 0.2 * scale, 0, 0, Math.PI * 2);
     context.fill();
     context.restore();
   }
 
   // Live animated accents drawn ON TOP of a building's baked body (the baked body
   // carries the static silhouette + shading; only motion lives here).
-  function drawBuildingAccents(kind: string, sx: number, sy: number, style: TeamStyle): void {
-    const S = TILE_SIZE_PX, t = frame;
+  function drawBuildingAccents(kind: string, sx: number, sy: number, style: TeamStyle, scale: number): void {
+    const S = TILE_SIZE_PX * scale, t = frame;
     const big = kind === 'construction_yard' || kind === 'refinery';
     const halfH = (big ? S * 1.2 : S * 0.82) / 2;
     const top = sy - halfH * 0.6; // baked body is roughly centred; top-ish anchor
