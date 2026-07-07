@@ -11,6 +11,7 @@ import type { StructureDef } from '../loaders/structures.js';
 import type { WeaponsFile } from '../loaders/schemas.js';
 import type { Onboarding } from './onboarding.js';
 import type { EntityId } from '../sim/ids.js';
+import { makeSpriteBank } from './spritebank.js';
 
 // ── Terrain palette (base + a darker/lighter pair for per-tile texturing) ──────
 // Each tile gets base fill + deterministic grain/detail so the desert reads as a
@@ -104,6 +105,10 @@ export function makeView(cfg: ViewConfig): View {
 
   // Create HUD
   const hud = makeHUD({ canvas, simState, camera });
+
+  // Pre-bake the directional sprite bank once (S7-2). Units get DIRS fixed-lit
+  // facings; buildings get a lit body. Animated accents are drawn live on top.
+  const sprites = makeSpriteBank(TEAM, NEUTRAL_TEAM, weapons);
 
   // ── Combat FX (view-only juice) ─────────────────────────────────────────────
   // Muzzle flashes when a unit fires and explosions when one dies. Detected by
@@ -582,243 +587,65 @@ export function makeView(cfg: ViewConfig): View {
       const { sx, sy } = worldToScreen(interp, camera);
 
       const team = e.components.faction?.team;
+      const teamKey = team ?? 'neutral';
       const style = (team && TEAM[team]) ? TEAM[team] : NEUTRAL_TEAM;
       const kind = e.components.faction?.faction ?? '';
 
       if (e.components.building) {
-        drawBuilding(kind, sx, sy, style);
+        // Baked lit body (S7-2) + live animated accents on top.
+        sprites.drawBuildingBody(context, kind, teamKey, sx, sy);
+        drawBuildingAccents(kind, sx, sy, style);
       } else {
-        drawUnit(e, kind, sx, sy, style, facingAngle(e, interp));
+        // Cargo glow (harvester) draws under the baked sprite, then the sprite.
+        drawUnitUnderlay(e, kind, sx, sy);
+        sprites.drawUnit(context, kind, teamKey, undefined, facingAngle(e, interp), sx, sy);
       }
     }
   }
 
-  // ── Building sprites: extruded block (lit roof + dark front face) + detail ─────
-  function drawBuilding(kind: string, sx: number, sy: number, style: TeamStyle): void {
-    const S = TILE_SIZE_PX;
-    const big = kind === 'construction_yard' || kind === 'refinery';
-    const w = big ? S * 1.5 : S * 0.94;
-    const h = big ? S * 1.2 : S * 0.82;
-    const depth = big ? 8 : 6;                 // extruded front-face height
-    const x = sx - w / 2, y = sy - h / 2;
-    const t = frame;
-
-    // Grounding shadow (offset down-right for the top-left key light).
-    context.fillStyle = 'rgba(0,0,0,0.35)';
-    rr(x + 4, y + h - 1, w, depth + 5, 3); context.fill();
-
-    // Extruded FRONT face (darkest, gives height).
-    context.fillStyle = mix(style.hullDark, '#000', 0.42);
-    context.fillRect(x, y + h - 2, w, depth + 2);
-    // ROOF: vertical gradient, lighter at the top (sunlit).
-    const g = context.createLinearGradient(0, y, 0, y + h);
-    g.addColorStop(0, mix(style.hull, '#fff', 0.16));
-    g.addColorStop(1, mix(style.hullDark, '#000', 0.05));
-    context.fillStyle = g;
-    context.fillRect(x, y, w, h);
-    // Panel seams + corner rivets for surface detail.
-    context.strokeStyle = 'rgba(0,0,0,0.22)'; context.lineWidth = 1;
+  // Harvester ore-load glow, drawn UNDER the baked sprite so the crystal cargo
+  // reads through the hopper (the only per-instance unit state we surface visually).
+  function drawUnitUnderlay(e: ReturnType<typeof simState.store.all>[number], kind: string, sx: number, sy: number): void {
+    if (kind !== 'harvester') return;
+    const cargo = e.components.harvest?.cargo ?? 0;
+    if (cargo <= 0) return;
+    context.save();
+    context.globalAlpha = Math.min(0.85, 0.3 + cargo / 700);
+    context.fillStyle = '#c9a6ff';
     context.beginPath();
-    context.moveTo(x, y + h * 0.5); context.lineTo(x + w, y + h * 0.5); context.stroke();
-    context.fillStyle = 'rgba(255,255,255,0.18)';
-    for (const rx of [x + 3, x + w - 5]) for (const ry of [y + 3, y + h - 6]) context.fillRect(rx, ry, 2, 2);
+    context.ellipse(sx, sy - 2, TILE_SIZE_PX * 0.26, TILE_SIZE_PX * 0.2, 0, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+  }
 
-    // Team accent trim.
-    context.strokeStyle = style.stripe; context.lineWidth = 2;
-    context.strokeRect(x + 1, y + 1, w - 2, h - 2);
+  // Live animated accents drawn ON TOP of a building's baked body (the baked body
+  // carries the static silhouette + shading; only motion lives here).
+  function drawBuildingAccents(kind: string, sx: number, sy: number, style: TeamStyle): void {
+    const S = TILE_SIZE_PX, t = frame;
+    const big = kind === 'construction_yard' || kind === 'refinery';
+    const halfH = (big ? S * 1.2 : S * 0.82) / 2;
+    const top = sy - halfH * 0.6; // baked body is roughly centred; top-ish anchor
 
     if (kind === 'refinery') {
-      // Two silo cylinders (shaded) + dock bay + animated exhaust puff.
-      for (const cx of [x + w * 0.24, x + w * 0.44]) {
-        const cg = context.createLinearGradient(cx - w * 0.11, 0, cx + w * 0.11, 0);
-        cg.addColorStop(0, mix(style.accent, '#000', 0.25));
-        cg.addColorStop(0.4, style.accent);
-        cg.addColorStop(1, mix(style.accent, '#000', 0.4));
-        context.fillStyle = cg;
-        rr(cx - w * 0.1, y + h * 0.2, w * 0.2, h * 0.55, 3); context.fill();
-        context.strokeStyle = 'rgba(0,0,0,0.3)'; context.lineWidth = 1; context.stroke();
-      }
-      context.fillStyle = mix(style.hull, '#000', 0.25); // dock bay
-      rr(x + w * 0.58, y + h * 0.45, w * 0.36, h * 0.48, 2); context.fill();
-      // exhaust puff rising + fading
-      const puff = (t % 90) / 90;
-      context.globalAlpha = (1 - puff) * 0.35;
+      const puff = (t % 90) / 90;                       // exhaust rising + fading
+      context.globalAlpha = (1 - puff) * 0.4;
       context.fillStyle = '#cfc6bb';
-      context.beginPath(); context.arc(x + w * 0.34, y - puff * 14, 3 + puff * 5, 0, Math.PI * 2); context.fill();
+      context.beginPath(); context.arc(sx - S * 0.28, top - puff * 16, 3 + puff * 5, 0, Math.PI * 2); context.fill();
       context.globalAlpha = 1;
-    } else if (kind === 'barracks') {
-      context.fillStyle = mix(style.hull, '#fff', 0.14); // roof ridge
-      context.fillRect(x + 4, y + 4, w - 8, 4);
-      context.fillStyle = '#140e09'; // door
-      rr(sx - w * 0.13, y + h * 0.44, w * 0.26, h * 0.56, 2); context.fill();
-      context.fillStyle = style.accent; // lamp over the door
-      context.fillRect(sx - 2, y + h * 0.4, 4, 3);
     } else if (kind === 'construction_yard') {
-      // Crane arm + rotating hook + blinking hazard beacon.
-      context.strokeStyle = mix(style.accent, '#000', 0.1); context.lineWidth = 3;
-      context.beginPath();
-      context.moveTo(sx - w * 0.32, y + 6); context.lineTo(sx + w * 0.36, y - h * 0.16); context.stroke();
-      const hook = sx - w * 0.32 + (Math.sin(t * 0.04) * 0.5 + 0.5) * (w * 0.68);
+      context.strokeStyle = mix(style.accent, '#000', 0.1); context.lineWidth = 2.5;   // crane arm
+      context.beginPath(); context.moveTo(sx - S * 0.5, top + 4); context.lineTo(sx + S * 0.55, top - S * 0.28); context.stroke();
+      const hook = sx - S * 0.5 + (Math.sin(t * 0.04) * 0.5 + 0.5) * (S * 1.05);        // sweeping hook
       context.strokeStyle = '#3a352a'; context.lineWidth = 1.5;
-      context.beginPath(); context.moveTo(hook, y + 2); context.lineTo(hook, y + h * 0.35); context.stroke();
-      context.fillStyle = (t % 40) < 20 ? '#ff4a3d' : '#5a1a14'; // beacon blink
-      context.beginPath(); context.arc(sx + w * 0.36, y - h * 0.16, 3, 0, Math.PI * 2); context.fill();
+      context.beginPath(); context.moveTo(hook, top); context.lineTo(hook, top + S * 0.3); context.stroke();
+      context.fillStyle = (t % 40) < 20 ? '#ff4a3d' : '#5a1a14';                        // beacon blink
+      context.beginPath(); context.arc(sx + S * 0.55, top - S * 0.28, 3, 0, Math.PI * 2); context.fill();
     } else if (kind === 'power_node') {
-      context.strokeStyle = mix(style.accent, '#000', 0.1); context.lineWidth = 2;
-      context.beginPath(); context.moveTo(sx, y + 2); context.lineTo(sx, y - h * 0.34); context.stroke();
-      context.fillStyle = (t % 60) < 30 ? '#00e5ff' : '#0a5563';
-      context.fillRect(sx - 2, y - h * 0.34 - 3, 4, 4);
-    } else {
-      context.fillStyle = style.accent; // lit windows
-      for (const dx of [-0.24, 0.02]) for (const dy of [0.3, 0.58])
-        context.fillRect(sx + w * dx, y + h * dy, w * 0.18, h * 0.16);
+      context.strokeStyle = mix(style.accent, '#000', 0.1); context.lineWidth = 2;      // mast
+      context.beginPath(); context.moveTo(sx, top); context.lineTo(sx, top - S * 0.34); context.stroke();
+      context.fillStyle = (t % 60) < 30 ? '#00e5ff' : '#0a5563';                        // pulse
+      context.fillRect(sx - 2, top - S * 0.34 - 3, 4, 4);
     }
-  }
-
-  // Draw a pair of tank treads down the local ±y sides (local +x = forward), with
-  // segment ticks so tracked units read as machines, not blobs.
-  function treads(l: number, w: number, tw: number): void {
-    for (const sign of [-1, 1]) {
-      const ty = sign * w - (sign < 0 ? tw : 0);
-      context.fillStyle = '#232019';
-      context.fillRect(-l, ty, l * 2, tw);
-      context.fillStyle = '#3b352a';
-      context.fillRect(-l, ty, l * 2, tw * 0.32); // top-lit edge
-      context.fillStyle = '#17140f';
-      for (let x = -l + 2; x < l - 1; x += 4) context.fillRect(x, ty + tw * 0.4, 2, tw * 0.5); // links
-    }
-  }
-  // Rounded-rect path helper (local coords).
-  function rr(x: number, y: number, w: number, h: number, r: number): void {
-    context.beginPath();
-    context.moveTo(x + r, y);
-    context.arcTo(x + w, y, x + w, y + h, r);
-    context.arcTo(x + w, y + h, x, y + h, r);
-    context.arcTo(x, y + h, x, y, r);
-    context.arcTo(x, y, x + w, y, r);
-    context.closePath();
-  }
-
-  // ── Unit sprites: tracked/shaded chassis oriented to facing (§11.1 → S7 art) ──
-  function drawUnit(
-    e: ReturnType<typeof simState.store.all>[number],
-    kind: string, sx: number, sy: number, style: TeamStyle, angle: number,
-  ): void {
-    const S = TILE_SIZE_PX;
-    const combat = e.components.combat;
-    const weaponType = combat?.weaponId ? weapons?.weapons[combat.weaponId]?.type : undefined;
-
-    // Soft contact shadow, offset down-right for a consistent top-left key light.
-    context.fillStyle = 'rgba(0,0,0,0.32)';
-    context.beginPath();
-    context.ellipse(sx + 2, sy + S * 0.32, S * 0.34, S * 0.15, 0, 0, Math.PI * 2);
-    context.fill();
-
-    context.save();
-    context.translate(sx, sy);
-    context.rotate(angle);
-
-    const outline = 'rgba(0,0,0,0.55)';
-
-    if (kind === 'infantry' || kind === 'rocket_trooper') {
-      // Trooper: boots shadow, shaded torso, helmet with highlight, weapon tell.
-      const r = S * 0.19;
-      // torso
-      context.fillStyle = style.hullDark;
-      rr(-r * 0.9, -r * 0.8, r * 1.8, r * 1.6, r * 0.6); context.fill();
-      context.fillStyle = style.hull;
-      rr(-r * 0.9, -r * 0.8, r * 1.8, r * 0.9, r * 0.5); context.fill();
-      // helmet
-      context.fillStyle = mix(style.hull, '#ffffff', 0.12);
-      context.beginPath(); context.arc(r * 0.15, 0, r * 0.62, 0, Math.PI * 2); context.fill();
-      context.fillStyle = mix(style.hull, '#000', 0.25);
-      context.beginPath(); context.arc(r * 0.15, r * 0.18, r * 0.62, 0.15, Math.PI - 0.15); context.fill();
-      if (weaponType === 'ROCKET') {
-        context.fillStyle = '#2f2a22';
-        context.fillRect(-r * 0.2, -r * 1.05, r * 1.9, r * 0.52); // launcher tube
-        context.fillStyle = '#ffce54';
-        context.fillRect(r * 1.45, -r * 1.05, r * 0.3, r * 0.52); // warhead
-      } else {
-        context.fillStyle = '#201d17';
-        context.fillRect(0, -r * 0.16, r * 1.7, r * 0.32); // rifle
-      }
-    } else if (kind === 'vehicle') {
-      // Light tank: treads, beveled hull, rotating turret + barrel.
-      const l = S * 0.34, w = S * 0.2;
-      treads(l * 0.92, w, S * 0.14);
-      // hull
-      context.save();
-      context.fillStyle = style.hull;
-      context.beginPath();
-      context.moveTo(l, 0); context.lineTo(l * 0.55, -w); context.lineTo(-l * 0.85, -w);
-      context.lineTo(-l, 0); context.lineTo(-l * 0.85, w); context.lineTo(l * 0.55, w);
-      context.closePath();
-      context.fill();
-      context.fillStyle = mix(style.hull, '#fff', 0.16); // top-lit deck
-      context.beginPath();
-      context.moveTo(l, 0); context.lineTo(l * 0.55, -w); context.lineTo(-l * 0.85, -w); context.lineTo(-l, 0);
-      context.closePath(); context.fill();
-      context.lineWidth = 1.2; context.strokeStyle = outline; context.stroke();
-      context.restore();
-      // turret
-      context.fillStyle = style.hullDark;
-      context.beginPath(); context.arc(-l * 0.1, 0, w * 0.85, 0, Math.PI * 2); context.fill();
-      context.fillStyle = mix(style.hullDark, '#fff', 0.2);
-      context.beginPath(); context.arc(-l * 0.1, -w * 0.2, w * 0.5, 0, Math.PI * 2); context.fill();
-      context.fillStyle = '#201d17';
-      context.fillRect(-l * 0.1, -2.2, l * 1.15, 4.4); // barrel
-      context.fillStyle = style.stripe; // muzzle band
-      context.fillRect(l * 1.0, -2.2, 3, 4.4);
-    } else if (kind === 'harvester') {
-      // Ore hauler: wide treads, ribbed hopper, ore glow when carrying cargo.
-      const l = S * 0.42, w = S * 0.26;
-      const cargo = e.components.harvest?.cargo ?? 0;
-      treads(l * 0.95, w, S * 0.16);
-      context.fillStyle = mix(style.hull, '#8a7a53', 0.45);
-      context.beginPath();
-      context.moveTo(l, -w * 0.8); context.lineTo(l, w * 0.8);
-      context.lineTo(-l, w); context.lineTo(-l, -w); context.closePath(); context.fill();
-      context.fillStyle = mix(style.hull, '#fff', 0.1);
-      context.fillRect(-l, -w, l * 2, w * 0.5); // lit top
-      context.strokeStyle = outline; context.lineWidth = 1.2; context.stroke();
-      // hopper ribs
-      context.fillStyle = '#2c2418';
-      for (let x = -l * 0.6; x < l * 0.7; x += 5) context.fillRect(x, -w * 0.55, 2, w * 1.1);
-      // ore load glow
-      if (cargo > 0) {
-        context.fillStyle = '#c9a6ff';
-        context.globalAlpha = Math.min(1, 0.35 + cargo / 700);
-        context.fillRect(-l * 0.55, -w * 0.4, l * 0.6, w * 0.8);
-        context.globalAlpha = 1;
-      }
-      context.fillStyle = '#3a2f1c';
-      context.fillRect(l * 0.55, -w * 0.55, l * 0.45, w * 1.1); // intake mouth
-    } else if (kind === 'mcv') {
-      // Heavy crawler: broad treads, folded construction core, warning beacon.
-      const l = S * 0.44, w = S * 0.28;
-      treads(l * 0.95, w, S * 0.17);
-      context.fillStyle = style.hull;
-      context.beginPath();
-      context.moveTo(l, 0); context.lineTo(l * 0.55, -w); context.lineTo(-l * 0.6, -w);
-      context.lineTo(-l, 0); context.lineTo(-l * 0.6, w); context.lineTo(l * 0.55, w);
-      context.closePath(); context.fill();
-      context.fillStyle = mix(style.hull, '#fff', 0.14);
-      context.fillRect(-l * 0.6, -w, l * 1.15, w * 0.5);
-      context.strokeStyle = outline; context.lineWidth = 1.3; context.stroke();
-      context.fillStyle = style.accent; // deploy core
-      rr(-l * 0.32, -w * 0.45, l * 0.64, w * 0.9, 2); context.fill();
-      context.fillStyle = style.hullDark;
-      rr(-l * 0.2, -w * 0.28, l * 0.4, w * 0.56, 2); context.fill();
-      context.fillStyle = '#ffd36b'; // beacon
-      context.beginPath(); context.arc(l * 0.35, 0, 2.4, 0, Math.PI * 2); context.fill();
-    } else {
-      const h = S * 0.26;
-      context.fillStyle = style.hull;
-      rr(-h, -h, h * 2, h * 2, 3); context.fill();
-      context.strokeStyle = outline; context.lineWidth = 1.3; context.stroke();
-    }
-
-    context.restore();
   }
 
   function render() {
