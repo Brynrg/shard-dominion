@@ -49,6 +49,30 @@
       }
     },
     {
+      "id": "harvester",
+      "name": "Harvester",
+      "cost": 400,
+      "hp": 200,
+      "armorClass": "MEDIUM",
+      "weaponId": "rifle",
+      "speed": 10,
+      "buildTimeSeconds": 8,
+      "team": "player",
+      "graphics": {
+        "sprite_id": "harvester",
+        "fallback_geometry": {
+          "chassis": "LIGHT_VEHICLE",
+          "chassisMod": "NONE",
+          "weaponGlyph": "NONE",
+          "barrelClass": "NONE",
+          "roleBadge": "SCOUT",
+          "rangeMarks": 0,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      }
+    },
+    {
       "id": "rocket_trooper",
       "name": "Rocket Trooper",
       "cost": 200,

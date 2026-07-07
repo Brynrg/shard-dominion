@@ -21,7 +21,7 @@ export interface CombatComponent { weaponId: string | null; cooldownRemaining: n
 export interface ExperienceComponent { kills: number; rank: number } // veterancy (dormant by default)
 export interface RenderableComponent { spriteId: string }
 export interface BuildingComponent { onSlab: boolean; buildProgress: number; powered: boolean }
-export interface ProductionComponent { queue: readonly string[]; progress: number }
+export interface ProductionComponent { queue: readonly string[]; progress: number; current?: string | null }
 
 /** Economy component for credits and storage. */
 export interface EconomyComponent {

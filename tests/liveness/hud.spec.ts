@@ -23,9 +23,9 @@ test.describe('HUD build-button gate', () => {
 
     const credits0 = await page.evaluate(() => (window as { __debugEconomy?: () => { credits: number } }).__debugEconomy?.().credits ?? 0);
 
-    // The Barracks button is the 3rd build row in the right panel (canvas 800×600,
-    // panel width 184). Centre ≈ (700, 229) in canvas pixels — click it (NOT the 'b' key).
-    await page.mouse.click(box.x + 700, box.y + 229);
+    // The Barracks button is the 4th build row (Infantry/Rocket/Harvester/Barracks/Power)
+    // in the right panel (canvas 800×600). Centre ≈ (700, 263) — click it (NOT the 'b' key).
+    await page.mouse.click(box.x + 700, box.y + 263);
     await page.waitForTimeout(80);
 
     // Now in placement mode → click a tile near the ConYard to place the barracks.

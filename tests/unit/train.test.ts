@@ -177,4 +177,23 @@ describe('train intent', () => {
     expect(rocketTrooper?.components.health?.hp).toBe(20);
     expect(rocketTrooper?.components.combat?.weaponId).toBe('inf_rocket');
   });
+
+  it('train a Harvester (400) — spawns with a harvest FSM, not combat', () => {
+    addRefinery(5, 5, 800);
+    addBarracks(5, 6);
+
+    queue.push({ type: 'train', unitId: 'harvester' });
+    runTick(state, systems);
+    // 400 charged (800 → 400)
+    expect(state.store.all().find(e => e.components.economy)?.components.economy?.credits).toBe(400);
+
+    // Harvester builds in 8s = 160 ticks — run 170 for margin.
+    for (let i = 0; i < 170; i++) runTick(state, systems);
+
+    const harv = state.store.all().find(e =>
+      e.components.faction?.faction === 'harvester' && e.components.faction?.team === 'player');
+    expect(harv).toBeDefined();
+    expect(harv?.components.harvest?.state).toBe('SEEK'); // auto-mines
+    expect(harv?.components.combat).toBeUndefined();      // not a fighter
+  });
 });

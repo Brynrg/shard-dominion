@@ -19,6 +19,7 @@ interface BuildItem { id: string; key: string; name: string; cost: number; kind:
 const BUILD_MENU: readonly BuildItem[] = [
   { id: 'infantry', key: 'T', name: 'Infantry', cost: 100, kind: 'train' },
   { id: 'rocket_trooper', key: 'R', name: 'Rocket', cost: 200, kind: 'train' },
+  { id: 'harvester', key: 'H', name: 'Harvester', cost: 400, kind: 'train' },
   { id: 'barracks', key: 'B', name: 'Barracks', cost: 300, kind: 'build' },
   { id: 'power_node', key: 'N', name: 'Power', cost: 400, kind: 'build' },
 ];
@@ -84,12 +85,13 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
     return { supply, demand, powered: supply >= demand };
   }
 
-  function getPlayerBarracks(): { queue: readonly string[]; progress: number } | null {
+  function getPlayerBarracks(): { queue: readonly string[]; progress: number; current: string | null } | null {
     for (const e of simState.store.all()) {
       if (e.components.faction?.team === 'player' && e.components.production) {
         return {
           queue: e.components.production.queue ?? [],
           progress: e.components.production.progress ?? 0,
+          current: e.components.production.current ?? null,
         };
       }
     }
@@ -147,12 +149,19 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
   }
 
   // Clickable C&C-style build button. Records its rect (+ enabled) for hit-testing.
+  // `progress` 0-100 = the item currently building (draws a fill); `queued` = how many
+  // more of it are waiting.
   const rects: { action: BuildAction; x: number; y: number; w: number; h: number; enabled: boolean }[] = [];
-  function drawBuildButton(item: BuildItem, x: number, y: number, w: number, h: number, enabled: boolean, hovered: boolean, building: boolean): void {
+  function drawBuildButton(item: BuildItem, x: number, y: number, w: number, h: number, enabled: boolean, hovered: boolean, progress: number, queued: number): void {
     rects.push({ action: `${item.kind}:${item.id}`, x, y, w, h, enabled });
     context.fillStyle = !enabled ? 'rgba(70,72,82,0.20)' : hovered ? 'rgba(74,144,226,0.50)' : 'rgba(74,144,226,0.22)';
     context.fillRect(x, y, w, h);
-    context.strokeStyle = !enabled ? '#3a3d46' : hovered ? '#8fd6ff' : '#4a6a8a';
+    // Production fill: a green wash sweeping left→right as the unit builds.
+    if (progress > 0) {
+      context.fillStyle = 'rgba(76,175,80,0.40)';
+      context.fillRect(x, y, Math.floor((w * progress) / 100), h);
+    }
+    context.strokeStyle = !enabled ? '#3a3d46' : (progress > 0 ? COLORS.success : hovered ? '#8fd6ff' : '#4a6a8a');
     context.lineWidth = 1; context.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
     // hotkey chip
     context.fillStyle = enabled ? COLORS.highlight : '#4a4a52';
@@ -167,7 +176,9 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
     context.font = '12px monospace';
     context.fillStyle = enabled ? '#ffd34a' : '#6d6d75';
     context.fillText(`◈${item.cost}`, x + w - 44, y + 9);
-    if (building) { context.fillStyle = COLORS.success; context.fillText('▶', x + w - 12, y + 9); }
+    // Building/queue badge on the right.
+    if (progress > 0) { context.fillStyle = COLORS.success; context.font = 'bold 11px monospace'; context.fillText(`${progress}%`, x + w - 30, y + 9); }
+    if (queued > 0) { context.fillStyle = COLORS.text; context.font = 'bold 12px monospace'; context.fillText(`×${queued}`, x + w - 16, y + 9); }
   }
 
   return {
@@ -189,7 +200,7 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
       const pw = 184;
       const px = canvas.width - pw - 8;
       const py = 8;
-      const ph = 336;
+      const ph = 372; // fits 5 build buttons + footer
       drawPanel(px, py, pw, ph);
 
       // Title bar.
@@ -224,9 +235,8 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
           refinery.storage >= refinery.maxStorage ? COLORS.warning : COLORS.success);
       }
 
-      // Build menu — clickable C&C-style buttons.
+      // Build menu — clickable C&C-style buttons with live progress + queue count.
       drawText('BUILD  (click or hotkey)', px + 10, py + 120, '#9fb4cc');
-      const buildingUnit = (id: string) => (barracks?.progress ?? 0) > 0 && barracks?.queue[0] === id;
       const hover = cfg.getHover?.() ?? null;
       const barracksUp = hasBarracks();
       const bw = pw - 16;
@@ -235,14 +245,10 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
         // Train needs a barracks + credits; build needs credits (placement charges).
         const enabled = credits >= item.cost && (item.kind === 'build' ? true : barracksUp);
         const hovered = !!hover && hover.sx >= px + 8 && hover.sx <= px + 8 + bw && hover.sy >= by && hover.sy <= by + 30;
-        drawBuildButton(item, px + 8, by, bw, 30, enabled, hovered, item.kind === 'train' && buildingUnit(item.id));
+        const progress = item.kind === 'train' && barracks?.current === item.id ? (barracks?.progress ?? 0) : 0;
+        const queued = item.kind === 'train' && barracks ? barracks.queue.filter(q => q === item.id).length : 0;
+        drawBuildButton(item, px + 8, by, bw, 30, enabled, hovered, progress, queued);
         by += 34;
-      }
-
-      // Queue depth + build progress.
-      if (barracks && (barracks.queue.length > 0 || barracks.progress > 0)) {
-        drawText(`Queue ${barracks.queue.length}`, px + 10, by + 2, COLORS.text);
-        if (barracks.progress > 0) drawProgressBar(px + 74, by, 100, barracks.progress, 100, COLORS.highlight);
       }
 
       // Legend (footer).

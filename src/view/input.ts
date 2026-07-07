@@ -309,6 +309,11 @@ export function makeInputHandlers(
         e.preventDefault();
         queue.push({ type: 'train', unitId: 'rocket_trooper' });
         return;
+      case 'h': // Train a Harvester (grow the economy)
+      case 'H':
+        e.preventDefault();
+        queue.push({ type: 'train', unitId: 'harvester' });
+        return;
       case '1':
       case '2':
       case '3': {
