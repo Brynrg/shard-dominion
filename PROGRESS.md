@@ -37,6 +37,16 @@
 - **P0c sustaining economy (2026-07-02):** replaced token demo seeding with a real field (natural shard 300 +
   a 3×3 home field at 800) — a single harvester banks 500→1900 in 30s then refills toward the 2000 cap. Fixed two
   fragile S2 gates the faster harvester exposed (move-test Y tolerance; box-select now targets the stationary base).
+- **🖼️ REAL SPRITES LIVE (2026-07-03, v0.15.0, commit 82ba44e):** 14 Grok-generated painted sprites are in the
+  game — vehicle/infantry/rocket_trooper (both teams), harvester/mcv/power_node (player), refinery/barracks (both
+  teams), construction_yard (neutral). Pipeline: operator moved the folder out of the TCC-locked ~/Downloads into
+  the repo → `scripts/import-art.mjs` mapped them in. **Two fixes during integration:** (1) macOS TCC blocks my
+  terminal from reading ~/Downloads AND ~/Desktop entirely ('Operation not permitted') — the operator must move
+  files into ~/Code for me to see them; (2) Grok vignetted the 'flat' magenta bg (corners pure #ff00ff, centre
+  drifts), so exact-distance chroma-key left a pink halo → rewrote `chromaKeyOut` to key by COLOUR FAMILY (magenta
+  = R+B high, G low), which removes every magenta shade while sparing blue/red/cyan/yellow. Downscaled 1024→256px
+  (payload 5.7MB→0.6MB). Verified live in-browser: painted refinery/MCV/conyard/infantry/barracks render clean on
+  the desert, no magenta. 113 unit + 9 liveness gates green.
 - **🎨 IMAGE-GEN ASSET PATH LIVE (2026-07-03, v0.14.0, commit abb3409):** adapted the loader to what AI image
   tools actually produce (one clean top-down sprite, opaque bg) instead of precise facing atlases. `chromaKeyOut()`
   removes a flat key colour (#ff00ff) → transparent at load (edge feather); `drawReal` gains `rotateFrom` mode that
