@@ -37,6 +37,18 @@
 - **P0c sustaining economy (2026-07-02):** replaced token demo seeding with a real field (natural shard 300 +
   a 3×3 home field at 800) — a single harvester banks 500→1900 in 30s then refills toward the 2000 cap. Fixed two
   fragile S2 gates the faster harvester exposed (move-test Y tolerance; box-select now targets the stationary base).
+- **🎨 S7-2 BAKED SPRITES + ⚔️ S6B AI WAVES LIVE (2026-07-03, v0.11.0, commit d5f201e):**
+  **S7-2 (art):** new `src/view/spritebank.ts` pre-bakes every unit into 16 FIXED-LIT directional frames at 2×
+  supersampling + buildings into lit bodies, then blits (the Westwood 'sprite' technique — consistent sun
+  regardless of heading + crisper edges, vs rotating a vector whose shading spins with it). Renderer draws live
+  animated accents (refinery exhaust, conyard crane+beacon, power pulse) + harvester ore-glow over baked bodies;
+  FX + terrain-blending retained. Verified rendering on a foreground localhost tab (identical bundle), no console
+  errors. **S6B (AI):** enemy now attacks in continuous ROLLING WAVES — accumulate fresh combat units, send each
+  armySize batch at the player, never re-order committed units, prune the dead so the dispatched set can't leak.
+  Sustained pressure vs the old one-shot muster. **Delegation note:** ai.ts drafted by the local Qwen coder
+  (`hermes-ask code`) from a scaffolded packet; orchestrator reviewed + authored `tests/unit/ai_waves.test.ts`
+  (3 wave tests). 108 unit + 9 liveness gates green; deploy verified by state. **Still open (S7-3, if wanted):**
+  true hand-authored/rendered bitmap sprite-sheet ART needs commissioned/generated assets — beyond procedural.
 - **🎨 S7-1 ART PASS + HUD-POLISH LIVE (2026-07-03, v0.10.0, commit 3d96a65):** driven-through & verified via
   Claude-in-Chrome on the live site. (A) HUD is now hidden while the briefing is up — the COMMAND panel no longer
   bleeds past the briefing frame. (B) Procedural high-fidelity render (view-only, IP-clean, zero external assets):
