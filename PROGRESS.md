@@ -37,6 +37,14 @@
 - **P0c sustaining economy (2026-07-02):** replaced token demo seeding with a real field (natural shard 300 +
   a 3×3 home field at 800) — a single harvester banks 500→1900 in 30s then refills toward the 2000 cap. Fixed two
   fragile S2 gates the faster harvester exposed (move-test Y tolerance; box-select now targets the stationary base).
+- **🏜️ REAL TERRAIN TILES + ZOOM SCALING LIVE (2026-07-03, v0.20.0, commit 73699c7):** 9 seamless Grok ground
+  tiles (sand ×2, deep_sand, dune, rock, impassable, shard full/mid/low; all tile perfectly — edge-diff ~1-3)
+  imported 512→128px (138KB). spritebank.loadTerrain()/getTerrainTile() (sand variant by hash, Shard art by
+  density); drawTerrain blits the real tile + fog-dim overlay, procedural fallback per-tile. **Zoom fix:** the
+  wheel-zoom I added earlier sized tiles/sprites at a FIXED 32px → gaps when zoomed in. Now tile size + all
+  size-based draws (sprites, slabs, rings, health bars, ghost, accents, harvester glow) scale by camera.zoom.
+  Verified live: painted terrain renders seamlessly, zoom-in holds up, sprites stay proportional. 119 unit + 10
+  liveness green. **Open cosmetic:** Grok's building sprites have a purple base platform that reads oddly on sand.
 - **🕹️ C&C/RED-ALERT CONTROL INTERFACE LIVE (2026-07-03, v0.19.0, commit dd15587):** feedback 'make the control
   interface act more like C&C Red Alert'. (1) The BUILD panel is now a CLICKABLE SIDEBAR: Infantry/Rocket (click to
   train), Barracks/Power (click → placement → click map). Buttons show a hotkey chip + name + cost, hover-highlight,
