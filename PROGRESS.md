@@ -37,6 +37,16 @@
 - **P0c sustaining economy (2026-07-02):** replaced token demo seeding with a real field (natural shard 300 +
   a 3×3 home field at 800) — a single harvester banks 500→1900 in 30s then refills toward the 2000 cap. Fixed two
   fragile S2 gates the faster harvester exposed (move-test Y tolerance; box-select now targets the stationary base).
+- **🛰️ S7-3 SPRITES + RADAR MINIMAP LIVE (2026-07-03, v0.12.0, commit ccff729):** verified in a foreground
+  Chrome tab (localhost, identical bundle) — no console errors. **S7-3 (art):** richer baked sprites — vehicle
+  gains an engine deck/louvres, turret hatch, side-skirts, barrel collar; harvester gains hazard stripes + scoop
+  blade + exhaust stack; MCV gains fold-out panel seams + core vents; infantry gain backpack + shoulders. Bigger
+  cells (U 40→44, BLDG 60→64). **Deeper RTS: radar minimap** (bottom-left) — baked terrain layer + live fog
+  shading + team unit blips + camera-viewport rect; **LEFT-CLICK the radar recentres the camera** (verified: click
+  NE → camera jumped, viewport rect moved). New View.minimapRect()/minimapJump(); input swallows radar clicks so
+  they don't select/move on the field. 108 unit + 9 liveness gates green. **Honest note:** the promised PNG
+  sprite-sheet load path was deferred in favour of visible sprite detail; true commissioned/generated bitmap art
+  is still the only path to a dramatic art jump (procedural has plateaued).
 - **🎨 S7-2 BAKED SPRITES + ⚔️ S6B AI WAVES LIVE (2026-07-03, v0.11.0, commit d5f201e):**
   **S7-2 (art):** new `src/view/spritebank.ts` pre-bakes every unit into 16 FIXED-LIT directional frames at 2×
   supersampling + buildings into lit bodies, then blits (the Westwood 'sprite' technique — consistent sun
