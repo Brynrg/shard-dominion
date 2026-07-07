@@ -37,6 +37,16 @@
 - **P0c sustaining economy (2026-07-02):** replaced token demo seeding with a real field (natural shard 300 +
   a 3×3 home field at 800) — a single harvester banks 500→1900 in 30s then refills toward the 2000 cap. Fixed two
   fragile S2 gates the faster harvester exposed (move-test Y tolerance; box-select now targets the stationary base).
+- **🎨 REAL-ASSET SPRITE LOADER LIVE (2026-07-03, v0.13.0, commit 7e6a6ec):** the pipeline for commissioned/
+  generated art is built + shipped. `spritebank` loads delivered sheets from `public/art/manifest.json` + JSON
+  sidecars; a real sheet OVERRIDES the procedural bake for its (assetId, team), everything else stays procedural
+  → assets can land one at a time. Pure `facingToRow()` maps engine heading → sheet facing row (facing0/order
+  aware, unit-tested); `drawReal()` slices the grid, places on the pivot, advances anim by fps. Drop-zone at
+  `public/art/` (README + manifest.example.json; NO manifest.json yet → prod stays procedural). Spec at
+  `docs/ART_ASSETS_SPEC.md`. **Verified live in-browser:** an injected test sheet swapped the MCV sprite (green
+  arrow correctly pointed North for the idle unit) while all other units stayed procedural — proves install →
+  facing → slice → pivot AND per-asset fallback. 113 unit + 9 liveness gates green. **Next:** operator delivers
+  art to spec → I add manifest.json entries → sprites swap in automatically.
 - **🛰️ S7-3 SPRITES + RADAR MINIMAP LIVE (2026-07-03, v0.12.0, commit ccff729):** verified in a foreground
   Chrome tab (localhost, identical bundle) — no console errors. **S7-3 (art):** richer baked sprites — vehicle
   gains an engine deck/louvres, turret hatch, side-skirts, barrel collar; harvester gains hazard stripes + scoop
