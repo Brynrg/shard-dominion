@@ -9,9 +9,24 @@ export interface HUDConfig {
   simState: SimState;
   camera: Camera; // unused in current implementation
   constructionOutput?: ConstructionOutput;
+  /** Cursor position (canvas px) for hover highlighting the build buttons. */
+  getHover?: () => { sx: number; sy: number } | null;
 }
 
-export function makeHUD(cfg: HUDConfig): { draw(): void } {
+/** The C&C-style sidebar build menu. `kind` decides the click action:
+ *  train → queue a unit at the barracks; build → enter placement mode. */
+interface BuildItem { id: string; key: string; name: string; cost: number; kind: 'train' | 'build' }
+const BUILD_MENU: readonly BuildItem[] = [
+  { id: 'infantry', key: 'T', name: 'Infantry', cost: 100, kind: 'train' },
+  { id: 'rocket_trooper', key: 'R', name: 'Rocket', cost: 200, kind: 'train' },
+  { id: 'barracks', key: 'B', name: 'Barracks', cost: 300, kind: 'build' },
+  { id: 'power_node', key: 'N', name: 'Power', cost: 400, kind: 'build' },
+];
+
+/** A build-menu button hit-test result: `"train:infantry"`, `"build:barracks"`, … */
+export type BuildAction = string;
+
+export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy: number): BuildAction | null } {
   const { canvas, simState } = cfg;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D context not available');
@@ -125,28 +140,45 @@ export function makeHUD(cfg: HUDConfig): { draw(): void } {
     context.fillRect(x + 1, y + h - 2, w - 2, 1);
   }
 
-  // One roster row: hotkey chip + name + cost, greyed when unaffordable, ⏳ when building.
-  function drawBuildRow(x: number, y: number, w: number, key: string, name: string, cost: number, credits: number, building: boolean): void {
-    const affordable = credits >= cost;
-    drawBox(x, y, w, 22, affordable ? 'rgba(74,144,226,0.18)' : 'rgba(80,80,80,0.15)');
+  function hasBarracks(): boolean {
+    for (const e of simState.store.all())
+      if (e.components.faction?.team === 'player' && e.components.faction?.faction === 'barracks') return true;
+    return false;
+  }
+
+  // Clickable C&C-style build button. Records its rect (+ enabled) for hit-testing.
+  const rects: { action: BuildAction; x: number; y: number; w: number; h: number; enabled: boolean }[] = [];
+  function drawBuildButton(item: BuildItem, x: number, y: number, w: number, h: number, enabled: boolean, hovered: boolean, building: boolean): void {
+    rects.push({ action: `${item.kind}:${item.id}`, x, y, w, h, enabled });
+    context.fillStyle = !enabled ? 'rgba(70,72,82,0.20)' : hovered ? 'rgba(74,144,226,0.50)' : 'rgba(74,144,226,0.22)';
+    context.fillRect(x, y, w, h);
+    context.strokeStyle = !enabled ? '#3a3d46' : hovered ? '#8fd6ff' : '#4a6a8a';
+    context.lineWidth = 1; context.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
     // hotkey chip
-    context.fillStyle = affordable ? COLORS.highlight : '#555';
-    context.fillRect(x + 4, y + 4, 15, 14);
-    context.fillStyle = '#0e1014';
-    context.font = 'bold 12px monospace';
-    context.textBaseline = 'top';
-    context.fillText(key, x + 8, y + 5);
+    context.fillStyle = enabled ? COLORS.highlight : '#4a4a52';
+    context.fillRect(x + 5, y + 6, 18, 18);
+    context.fillStyle = enabled ? '#0e1014' : '#2a2a30';
+    context.font = 'bold 13px monospace'; context.textBaseline = 'top';
+    context.fillText(item.key, x + 10, y + 9);
     // name + cost
-    const textColor = affordable ? COLORS.text : '#7c7c7c';
-    drawText(name, x + 26, y + 5, textColor);
-    context.fillStyle = affordable ? COLORS.success : '#7c7c7c';
+    context.font = '13px monospace';
+    context.fillStyle = enabled ? COLORS.text : '#6d6d75';
+    context.fillText(item.name, x + 30, y + 9);
     context.font = '12px monospace';
-    context.fillText(`${cost}`, x + w - 34, y + 5);
-    if (building) drawText('▶', x + w - 14, y + 5, COLORS.highlight);
+    context.fillStyle = enabled ? '#ffd34a' : '#6d6d75';
+    context.fillText(`◈${item.cost}`, x + w - 44, y + 9);
+    if (building) { context.fillStyle = COLORS.success; context.fillText('▶', x + w - 12, y + 9); }
   }
 
   return {
+    // Hit-test the build buttons; returns e.g. "train:infantry" / "build:barracks",
+    // or null if (sx,sy) isn't over an enabled button.
+    buttonAt(sx: number, sy: number): BuildAction | null {
+      for (const r of rects) if (r.enabled && sx >= r.x && sx <= r.x + r.w && sy >= r.y && sy <= r.y + r.h) return r.action;
+      return null;
+    },
     draw() {
+      rects.length = 0; // rebuild the clickable rects each frame
       const harvester = getHarvester();
       const refinery = getRefinery();
       const power = getPowerStatus();
@@ -154,10 +186,10 @@ export function makeHUD(cfg: HUDConfig): { draw(): void } {
       const credits = refinery ? Math.floor(refinery.credits) : 0;
 
       // ── Right-edge command panel ────────────────────────────────────────────
-      const pw = 176;
+      const pw = 184;
       const px = canvas.width - pw - 8;
       const py = 8;
-      const ph = 262;
+      const ph = 336;
       drawPanel(px, py, pw, ph);
 
       // Title bar.
@@ -192,24 +224,32 @@ export function makeHUD(cfg: HUDConfig): { draw(): void } {
           refinery.storage >= refinery.maxStorage ? COLORS.warning : COLORS.success);
       }
 
-      // Build roster.
-      drawText('BUILD', px + 10, py + 120, '#9fb4cc');
+      // Build menu — clickable C&C-style buttons.
+      drawText('BUILD  (click or hotkey)', px + 10, py + 120, '#9fb4cc');
       const buildingUnit = (id: string) => (barracks?.progress ?? 0) > 0 && barracks?.queue[0] === id;
-      drawBuildRow(px + 8, py + 138, pw - 16, 'T', 'Infantry', 100, credits, buildingUnit('infantry'));
-      drawBuildRow(px + 8, py + 164, pw - 16, 'R', 'Rocket', 200, credits, buildingUnit('rocket_trooper'));
+      const hover = cfg.getHover?.() ?? null;
+      const barracksUp = hasBarracks();
+      const bw = pw - 16;
+      let by = py + 138;
+      for (const item of BUILD_MENU) {
+        // Train needs a barracks + credits; build needs credits (placement charges).
+        const enabled = credits >= item.cost && (item.kind === 'build' ? true : barracksUp);
+        const hovered = !!hover && hover.sx >= px + 8 && hover.sx <= px + 8 + bw && hover.sy >= by && hover.sy <= by + 30;
+        drawBuildButton(item, px + 8, by, bw, 30, enabled, hovered, item.kind === 'train' && buildingUnit(item.id));
+        by += 34;
+      }
 
       // Queue depth + build progress.
       if (barracks && (barracks.queue.length > 0 || barracks.progress > 0)) {
-        drawText(`Queue ${barracks.queue.length}`, px + 10, py + 192, COLORS.text);
-        if (barracks.progress > 0) drawProgressBar(px + 70, py + 190, 96, barracks.progress, 100, COLORS.highlight);
+        drawText(`Queue ${barracks.queue.length}`, px + 10, by + 2, COLORS.text);
+        if (barracks.progress > 0) drawProgressBar(px + 74, by, 100, barracks.progress, 100, COLORS.highlight);
       }
 
-      // Hotkey legend (footer) — kept within panel width (10px monospace, ~26 chars).
+      // Legend (footer).
       context.fillStyle = '#8894a4';
       context.font = '10px monospace';
-      context.fillText('B Barracks  N Power', px + 10, py + 214);
-      context.fillText('Ctrl+1-3 set  1-3 recall', px + 10, py + 226);
-      context.fillText('R-clk: move/attack/mine', px + 10, py + 238);
+      context.fillText('L-click select · R-click move/attack/mine', px + 10, py + ph - 30);
+      context.fillText('Ctrl+1-3 set groups · 1-3 recall', px + 10, py + ph - 18);
 
       // Overflow warning (below panel, hard to miss).
       if (refinery && refinery.storage >= refinery.maxStorage) {

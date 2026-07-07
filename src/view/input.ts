@@ -59,6 +59,8 @@ export interface InputHandlers {
   hasConYard(): boolean;
   /** Set the sim state reference for hasConYard check. */
   setSimState(state: SimState): void;
+  /** Last cursor position (canvas px) — for the HUD's hover highlight. */
+  getCursor(): ScreenPos | null;
 }
 
 export function makeInputHandlers(
@@ -74,12 +76,45 @@ export function makeInputHandlers(
   /** Optional radar minimap: a left-click inside it recentres the camera and is
    *  swallowed (does not select/move units on the field). */
   minimap?: { jump(sx: number, sy: number): boolean },
+  /** Optional sidebar build menu: a left-click on a build button queues a unit /
+   *  enters structure placement (C&C-style), instead of selecting on the field. */
+  hud?: { buttonAt(sx: number, sy: number): string | null },
 ): InputHandlers {
   let selectStart: ScreenPos | null = null;
   let selectCurrent: ScreenPos | null = null;
   let placementMode: { structureId: string; tile: TilePos } | null = null;
   let simStateRef: SimState | null = null;
   let panLast: { x: number; y: number } | null = null; // middle-drag pan anchor
+  let lastCursor: ScreenPos | null = null;             // for HUD hover + context cursor
+
+  // C&C-style build-button click: queue a unit or enter structure placement.
+  function doBuildAction(action: string): void {
+    const [kind, id] = action.split(':');
+    if (kind === 'train' && id) queue.push({ type: 'train', unitId: id });
+    else if (kind === 'build' && id) setPlacementMode(id);
+  }
+
+  // Context cursor (C&C feel): crosshair over enemies, pointer over own units /
+  // buttons, cell in placement mode, grab while panning.
+  function updateCursor(pos: ScreenPos): void {
+    let c = 'default';
+    if (placementMode) c = 'cell';
+    else if (hud?.buttonAt(pos.sx, pos.sy)) c = 'pointer';
+    else if (simStateRef) {
+      const w = screenToWorld(pos, camera);
+      let enemy = false, own = false;
+      for (const e of simStateRef.store.all()) {
+        const p = e.components.position;
+        if (!p) continue;
+        if (Math.hypot(p.wx - w.wx, p.wy - w.wy) < 180) { // ~0.7 tile
+          const team = e.components.faction?.team;
+          if (team === 'enemy') enemy = true; else if (team === 'player') own = true;
+        }
+      }
+      c = enemy ? 'crosshair' : own ? 'pointer' : 'default';
+    }
+    canvas.style.cursor = c;
+  }
 
   // ── Camera: mouse-wheel zoom (to cursor) + middle-drag pan. The contract transform
   //    already applies cam.zoom, so we just mutate the live camera object. ──────────
@@ -146,6 +181,14 @@ export function makeInputHandlers(
       return;
     }
     const pos = getMousePos(e);
+    // Sidebar build button → queue/place; swallow (not a field select).
+    const action = hud?.buttonAt(pos.sx, pos.sy);
+    if (action) {
+      doBuildAction(action);
+      selectStart = null;
+      selectCurrent = null;
+      return;
+    }
     // Radar click → jump the camera; swallow so it doesn't select/move on the field.
     if (minimap?.jump(pos.sx, pos.sy)) {
       selectStart = null;
@@ -167,9 +210,10 @@ export function makeInputHandlers(
       return;
     }
     const pos = getMousePos(e);
+    lastCursor = pos;
     // The placement ghost follows the cursor on hover (no button required).
     if (placementMode) placementMode.tile = screenToTile(pos, camera);
-    if (!selectStart) return;
+    if (!selectStart) { updateCursor(pos); return; }
     selectCurrent = pos;
   }
 
@@ -337,5 +381,6 @@ export function makeInputHandlers(
     getPlacementMode,
     hasConYard,
     setSimState,
+    getCursor: () => lastCursor,
   };
 }

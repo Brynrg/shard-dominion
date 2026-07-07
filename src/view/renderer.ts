@@ -76,6 +76,8 @@ export interface ViewConfig {
   /** World position of the objective (enemy base). Marked on the radar + pointed to
    *  by an off-screen arrow so the goal is always obvious. */
   objectiveWorld?: WorldPos;
+  /** Cursor position (canvas px) for hover-highlighting the sidebar build buttons. */
+  getHover?: () => { sx: number; sy: number } | null;
 }
 
 export interface View {
@@ -87,12 +89,14 @@ export interface View {
   minimapRect(): { x: number; y: number; w: number; h: number };
   /** If (sx,sy) is inside the minimap, recentre the camera there and return true. */
   minimapJump(sx: number, sy: number): boolean;
+  /** Hit-test the sidebar build buttons; returns "train:infantry" / "build:barracks" / null. */
+  hudButtonAt(sx: number, sy: number): string | null;
   /** The sprite bank (exposed for the real-asset loader + tests). */
   readonly spriteBank: SpriteBank;
 }
 
 export function makeView(cfg: ViewConfig): View {
-  const { canvas, simState, systems, mapWidth, mapHeight, confirmationMarkers, getSelectionBox, getPlacementMode, structures = [], getVictory, getFog, weapons = { matrix: {}, weapons: {} }, onboarding, objectiveWorld } = cfg;
+  const { canvas, simState, systems, mapWidth, mapHeight, confirmationMarkers, getSelectionBox, getPlacementMode, structures = [], getVictory, getFog, weapons = { matrix: {}, weapons: {} }, onboarding, objectiveWorld, getHover } = cfg;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D context not available');
 
@@ -112,8 +116,8 @@ export function makeView(cfg: ViewConfig): View {
   // Use ctx as non-null after the check
   const context = ctx as CanvasRenderingContext2D;
 
-  // Create HUD
-  const hud = makeHUD({ canvas, simState, camera });
+  // Create HUD (clickable C&C-style build sidebar; getHover drives button highlight)
+  const hud = makeHUD({ canvas, simState, camera, getHover });
 
   // Pre-bake the directional sprite bank once (S7-2). Units get DIRS fixed-lit
   // facings; buildings get a lit body. Animated accents are drawn live on top.
@@ -885,6 +889,7 @@ export function makeView(cfg: ViewConfig): View {
       Object.assign(camera, cam);
     },
     spriteBank: sprites,
+    hudButtonAt: (sx, sy) => hud.buttonAt(sx, sy),
     minimapRect,
     minimapJump(sx: number, sy: number): boolean {
       if (onboarding?.briefingActive()) return false;

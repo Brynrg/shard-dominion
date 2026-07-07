@@ -197,6 +197,7 @@ export function bootstrap(): void {
     getFog: () => ({ visible: fogSystem.visible, explored: fogSystem.explored }),
     onboarding,
     objectiveWorld: tileToWorldCenter({ tx: cx + 10, ty: cy - 8 }), // the enemy base = the goal
+    getHover: () => input.getCursor(),                               // sidebar hover highlight
   });
 
   // Camera panning is a pure view action — never a sim command.
@@ -211,6 +212,8 @@ export function bootstrap(): void {
     dismiss: () => onboarding.dismissBriefing(),
   }, {
     jump: (sx, sy) => view.minimapJump(sx, sy),
+  }, {
+    buttonAt: (sx, sy) => view.hudButtonAt(sx, sy),
   });
   input.setSimState(state); // wire the sim-state ref used by the ConYard check (for 'B' placement)
   input.start();
