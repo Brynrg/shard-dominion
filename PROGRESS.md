@@ -37,6 +37,16 @@
 - **P0c sustaining economy (2026-07-02):** replaced token demo seeding with a real field (natural shard 300 +
   a 3×3 home field at 800) — a single harvester banks 500→1900 in 30s then refills toward the 2000 cap. Fixed two
   fragile S2 gates the faster harvester exposed (move-test Y tolerance; box-select now targets the stationary base).
+- **🎮 ONBOARDING + INTERACTION FIX LIVE (2026-07-03, v0.9.0, commit bfc37c1):** addresses play-test feedback
+  "I can see shapes moving but cannot interact, and there's no story/path to begin."
+  (1) **Interaction bug FIXED** — `input.getMousePos` now scales CSS-pixel cursor coords into the canvas's 800×600
+  backing store (`canvas.width/rect.width`). Before, any embed/scale (the portal) mis-mapped every click → selection
+  silently failed → "can't interact." (2) **Mission briefing** (story + goal + controls) pauses the sim until the
+  player clicks "TAKE COMMAND" — the dismiss-click also grabs keyboard focus (fixes iframe key capture). (3) **Staged
+  first-match objectives** (select → move → train → attack) advance by observing what the player does (view-only, no
+  contract/sim change). (4) Responsive, focusable canvas. New `src/view/onboarding.ts`. All 7 gates updated to
+  take-command first; new `p1.spec.ts` proves briefing-pause → start → click-selects-a-unit. **105 unit + 9 liveness
+  gates green.** Deploy verified by state (ready) not URL polling.
 - **🌐 P1 VISUAL-GRAMMAR BUILD LIVE (2026-07-03):** speedrungames.net/games/shard-dominion/ now serves the P1
   bundle (index-D_7piw3Y.js, deploy e5081bb ready). **Deploy postmortem:** a hand-rewritten manifest.json (after an
   rm -rf dropped the original) omitted buildHash/buildTimestamp/lastUpdated → the prebuild registry validator failed
