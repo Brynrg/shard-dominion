@@ -37,6 +37,14 @@
 - **P0c sustaining economy (2026-07-02):** replaced token demo seeding with a real field (natural shard 300 +
   a 3×3 home field at 800) — a single harvester banks 500→1900 in 30s then refills toward the 2000 cap. Fixed two
   fragile S2 gates the faster harvester exposed (move-test Y tolerance; box-select now targets the stationary base).
+- **🎨 IMAGE-GEN ASSET PATH LIVE (2026-07-03, v0.14.0, commit abb3409):** adapted the loader to what AI image
+  tools actually produce (one clean top-down sprite, opaque bg) instead of precise facing atlases. `chromaKeyOut()`
+  removes a flat key colour (#ff00ff) → transparent at load (edge feather); `drawReal` gains `rotateFrom` mode that
+  rotates a single top-down sprite to the unit heading (buildings static). `scripts/import-art.mjs` maps a dropped
+  folder of `assetId__team__state.(png|jpg)` → public/art + sidecars + manifest merge. Spec §0.5 = PATH A (image
+  gen: single magenta-bg PNG facing up) vs PATH B (pre-rendered atlas). Verified live: magenta test sprite keyed
+  clean + rotated to the harvester heading. **Grok delivered .jpg (no alpha) — rejected; gave the operator a
+  corrected Grok prompt (single sprite, magenta bg, PNG).** 113 unit + 9 liveness gates green.
 - **🎨 REAL-ASSET SPRITE LOADER LIVE (2026-07-03, v0.13.0, commit 7e6a6ec):** the pipeline for commissioned/
   generated art is built + shipped. `spritebank` loads delivered sheets from `public/art/manifest.json` + JSON
   sidecars; a real sheet OVERRIDES the procedural bake for its (assetId, team), everything else stays procedural
