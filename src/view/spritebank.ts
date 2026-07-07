@@ -253,21 +253,33 @@ function withDefaults(m: SpriteMeta, imgW: number, imgH: number): ResolvedMeta {
   };
 }
 
-// Knock a flat background colour out to transparent (chroma key). Image generators
-// can't emit real alpha, so we render on a pure key colour and remove it here.
-function chromaKeyOut(src: CanvasImageSource, hex: string, tol = 60): HTMLCanvasElement {
+// Knock a flat key-colour background out to transparent. Image generators can't emit
+// real alpha AND tend to vignette the "flat" background (corners pure, centre drifts),
+// so an exact-distance key leaves a faded halo. Instead we match the key's colour
+// FAMILY per channel — for magenta #ff00ff that's "red high + blue high + green low",
+// which catches every magenta shade while leaving blue/red/cyan/yellow unit colours
+// (each of which fails at least one channel test) fully intact.
+function chromaKeyOut(src: CanvasImageSource, hex: string): HTMLCanvasElement {
   const { w, h } = srcSize(src);
   const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
   const c = cv.getContext('2d') as CanvasRenderingContext2D;
   c.drawImage(src, 0, 0);
-  const [tr, tg, tb] = [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+  const tr = parseInt(hex.slice(1, 3), 16), tg = parseInt(hex.slice(3, 5), 16), tb = parseInt(hex.slice(5, 7), 16);
+  const hiR = tr >= 200, hiG = tg >= 200, hiB = tb >= 200;
+  const loR = tr <= 55, loG = tg <= 55, loB = tb <= 55;
+  const HI = 120, LO = 120; // channel thresholds (generous, to swallow the vignette)
   const data = c.getImageData(0, 0, w, h);
   const p = data.data;
   for (let i = 0; i < p.length; i += 4) {
-    const dr = (p[i] ?? 0) - tr, dg = (p[i + 1] ?? 0) - tg, db = (p[i + 2] ?? 0) - tb;
-    const dist = Math.sqrt(dr * dr + dg * dg + db * db);
-    if (dist < tol) p[i + 3] = 0;                       // full key → transparent
-    else if (dist < tol * 1.8) p[i + 3] = Math.round(((dist - tol) / (tol * 0.8)) * 255); // feather edge
+    const r = p[i] ?? 0, g = p[i + 1] ?? 0, b = p[i + 2] ?? 0;
+    let bg = true;
+    if (hiR && !(r > HI)) bg = false;
+    if (hiG && !(g > HI)) bg = false;
+    if (hiB && !(b > HI)) bg = false;
+    if (loR && !(r < LO)) bg = false;
+    if (loG && !(g < LO)) bg = false;
+    if (loB && !(b < LO)) bg = false;
+    if (bg) p[i + 3] = 0;
   }
   c.putImageData(data, 0, 0);
   return cv;

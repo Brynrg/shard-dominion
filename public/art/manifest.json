@@ -1,0 +1,18 @@
+{
+  "sheets": [
+    "buildings/barracks__enemy__idle",
+    "buildings/barracks__player__idle",
+    "buildings/construction_yard__neutral__idle",
+    "buildings/power_node__player__idle",
+    "buildings/refinery__enemy__idle",
+    "buildings/refinery__player__idle",
+    "units/harvester__player__move",
+    "units/infantry__enemy__move",
+    "units/infantry__player__move",
+    "units/mcv__player__move",
+    "units/rocket_trooper__enemy__move",
+    "units/rocket_trooper__player__move",
+    "units/vehicle__enemy__move",
+    "units/vehicle__player__move"
+  ]
+}
