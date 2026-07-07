@@ -37,6 +37,12 @@
 - **P0c sustaining economy (2026-07-02):** replaced token demo seeding with a real field (natural shard 300 +
   a 3×3 home field at 800) — a single harvester banks 500→1900 in 30s then refills toward the 2000 cap. Fixed two
   fragile S2 gates the faster harvester exposed (move-test Y tolerance; box-select now targets the stationary base).
+- **🔧 NO-MOBILE-BUILDINGS + ACTION FX LIVE (2026-07-03, v0.18.0, commit 4eb1763):** feedback 'buildings look
+  mobile; missing harvest/fire animations'. (1) BUG fix: the right-click move/order handler grafted a movement
+  component onto ANY selected entity → selecting a building + right-click drove it off. Guard: order+move handlers
+  skip entities with a building component (unit-tested). (2) Action FX (Grok sprites are single-frame → procedural):
+  harvesters kick up purple Shard flecks while HARVESTing; firing units get a brighter muzzle flash + a tracer
+  streak to target (new beam/spark particle kinds). 119 unit + 9 liveness green.
 - **🔍 ZOOM/PAN + CLEAR GOAL LIVE (2026-07-03, v0.17.0, commit 9bd5948):** feedback 'hard to tell the point/
   how to play; want zoom+pan'. (1) Camera: mouse-WHEEL zoom-to-cursor (0.55–2.6) + MIDDLE-DRAG pan (arrows still
   pan) — contract transform already applies cam.zoom so input just mutates the live camera + screenToWorld stays
