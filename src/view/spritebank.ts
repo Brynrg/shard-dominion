@@ -206,9 +206,58 @@ function paintBuildingBody(c: CanvasRenderingContext2D, kind: string, style: Tea
   }
 }
 
+// ── Real-asset support (drop-in sprite sheets per docs/ART_ASSETS_SPEC.md) ──────
+// A delivered sheet is a grid: rows = facings, cols = animation frames. Its JSON
+// sidecar carries the layout + pivot. Loaded sheets OVERRIDE the procedural bake
+// per (assetId, team); anything not delivered keeps rendering procedurally.
+export interface SpriteMeta {
+  frameWidth: number; frameHeight: number;
+  facings: number; frames: number;
+  facing0?: 'north' | 'east'; facingOrder?: 'cw' | 'ccw';
+  fps?: number; pivotX?: number; pivotY?: number; inGameWidthPx?: number;
+}
+interface RealSprite { img: CanvasImageSource; meta: Required<SpriteMeta> }
+
+const UNIT_IDS = new Set(['infantry', 'rocket_trooper', 'vehicle', 'harvester', 'mcv', 'generic']);
+
+function withDefaults(m: SpriteMeta): Required<SpriteMeta> {
+  return {
+    frameWidth: m.frameWidth, frameHeight: m.frameHeight,
+    facings: Math.max(1, m.facings), frames: Math.max(1, m.frames),
+    facing0: m.facing0 ?? 'north', facingOrder: m.facingOrder ?? 'cw',
+    fps: m.fps ?? 0,
+    pivotX: m.pivotX ?? m.frameWidth / 2, pivotY: m.pivotY ?? m.frameHeight / 2,
+    inGameWidthPx: m.inGameWidthPx ?? 44,
+  };
+}
+
+// Map an engine heading (radians; 0 = East, +CW because screen-Y is down) to the
+// sheet's facing row, honouring its facing0/order. Pure — unit-tested.
+export function facingToRow(angle: number, facings: number, facing0: 'north' | 'east', order: 'cw' | 'ccw'): number {
+  const TAU = Math.PI * 2;
+  if (facings <= 1) return 0;
+  let a = facing0 === 'north' ? angle + Math.PI / 2 : angle; // CW offset from the reference heading
+  a = ((a % TAU) + TAU) % TAU;
+  if (order === 'ccw') a = (TAU - a) % TAU;
+  return Math.round(a / (TAU / facings)) % facings;
+}
+
+function loadImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`sprite load failed: ${url}`));
+    img.src = url;
+  });
+}
+
 export interface SpriteBank {
-  drawUnit(ctx: CanvasRenderingContext2D, kind: string, team: string, weaponType: string | undefined, angle: number, sx: number, sy: number): void;
-  drawBuildingBody(ctx: CanvasRenderingContext2D, kind: string, team: string, sx: number, sy: number): void;
+  drawUnit(ctx: CanvasRenderingContext2D, kind: string, team: string, weaponType: string | undefined, angle: number, sx: number, sy: number, frame: number): void;
+  drawBuildingBody(ctx: CanvasRenderingContext2D, kind: string, team: string, sx: number, sy: number, frame: number): void;
+  /** Fetch a manifest of delivered sheets and install them (async, best-effort). */
+  loadManifest(baseUrl?: string): Promise<void>;
+  /** Install a decoded sheet directly (used by loadManifest + tests). */
+  installSheet(basename: string, img: CanvasImageSource, meta: SpriteMeta): void;
   readonly U: number;
   readonly BLDG: number;
 }
@@ -226,6 +275,22 @@ export function makeSpriteBank(teams: Record<string, TeamStyle>, neutral: TeamSt
 
   const unitFrames = new Map<string, HTMLCanvasElement[]>();   // key `${kind}|${team}`
   const bldgFrame = new Map<string, HTMLCanvasElement>();      // key `${kind}|${team}`
+  const realUnit = new Map<string, RealSprite>();             // delivered unit sheets, key `${assetId}|${team}`
+  const realBldg = new Map<string, RealSprite>();             // delivered building sheets
+
+  // Draw one frame of a delivered sheet centred on its pivot at (sx,sy).
+  function drawReal(ctx: CanvasRenderingContext2D, rs: RealSprite, angle: number, sx: number, sy: number, frame: number): void {
+    const m = rs.meta;
+    const row = facingToRow(angle, m.facings, m.facing0, m.facingOrder);
+    const col = m.fps > 0 && m.frames > 1 ? Math.floor((frame * m.fps) / 60) % m.frames : 0;
+    const dw = m.inGameWidthPx;
+    const dh = dw * (m.frameHeight / m.frameWidth);
+    ctx.drawImage(
+      rs.img,
+      col * m.frameWidth, row * m.frameHeight, m.frameWidth, m.frameHeight,
+      sx - (m.pivotX / m.frameWidth) * dw, sy - (m.pivotY / m.frameHeight) * dh, dw, dh,
+    );
+  }
 
   for (const team of teamKeys) {
     const style = styleOf(team);
@@ -251,28 +316,63 @@ export function makeSpriteBank(teams: Record<string, TeamStyle>, neutral: TeamSt
     }
   }
 
+  function installSheet(basename: string, img: CanvasImageSource, meta: SpriteMeta): void {
+    const leaf = basename.split('/').pop() ?? basename;
+    const [assetId, team, state] = leaf.split('__');
+    if (!assetId || !team) return;
+    // v1 renders a single primary state per asset; ignore fire/deploy/etc for now.
+    if (state && state !== 'move' && state !== 'idle') return;
+    const rs: RealSprite = { img, meta: withDefaults(meta) };
+    (UNIT_IDS.has(assetId) ? realUnit : realBldg).set(`${assetId}|${team}`, rs);
+  }
+
   return {
     U, BLDG,
-    drawUnit(ctx, kind, team, _weaponType, angle, sx, sy) {
+    installSheet,
+    async loadManifest(baseUrl = 'art') {
+      let sheets: string[];
+      try {
+        const res = await fetch(`${baseUrl}/manifest.json`, { cache: 'no-cache' });
+        if (!res.ok) return; // no assets delivered yet → stay procedural
+        const man = await res.json() as { sheets?: string[] };
+        sheets = man.sheets ?? [];
+      } catch { return; }
+      await Promise.all(sheets.map(async (p) => {
+        try {
+          const meta = await (await fetch(`${baseUrl}/${p}.json`, { cache: 'no-cache' })).json() as SpriteMeta;
+          const img = await loadImage(`${baseUrl}/${p}.png`);
+          installSheet(p, img, meta);
+        } catch { /* skip a bad/missing sheet, keep procedural for it */ }
+      }));
+    },
+    drawUnit(ctx, kind, team, _weaponType, angle, sx, sy, frame) {
+      // contact shadow (world-down; shared by real + procedural so units feel grounded)
+      ctx.fillStyle = 'rgba(0,0,0,0.32)';
+      ctx.beginPath(); ctx.ellipse(sx + 2, sy + U * 0.22, U * 0.28, U * 0.13, 0, 0, Math.PI * 2); ctx.fill();
+
+      const real = realUnit.get(`${kind}|${team}`) ?? realUnit.get(`${kind}|neutral`);
+      if (real) { drawReal(ctx, real, angle, sx, sy, frame); return; }
+
       const k = unitFrames.has(`${kind}|${team}`) ? kind : 'generic';
       const t = unitFrames.has(`${k}|${team}`) ? team : 'neutral';
       const frames = unitFrames.get(`${k}|${t}`);
       if (!frames) return;
-      // contact shadow (world-down; NOT baked so it never rotates with the sprite)
-      ctx.fillStyle = 'rgba(0,0,0,0.32)';
-      ctx.beginPath(); ctx.ellipse(sx + 2, sy + U * 0.22, U * 0.28, U * 0.13, 0, 0, Math.PI * 2); ctx.fill();
       let d = Math.round((angle / (Math.PI * 2)) * DIRS) % DIRS;
       if (d < 0) d += DIRS;
       const f = frames[d] ?? frames[0];
       if (f) ctx.drawImage(f, sx - U / 2, sy - U / 2, U, U);
     },
-    drawBuildingBody(ctx, kind, team, sx, sy) {
-      const k = bldgFrame.has(`${kind}|${team}`) ? kind : 'generic';
-      const t = bldgFrame.has(`${k}|${team}`) ? team : 'neutral';
-      const f = bldgFrame.get(`${k}|${t}`);
+    drawBuildingBody(ctx, kind, team, sx, sy, frame) {
       // grounding shadow
       ctx.fillStyle = 'rgba(0,0,0,0.35)';
       ctx.fillRect(sx - BLDG * 0.3, sy + BLDG * 0.18, BLDG * 0.6, 6);
+
+      const real = realBldg.get(`${kind}|${team}`) ?? realBldg.get(`${kind}|neutral`);
+      if (real) { drawReal(ctx, real, 0, sx, sy, frame); return; }
+
+      const k = bldgFrame.has(`${kind}|${team}`) ? kind : 'generic';
+      const t = bldgFrame.has(`${k}|${team}`) ? team : 'neutral';
+      const f = bldgFrame.get(`${k}|${t}`);
       if (f) ctx.drawImage(f, sx - BLDG / 2, sy - BLDG / 2, BLDG, BLDG);
     },
   };

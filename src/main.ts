@@ -44,6 +44,7 @@ declare global {
     __debugMatch?: () => { enemyUnits: number; playerUnits: number; enemyCredits: number };
     __debugPlayerQueue?: () => number;
     __debugBriefing?: () => boolean;
+    __debugSprites?: unknown; // the sprite bank, for the real-asset loader smoke test
   }
 }
 
@@ -310,6 +311,9 @@ export function bootstrap(): void {
 
   // Expose briefing state for the P1 onboarding gate.
   window.__debugBriefing = () => onboarding.briefingActive();
+
+  // Expose the sprite bank so the real-asset load path can be smoke-tested.
+  window.__debugSprites = view.spriteBank;
 
   // Expose player queue debug hook for P0b
   window.__debugPlayerQueue = () => {

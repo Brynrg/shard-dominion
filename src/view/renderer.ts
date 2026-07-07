@@ -11,7 +11,7 @@ import type { StructureDef } from '../loaders/structures.js';
 import type { WeaponsFile } from '../loaders/schemas.js';
 import type { Onboarding } from './onboarding.js';
 import type { EntityId } from '../sim/ids.js';
-import { makeSpriteBank } from './spritebank.js';
+import { makeSpriteBank, type SpriteBank } from './spritebank.js';
 
 // ── Terrain palette (base + a darker/lighter pair for per-tile texturing) ──────
 // Each tile gets base fill + deterministic grain/detail so the desert reads as a
@@ -84,6 +84,8 @@ export interface View {
   minimapRect(): { x: number; y: number; w: number; h: number };
   /** If (sx,sy) is inside the minimap, recentre the camera there and return true. */
   minimapJump(sx: number, sy: number): boolean;
+  /** The sprite bank (exposed for the real-asset loader + tests). */
+  readonly spriteBank: SpriteBank;
 }
 
 export function makeView(cfg: ViewConfig): View {
@@ -113,6 +115,9 @@ export function makeView(cfg: ViewConfig): View {
   // Pre-bake the directional sprite bank once (S7-2). Units get DIRS fixed-lit
   // facings; buildings get a lit body. Animated accents are drawn live on top.
   const sprites = makeSpriteBank(TEAM, NEUTRAL_TEAM, weapons);
+  // Best-effort: swap in any delivered real sprite sheets (docs/ART_ASSETS_SPEC.md).
+  // No manifest / missing sheets → silently stays procedural. Exposed for testing.
+  void sprites.loadManifest('art');
 
   // ── Radar minimap (bottom-left) ─────────────────────────────────────────────
   const MM = { size: 168, margin: 12 };
@@ -684,12 +689,12 @@ export function makeView(cfg: ViewConfig): View {
 
       if (e.components.building) {
         // Baked lit body (S7-2) + live animated accents on top.
-        sprites.drawBuildingBody(context, kind, teamKey, sx, sy);
+        sprites.drawBuildingBody(context, kind, teamKey, sx, sy, frame);
         drawBuildingAccents(kind, sx, sy, style);
       } else {
         // Cargo glow (harvester) draws under the baked sprite, then the sprite.
         drawUnitUnderlay(e, kind, sx, sy);
-        sprites.drawUnit(context, kind, teamKey, undefined, facingAngle(e, interp), sx, sy);
+        sprites.drawUnit(context, kind, teamKey, undefined, facingAngle(e, interp), sx, sy, frame);
       }
     }
   }
@@ -813,6 +818,7 @@ export function makeView(cfg: ViewConfig): View {
     setCamera(cam: Camera) {
       Object.assign(camera, cam);
     },
+    spriteBank: sprites,
     minimapRect,
     minimapJump(sx: number, sy: number): boolean {
       if (onboarding?.briefingActive()) return false;
