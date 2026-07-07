@@ -17,7 +17,7 @@ test.describe('S2 liveness gate', () => {
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
     // Dismiss the mission briefing (the player's "click to take command") — this
     // unpauses the sim AND grabs focus. Every gate must do it before the match runs.
-    await page.locator('#game-canvas').click({ position: { x: 4, y: 4 } });
+    await page.locator('#game-canvas').click({ position: { x: 400, y: 300 } });
     await page.waitForTimeout(60);
 
     const canvas = page.locator('#game-canvas');
@@ -145,7 +145,7 @@ test.describe('S2 liveness gate', () => {
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
     // Dismiss the mission briefing (the player's "click to take command") — this
     // unpauses the sim AND grabs focus. Every gate must do it before the match runs.
-    await page.locator('#game-canvas').click({ position: { x: 4, y: 4 } });
+    await page.locator('#game-canvas').click({ position: { x: 400, y: 300 } });
     await page.waitForTimeout(60);
 
     // Wait for initial render

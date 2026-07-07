@@ -15,7 +15,7 @@ test.describe('HUD build-button gate', () => {
   test('clicking the Barracks button in the sidebar builds one (no hotkey)', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
-    await page.locator('#game-canvas').click({ position: { x: 4, y: 4 } }); // take command
+    await page.locator('#game-canvas').click({ position: { x: 400, y: 300 } }); // take command
     await page.waitForTimeout(60);
     const canvas = page.locator('#game-canvas');
     const box = (await canvas.boundingBox())!;

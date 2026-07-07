@@ -248,6 +248,34 @@ export function makeView(cfg: ViewConfig): View {
     Object.assign(camera, { x: wx - halfW, y: wy - halfH, zoom: camera.zoom });
   }
 
+  // ── Camera navigation (C&C/RA): edge-scroll + clamp to the map ──────────────
+  // Move the cursor to a screen edge → the view scrolls that way (works on any
+  // device, unlike middle-drag). Runs each frame from the cursor position.
+  function edgeScroll(): void {
+    if (onboarding?.briefingActive()) return;
+    const cur = getHover?.();
+    if (!cur) return;
+    const WPP = TILE_SUBUNITS / TILE_SIZE_PX;
+    const M = 28;                       // edge band (px)
+    const spd = (11 * WPP) / camera.zoom; // world units / frame
+    const W = canvas.width, H = canvas.height;
+    let dx = 0, dy = 0;
+    if (cur.sx <= M) dx = -spd; else if (cur.sx >= W - M) dx = spd;
+    if (cur.sy <= M) dy = -spd; else if (cur.sy >= H - M) dy = spd;
+    if (dx || dy) Object.assign(camera, { x: camera.x + dx, y: camera.y + dy, zoom: camera.zoom });
+  }
+  // Keep the view on (or just past) the map so you can't scroll into the void.
+  function clampCamera(): void {
+    const WPP = TILE_SUBUNITS / TILE_SIZE_PX;
+    const visW = (canvas.width * WPP) / camera.zoom, visH = (canvas.height * WPP) / camera.zoom;
+    const padX = visW * 0.35, padY = visH * 0.35;
+    const loX = -padX, hiX = Math.max(loX, worldW - visW + padX);
+    const loY = -padY, hiY = Math.max(loY, worldH - visH + padY);
+    const x = Math.max(loX, Math.min(hiX, camera.x));
+    const y = Math.max(loY, Math.min(hiY, camera.y));
+    if (x !== camera.x || y !== camera.y) Object.assign(camera, { x, y, zoom: camera.zoom });
+  }
+
   // ── Combat FX (view-only juice) ─────────────────────────────────────────────
   // Muzzle flashes when a unit fires and explosions when one dies. Detected by
   // diffing sim state frame-to-frame (no sim/contract changes). The view MAY use
@@ -828,6 +856,8 @@ export function makeView(cfg: ViewConfig): View {
 
   function render() {
     frame += 1;
+    edgeScroll();   // move mouse to a screen edge → scroll the view (C&C/RA)
+    clampCamera();  // keep the view on the map after any pan/zoom
     // Clear canvas
     context.fillStyle = '#000000';
     context.fillRect(0, 0, canvas.width, canvas.height);

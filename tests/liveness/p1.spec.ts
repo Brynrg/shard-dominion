@@ -30,7 +30,8 @@ test.describe('P1 onboarding gate', () => {
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'p1-briefing.png') });
 
     // 2) Take command: the first click dismisses the briefing and unpauses.
-    await canvas.click({ position: { x: 8, y: 8 } });
+    //    Click centre (not a corner) so the resting cursor doesn't trigger edge-scroll.
+    await canvas.click({ position: { x: 400, y: 300 } });
     await page.waitForTimeout(60);
     expect(await briefing()).toBe(false);
 

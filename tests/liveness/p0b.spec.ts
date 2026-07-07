@@ -16,7 +16,7 @@ test.describe('P0b liveness gate', () => {
     test.setTimeout(60_000);
     await page.goto('/');
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
-    await page.locator('#game-canvas').click({ position: { x: 4, y: 4 } }); // take command
+    await page.locator('#game-canvas').click({ position: { x: 400, y: 300 } }); // take command
     await page.waitForTimeout(60);
     const canvas = page.locator('#game-canvas');
     const canvasBox = (await canvas.boundingBox())!;

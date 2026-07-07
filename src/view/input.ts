@@ -135,6 +135,8 @@ export function makeInputHandlers(
   }
   // End a middle-drag even if the button is released outside the canvas.
   function onWindowMouseUp(e: MouseEvent): void { if (e.button === 1) panLast = null; }
+  // Cursor left the canvas → stop edge-scroll (clear the tracked cursor).
+  function onMouseLeave(): void { lastCursor = null; panLast = null; }
 
   function getMousePos(e: MouseEvent): ScreenPos {
     const rect = canvas.getBoundingClientRect();
@@ -356,6 +358,7 @@ export function makeInputHandlers(
       canvas.addEventListener('mouseup', onMouseUp);
       canvas.addEventListener('contextmenu', onContextMenu);
       canvas.addEventListener('wheel', onWheel, { passive: false });
+      canvas.addEventListener('mouseleave', onMouseLeave);
       window.addEventListener('mouseup', onWindowMouseUp);
       window.addEventListener('keydown', onKeyDown);
     },
@@ -363,6 +366,7 @@ export function makeInputHandlers(
       canvas.removeEventListener('mousedown', onMouseDown);
       canvas.removeEventListener('mousemove', onMouseMove);
       canvas.removeEventListener('wheel', onWheel);
+      canvas.removeEventListener('mouseleave', onMouseLeave);
       window.removeEventListener('mouseup', onWindowMouseUp);
       canvas.removeEventListener('mouseup', onMouseUp);
       canvas.removeEventListener('contextmenu', onContextMenu);

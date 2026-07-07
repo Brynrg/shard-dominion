@@ -16,7 +16,7 @@ test.describe('S3 liveness gate', () => {
     await page.goto('/');
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
     // Dismiss the mission briefing (unpauses the sim + grabs focus).
-    await page.locator('#game-canvas').click({ position: { x: 4, y: 4 } });
+    await page.locator('#game-canvas').click({ position: { x: 400, y: 300 } });
     await page.waitForTimeout(60);
     const canvas = page.locator('#game-canvas');
     const canvasBox = (await canvas.boundingBox())!;

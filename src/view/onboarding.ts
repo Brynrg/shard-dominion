@@ -41,7 +41,7 @@ const BRIEF_HOWTO: readonly string[] = [
   '4.  Drag a box to select troops, then RIGHT-CLICK the enemy to attack.',
   '5.  Push north-east and destroy their base to win.',
 ];
-const BRIEF_HINT = 'wheel = zoom · middle-drag / arrow keys = pan · radar: bottom-left';
+const BRIEF_HINT = 'SCROLL: move mouse to a screen edge · wheel = zoom · click the radar to jump';
 
 export function makeOnboarding(): Onboarding {
   let briefing = true;
