@@ -292,12 +292,17 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             break;
           }
           case 'train': {
-            // Append to the player's barracks queue (first player entity with a production component)
-            const barracks = state.store.all().find(e =>
-              e.components.faction?.team === 'player' && e.components.production);
-            if (barracks && barracks.components.production) {
-              const p = barracks.components.production;
-              barracks.components.production = { ...p, queue: [...p.queue, intent.unitId] };
+            // Route by unit type: Harvesters build at the Refinery (available turn
+            // one — C&C-accurate), combat units at the Barracks. Find the matching
+            // player producer building and append to its queue.
+            const producerFaction = intent.unitId === 'harvester' ? 'refinery' : 'barracks';
+            const producer = state.store.all().find(e =>
+              e.components.faction?.team === 'player' &&
+              e.components.faction?.faction === producerFaction &&
+              e.components.production);
+            if (producer && producer.components.production) {
+              const p = producer.components.production;
+              producer.components.production = { ...p, queue: [...p.queue, intent.unitId] };
             }
             break;
           }

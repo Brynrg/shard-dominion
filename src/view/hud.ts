@@ -85,9 +85,13 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
     return { supply, demand, powered: supply >= demand };
   }
 
-  function getPlayerBarracks(): { queue: readonly string[]; progress: number; current: string | null } | null {
+  // A player producer building's live production state, looked up by its faction id
+  // ('barracks' → combat units, 'refinery' → Harvesters). Drives the build-button
+  // progress fill + queue count for whichever unit that building makes.
+  function getProducer(faction: string): { queue: readonly string[]; progress: number; current: string | null } | null {
     for (const e of simState.store.all()) {
-      if (e.components.faction?.team === 'player' && e.components.production) {
+      if (e.components.faction?.team === 'player' &&
+          e.components.faction?.faction === faction && e.components.production) {
         return {
           queue: e.components.production.queue ?? [],
           progress: e.components.production.progress ?? 0,
@@ -193,7 +197,8 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
       const harvester = getHarvester();
       const refinery = getRefinery();
       const power = getPowerStatus();
-      const barracks = getPlayerBarracks();
+      const barracks = getProducer('barracks');       // trains infantry / rocket
+      const refineryProd = getProducer('refinery');    // builds harvesters
       const credits = refinery ? Math.floor(refinery.credits) : 0;
 
       // ── Right-edge command panel ────────────────────────────────────────────
@@ -242,11 +247,18 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
       const bw = pw - 16;
       let by = py + 138;
       for (const item of BUILD_MENU) {
-        // Train needs a barracks + credits; build needs credits (placement charges).
-        const enabled = credits >= item.cost && (item.kind === 'build' ? true : barracksUp);
+        // Which building makes this item? Harvester ← Refinery (up from turn one),
+        // combat units ← Barracks, structures are placed (no producer).
+        const producer = item.kind !== 'train' ? null
+          : (item.id === 'harvester' ? refineryProd : barracks);
+        // Prereq: harvester needs a Refinery (always present), combat units need a
+        // Barracks; builds just need the credits (placement charges).
+        const prereqMet = item.kind === 'build' ? true
+          : (item.id === 'harvester' ? !!refineryProd : barracksUp);
+        const enabled = credits >= item.cost && prereqMet;
         const hovered = !!hover && hover.sx >= px + 8 && hover.sx <= px + 8 + bw && hover.sy >= by && hover.sy <= by + 30;
-        const progress = item.kind === 'train' && barracks?.current === item.id ? (barracks?.progress ?? 0) : 0;
-        const queued = item.kind === 'train' && barracks ? barracks.queue.filter(q => q === item.id).length : 0;
+        const progress = producer?.current === item.id ? (producer?.progress ?? 0) : 0;
+        const queued = producer ? producer.queue.filter(q => q === item.id).length : 0;
         drawBuildButton(item, px + 8, by, bw, 30, enabled, hovered, progress, queued);
         by += 34;
       }

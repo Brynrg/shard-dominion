@@ -6,18 +6,18 @@
 ## What this is
 **Shard Dominion** — an IP-clean, late-1990s Westwood-style (C&C / Red Alert / Dune 2000) web RTS.
 - **Repo:** `~/Code/games/shard-dominion` (TypeScript + Canvas2D + Vite + Vitest + zod + ESLint, single pnpm pkg).
-- **Live:** https://speedrungames.net/games/shard-dominion/ — currently **v0.22.0**.
+- **Live:** https://speedrungames.net/games/shard-dominion/ — currently **v0.23.0**.
 - **Your role now:** you (Claude) **build it directly** and verify. (Earlier plan was to delegate slices to a
   local Qwen builder; in practice Claude builds and only occasionally hands a tightly-scaffolded sub-task to
   `hermes-ask code` — e.g. the S6B AI waves. Default to building it yourself + verifying.)
 
-## Current state (v0.22.0) — a genuinely playable RTS
+## Current state (v0.23.0) — a genuinely playable RTS
 Start with a Construction Yard + Refinery + 1 Harvester + 2 troops + 700cr → harvester auto-mines Shard →
 **build a Barracks (B)** → **train Infantry/Rocket/Harvester (T/R/H)** → **right-click** to move/attack/mine →
 destroy the enemy base (marked on radar + off-screen arrow) to win. The AI reinforces + attacks in waves.
 Shipped: real Grok **painted sprites** (units+buildings) + **seamless terrain tiles**; **clickable C&C build
 sidebar** with live progress fill + `×N` queue + context cursors; **edge-scroll + wheel-zoom + radar click-jump**
-camera (clamped to map); mission briefing (goal-first + how-to). **120 unit tests + 11 Playwright gates green.**
+camera (clamped to map); mission briefing (goal-first + how-to). **121 unit tests + 12 Playwright gates green.**
 
 ## How to work
 - **Architecture:** `src/sim/**` is the PURE deterministic core (no DOM/Date/Math.random — ESLint red-builds it;
@@ -26,8 +26,8 @@ camera (clamped to map); mission briefing (goal-first + how-to). **120 unit test
   → command intents), `spritebank.ts` (real-asset + terrain loader, chroma-key, zoom scaling), `onboarding.ts`
   (briefing + objectives). `src/sim/systems/**` = command, movement, harvest, production, construction, power,
   combatTargeting, damage, ai, victory, fog. `data/*.json` + `src/loaders/**` = tunables.
-- **Verify (non-negotiable):** `pnpm run verify` (typecheck + lint + 120 unit tests) AND `pnpm run test:live`
-  (11 Playwright gates — the real-browser proof of interaction; add a gate for any new mechanic).
+- **Verify (non-negotiable):** `pnpm run verify` (typecheck + lint + 121 unit tests) AND `pnpm run test:live`
+  (12 Playwright gates — the real-browser proof of interaction; add a gate for any new mechanic).
 - **Visual check:** claude-in-chrome on `localhost:5199` (preview_start "shard-dominion") or the preview MCP.
   **GOTCHA: a backgrounded Chrome tab throttles rAF → the sim FREEZES** (credits static, clicks don't process).
   Dismiss the briefing by dispatching a real `mousedown/up` on the canvas; rely on Playwright gates for interaction
@@ -61,11 +61,15 @@ camera (clamped to map); mission briefing (goal-first + how-to). **120 unit test
 ## Open threads (pick up here)
 1. **Purple building base** — Grok's building sprites bake a purple base platform that reads oddly on tan sand.
    Fix: re-gen the 6 buildings with Grok ("no coloured base — sits flat on the ground, transparent to its
-   footprint"), re-import. (Operator was considering it.)
-2. **Pacing / balance** — awaiting operator feel-feedback on starting credits (700), unit/build costs, income rate,
-   AI wave timing. Tunables in `data/{units,structures,economyConstants}.json`.
-3. **Harvester source** — harvesters currently build at the Barracks (gated behind it). Operator was offered
-   "build from the Refinery instead (C&C-accurate, available turn one)" — implement if they say yes.
+   footprint"), re-import. (Operator generating the re-gen art; drop into `~/Code/...`, then `import-art.mjs`.)
+2. **Harvester source — ✅ DONE (v0.23.0):** harvesters now build at the **Refinery** (available turn one,
+   C&C-accurate); combat units still come from the Barracks. Routing is by unit type in `command.ts`'s `train`
+   handler; the starting Refinery carries a `production` component (`main.ts`); HUD greys the Harvester button
+   against the Refinery, not the Barracks. Gate: `tests/liveness/harvester_refinery.spec.ts`.
+3. **Balance pass (IN PROGRESS, next build):** operator feel-feedback on v0.22.0 = **AI too weak** (only 2
+   infantry/wave, no vehicles/rockets), **economy too fast**, **matches end too quick**. Direction: bigger/faster
+   AI waves + AI builds vehicles/rockets; trim income and/or raise costs; more base/starting resilience so matches
+   last. Levers: `data/{units,structures,economyConstants}.json` + `armySize` in `main.ts:175`.
 4. **Optional depth:** construction_yard player/enemy team variants (currently neutral), unit animation frames,
    more building types (war factory / defense turret).
 

@@ -11,14 +11,23 @@
 
 ## Current state
 
-**SHIPPED PLAYABLE RTS — v0.22.0 live at speedrungames.net/games/shard-dominion/.** `pnpm run verify`:
-**120 unit tests** · `pnpm run test:live`: **11 Playwright gates** — all green. **Read `HANDOFF.md` for how to
-work + the deploy pipeline + open threads.** Feature set (v0.7→v0.22, newest entries below): Warcraft-style
+**SHIPPED PLAYABLE RTS — v0.23.0 live at speedrungames.net/games/shard-dominion/.** `pnpm run verify`:
+**121 unit tests** · `pnpm run test:live`: **12 Playwright gates** — all green. **Read `HANDOFF.md` for how to
+work + the deploy pipeline + open threads.** Feature set (v0.7→v0.23, newest entries below): Warcraft-style
 build-up opening; **real Grok painted sprites + seamless terrain tiles**; **clickable C&C build sidebar** (live
 progress fill + `×N` queue + context cursors); **edge-scroll + wheel-zoom + radar click-jump** camera (clamped);
-right-click move/attack/mine; buildable **harvesters** (grow the economy); mission briefing (goal-first + how-to);
-harvest/fire FX; wave-attacking AI; win by destroying the enemy base. **Open:** purple building-base (Grok re-gen),
-pacing/balance tuning, harvester-from-refinery option — see HANDOFF.md §Open threads.
+right-click move/attack/mine; buildable **harvesters** (from the Refinery, turn one); mission briefing (goal-first
++ how-to); harvest/fire FX; wave-attacking AI; win by destroying the enemy base. **Open:** purple building-base
+(Grok re-gen), balance pass (AI too weak / economy too fast / matches too short) — see HANDOFF.md §Open threads.
+
+- **🏭 HARVESTER-FROM-REFINERY LIVE (2026-07-07, v0.23.0):** operator feedback — harvesters were gated behind the
+  Barracks; make them C&C-accurate. Now the **Refinery produces harvesters from turn one** (it carries a
+  `production` component seeded in `main.ts`); combat units still come from the Barracks. `command.ts`'s `train`
+  handler routes by unit type (`harvester` → the player's `refinery` producer, else → `barracks`). HUD greys the
+  Harvester button against the Refinery (always present), not the Barracks; per-button progress/queue now read the
+  correct producer via a `getProducer(faction)` helper. New `__debugHarvesterCount` hook + `harvester_refinery`
+  liveness gate (click Harvester turn-one with NO Barracks → one builds) + a `train`-routing unit test. 121 unit +
+  12 liveness green.
 
 - **P1 visual-grammar pass (2026-07-02):** the "not even Dune-2000 level" fix — **view-only**
   (`renderer.ts` + `hud.ts`, zero sim/contract change). Units now draw as **oriented chassis

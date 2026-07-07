@@ -43,6 +43,7 @@ declare global {
     __debugVictory?: () => { over: boolean; winner: 'player' | 'enemy' | null };
     __debugMatch?: () => { enemyUnits: number; playerUnits: number; enemyCredits: number };
     __debugPlayerQueue?: () => number;
+    __debugHarvesterCount?: () => number;
     __debugBriefing?: () => boolean;
     __debugSprites?: unknown; // the sprite bank, for the real-asset loader smoke test
     __debugCamera?: () => { x: number; y: number; zoom: number };
@@ -99,6 +100,10 @@ export function bootstrap(): void {
     building: { onSlab: true, buildProgress: 100, powered: true },
     faction: { team: 'player', faction: 'refinery' },
     economy: { credits: 700, refineryStorage: 700, maxStorage: economy.refineryStorageCapacity },
+    // The Refinery builds Harvesters (C&C-accurate: available turn one, no Barracks
+    // gate). Combat units still come from the Barracks. Production is routed by unit
+    // type in the command system's 'train' handler.
+    production: { queue: [], progress: 0, current: null },
     health: { hp: 1500, maxHp: 1500 },
     armor: { armorClass: 'BUILDING' },
   });
@@ -329,6 +334,18 @@ export function bootstrap(): void {
     const barracks = state.store.all().find(e =>
       e.components.faction?.team === 'player' && e.components.production);
     return barracks?.components.production?.queue.length ?? 0;
+  };
+
+  // Count living player Harvesters (harvest FSM, not combat) — for the
+  // Harvester-from-Refinery gate (turn-one production, no Barracks needed).
+  window.__debugHarvesterCount = () => {
+    let n = 0;
+    for (const e of state.store.all()) {
+      if (e.components.faction?.team === 'player' &&
+          e.components.faction?.faction === 'harvester' &&
+          (e.components.health?.hp ?? 1) > 0) n++;
+    }
+    return n;
   };
 }
 

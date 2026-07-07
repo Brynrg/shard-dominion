@@ -43,6 +43,8 @@ describe('train intent', () => {
       building: { onSlab: true, buildProgress: 100, powered: true },
       faction: { team: 'player', faction: 'refinery' },
       economy: { credits, refineryStorage: credits, maxStorage: 2000 },
+      // The Refinery is the Harvester producer (C&C-accurate: up from turn one).
+      production: { queue: [], progress: 0 },
       health: { hp: 1500, maxHp: 1500 },
       armor: { armorClass: 'BUILDING' },
     });
@@ -62,9 +64,25 @@ describe('train intent', () => {
     // (draining the queue into the active build), so the barracks is now either
     // queued OR building infantry — not idle.
     const barracks = state.store.all().find(e =>
-      e.components.faction?.team === 'player' && e.components.production);
+      e.components.faction?.faction === 'barracks' && e.components.production);
     const prod = barracks?.components.production;
     expect((prod?.queue.length ?? 0) > 0 || (prod?.progress ?? 0) > 0).toBe(true);
+  });
+
+  it('train Harvester routes to the Refinery, not the Barracks', () => {
+    addRefinery(5, 5, 800);
+    addBarracks(5, 6);
+
+    queue.push({ type: 'train', unitId: 'harvester' });
+    runTick(state, systems); // command queues it, production may start it same tick
+
+    const refinery = state.store.all().find(e => e.components.faction?.faction === 'refinery');
+    const barracks = state.store.all().find(e => e.components.faction?.faction === 'barracks');
+    const refProd = refinery?.components.production;
+    // Refinery is building (queued OR started same tick); Barracks stays idle.
+    expect((refProd?.queue.length ?? 0) > 0 || (refProd?.current === 'harvester')).toBe(true);
+    expect(barracks?.components.production?.queue.length ?? 0).toBe(0);
+    expect(barracks?.components.production?.current ?? null).toBe(null);
   });
 
   it('train infantry spawns after build time (~65 ticks) and credits drop 100', () => {
