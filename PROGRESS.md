@@ -37,6 +37,16 @@
 - **P0c sustaining economy (2026-07-02):** replaced token demo seeding with a real field (natural shard 300 +
   a 3×3 home field at 800) — a single harvester banks 500→1900 in 30s then refills toward the 2000 cap. Fixed two
   fragile S2 gates the faster harvester exposed (move-test Y tolerance; box-select now targets the stationary base).
+- **🎨 S7-1 ART PASS + HUD-POLISH LIVE (2026-07-03, v0.10.0, commit 3d96a65):** driven-through & verified via
+  Claude-in-Chrome on the live site. (A) HUD is now hidden while the briefing is up — the COMMAND panel no longer
+  bleeds past the briefing frame. (B) Procedural high-fidelity render (view-only, IP-clean, zero external assets):
+  units are tracked/shaded chassis (treads, turret+barrel, infantry helmets, harvester ore-glow, contact shadows,
+  dark outlines); buildings are EXTRUDED (lit roof + dark front face, shaded silos, seams/rivets) with idle animation
+  (refinery exhaust, conyard crane+beacon, power blink); terrain uses neighbour-aware EDGE BLENDING + ambient shadow
+  from raised rock; combat FX = muzzle flashes on fire + debris explosions on death (view particle diff of sim
+  transitions). Fixed a render-crash: rgb() now parses #rgb shorthand (was NaN-ing gradient colors). 105 unit + 9
+  liveness gates green. **Honest gap:** this is procedural sprite-GEOMETRY at much higher fidelity — true bitmap
+  sprite-sheet art (hand-drawn/rendered isometric) is a heavier S7-2 if the operator wants to commission assets.
 - **🎮 ONBOARDING + INTERACTION FIX LIVE (2026-07-03, v0.9.0, commit bfc37c1):** addresses play-test feedback
   "I can see shapes moving but cannot interact, and there's no story/path to begin."
   (1) **Interaction bug FIXED** — `input.getMousePos` now scales CSS-pixel cursor coords into the canvas's 800×600
