@@ -51,12 +51,12 @@
     {
       "id": "harvester",
       "name": "Harvester",
-      "cost": 400,
+      "cost": 450,
       "hp": 200,
       "armorClass": "MEDIUM",
       "weaponId": "rifle",
       "speed": 10,
-      "buildTimeSeconds": 8,
+      "buildTimeSeconds": 12,
       "team": "player",
       "graphics": {
         "sprite_id": "harvester",

@@ -1,6 +1,6 @@
 {
-  "harvestRate": 25,
-  "cargoCapacity": 700,
-  "dockRate": 100,
+  "harvestRate": 6,
+  "cargoCapacity": 600,
+  "dockRate": 80,
   "refineryStorageCapacity": 2000
 }

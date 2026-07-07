@@ -55,5 +55,10 @@ export function stateHash(state: SimState): number {
     const h = e.components.health;
     if (h) ints.push(h.hp, h.maxHp);
   }
+  // Shard density is gameplay-critical state (harvesting depletes it; regrowth/blooms
+  // will write it) → fold it in, walked in sorted-key order so Map iteration order can't
+  // leak nondeterminism into the hash.
+  const shardKeys = [...state.shardDensity.keys()].sort();
+  for (const k of shardKeys) ints.push(state.shardDensity.get(k)!);
   return hashInts(ints);
 }

@@ -12,7 +12,12 @@ const DOCK_SLOTS_PER_REFINERY = 1;
 
 export function makeHarvestSystem(economy: EconomyConstants): { name: 'harvest'; run(state: SimState): void } {
   // Derived constants from economy config
-  const DOCK_RATE_PER_TICK = economy.dockRate / SIM_TICK_RATE; // 100/s ÷ 20Hz = 5 credits/tick
+  const DOCK_RATE_PER_TICK = economy.dockRate / SIM_TICK_RATE; // 80/s ÷ 20Hz = 4 credits/tick
+
+  // Last-seen hp per harvester, for flee detection (E6). Closure-scoped (one per sim),
+  // deterministic. Id reuse is safe: we read prev then overwrite, and a fresh harvester's
+  // full hp never reads as "dropped" against a dead predecessor's last (lower/equal) hp.
+  const lastHp = new Map<EntityId, number>();
 
   return {
     name: 'harvest' as const,
@@ -38,6 +43,17 @@ export function makeHarvestSystem(economy: EconomyConstants): { name: 'harvest';
         const faction = e.components.faction;
 
         if (!pos || !movement || !harvest || faction?.faction !== 'harvester') continue;
+
+        // ── Flee (E6): a harvester that LOST hp since last tick breaks off mining and
+        // routes to safety (its nearest refinery) instead of standing in the field.
+        // Forces a raider to commit faster units; rewards defended harvest routes.
+        const hp = e.components.health?.hp ?? Infinity;
+        const prevHp = lastHp.get(e.id) ?? hp;
+        lastHp.set(e.id, hp);
+        if (hp < prevHp && (harvest.state === 'SEEK' || harvest.state === 'HARVEST')) {
+          harvest.state = 'RETURN';
+          movement.target = null;
+        }
 
         switch (harvest.state) {
           case 'SEEK':

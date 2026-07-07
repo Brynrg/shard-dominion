@@ -102,16 +102,13 @@ test.describe('S1 liveness gate', () => {
     expect(pos1.x).toBeGreaterThan(0);
     expect(pos1.y).toBeGreaterThan(0);
 
-    await page.waitForTimeout(1000);
-    const pos2 = await page.evaluate(() => {
-      const pos = (window as any).__debugHarvesterScreenPos?.();
-      return pos || { x: -1, y: -1 };
-    });
-    expect(pos2.x).toBeGreaterThan(0);
-    expect(pos2.y).toBeGreaterThan(0);
-
-    const dist = Math.sqrt((pos2.x - pos1.x) ** 2 + (pos2.y - pos1.y) ** 2);
-    expect(dist).toBeGreaterThan(5); // At least 5 pixels of movement
+    // The harvester travels during SEEK/RETURN but parks while mining. With the slower,
+    // deliberately-visible harvest (v0.24) it can be stationary at any single instant, so
+    // watch for displacement across a full harvest cycle rather than a fixed 1s gap.
+    await expect.poll(async () => {
+      const p = await page.evaluate(() => (window as any).__debugHarvesterScreenPos?.() || { x: -1, y: -1 });
+      return Math.sqrt((p.x - pos1.x) ** 2 + (p.y - pos1.y) ** 2);
+    }, { timeout: 14000, intervals: [400] }).toBeGreaterThan(5); // ≥5 px of movement within a cycle
 
     // Economy is VISIBLE: give the harvester time to complete a harvest→return→deposit
     // cycle, then assert the refinery's credits actually rose (a deposit landed on screen).

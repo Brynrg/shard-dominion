@@ -11,6 +11,8 @@ export interface HUDConfig {
   constructionOutput?: ConstructionOutput;
   /** Cursor position (canvas px) for hover highlighting the build buttons. */
   getHover?: () => { sx: number; sy: number } | null;
+  /** Harvester cargo capacity (from economyConstants) — the cargo-bar denominator. */
+  cargoCapacity?: number;
 }
 
 /** The C&C-style sidebar build menu. `kind` decides the click action:
@@ -29,6 +31,7 @@ export type BuildAction = string;
 
 export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy: number): BuildAction | null } {
   const { canvas, simState } = cfg;
+  const cargoCapacity = cfg.cargoCapacity ?? 600;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D context not available');
 
@@ -50,7 +53,7 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
     for (const e of simState.store.all()) {
       if (e.components.faction?.team === 'player' &&
           e.components.faction?.faction === 'harvester' && e.components.harvest) {
-        return { cargo: e.components.harvest.cargo || 0, capacity: 700 };
+        return { cargo: e.components.harvest.cargo || 0, capacity: cargoCapacity };
       }
     }
     return null;

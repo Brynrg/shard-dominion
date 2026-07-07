@@ -44,6 +44,8 @@ declare global {
     __debugMatch?: () => { enemyUnits: number; playerUnits: number; enemyCredits: number };
     __debugPlayerQueue?: () => number;
     __debugHarvesterCount?: () => number;
+    __debugAiState?: () => string;
+    __debugEconomyTeams?: () => Record<'player' | 'enemy', { credits: number; harvesters: number; army: number; armyValue: number }>;
     __debugBriefing?: () => boolean;
     __debugSprites?: unknown; // the sprite bank, for the real-asset loader smoke test
     __debugCamera?: () => { x: number; y: number; zoom: number };
@@ -91,6 +93,15 @@ export function bootstrap(): void {
       state.shardDensity.set(`${cx + 2 + dx},${cy + dy}`, 800);
     }
   }
+  // The AI's home field — a mirror 3×3 cluster next to the enemy base (~cx+10,cy-8),
+  // so the enemy harvester funds a real, ongoing economy (v0.24: symmetry). Placed east
+  // of the enemy refinery and far enough from the player field that neither harvester
+  // (search radius 10) poaches the other's tiles.
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = 0; dx <= 2; dx++) {
+      state.shardDensity.set(`${cx + 12 + dx},${cy - 8 + dy}`, 800);
+    }
+  }
 
   // ── Warcraft-style opening: a base HUB + a worker, then you build up ──────────
   // Refinery = your resource hub (the harvester docks credits here). Starts with
@@ -99,7 +110,7 @@ export function bootstrap(): void {
     position: tileToWorldCenter({ tx: cx, ty: cy }),
     building: { onSlab: true, buildProgress: 100, powered: true },
     faction: { team: 'player', faction: 'refinery' },
-    economy: { credits: 700, refineryStorage: 700, maxStorage: economy.refineryStorageCapacity },
+    economy: { credits: 600, refineryStorage: 600, maxStorage: economy.refineryStorageCapacity },
     // The Refinery builds Harvesters (C&C-accurate: available turn one, no Barracks
     // gate). Combat units still come from the Barracks. Production is routed by unit
     // type in the command system's 'train' handler.
@@ -121,10 +132,13 @@ export function bootstrap(): void {
   });
 
   // Harvester (your worker) — one tile east of the refinery, auto-mining Shard.
+  // Health + armor so it can be raided (E6) and flee when hit; matches produced harvesters.
   state.store.create({
     position: tileToWorldCenter({ tx: cx + 1, ty: cy }),
     movement: { target: null, path: [], speed: 10 },
     faction: { team: 'player', faction: 'harvester' },
+    health: { hp: 200, maxHp: 200 },
+    armor: { armorClass: 'MEDIUM' },
     harvest: { state: 'SEEK', targetTile: null, targetRefinery: null, cargo: 0 },
   });
 
@@ -137,11 +151,14 @@ export function bootstrap(): void {
       combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
       faction: { team: 'player', faction: 'infantry' } });
   }
-  // AI base ~10 tiles NE: bank (refinery w/ credits) + barracks (producer):
+  // AI base ~10 tiles NE: refinery (bank + harvester producer) + barracks (unit producer).
+  // The refinery carries a production component so the AI can (re)build harvesters — its
+  // economy is now real (harvest → credits), not a static 600-credit allowance.
   state.store.create({ position: tileToWorldCenter({ tx: cx + 10, ty: cy - 8 }),
     building: { onSlab: true, buildProgress: 100, powered: true },
     faction: { team: 'enemy', faction: 'refinery' },
     economy: { credits: 600, refineryStorage: 600, maxStorage: 2000 },
+    production: { queue: [], progress: 0, current: null },
     health: { hp: 1500, maxHp: 1500 },
     armor: { armorClass: 'BUILDING' } });
   state.store.create({ position: tileToWorldCenter({ tx: cx + 11, ty: cy - 7 }),
@@ -150,6 +167,13 @@ export function bootstrap(): void {
     production: { queue: [], progress: 0 },
     health: { hp: 800, maxHp: 800 },
     armor: { armorClass: 'BUILDING' } });
+  // The AI's harvester — mines its home field into the enemy refinery, funding real income.
+  state.store.create({ position: tileToWorldCenter({ tx: cx + 11, ty: cy - 8 }),
+    movement: { target: null, path: [], speed: 10 },
+    faction: { team: 'enemy', faction: 'harvester' },
+    health: { hp: 200, maxHp: 200 },
+    armor: { armorClass: 'MEDIUM' },
+    harvest: { state: 'SEEK', targetTile: null, targetRefinery: null, cargo: 0 } });
 
   // Create command queue (view writes, command system reads) + the command system.
   const commandQueue = makeCommandQueue();
@@ -163,6 +187,7 @@ export function bootstrap(): void {
 
   // Register systems (command runs FIRST per SYSTEM_ORDER)
   const fogSystem = makeFogSystem();
+  const aiSystem = makeAiSystem(units, { team: 'enemy', attackTile: { tx: cx, ty: cy } });
   const systems = orderSystems([
     commandSystem,
     makeMovementSystem(),
@@ -172,7 +197,7 @@ export function bootstrap(): void {
     makeCombatTargetingSystem(weapons),
     makeDamageSystem(weapons),
     makeProductionSystem(units),
-    makeAiSystem(units, { team: 'enemy', unitId: 'infantry', armySize: 2, attackTile: { tx: cx, ty: cy } }),
+    aiSystem,
     victorySystem,
     fogSystem,
   ]);
@@ -204,6 +229,7 @@ export function bootstrap(): void {
     onboarding,
     objectiveWorld: tileToWorldCenter({ tx: cx + 10, ty: cy - 8 }), // the enemy base = the goal
     getHover: () => input.getCursor(),                               // sidebar hover highlight
+    cargoCapacity: economy.cargoCapacity,                            // HUD cargo-bar denominator
   });
 
   // Camera panning is a pure view action — never a sim command.
@@ -346,6 +372,31 @@ export function bootstrap(): void {
           (e.components.health?.hp ?? 1) > 0) n++;
     }
     return n;
+  };
+
+  // The AI's current FSM plan (Stabilize/Develop/Pressure/Raid/Assault/Recover/Expand).
+  window.__debugAiState = () => aiSystem.debugState();
+
+  // E10 economy telemetry: per-team snapshot for balance tuning (income is real, so
+  // watching credits + harvesters + army over time proves the AI economy is alive).
+  window.__debugEconomyTeams = () => {
+    const out = {
+      player: { credits: 0, harvesters: 0, army: 0, armyValue: 0 },
+      enemy: { credits: 0, harvesters: 0, army: 0, armyValue: 0 },
+    };
+    const cost = (id: string): number => units.find(u => u.id === id)?.cost ?? 0;
+    for (const e of state.store.all()) {
+      const team = e.components.faction?.team;
+      if (team !== 'player' && team !== 'enemy') continue;
+      const row = out[team];
+      if (e.components.economy) row.credits += e.components.economy.credits;
+      if (e.components.faction?.faction === 'harvester' && (e.components.health?.hp ?? 0) > 0) row.harvesters++;
+      if (e.components.combat && (e.components.health?.hp ?? 0) > 0) {
+        row.army++;
+        row.armyValue += cost(e.components.faction?.faction ?? '');
+      }
+    }
+    return out;
   };
 }
 

@@ -78,6 +78,8 @@ export interface ViewConfig {
   objectiveWorld?: WorldPos;
   /** Cursor position (canvas px) for hover-highlighting the sidebar build buttons. */
   getHover?: () => { sx: number; sy: number } | null;
+  /** Harvester cargo capacity (economyConstants) — passed to the HUD cargo bar. */
+  cargoCapacity?: number;
 }
 
 export interface View {
@@ -96,7 +98,7 @@ export interface View {
 }
 
 export function makeView(cfg: ViewConfig): View {
-  const { canvas, simState, systems, mapWidth, mapHeight, confirmationMarkers, getSelectionBox, getPlacementMode, structures = [], getVictory, getFog, weapons = { matrix: {}, weapons: {} }, onboarding, objectiveWorld, getHover } = cfg;
+  const { canvas, simState, systems, mapWidth, mapHeight, confirmationMarkers, getSelectionBox, getPlacementMode, structures = [], getVictory, getFog, weapons = { matrix: {}, weapons: {} }, onboarding, objectiveWorld, getHover, cargoCapacity } = cfg;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D context not available');
 
@@ -117,7 +119,7 @@ export function makeView(cfg: ViewConfig): View {
   const context = ctx as CanvasRenderingContext2D;
 
   // Create HUD (clickable C&C-style build sidebar; getHover drives button highlight)
-  const hud = makeHUD({ canvas, simState, camera, getHover });
+  const hud = makeHUD({ canvas, simState, camera, getHover, cargoCapacity });
 
   // Pre-bake the directional sprite bank once (S7-2). Units get DIRS fixed-lit
   // facings; buildings get a lit body. Animated accents are drawn live on top.

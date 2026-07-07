@@ -1,4 +1,4 @@
-// ── AI system unit tests: build army then attack ────────────────────────────────
+// ── AI FSM unit tests (v0.24): economy, reactive composition, plan selection ─────
 import { describe, it, expect, beforeEach } from 'vitest';
 import { makeSimState, type SimState } from '../../src/sim/state.js';
 import { makeAiSystem } from '../../src/sim/systems/ai.js';
@@ -9,198 +9,173 @@ import { loadUnits } from '../../src/loaders/units.js';
 import unitsData from '../../data/units.json' with { type: 'json' };
 import { asEntityId } from '../../src/sim/ids.js';
 
-// Load units
 const units = loadUnits(unitsData);
 
-describe('ai system', () => {
+function addRefinery(state: SimState, tx: number, ty: number, credits: number, team = 'enemy' as const) {
+  return state.store.create({
+    position: tileToWorldCenter({ tx, ty }),
+    building: { onSlab: true, buildProgress: 100, powered: true },
+    faction: { team, faction: 'refinery' },
+    economy: { credits, refineryStorage: credits, maxStorage: 2000 },
+    production: { queue: [], progress: 0, current: null },
+    health: { hp: 1500, maxHp: 1500 }, armor: { armorClass: 'BUILDING' },
+  });
+}
+function addBarracks(state: SimState, tx: number, ty: number, team = 'enemy' as const) {
+  return state.store.create({
+    position: tileToWorldCenter({ tx, ty }),
+    building: { onSlab: true, buildProgress: 100, powered: true },
+    faction: { team, faction: 'barracks' },
+    production: { queue: [], progress: 0 },
+    health: { hp: 800, maxHp: 800 }, armor: { armorClass: 'BUILDING' },
+  });
+}
+function addHarvester(state: SimState, tx: number, ty: number, team: 'player' | 'enemy' = 'enemy') {
+  return state.store.create({
+    position: tileToWorldCenter({ tx, ty }),
+    movement: { target: null, path: [], speed: 10 },
+    faction: { team, faction: 'harvester' },
+    health: { hp: 200, maxHp: 200 }, armor: { armorClass: 'MEDIUM' },
+    harvest: { state: 'SEEK', targetTile: null, targetRefinery: null, cargo: 0 },
+  });
+}
+function addSoldier(state: SimState, tx: number, ty: number, team: 'player' | 'enemy' = 'enemy', faction = 'infantry', weaponId = 'rifle') {
+  return state.store.create({
+    position: tileToWorldCenter({ tx, ty }),
+    health: { hp: 20, maxHp: 20 },
+    movement: { target: null, path: [], speed: 12 },
+    combat: { weaponId, cooldownRemaining: 0, targetId: null },
+    faction: { team, faction },
+  });
+}
+
+describe('ai FSM — economy', () => {
   let state: SimState;
   let systems: readonly SimSystem[];
-
-  const cfg = { team: 'enemy' as const, unitId: 'infantry', armySize: 3, attackTile: { tx: 5, ty: 5 } };
+  const cfg = { team: 'enemy' as const, attackTile: { tx: 5, ty: 5 }, evalInterval: 1 };
 
   beforeEach(() => {
     state = makeSimState({ seed: 42, mapWidth: 32, mapHeight: 32 });
     systems = orderSystems([makeAiSystem(units, cfg)]);
   });
 
-  it('enemy producer with empty queue + rich bank queues infantry', () => {
-    // Create enemy producer with empty queue
-    const producerPos = tileToWorldCenter({ tx: 10, ty: 10 });
-    const producerId = state.store.create({
-      position: producerPos,
-      building: { onSlab: true, buildProgress: 100, powered: true },
-      faction: { team: 'enemy', faction: 'construction_yard' },
-      production: { queue: [], progress: 0 },
-      economy: { credits: 500, refineryStorage: 0, maxStorage: 2000 },
-    });
-
-    // Run tick
+  it('rebuilds a lost harvester at the refinery (no harvester alive)', () => {
+    const ref = addRefinery(state, 10, 10, 600);
     runTick(state, systems);
-
-    // Verify queue now has infantry
-    const producer = state.store.get(producerId);
-    expect(producer?.components.production?.queue).toEqual(['infantry']);
+    expect(state.store.get(ref)?.components.production?.queue).toEqual(['harvester']);
   });
 
-  it('enemy producer does NOT queue when bank cannot afford', () => {
-    // Create enemy producer with empty queue and poor bank
-    const producerPos = tileToWorldCenter({ tx: 10, ty: 10 });
-    const producerId = state.store.create({
-      position: producerPos,
-      building: { onSlab: true, buildProgress: 100, powered: true },
-      faction: { team: 'enemy', faction: 'construction_yard' },
-      production: { queue: [], progress: 0 },
-      economy: { credits: 50, refineryStorage: 0, maxStorage: 2000 }, // 50 < 100 cost
-    });
-
-    // Run tick
+  it('does NOT queue a harvester when one is alive', () => {
+    const ref = addRefinery(state, 10, 10, 600);
+    addHarvester(state, 11, 10);
     runTick(state, systems);
+    expect(state.store.get(ref)?.components.production?.queue).toEqual([]);
+  });
+});
 
-    // Verify queue stays empty
-    const producer = state.store.get(producerId);
-    expect(producer?.components.production?.queue).toEqual([]);
+describe('ai FSM — reactive composition', () => {
+  let state: SimState;
+  let systems: readonly SimSystem[];
+  const cfg = { team: 'enemy' as const, attackTile: { tx: 5, ty: 5 }, evalInterval: 1 };
+
+  beforeEach(() => {
+    state = makeSimState({ seed: 42, mapWidth: 32, mapHeight: 32 });
+    systems = orderSystems([makeAiSystem(units, cfg)]);
   });
 
-  it('with only 2 enemy combat units, movement.target stays null', () => {
-    // Create 2 enemy combat units
-    const pos1 = tileToWorldCenter({ tx: 10, ty: 10 });
-    state.store.create({
-      position: pos1,
-      health: { hp: 20, maxHp: 20 },
-      movement: { target: null, path: [], speed: 12 },
-      combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
-      faction: { team: 'enemy', faction: 'infantry' },
-    });
-
-    const pos2 = tileToWorldCenter({ tx: 11, ty: 10 });
-    state.store.create({
-      position: pos2,
-      health: { hp: 20, maxHp: 20 },
-      movement: { target: null, path: [], speed: 12 },
-      combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
-      faction: { team: 'enemy', faction: 'infantry' },
-    });
-
-    // Run tick
+  it('queues infantry by default (no player army observed)', () => {
+    addRefinery(state, 10, 10, 600);
+    addHarvester(state, 11, 10);
+    const bar = addBarracks(state, 12, 10);
     runTick(state, systems);
-
-    // Verify movement.target is still null (armySize=3 not reached)
-    const army1 = state.store.all().find(e => e.components.faction?.team === 'enemy' && e.components.combat && e.components.health && e.components.movement);
-    const army2 = state.store.all().find((e, i) => e.components.faction?.team === 'enemy' && e.components.combat && e.components.health && e.components.movement && i > 0);
-    expect(army1?.components.movement?.target).toBeNull();
-    expect(army2?.components.movement?.target).toBeNull();
+    expect(state.store.get(bar)?.components.production?.queue).toEqual(['infantry']);
   });
 
-  it('with 3 enemy combat units, idle ones march on attackTile', () => {
-    // Create 3 enemy combat units
-    const pos1 = tileToWorldCenter({ tx: 10, ty: 10 });
-    const id1 = state.store.create({
-      position: pos1,
-      health: { hp: 20, maxHp: 20 },
-      movement: { target: null, path: [], speed: 12 },
-      combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
-      faction: { team: 'enemy', faction: 'infantry' },
-    });
-
-    const pos2 = tileToWorldCenter({ tx: 11, ty: 10 });
-    const id2 = state.store.create({
-      position: pos2,
-      health: { hp: 20, maxHp: 20 },
-      movement: { target: null, path: [], speed: 12 },
-      combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
-      faction: { team: 'enemy', faction: 'infantry' },
-    });
-
-    const pos3 = tileToWorldCenter({ tx: 12, ty: 10 });
-    const id3 = state.store.create({
-      position: pos3,
-      health: { hp: 20, maxHp: 20 },
-      movement: { target: null, path: [], speed: 12 },
-      combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
-      faction: { team: 'enemy', faction: 'infantry' },
-    });
-
-    // Run tick
+  it('counters a rifle-heavy player with a vehicle', () => {
+    addRefinery(state, 10, 10, 600);
+    addHarvester(state, 11, 10);
+    const bar = addBarracks(state, 12, 10);
+    addSoldier(state, 3, 3, 'player', 'infantry', 'rifle');
+    addSoldier(state, 4, 3, 'player', 'infantry', 'rifle');
     runTick(state, systems);
-
-    // Verify all idle units have movement.target set to attackTile center
-    const target = tileToWorldCenter({ tx: 5, ty: 5 });
-    expect(state.store.get(id1)?.components.movement?.target).toEqual(target);
-    expect(state.store.get(id2)?.components.movement?.target).toEqual(target);
-    expect(state.store.get(id3)?.components.movement?.target).toEqual(target);
+    expect(state.store.get(bar)?.components.production?.queue).toEqual(['vehicle']);
   });
 
-  it('unit already fighting (combat.targetId set) is NOT retargeted', () => {
-    // Create 3 enemy combat units, one already fighting
-    const pos1 = tileToWorldCenter({ tx: 10, ty: 10 });
-    const id1 = state.store.create({
-      position: pos1,
-      health: { hp: 20, maxHp: 20 },
-      movement: { target: null, path: [], speed: 12 },
-      combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: asEntityId(999) }, // already fighting
-      faction: { team: 'enemy', faction: 'infantry' },
-    });
-
-    const pos2 = tileToWorldCenter({ tx: 11, ty: 10 });
-    const id2 = state.store.create({
-      position: pos2,
-      health: { hp: 20, maxHp: 20 },
-      movement: { target: null, path: [], speed: 12 },
-      combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
-      faction: { team: 'enemy', faction: 'infantry' },
-    });
-
-    const pos3 = tileToWorldCenter({ tx: 12, ty: 10 });
-    const id3 = state.store.create({
-      position: pos3,
-      health: { hp: 20, maxHp: 20 },
-      movement: { target: null, path: [], speed: 12 },
-      combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
-      faction: { team: 'enemy', faction: 'infantry' },
-    });
-
-    // Run tick
+  it('does not queue a unit the bank cannot start', () => {
+    addRefinery(state, 10, 10, 50); // 50 < infantry cost 100
+    addHarvester(state, 11, 10);
+    const bar = addBarracks(state, 12, 10);
     runTick(state, systems);
+    expect(state.store.get(bar)?.components.production?.queue).toEqual([]);
+  });
+});
 
-    // Fighting unit should NOT be retargeted
-    expect(state.store.get(id1)?.components.movement?.target).toBeNull();
-    // Idle units should be retargeted
-    const target = tileToWorldCenter({ tx: 5, ty: 5 });
-    expect(state.store.get(id2)?.components.movement?.target).toEqual(target);
-    expect(state.store.get(id3)?.components.movement?.target).toEqual(target);
+describe('ai FSM — plans', () => {
+  let state: SimState;
+
+  beforeEach(() => {
+    state = makeSimState({ seed: 42, mapWidth: 32, mapHeight: 32 });
   });
 
-  it('end-to-end: AI queues -> production builds -> enemy infantry exists', () => {
-    // Setup: enemy producer + rich bank + ai system + production system
-    const producerPos = tileToWorldCenter({ tx: 10, ty: 10 });
-    state.store.create({
-      position: producerPos,
-      building: { onSlab: true, buildProgress: 100, powered: true },
-      faction: { team: 'enemy', faction: 'construction_yard' },
-      production: { queue: [], progress: 0 },
-      economy: { credits: 500, refineryStorage: 0, maxStorage: 2000 },
-    });
+  it('Assault: a strong army marches on the attack tile', () => {
+    const cfg = { team: 'enemy' as const, attackTile: { tx: 2, ty: 2 }, evalInterval: 1, assaultValue: 200 };
+    const systems = orderSystems([makeAiSystem(units, cfg)]);
+    addRefinery(state, 10, 10, 600); addHarvester(state, 11, 10);
+    const a = addSoldier(state, 10, 12); const b = addSoldier(state, 11, 12); // value 200 ≥ 200
+    runTick(state, systems);
+    const target = tileToWorldCenter({ tx: 2, ty: 2 });
+    expect(state.store.get(a)?.components.movement?.target).toEqual(target);
+    expect(state.store.get(b)?.components.movement?.target).toEqual(target);
+  });
 
-    systems = orderSystems([
-      makeAiSystem(units, cfg),
-      makeProductionSystem(units),
-    ]);
+  it('Assault does not retarget an already-fighting unit', () => {
+    const cfg = { team: 'enemy' as const, attackTile: { tx: 2, ty: 2 }, evalInterval: 1, assaultValue: 200 };
+    const systems = orderSystems([makeAiSystem(units, cfg)]);
+    addRefinery(state, 10, 10, 600); addHarvester(state, 11, 10);
+    const fighting = addSoldier(state, 10, 12);
+    state.store.get(fighting)!.components.combat!.targetId = asEntityId(999);
+    const idle = addSoldier(state, 11, 12); addSoldier(state, 12, 12);
+    runTick(state, systems);
+    expect(state.store.get(fighting)?.components.movement?.target).toBeNull();
+    expect(state.store.get(idle)?.components.movement?.target).toEqual(tileToWorldCenter({ tx: 2, ty: 2 }));
+  });
 
-    // Run ~65 ticks to allow queue to be processed and unit built
-    // infantry buildTimeSeconds=3 → 60 ticks at 20Hz
-    for (let i = 0; i < 70; i++) {
-      runTick(state, systems);
-    }
+  it('Raid: peels units to an exposed player harvester (not the base)', () => {
+    const cfg = { team: 'enemy' as const, attackTile: { tx: 2, ty: 2 }, evalInterval: 1, raidUnitCap: 2 };
+    const systems = orderSystems([makeAiSystem(units, cfg)]);
+    addRefinery(state, 10, 10, 600); addHarvester(state, 11, 10);
+    // Medium army (300 < 500 assault threshold) → not an assault.
+    const s1 = addSoldier(state, 10, 12); const s2 = addSoldier(state, 11, 12); const s3 = addSoldier(state, 12, 12);
+    // Player harvester far away with NO player defenders → exposed.
+    addHarvester(state, 24, 24, 'player');
+    runTick(state, systems);
+    const raidTarget = tileToWorldCenter({ tx: 24, ty: 24 });
+    const targets = [s1, s2, s3].map(id => state.store.get(id)?.components.movement?.target);
+    const raiders = targets.filter(t => t?.wx === raidTarget.wx && t?.wy === raidTarget.wy);
+    expect(raiders.length).toBe(2); // exactly raidUnitCap
+  });
 
-    // Verify an enemy infantry unit exists
-    const infantry = state.store.all().find(e =>
-      e.components.faction?.team === 'enemy' &&
-      e.components.faction?.faction === 'infantry' &&
-      e.components.combat &&
-      e.components.health &&
-      e.components.movement
-    );
-    expect(infantry).toBeDefined();
-    expect(infantry?.components.faction?.faction).toBe('infantry');
+  it('Stabilize: no harvester → recalls the army home AND rebuilds a harvester', () => {
+    const cfg = { team: 'enemy' as const, attackTile: { tx: 2, ty: 2 }, evalInterval: 1, assaultValue: 100 };
+    const systems = orderSystems([makeAiSystem(units, cfg)]);
+    const ref = addRefinery(state, 10, 10, 600); // no harvester
+    const a = addSoldier(state, 20, 20); addSoldier(state, 21, 20);
+    runTick(state, systems);
+    // army recalled to the base (refinery) position, not the attack tile
+    expect(state.store.get(a)?.components.movement?.target).toEqual(tileToWorldCenter({ tx: 10, ty: 10 }));
+    expect(state.store.get(ref)?.components.production?.queue).toEqual(['harvester']);
+  });
+});
+
+describe('ai FSM — end to end', () => {
+  it('AI queues → production builds → an enemy combat unit exists', () => {
+    const state = makeSimState({ seed: 42, mapWidth: 32, mapHeight: 32 });
+    const cfg = { team: 'enemy' as const, attackTile: { tx: 5, ty: 5 }, evalInterval: 1 };
+    addRefinery(state, 10, 10, 600); addHarvester(state, 11, 10); addBarracks(state, 12, 10);
+    const systems = orderSystems([makeAiSystem(units, cfg), makeProductionSystem(units)]);
+    for (let i = 0; i < 80; i++) runTick(state, systems);
+    const combat = state.store.all().find(e =>
+      e.components.faction?.team === 'enemy' && e.components.combat && e.components.health && e.components.movement);
+    expect(combat).toBeDefined();
   });
 });
