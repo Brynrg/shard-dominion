@@ -37,7 +37,7 @@ declare global {
     __debugEconomy?: () => { credits: number };
     __debugSelection?: () => number;
     __debugPower?: () => { supply: number; demand: number; powered: boolean };
-    __debugBuildingCount?: () => { mcv: number; conyard: number; power_node: number };
+    __debugBuildingCount?: () => { mcv: number; conyard: number; power_node: number; barracks: number };
     __debugConYardScreenPos?: () => { x: number; y: number } | null;
     __debugUnitCount?: () => { player: number; enemy: number };
     __debugVictory?: () => { over: boolean; winner: 'player' | 'enemy' | null };
@@ -90,41 +90,40 @@ export function bootstrap(): void {
     }
   }
 
-  // Refinery at center (starts with 500 credits; storage mirrors the credits pool).
+  // ── Warcraft-style opening: a base HUB + a worker, then you build up ──────────
+  // Refinery = your resource hub (the harvester docks credits here). Starts with
+  // enough cash to raise a Barracks (300) and train a few troops.
   state.store.create({
     position: tileToWorldCenter({ tx: cx, ty: cy }),
     building: { onSlab: true, buildProgress: 100, powered: true },
     faction: { team: 'player', faction: 'refinery' },
-    economy: { credits: 500, refineryStorage: 500, maxStorage: economy.refineryStorageCapacity },
+    economy: { credits: 700, refineryStorage: 700, maxStorage: economy.refineryStorageCapacity },
     health: { hp: 1500, maxHp: 1500 },
     armor: { armorClass: 'BUILDING' },
   });
 
+  // Construction Yard already standing (the "town hall") — provides the build radius
+  // so you can raise a Barracks with B from turn one. No MCV-deploy step needed.
+  state.store.create({
+    position: tileToWorldCenter({ tx: cx - 2, ty: cy }),
+    building: { onSlab: true, buildProgress: 100, powered: true },
+    faction: { team: 'player', faction: 'construction_yard' },
+    construction: { queue: [], progress: 0, currentStructureId: null },
+    power: { powerSupply: 0, powerDemand: 0, powered: true },
+    health: { hp: 2000, maxHp: 2000 },
+    armor: { armorClass: 'BUILDING' },
+  });
 
-  // Harvester one tile east of the refinery, seeking.
+  // Harvester (your worker) — one tile east of the refinery, auto-mining Shard.
   state.store.create({
     position: tileToWorldCenter({ tx: cx + 1, ty: cy }),
-    movement: { target: null, path: [], speed: 10 }, // 10 world units per tick
+    movement: { target: null, path: [], speed: 10 },
     faction: { team: 'player', faction: 'harvester' },
     harvest: { state: 'SEEK', targetTile: null, targetRefinery: null, cargo: 0 },
   });
 
-  // MCV at center (deployable to Construction Yard)
-  state.store.create({
-    position: tileToWorldCenter({ tx: cx - 2, ty: cy }),
-    faction: { team: 'player', faction: 'mcv' },
-  });
-
-  // Player barracks near the base (producer, destructible, health 800 armor BUILDING)
-  state.store.create({ position: tileToWorldCenter({ tx: cx - 1, ty: cy + 3 }),
-    building: { onSlab: true, buildProgress: 100, powered: true },
-    faction: { team: 'player', faction: 'barracks' },
-    production: { queue: [], progress: 0 },
-    health: { hp: 800, maxHp: 800 },
-    armor: { armorClass: 'BUILDING' } });
-
-  // ── Match scene (S6A-3): player base (existing refinery/harvester/MCV) vs an AI base ──
-  // Player defenders (2 infantry near the base):
+  // ── Match scene: player hub + worker + 2 starting troops vs an AI base ─────────
+  // Two starting soldiers so you're not defenceless while you build a Barracks.
   for (const dx of [-3, -2]) {
     state.store.create({ position: tileToWorldCenter({ tx: cx + dx, ty: cy + 2 }),
       health: { hp: 20, maxHp: 20 }, armor: { armorClass: 'LIGHT' },
@@ -259,12 +258,14 @@ export function bootstrap(): void {
 
   // Building-count + ConYard locator hooks for the S3 liveness gate.
   window.__debugBuildingCount = () => {
-    const count = { mcv: 0, conyard: 0, power_node: 0 };
+    const count = { mcv: 0, conyard: 0, power_node: 0, barracks: 0 };
     for (const e of state.store.all()) {
       const f = e.components.faction?.faction;
+      if (e.components.faction?.team !== 'player') continue;
       if (f === 'mcv') count.mcv += 1;
       else if (f === 'construction_yard') count.conyard += 1;
       else if (f === 'power_node') count.power_node += 1;
+      else if (f === 'barracks') count.barracks += 1;
     }
     return count;
   };

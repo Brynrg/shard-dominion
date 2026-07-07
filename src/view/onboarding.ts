@@ -20,27 +20,29 @@ export interface Onboarding {
 
 interface Step { key: string; text: string }
 const STEPS: readonly Step[] = [
-  { key: 'select', text: 'LEFT-CLICK one of your blue units to select it (yellow ring)' },
-  { key: 'move',   text: 'RIGHT-CLICK open sand to order that unit to move there' },
-  { key: 'train',  text: 'Press  T  to train an Infantry from your Barracks (100 credits)' },
-  { key: 'attack', text: 'Build a force, then wipe out the RED base to the north-east' },
+  { key: 'select', text: 'LEFT-CLICK one of your units to select it (yellow ring)' },
+  { key: 'move',   text: 'RIGHT-CLICK to command: open ground = move, enemy = attack, Shard = mine' },
+  { key: 'build',  text: 'Press  B  and place a BARRACKS near your base (300 credits)' },
+  { key: 'train',  text: 'Press  T  to train Infantry from the Barracks — raise an army' },
+  { key: 'attack', text: 'Send your army north-east and destroy the RED enemy base' },
 ];
 
 const BRIEF_TITLE = 'SHARD DOMINION';
 const BRIEF_STORY: readonly string[] = [
   'Aether Prime — a desert world veined with Shard, the crystal that powers',
-  'every war machine in the sector. Your clan has made planetfall. So has a',
-  'rival warband, digging in to the north-east. Only one command will hold',
-  'this ground.',
+  'every war machine in the sector. Your clan has made planetfall; a rival',
+  'warband is already digging in to the north-east.',
   '',
-  'Your Harvester mines Shard into credits. Spend them to train troops and',
-  'grind the enemy off the map.',
+  'You hold a Construction Yard and a lone Harvester. Mine Shard for credits,',
+  'raise a Barracks, train an army, and drive the enemy off this ground before',
+  'their war machine outgrows yours.',
 ];
 const BRIEF_CONTROLS: readonly [string, string][] = [
   ['Left-click / drag', 'select unit(s)'],
-  ['Right-click', 'move'],
+  ['Right-click', 'move · attack enemy · mine Shard'],
+  ['B', 'build a Barracks (300)'],
   ['T  /  R', 'train Infantry / Rocket trooper'],
-  ['B  ·  D', 'build power node · deploy MCV'],
+  ['N', 'build a Power Node'],
   ['Ctrl+1-3  /  1-3', 'assign / recall groups'],
 ];
 
@@ -51,12 +53,19 @@ export function makeOnboarding(): Onboarding {
   // seen they stay satisfied.
   let everSelected = false;
   let everMoved = false;
+  let everBuilt = false;
   let everTrained = false;
   let pulse = 0;
 
   function playerHasSelection(state: SimState): boolean {
     for (const e of state.store.all()) {
       if (e.components.selection?.selected && e.components.faction?.team === 'player') return true;
+    }
+    return false;
+  }
+  function playerHasBarracks(state: SimState): boolean {
+    for (const e of state.store.all()) {
+      if (e.components.faction?.team === 'player' && e.components.faction?.faction === 'barracks') return true;
     }
     return false;
   }
@@ -76,6 +85,7 @@ export function makeOnboarding(): Onboarding {
       if (briefing) return;
       if (playerHasSelection(state)) everSelected = true;
       if (markers.length > 0) everMoved = true;
+      if (playerHasBarracks(state)) everBuilt = true;
       if (playerIsTraining(state)) everTrained = true;
 
       // Advance through the ordered steps as each is satisfied.
@@ -85,6 +95,7 @@ export function makeOnboarding(): Onboarding {
         const done =
           (key === 'select' && everSelected) ||
           (key === 'move' && everMoved) ||
+          (key === 'build' && everBuilt) ||
           (key === 'train' && everTrained);
         if (done) step += 1; else break;
       }

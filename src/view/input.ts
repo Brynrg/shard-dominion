@@ -14,6 +14,9 @@ export type CommandIntent =
   | { type: 'select'; worldRect?: { minWx: number; minWy: number; maxWx: number; maxWy: number }; target?: WorldPos }
   | { type: 'deselect' }
   | { type: 'move'; target: WorldPos }
+  // Context-sensitive right-click: the command system resolves it to attack (enemy at
+  // the point), harvest (Shard tile), or move (open ground) for the selected units.
+  | { type: 'order'; target: WorldPos; tile: TilePos }
   | { type: 'deploy' }
   | { type: 'place-structure'; structureId: string; tile: TilePos }
   | { type: 'assign-group'; group: number }
@@ -172,11 +175,13 @@ export function makeInputHandlers(
 
   function onContextMenu(e: MouseEvent): void {
     e.preventDefault();
-    // If in placement mode, cancel it; otherwise issue move order
+    // If in placement mode, cancel it; otherwise issue a context-sensitive order
+    // (the command system decides attack / harvest / move from what's at the point).
     if (placementMode) {
       setPlacementMode(null);
     } else {
-      queue.push({ type: 'move', target: screenToWorld(getMousePos(e), camera) });
+      const pos = getMousePos(e);
+      queue.push({ type: 'order', target: screenToWorld(pos, camera), tile: screenToTile(pos, camera) });
     }
   }
 
@@ -197,13 +202,15 @@ export function makeInputHandlers(
         e.preventDefault();
         queue.push({ type: 'deploy' });
         return;
-      case 'b': // Enter placement mode for power_node (if ConYard exists)
-      case 'B': // Enter placement mode for power_node (case-insensitive)
+      case 'b': // Build a Barracks (needs a Construction Yard for build radius)
+      case 'B':
         e.preventDefault();
-        // Check if a ConYard exists via the sim state reference
-        if (hasConYard()) {
-          setPlacementMode('power_node');
-        }
+        if (hasConYard()) setPlacementMode('barracks');
+        return;
+      case 'n': // Build a Power Node
+      case 'N':
+        e.preventDefault();
+        if (hasConYard()) setPlacementMode('power_node');
         return;
       case 'Escape': // Cancel placement mode
         e.preventDefault();

@@ -28,6 +28,33 @@
       }
     },
     {
+      "id": "barracks",
+      "name": "Barracks",
+      "cost": 300,
+      "buildTimeSeconds": 20,
+      "hp": 800,
+      "footprint": { "w": 2, "h": 2 },
+      "powerSupply": 0,
+      "powerDemand": 0,
+      "onSlabHpFraction": 1.0,
+      "offSlabHpFraction": 0.7,
+      "providesBuildRadius": false,
+      "isDeployable": false,
+      "graphics": {
+        "sprite_id": "barracks",
+        "fallback_geometry": {
+          "chassis": "BUILDING",
+          "chassisMod": "NONE",
+          "weaponGlyph": "NONE",
+          "barrelClass": "NONE",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 0,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      }
+    },
+    {
       "id": "power_node",
       "name": "Power Node",
       "cost": 400,

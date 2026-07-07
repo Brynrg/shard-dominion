@@ -207,9 +207,9 @@ export function makeHUD(cfg: HUDConfig): { draw(): void } {
       // Hotkey legend (footer) — kept within panel width (10px monospace, ~26 chars).
       context.fillStyle = '#8894a4';
       context.font = '10px monospace';
-      context.fillText('D deploy   B power', px + 10, py + 214);
+      context.fillText('B Barracks  N Power', px + 10, py + 214);
       context.fillText('Ctrl+1-3 set  1-3 recall', px + 10, py + 226);
-      context.fillText('drag select  R-clk move', px + 10, py + 238);
+      context.fillText('R-clk: move/attack/mine', px + 10, py + 238);
 
       // Overflow warning (below panel, hard to miss).
       if (refinery && refinery.storage >= refinery.maxStorage) {

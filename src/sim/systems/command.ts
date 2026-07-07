@@ -161,6 +161,51 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             break;
           }
 
+          case 'order': {
+            // Context-sensitive right-click. Resolve what's at the point:
+            //   enemy entity → attack (drive in; combatTargeting auto-fires in range)
+            //   Shard tile   → send the selected harvester to mine there
+            //   open ground  → move
+            let enemy: ReturnType<typeof state.store.all>[number] | null = null;
+            let ed = TILE_SUBUNITS * 0.9;
+            for (const e of state.store.all()) {
+              if (e.components.faction?.team !== 'enemy') continue;
+              const pos = e.components.position;
+              if (!pos || (e.components.health && e.components.health.hp <= 0)) continue;
+              const d = Math.hypot(pos.wx - intent.target.wx, pos.wy - intent.target.wy);
+              if (d < ed) { ed = d; enemy = e; }
+            }
+            const key = `${intent.tile.tx},${intent.tile.ty}`;
+            const isShard = state.grid.terrainAt(intent.tile) === 'SHARD' || (state.shardDensity.get(key) ?? 0) > 0;
+
+            for (const e of state.store.all()) {
+              if (!e.components.selection?.selected) continue;
+              if (e.components.faction?.team !== 'player') continue;
+              if (enemy && e.components.combat) {
+                const epos = enemy.components.position!;
+                if (!e.components.movement) e.components.movement = { target: null, path: [], speed: 10 };
+                e.components.movement.target = { wx: epos.wx, wy: epos.wy };
+                e.components.combat.targetId = enemy.id;
+                if (e.components.harvest) e.components.harvest.state = 'IDLE';
+              } else if (isShard && e.components.harvest) {
+                e.components.harvest.state = 'SEEK';
+                e.components.harvest.targetTile = { tx: intent.tile.tx, ty: intent.tile.ty };
+                e.components.harvest.targetRefinery = null;
+                if (e.components.movement) e.components.movement.target = null;
+              } else {
+                if (!e.components.movement) e.components.movement = { target: null, path: [], speed: 10 };
+                e.components.movement.target = intent.target;
+                if (e.components.harvest) {
+                  e.components.harvest.state = 'IDLE';
+                  e.components.harvest.targetTile = null;
+                  e.components.harvest.targetRefinery = null;
+                }
+              }
+            }
+            markers.push({ target: intent.target, remaining: MARKER_LIFETIME });
+            break;
+          }
+
           case 'deploy': {
             // Deploy MCV to Construction Yard
             const conYardDef = structures.find(s => s.id === 'construction_yard');
@@ -186,23 +231,31 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             if (!structure) break;
 
             const result = validatePlacement(state, structure, intent.tile);
-            if (result.valid) {
-              // Spawn the structure at the tile centre (contract fn, no inline math).
-              const tileCenter = tileToWorldCenter(intent.tile);
-              state.store.create({
-                position: tileCenter,
-                building: { onSlab: false, buildProgress: 100, powered: false },
-                faction: { team: 'player', faction: intent.structureId },
-                power: {
-                  powerSupply: structure.powerSupply,
-                  powerDemand: structure.powerDemand,
-                  powered: false,
-                },
-                health: { hp: structure.hp, maxHp: structure.hp },
-                armor: { armorClass: 'BUILDING' },
-              });
-              markers.push({ target: tileCenter, remaining: MARKER_LIFETIME });
+            if (!result.valid) break;
+
+            // Charge the player's bank; reject the build if it can't be afforded.
+            const bank = state.store.all().find(e =>
+              e.components.faction?.team === 'player' && e.components.economy)?.components.economy;
+            const cost = structure.cost ?? 0;
+            if (cost > 0) {
+              if (!bank || bank.credits < cost) break;
+              bank.credits -= cost;
             }
+
+            // Spawn the structure at the tile centre (contract fn, no inline math).
+            // Producer structures (barracks) get a production component so T/R work.
+            const tileCenter = tileToWorldCenter(intent.tile);
+            const isProducer = structure.id === 'barracks';
+            state.store.create({
+              position: tileCenter,
+              building: { onSlab: false, buildProgress: 100, powered: true },
+              faction: { team: 'player', faction: intent.structureId },
+              power: { powerSupply: structure.powerSupply, powerDemand: structure.powerDemand, powered: true },
+              health: { hp: structure.hp, maxHp: structure.hp },
+              armor: { armorClass: 'BUILDING' },
+              ...(isProducer ? { production: { queue: [], progress: 0 } } : {}),
+            });
+            markers.push({ target: tileCenter, remaining: MARKER_LIFETIME });
             break;
           }
 

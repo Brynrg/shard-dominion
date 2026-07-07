@@ -1,4 +1,4 @@
-// ── P0b liveness gate: the PLAYER can train an army (the "I can play" fix) ───────
+// ── P0b liveness gate: build a Barracks, then train — the player force grows ────
 import { test, expect } from '@playwright/test';
 import path from 'path';
 import fs from 'fs';
@@ -9,34 +9,42 @@ const SCREENSHOT_DIR = path.join(__dirname, '../../screenshots');
 if (!fs.existsSync(SCREENSHOT_DIR)) fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
 
 type Match = { enemyUnits: number; playerUnits: number; enemyCredits: number };
+type Counts = { mcv: number; conyard: number; power_node: number; barracks: number };
 
 test.describe('P0b liveness gate', () => {
-  test('pressing T trains an infantry — the player unit count rises', async ({ page }) => {
+  test('build a Barracks then train infantry — the player unit count rises', async ({ page }) => {
     test.setTimeout(60_000);
     await page.goto('/');
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
-    // Dismiss the mission briefing (the player's "click to take command") — this
-    // unpauses the sim AND grabs focus. Every gate must do it before the match runs.
-    await page.locator('#game-canvas').click({ position: { x: 4, y: 4 } });
+    await page.locator('#game-canvas').click({ position: { x: 4, y: 4 } }); // take command
     await page.waitForTimeout(60);
+    const canvas = page.locator('#game-canvas');
+    const canvasBox = (await canvas.boundingBox())!;
     await page.waitForTimeout(500);
 
     const match = () => page.evaluate(() =>
       (window as { __debugMatch?: () => Match }).__debugMatch?.() ?? { enemyUnits: -1, playerUnits: -1, enemyCredits: -1 });
-    const queueLen = () => page.evaluate(() =>
-      (window as { __debugPlayerQueue?: () => number }).__debugPlayerQueue?.() ?? -1);
+
+    // Build a Barracks (needed before you can train).
+    const cy = await page.evaluate(() => (window as { __debugConYardScreenPos?: () => { x: number; y: number } | null }).__debugConYardScreenPos?.() ?? null);
+    expect(cy).not.toBeNull();
+    await page.keyboard.press('b');
+    await page.waitForTimeout(100);
+    const tx = canvasBox.x + cy!.x, ty = canvasBox.y + cy!.y - 96;
+    await page.mouse.move(tx, ty);
+    await page.waitForTimeout(50);
+    await page.mouse.click(tx, ty);
+    await page.waitForTimeout(200);
+    const counts = await page.evaluate(() => (window as { __debugBuildingCount?: () => Counts }).__debugBuildingCount?.() ?? { mcv: 0, conyard: 0, power_node: 0, barracks: 0 });
+    expect(counts.barracks).toBe(1);
 
     const start = await match();
-    expect(start.playerUnits).toBeGreaterThanOrEqual(2); // the 2 seeded defenders
+    expect(start.playerUnits).toBeGreaterThanOrEqual(2); // the two starting soldiers
 
-    // Train two infantry via the hotkey.
+    // Train two infantry from the new barracks.
     await page.keyboard.press('t');
     await page.keyboard.press('t');
-    // The queue registered the order (may already be building the first).
-    expect(await queueLen()).toBeGreaterThanOrEqual(0);
 
-    // Within a couple build cycles, the player's living unit count exceeds the start
-    // (trained infantry joined the field) — proof the player can build an army.
     let peak = start.playerUnits;
     await expect.poll(async () => {
       peak = Math.max(peak, (await match()).playerUnits);
