@@ -11,8 +11,14 @@
 
 ## Current state
 
-**PLAYABLE + LEGIBLE. S0→S6A + P0a/P0b/P0c + P1 complete.** `pnpm run verify`: **105 unit tests** ·
-`pnpm run test:live`: **8 Playwright gates** (s0, s1, s2, s3, s5, s6a match, p0b train) — all green.
+**SHIPPED PLAYABLE RTS — v0.22.0 live at speedrungames.net/games/shard-dominion/.** `pnpm run verify`:
+**120 unit tests** · `pnpm run test:live`: **11 Playwright gates** — all green. **Read `HANDOFF.md` for how to
+work + the deploy pipeline + open threads.** Feature set (v0.7→v0.22, newest entries below): Warcraft-style
+build-up opening; **real Grok painted sprites + seamless terrain tiles**; **clickable C&C build sidebar** (live
+progress fill + `×N` queue + context cursors); **edge-scroll + wheel-zoom + radar click-jump** camera (clamped);
+right-click move/attack/mine; buildable **harvesters** (grow the economy); mission briefing (goal-first + how-to);
+harvest/fire FX; wave-attacking AI; win by destroying the enemy base. **Open:** purple building-base (Grok re-gen),
+pacing/balance tuning, harvester-from-refinery option — see HANDOFF.md §Open threads.
 
 - **P1 visual-grammar pass (2026-07-02):** the "not even Dune-2000 level" fix — **view-only**
   (`renderer.ts` + `hud.ts`, zero sim/contract change). Units now draw as **oriented chassis
