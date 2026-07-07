@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Shard Dominion - S0</title>
+    <title>Shard Dominion</title>
     <style>
       body {
         margin: 0;
-        background: #000;
+        background: #0a0a0e;
         display: flex;
         justify-content: center;
         align-items: center;
@@ -17,10 +17,22 @@
       }
       #game-container {
         text-align: center;
+        max-width: 100vw;
       }
+      /* The canvas renders at a fixed 800×600 backing store but scales to fit the
+         viewport (aspect preserved). Input maps CSS→backing coords, so clicks stay
+         correct at any display size. */
       #game-canvas {
         border: 1px solid #333;
         background: #000;
+        display: block;
+        margin: 0 auto;
+        max-width: 100vw;
+        max-height: 100vh;
+        aspect-ratio: 4 / 3;
+        outline: none;
+        image-rendering: pixelated;
+        touch-action: none;
       }
       .status {
         margin-top: 10px;
@@ -31,8 +43,8 @@
   </head>
   <body>
     <div id="game-container">
-      <canvas id="game-canvas"></canvas>
-      <div class="status">Shard Dominion — T/R train units · D deploy · B build · you vs the AI</div>
+      <canvas id="game-canvas" tabindex="0"></canvas>
+      <div class="status">Shard Dominion — click the field to begin · T/R train · right-click move · destroy the enemy base to win</div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

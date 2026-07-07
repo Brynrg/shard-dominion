@@ -9,6 +9,7 @@ import { makeHUD } from './hud.js';
 import { validatePlacement, type ConfirmationMarker } from '../sim/systems/command.js';
 import type { StructureDef } from '../loaders/structures.js';
 import type { WeaponsFile } from '../loaders/schemas.js';
+import type { Onboarding } from './onboarding.js';
 
 // ── Terrain palette (base + a darker/lighter pair for per-tile texturing) ──────
 // Each tile gets base fill + deterministic grain/detail so the desert reads as a
@@ -65,6 +66,9 @@ export interface ViewConfig {
   weapons?: WeaponsFile;
   /** Fog accessor: returns visible and explored tile sets. If undefined, treat all visible (no regression). */
   getFog?: () => { visible: Set<string>; explored: Set<string> };
+  /** Onboarding overlay (briefing + objectives). While its briefing is active the
+   *  sim is paused so the player reads the mission before anything moves. */
+  onboarding?: Onboarding;
 }
 
 export interface View {
@@ -75,7 +79,7 @@ export interface View {
 }
 
 export function makeView(cfg: ViewConfig): View {
-  const { canvas, simState, systems, mapWidth, mapHeight, confirmationMarkers, getSelectionBox, getPlacementMode, structures = [], getVictory, getFog, weapons = { matrix: {}, weapons: {} } } = cfg;
+  const { canvas, simState, systems, mapWidth, mapHeight, confirmationMarkers, getSelectionBox, getPlacementMode, structures = [], getVictory, getFog, weapons = { matrix: {}, weapons: {} }, onboarding } = cfg;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D context not available');
 
@@ -624,6 +628,12 @@ export function makeView(cfg: ViewConfig): View {
 
     // Draw HUD
     hud.draw();
+
+    // Onboarding overlays (briefing + objective banner) sit on top of everything.
+    if (onboarding) {
+      onboarding.update(simState, confirmationMarkers ?? []);
+      onboarding.draw(context, canvas);
+    }
   }
 
   function loop(now: number) {
@@ -632,12 +642,20 @@ export function makeView(cfg: ViewConfig): View {
     const dt = now - lastTime;
     lastTime = now;
 
-    // Contract fixed-timestep: accumulate() decides how many whole ticks to run;
-    // runTick() snapshots prev positions, runs systems in SYSTEM_ORDER, and bumps
-    // the tick. The leftover remainder is the interpolation alpha for render().
-    const { steps, remainderMs } = accumulate(accMs, dt);
-    for (let i = 0; i < steps; i += 1) runTick(simState, systems);
-    accMs = remainderMs;
+    // Pause the sim while the mission briefing is up — the field freezes so the
+    // player reads the brief before any unit moves (and the dismiss-click grabs
+    // keyboard focus). Rendering continues so the briefing overlay still draws.
+    if (onboarding?.briefingActive()) {
+      lastTime = now; // don't let paused time pile into a catch-up burst on resume
+      accMs = 0;
+    } else {
+      // Contract fixed-timestep: accumulate() decides how many whole ticks to run;
+      // runTick() snapshots prev positions, runs systems in SYSTEM_ORDER, and bumps
+      // the tick. The leftover remainder is the interpolation alpha for render().
+      const { steps, remainderMs } = accumulate(accMs, dt);
+      for (let i = 0; i < steps; i += 1) runTick(simState, systems);
+      accMs = remainderMs;
+    }
 
     render();
     requestAnimationFrame(loop);

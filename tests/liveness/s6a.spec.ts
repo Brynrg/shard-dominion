@@ -19,6 +19,10 @@ test.describe('S6A liveness gate', () => {
     test.setTimeout(90_000);
     await page.goto('/');
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
+    // Dismiss the mission briefing (the player's "click to take command") — this
+    // unpauses the sim AND grabs focus. Every gate must do it before the match runs.
+    await page.locator('#game-canvas').click({ position: { x: 4, y: 4 } });
+    await page.waitForTimeout(60);
     await page.waitForTimeout(500);
 
     const match = () => page.evaluate(() =>

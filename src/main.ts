@@ -9,6 +9,7 @@ import { makeConstructionSystem } from './sim/systems/construction.js';
 import { makePowerSystem } from './sim/systems/power.js';
 import { makeView } from './view/index.js';
 import { makeInputHandlers, makeCommandQueue } from './view/input.js';
+import { makeOnboarding } from './view/onboarding.js';
 import { tileToWorldCenter, worldToScreen } from './sim/coords.js';
 import { loadEconomyConstants } from './loaders/economyConstants.js';
 import { loadStructures } from './loaders/structures.js';
@@ -42,6 +43,7 @@ declare global {
     __debugVictory?: () => { over: boolean; winner: 'player' | 'enemy' | null };
     __debugMatch?: () => { enemyUnits: number; playerUnits: number; enemyCredits: number };
     __debugPlayerQueue?: () => number;
+    __debugBriefing?: () => boolean;
   }
 }
 
@@ -175,6 +177,9 @@ export function bootstrap(): void {
   canvas.width = 800;
   canvas.height = 600;
 
+  // Onboarding: mission briefing (sim paused until dismissed) + staged objectives.
+  const onboarding = makeOnboarding();
+
   // Create the view — it reads the command system's confirmation markers and the
   // live selection box from input (both view-side; the sim stays screen-blind).
   const view = makeView({
@@ -190,6 +195,7 @@ export function bootstrap(): void {
     getVictory: () => victorySystem.result,
     weapons,
     getFog: () => ({ visible: fogSystem.visible, explored: fogSystem.explored }),
+    onboarding,
   });
 
   // Camera panning is a pure view action — never a sim command.
@@ -199,7 +205,10 @@ export function bootstrap(): void {
   };
 
   // Wire input, then start rendering (input must exist before the first render frame).
-  const input = makeInputHandlers(canvas, view.getCamera(), commandQueue, panCamera, structures);
+  const input = makeInputHandlers(canvas, view.getCamera(), commandQueue, panCamera, structures, {
+    active: () => onboarding.briefingActive(),
+    dismiss: () => onboarding.dismissBriefing(),
+  });
   input.setSimState(state); // wire the sim-state ref used by the ConYard check (for 'B' placement)
   input.start();
   view.start();
@@ -296,6 +305,9 @@ export function bootstrap(): void {
     }
     return { enemyUnits, playerUnits, enemyCredits };
   };
+
+  // Expose briefing state for the P1 onboarding gate.
+  window.__debugBriefing = () => onboarding.briefingActive();
 
   // Expose player queue debug hook for P0b
   window.__debugPlayerQueue = () => {

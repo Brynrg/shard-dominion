@@ -1,11 +1,6 @@
 {
   "version": "0.0.1",
   "configurations": [
-    {
-      "name": "shard-dominion",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["run", "dev", "--", "--port", "5187", "--strictPort"],
-      "port": 5187
-    }
+    { "name": "shard-dominion", "runtimeExecutable": "pnpm", "runtimeArgs": ["dev", "--port", "5199"], "port": 5199 }
   ]
 }

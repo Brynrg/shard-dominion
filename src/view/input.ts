@@ -61,6 +61,10 @@ export function makeInputHandlers(
   queue: CommandQueue,
   panCamera: (dx: number, dy: number) => void,
   structures: StructureDef[],
+  /** Optional briefing gate: while active, the first click dismisses the briefing
+   *  (and grabs focus so keyboard works, incl. inside a portal iframe) instead of
+   *  issuing a select/move order. */
+  briefing?: { active(): boolean; dismiss(): void },
 ): InputHandlers {
   let selectStart: ScreenPos | null = null;
   let selectCurrent: ScreenPos | null = null;
@@ -69,7 +73,13 @@ export function makeInputHandlers(
 
   function getMousePos(e: MouseEvent): ScreenPos {
     const rect = canvas.getBoundingClientRect();
-    return { sx: e.clientX - rect.left, sy: e.clientY - rect.top };
+    // Map CSS-pixel cursor coords → the canvas's INTERNAL pixel space. The canvas
+    // renders at a fixed 800×600 backing store but is displayed at whatever size CSS
+    // (or the portal iframe) gives it, so we must scale by width/height ratios — else
+    // every click lands at the wrong world point and selection silently fails.
+    const scaleX = rect.width > 0 ? canvas.width / rect.width : 1;
+    const scaleY = rect.height > 0 ? canvas.height / rect.height : 1;
+    return { sx: (e.clientX - rect.left) * scaleX, sy: (e.clientY - rect.top) * scaleY };
   }
 
   // Expose a way to set sim state reference for hasConYard check
@@ -91,6 +101,15 @@ export function makeInputHandlers(
   function onMouseDown(e: MouseEvent): void {
     if (e.button !== 0) return; // left button starts a select/drag
     e.preventDefault();
+    // Mission-briefing screen: the first click takes command (dismiss + focus),
+    // and is swallowed so it doesn't also select/move underneath the overlay.
+    if (briefing?.active()) {
+      briefing.dismiss();
+      canvas.focus?.();
+      selectStart = null;
+      selectCurrent = null;
+      return;
+    }
     const pos = getMousePos(e);
     selectStart = pos;
     selectCurrent = pos;
