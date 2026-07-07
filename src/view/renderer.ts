@@ -73,6 +73,9 @@ export interface ViewConfig {
   /** Onboarding overlay (briefing + objectives). While its briefing is active the
    *  sim is paused so the player reads the mission before anything moves. */
   onboarding?: Onboarding;
+  /** World position of the objective (enemy base). Marked on the radar + pointed to
+   *  by an off-screen arrow so the goal is always obvious. */
+  objectiveWorld?: WorldPos;
 }
 
 export interface View {
@@ -89,7 +92,7 @@ export interface View {
 }
 
 export function makeView(cfg: ViewConfig): View {
-  const { canvas, simState, systems, mapWidth, mapHeight, confirmationMarkers, getSelectionBox, getPlacementMode, structures = [], getVictory, getFog, weapons = { matrix: {}, weapons: {} }, onboarding } = cfg;
+  const { canvas, simState, systems, mapWidth, mapHeight, confirmationMarkers, getSelectionBox, getPlacementMode, structures = [], getVictory, getFog, weapons = { matrix: {}, weapons: {} }, onboarding, objectiveWorld } = cfg;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D context not available');
 
@@ -189,14 +192,48 @@ export function makeView(cfg: ViewConfig): View {
       context.fillRect(bx - s / 2, by - s / 2, s, s);
     }
 
-    // Viewport rectangle (where the main camera is looking).
+    // Objective marker: the enemy base you must destroy (always shown — it's the goal).
+    if (objectiveWorld) {
+      const ox = x + (objectiveWorld.wx / worldW) * w, oy = y + (objectiveWorld.wy / worldH) * h;
+      context.fillStyle = '#ff4a3d';
+      context.beginPath(); context.moveTo(ox, oy - 5); context.lineTo(ox + 5, oy); context.lineTo(ox, oy + 5); context.lineTo(ox - 5, oy); context.closePath(); context.fill();
+      context.strokeStyle = '#ffd34d'; context.lineWidth = 1; context.stroke();
+    }
+
+    // Viewport rectangle (where the main camera is looking). Width scales with zoom.
+    const WPP = TILE_SUBUNITS / TILE_SIZE_PX;
     const vx = x + (camera.x / worldW) * w;
     const vy = y + (camera.y / worldH) * h;
-    const vw = (canvas.width * (TILE_SUBUNITS / TILE_SIZE_PX) / worldW) * w;
-    const vh = (canvas.height * (TILE_SUBUNITS / TILE_SIZE_PX) / worldH) * h;
+    const vw = (canvas.width * WPP / camera.zoom / worldW) * w;
+    const vh = (canvas.height * WPP / camera.zoom / worldH) * h;
     context.strokeStyle = '#ffffff'; context.lineWidth = 1;
     context.strokeRect(x + Math.max(0, vx - x), y + Math.max(0, vy - y), Math.min(w, vw), Math.min(h, vh));
     context.strokeStyle = '#00e5ff'; context.strokeRect(x - 0.5, y - 0.5, w + 1, h + 1);
+  }
+
+  // Off-screen pointer to the objective (enemy base) — a red chevron at the screen
+  // edge + "ENEMY BASE" label, so the player always knows where the goal is.
+  function drawObjectivePointer(): void {
+    if (!objectiveWorld) return;
+    if (getVictory?.()?.over) return;
+    const s = worldToScreen(objectiveWorld, camera);
+    const W = canvas.width, H = canvas.height;
+    const onScreen = s.sx >= 0 && s.sx <= W && s.sy >= 0 && s.sy <= H;
+    if (onScreen) return; // you can see the base — no arrow needed
+    const cxp = W / 2, cyp = H / 2;
+    const ang = Math.atan2(s.sy - cyp, s.sx - cxp);
+    const px = Math.max(44, Math.min(W - 220, s.sx)); // keep clear of the right HUD
+    const py = Math.max(44, Math.min(H - 44, s.sy));
+    context.save();
+    context.translate(px, py);
+    context.rotate(ang);
+    context.fillStyle = '#ff4a3d';
+    context.beginPath(); context.moveTo(13, 0); context.lineTo(-9, -10); context.lineTo(-9, 10); context.closePath(); context.fill();
+    context.strokeStyle = '#ffd34d'; context.lineWidth = 1.5; context.stroke();
+    context.restore();
+    context.fillStyle = '#ffd34d'; context.font = 'bold 11px monospace'; context.textAlign = 'center'; context.textBaseline = 'top';
+    context.fillText('ENEMY BASE', px, py + 12);
+    context.textBaseline = 'alphabetic';
   }
 
   // Recentre the camera on a world point (clamped so the view stays on the map).
@@ -764,7 +801,7 @@ export function makeView(cfg: ViewConfig): View {
     // The mission briefing owns the whole screen — hide the HUD behind it so the
     // COMMAND panel doesn't bleed past the briefing frame.
     const briefing = onboarding?.briefingActive() ?? false;
-    if (!briefing) { hud.draw(); drawMinimap(); }
+    if (!briefing) { drawObjectivePointer(); hud.draw(); drawMinimap(); }
 
     // Onboarding overlays (briefing + objective banner) sit on top of everything.
     if (onboarding) {

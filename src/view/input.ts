@@ -5,7 +5,10 @@
 // or the screen). Camera panning is a pure view action applied straight to the view
 // camera — it never enters the sim.
 import type { Camera, WorldPos, ScreenPos, TilePos } from '../sim/coords.js';
-import { screenToWorld, screenToTile } from '../sim/coords.js';
+import { screenToWorld, screenToTile, TILE_SUBUNITS, TILE_SIZE_PX } from '../sim/coords.js';
+
+const WORLD_PER_PX = TILE_SUBUNITS / TILE_SIZE_PX; // world units per screen px at zoom 1
+const MIN_ZOOM = 0.55, MAX_ZOOM = 2.6;
 import type { StructureDef } from '../loaders/structures.js';
 import type { SimState } from '../sim/state.js';
 
@@ -76,6 +79,27 @@ export function makeInputHandlers(
   let selectCurrent: ScreenPos | null = null;
   let placementMode: { structureId: string; tile: TilePos } | null = null;
   let simStateRef: SimState | null = null;
+  let panLast: { x: number; y: number } | null = null; // middle-drag pan anchor
+
+  // ── Camera: mouse-wheel zoom (to cursor) + middle-drag pan. The contract transform
+  //    already applies cam.zoom, so we just mutate the live camera object. ──────────
+  function zoomAt(sx: number, sy: number, factor: number): void {
+    const before = screenToWorld({ sx, sy }, camera);
+    const z = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, camera.zoom * factor));
+    // Keep the world point under the cursor fixed as zoom changes.
+    Object.assign(camera, { x: before.wx - (sx / z) * WORLD_PER_PX, y: before.wy - (sy / z) * WORLD_PER_PX, zoom: z });
+  }
+  function onWheel(e: WheelEvent): void {
+    e.preventDefault();
+    const pos = getMousePos(e);
+    zoomAt(pos.sx, pos.sy, e.deltaY < 0 ? 1.12 : 1 / 1.12);
+  }
+  function scaleXY(): { sx: number; sy: number } {
+    const rect = canvas.getBoundingClientRect();
+    return { sx: rect.width > 0 ? canvas.width / rect.width : 1, sy: rect.height > 0 ? canvas.height / rect.height : 1 };
+  }
+  // End a middle-drag even if the button is released outside the canvas.
+  function onWindowMouseUp(e: MouseEvent): void { if (e.button === 1) panLast = null; }
 
   function getMousePos(e: MouseEvent): ScreenPos {
     const rect = canvas.getBoundingClientRect();
@@ -105,6 +129,11 @@ export function makeInputHandlers(
   }
 
   function onMouseDown(e: MouseEvent): void {
+    if (e.button === 1) { // middle button → grab-drag pan
+      e.preventDefault();
+      panLast = { x: e.clientX, y: e.clientY };
+      return;
+    }
     if (e.button !== 0) return; // left button starts a select/drag
     e.preventDefault();
     // Mission-briefing screen: the first click takes command (dismiss + focus),
@@ -130,6 +159,13 @@ export function makeInputHandlers(
   }
 
   function onMouseMove(e: MouseEvent): void {
+    if (panLast) { // middle-drag pan: shift the camera opposite the drag (grab feel)
+      const s = scaleXY();
+      const dx = (e.clientX - panLast.x) * s.sx, dy = (e.clientY - panLast.y) * s.sy;
+      panLast = { x: e.clientX, y: e.clientY };
+      Object.assign(camera, { x: camera.x - (dx * WORLD_PER_PX) / camera.zoom, y: camera.y - (dy * WORLD_PER_PX) / camera.zoom, zoom: camera.zoom });
+      return;
+    }
     const pos = getMousePos(e);
     // The placement ghost follows the cursor on hover (no button required).
     if (placementMode) placementMode.tile = screenToTile(pos, camera);
@@ -138,6 +174,7 @@ export function makeInputHandlers(
   }
 
   function onMouseUp(e: MouseEvent): void {
+    if (e.button === 1 || panLast) { panLast = null; return; } // end middle-drag pan
     if (!selectStart) return;
     e.preventDefault();
     const start = selectStart;
@@ -274,11 +311,15 @@ export function makeInputHandlers(
       canvas.addEventListener('mousemove', onMouseMove);
       canvas.addEventListener('mouseup', onMouseUp);
       canvas.addEventListener('contextmenu', onContextMenu);
+      canvas.addEventListener('wheel', onWheel, { passive: false });
+      window.addEventListener('mouseup', onWindowMouseUp);
       window.addEventListener('keydown', onKeyDown);
     },
     stop(): void {
       canvas.removeEventListener('mousedown', onMouseDown);
       canvas.removeEventListener('mousemove', onMouseMove);
+      canvas.removeEventListener('wheel', onWheel);
+      window.removeEventListener('mouseup', onWindowMouseUp);
       canvas.removeEventListener('mouseup', onMouseUp);
       canvas.removeEventListener('contextmenu', onContextMenu);
       window.removeEventListener('keydown', onKeyDown);

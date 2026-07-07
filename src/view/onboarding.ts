@@ -28,23 +28,20 @@ const STEPS: readonly Step[] = [
 ];
 
 const BRIEF_TITLE = 'SHARD DOMINION';
+const BRIEF_GOAL = 'GOAL:  Build an army and DESTROY THE ENEMY BASE to the north-east.';
 const BRIEF_STORY: readonly string[] = [
-  'Aether Prime — a desert world veined with Shard, the crystal that powers',
-  'every war machine in the sector. Your clan has made planetfall; a rival',
-  'warband is already digging in to the north-east.',
-  '',
-  'You hold a Construction Yard and a lone Harvester. Mine Shard for credits,',
-  'raise a Barracks, train an army, and drive the enemy off this ground before',
-  'their war machine outgrows yours.',
+  'Aether Prime is a desert veined with Shard — the crystal that fuels every',
+  'army. You start with a base and one Harvester; a rival warband is dug in to',
+  'the north-east. Last commander standing holds the planet.',
 ];
-const BRIEF_CONTROLS: readonly [string, string][] = [
-  ['Left-click / drag', 'select unit(s)'],
-  ['Right-click', 'move · attack enemy · mine Shard'],
-  ['B', 'build a Barracks (300)'],
-  ['T  /  R', 'train Infantry / Rocket trooper'],
-  ['N', 'build a Power Node'],
-  ['Ctrl+1-3  /  1-3', 'assign / recall groups'],
+const BRIEF_HOWTO: readonly string[] = [
+  '1.  Your Harvester auto-mines Shard into credits (the ◈ counter, top-right).',
+  '2.  Press  B  and click near your base to build a Barracks (300).',
+  '3.  Press  T  or  R  to train Infantry / Rocket troopers.',
+  '4.  Drag a box to select troops, then RIGHT-CLICK the enemy to attack.',
+  '5.  Push north-east and destroy their base to win.',
 ];
+const BRIEF_HINT = 'wheel = zoom · middle-drag / arrow keys = pan · radar: bottom-left';
 
 export function makeOnboarding(): Onboarding {
   let briefing = true;
@@ -130,26 +127,36 @@ export function makeOnboarding(): Onboarding {
     ctx.font = '13px monospace';
     ctx.fillText('MISSION BRIEFING', W / 2, pad + 84);
 
-    // Story, left-aligned block.
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#e7e2d6';
-    ctx.font = '14px monospace';
-    let y = pad + 120;
-    for (const line of BRIEF_STORY) { ctx.fillText(line, pad + 34, y); y += 21; }
+    // GOAL banner — the first thing you read, so the point is unmistakable.
+    ctx.fillStyle = 'rgba(255,74,61,0.14)';
+    ctx.fillRect(pad + 20, pad + 100, W - pad * 2 - 40, 30);
+    ctx.strokeStyle = 'rgba(255,211,77,0.5)'; ctx.lineWidth = 1;
+    ctx.strokeRect(pad + 20, pad + 100, W - pad * 2 - 40, 30);
+    ctx.fillStyle = '#ffd34d';
+    ctx.font = 'bold 15px monospace';
+    ctx.fillText(BRIEF_GOAL, W / 2, pad + 120);
 
-    // Controls table.
-    y += 6;
+    // Story, left-aligned.
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#cfc9bd';
+    ctx.font = '13px monospace';
+    let y = pad + 158;
+    for (const line of BRIEF_STORY) { ctx.fillText(line, pad + 34, y); y += 20; }
+
+    // How to play — numbered steps (these ARE the controls).
+    y += 8;
     ctx.fillStyle = '#00e5ff';
     ctx.font = 'bold 13px monospace';
-    ctx.fillText('CONTROLS', pad + 34, y); y += 22;
+    ctx.fillText('HOW TO PLAY', pad + 34, y); y += 24;
     ctx.font = '13px monospace';
-    for (const [k, v] of BRIEF_CONTROLS) {
-      ctx.fillStyle = '#ffd34d';
-      ctx.fillText(k, pad + 40, y);
-      ctx.fillStyle = '#cfc9bd';
-      ctx.fillText(v, pad + 230, y);
-      y += 20;
-    }
+    ctx.fillStyle = '#e7e2d6';
+    for (const line of BRIEF_HOWTO) { ctx.fillText(line, pad + 40, y); y += 22; }
+
+    // Camera hint.
+    y += 6;
+    ctx.fillStyle = '#8894a4';
+    ctx.font = '12px monospace';
+    ctx.fillText(BRIEF_HINT, pad + 34, y);
 
     // Pulsing call to action.
     const a = 0.55 + 0.45 * Math.sin(p * 0.08);

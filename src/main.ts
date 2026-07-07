@@ -196,6 +196,7 @@ export function bootstrap(): void {
     weapons,
     getFog: () => ({ visible: fogSystem.visible, explored: fogSystem.explored }),
     onboarding,
+    objectiveWorld: tileToWorldCenter({ tx: cx + 10, ty: cy - 8 }), // the enemy base = the goal
   });
 
   // Camera panning is a pure view action — never a sim command.
