@@ -37,6 +37,13 @@
 - **P0c sustaining economy (2026-07-02):** replaced token demo seeding with a real field (natural shard 300 +
   a 3×3 home field at 800) — a single harvester banks 500→1900 in 30s then refills toward the 2000 cap. Fixed two
   fragile S2 gates the faster harvester exposed (move-test Y tolerance; box-select now targets the stationary base).
+- **🔍 ZOOM/PAN + CLEAR GOAL LIVE (2026-07-03, v0.17.0, commit 9bd5948):** feedback 'hard to tell the point/
+  how to play; want zoom+pan'. (1) Camera: mouse-WHEEL zoom-to-cursor (0.55–2.6) + MIDDLE-DRAG pan (arrows still
+  pan) — contract transform already applies cam.zoom so input just mutates the live camera + screenToWorld stays
+  correct; minimap viewport scales with zoom. (2) Briefing rewritten goal-first: a highlighted GOAL banner
+  ('destroy the enemy base') + a 5-step HOW TO PLAY list + camera hint (dropped the controls table). (3) Objective
+  always visible: red marker on the radar at the enemy base + an off-screen 'ENEMY BASE' pointer arrow (hidden when
+  on-screen/after win). Verified live: zoom-out + radar objective marker render. 118 unit + 9 liveness green.
 - **⚔️ WARCRAFT-STYLE OPENING + COMMANDS LIVE (2026-07-03, v0.16.0, commit da4f87c):** play feedback was
   'I can move units but can't direct them (no attack/harvest/build), and it starts mid-game'. Fixes: (1)
   RIGHT-CLICK is context-sensitive (new 'order' intent) — enemy=attack, Shard=send harvester to mine, ground=move;
