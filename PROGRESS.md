@@ -37,6 +37,13 @@
 - **P0c sustaining economy (2026-07-02):** replaced token demo seeding with a real field (natural shard 300 +
   a 3×3 home field at 800) — a single harvester banks 500→1900 in 30s then refills toward the 2000 cap. Fixed two
   fragile S2 gates the faster harvester exposed (move-test Y tolerance; box-select now targets the stationary base).
+- **🕹️ C&C/RED-ALERT CONTROL INTERFACE LIVE (2026-07-03, v0.19.0, commit dd15587):** feedback 'make the control
+  interface act more like C&C Red Alert'. (1) The BUILD panel is now a CLICKABLE SIDEBAR: Infantry/Rocket (click to
+  train), Barracks/Power (click → placement → click map). Buttons show a hotkey chip + name + cost, hover-highlight,
+  and grey out when unaffordable or missing a prerequisite (train needs a Barracks). Hotkeys still work. (2) Context
+  CURSORS: crosshair over enemies, pointer over own units/buttons, cell in placement. HUD.buttonAt() + input swallow
+  the button click; getHover drives the highlight. New hud.spec.ts gate (click Barracks → builds). 119 unit + 10
+  liveness green.
 - **🔧 NO-MOBILE-BUILDINGS + ACTION FX LIVE (2026-07-03, v0.18.0, commit 4eb1763):** feedback 'buildings look
   mobile; missing harvest/fire animations'. (1) BUG fix: the right-click move/order handler grafted a movement
   component onto ANY selected entity → selecting a building + right-click drove it off. Guard: order+move handlers
