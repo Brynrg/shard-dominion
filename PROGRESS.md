@@ -37,6 +37,14 @@
 - **P0c sustaining economy (2026-07-02):** replaced token demo seeding with a real field (natural shard 300 +
   a 3×3 home field at 800) — a single harvester banks 500→1900 in 30s then refills toward the 2000 cap. Fixed two
   fragile S2 gates the faster harvester exposed (move-test Y tolerance; box-select now targets the stationary base).
+- **⚔️ WARCRAFT-STYLE OPENING + COMMANDS LIVE (2026-07-03, v0.16.0, commit da4f87c):** play feedback was
+  'I can move units but can't direct them (no attack/harvest/build), and it starts mid-game'. Fixes: (1)
+  RIGHT-CLICK is context-sensitive (new 'order' intent) — enemy=attack, Shard=send harvester to mine, ground=move;
+  (2) build-up start: you begin with a Construction Yard + Refinery (hub) + 1 Harvester + 2 troops + 700cr, NO
+  pre-built army (removed the seeded barracks + MCV); (3) buildable Barracks — B places one (charges 300cr, gets a
+  production component so T/R work), N builds a Power Node; place-structure now charges credits; (4) reworked 5-step
+  objectives (select→command→build barracks→train→attack) + Warcraft-style briefing; HUD hints updated. New
+  order_build.test.ts (5); gates s3→'build a Barracks', p0b→'build then train'. 118 unit + 9 liveness green.
 - **🖼️ REAL SPRITES LIVE (2026-07-03, v0.15.0, commit 82ba44e):** 14 Grok-generated painted sprites are in the
   game — vehicle/infantry/rocket_trooper (both teams), harvester/mcv/power_node (player), refinery/barracks (both
   teams), construction_yard (neutral). Pipeline: operator moved the folder out of the TCC-locked ~/Downloads into
