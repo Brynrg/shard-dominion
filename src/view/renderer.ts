@@ -249,8 +249,9 @@ export function makeView(cfg: ViewConfig): View {
   // wall-clock + randomness (the sim may not) — particles live here, not in sim.
   interface Particle {
     wx: number; wy: number; vx: number; vy: number;
-    life: number; max: number; size: number; kind: 'flash' | 'debris' | 'ring';
+    life: number; max: number; size: number; kind: 'flash' | 'debris' | 'ring' | 'beam' | 'spark';
     hue: string;
+    bx?: number; by?: number; // beam endpoint (world), for 'beam' tracers
   }
   const particles: Particle[] = [];
   const prevAlive = new Map<EntityId, { wx: number; wy: number; team: string; big: boolean }>();
@@ -286,6 +287,18 @@ export function makeView(cfg: ViewConfig): View {
       });
     }
   }
+  // A brief tracer streak from the muzzle to the target (sells "firing").
+  function spawnTracer(x1: number, y1: number, x2: number, y2: number, hue: string): void {
+    particles.push({ wx: x1, wy: y1, vx: 0, vy: 0, bx: x2, by: y2, life: 4, max: 4, size: 1.6, kind: 'beam', hue });
+  }
+  // Purple Shard flecks kicked up while a harvester is mining ("harvesting").
+  function spawnHarvestSpark(wx: number, wy: number): void {
+    particles.push({
+      wx, wy, vx: (Math.random() - 0.5) * 0.7, vy: -1.2 * (0.5 + Math.random()),
+      life: 12 + Math.random() * 12, max: 24, size: 1.6 + Math.random() * 1.8, kind: 'spark',
+      hue: Math.random() < 0.5 ? '#c9a6ff' : '#e6d4ff',
+    });
+  }
 
   // Diff sim state each tick: find deaths (id gone) → explosion; find shots
   // (cooldown jumped back up) → muzzle flash at the barrel toward the target.
@@ -309,6 +322,14 @@ export function makeView(cfg: ViewConfig): View {
         const muzWx = pos.wx + Math.cos(ang) * TILE_SUBUNITS * 0.35;
         const muzWy = pos.wy + Math.sin(ang) * TILE_SUBUNITS * 0.35;
         spawnMuzzle(muzWx, muzWy, ang, rocket);
+        // Tracer to the target so a shot reads clearly.
+        const tgtId = e.components.combat.targetId;
+        const tp = tgtId != null ? simState.store.get(tgtId)?.components.position : null;
+        if (tp) spawnTracer(muzWx, muzWy, tp.wx, tp.wy, rocket ? '#ffce54' : '#fff2b0');
+      }
+      // Harvesting: kick up Shard flecks while a harvester is actively mining.
+      if (fxSeeded && e.components.harvest?.state === 'HARVEST' && Math.random() < 0.4) {
+        spawnHarvestSpark(pos.wx + (Math.random() - 0.5) * TILE_SUBUNITS * 0.5, pos.wy + (Math.random() - 0.5) * TILE_SUBUNITS * 0.3);
       }
       prevCooldown.set(e.id, cd);
     }
@@ -338,7 +359,7 @@ export function makeView(cfg: ViewConfig): View {
     for (const p of particles) {
       const s = worldToScreen({ wx: p.wx, wy: p.wy }, camera);
       const t = Math.max(0, p.life / p.max);
-      context.globalAlpha = p.kind === 'ring' ? t * 0.6 : t;
+      context.globalAlpha = p.kind === 'ring' ? t * 0.6 : (p.kind === 'beam' ? t * 0.85 : t);
       if (p.kind === 'ring') {
         context.strokeStyle = p.hue;
         context.lineWidth = 2.5;
@@ -350,6 +371,14 @@ export function makeView(cfg: ViewConfig): View {
         context.beginPath();
         context.arc(s.sx, s.sy, p.size * (0.6 + t * 0.6), 0, Math.PI * 2);
         context.fill();
+      } else if (p.kind === 'beam') {
+        // Tracer line muzzle → target.
+        const e = worldToScreen({ wx: p.bx ?? p.wx, wy: p.by ?? p.wy }, camera);
+        context.strokeStyle = p.hue; context.lineWidth = p.size;
+        context.beginPath(); context.moveTo(s.sx, s.sy); context.lineTo(e.sx, e.sy); context.stroke();
+      } else if (p.kind === 'spark') {
+        context.fillStyle = p.hue;
+        context.beginPath(); context.arc(s.sx, s.sy, p.size * (0.5 + t * 0.6), 0, Math.PI * 2); context.fill();
       } else {
         context.fillStyle = p.hue;
         context.fillRect(s.sx - p.size / 2, s.sy - p.size / 2, p.size, p.size);

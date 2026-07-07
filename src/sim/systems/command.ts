@@ -144,6 +144,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
           case 'move': {
             for (const e of state.store.all()) {
               if (!e.components.selection?.selected) continue;
+              if (e.components.building) continue; // buildings never move
               if (!e.components.movement) {
                 e.components.movement = { target: null, path: [], speed: 10 };
               }
@@ -181,6 +182,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             for (const e of state.store.all()) {
               if (!e.components.selection?.selected) continue;
               if (e.components.faction?.team !== 'player') continue;
+              if (e.components.building) continue; // buildings don't move/attack — they stay put
               if (enemy && e.components.combat) {
                 const epos = enemy.components.position!;
                 if (!e.components.movement) e.components.movement = { target: null, path: [], speed: 10 };

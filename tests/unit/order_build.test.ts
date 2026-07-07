@@ -73,6 +73,19 @@ describe('order + build commands', () => {
     expect(e?.components.combat?.targetId).toBeNull(); // no enemy → not an attack
   });
 
+  it('a selected BUILDING never moves on a right-click order', () => {
+    const b = state.store.create({
+      position: tileToWorldCenter({ tx: 6, ty: 6 }),
+      building: { onSlab: true, buildProgress: 100, powered: true },
+      faction: { team: 'player', faction: 'refinery' },
+      selection: { selected: true },
+      health: { hp: 1500, maxHp: 1500 }, armor: { armorClass: 'BUILDING' },
+    });
+    queue.push({ type: 'order', target: tileToWorldCenter({ tx: 15, ty: 15 }), tile: { tx: 15, ty: 15 } });
+    runTick(state, systems);
+    expect(state.store.get(b)?.components.movement).toBeUndefined(); // no movement component grafted on
+  });
+
   it('build a Barracks: charges 300 credits, spawns a producer building', () => {
     // A ConYard for build radius + an economy to pay from.
     state.store.create({
