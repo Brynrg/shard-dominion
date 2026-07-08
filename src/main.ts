@@ -21,10 +21,14 @@ import { makeVictorySystem } from './sim/systems/victory.js';
 import { makeFogSystem } from './sim/systems/fog.js';
 import { makeProductionSystem } from './sim/systems/production.js';
 import { makeAiSystem } from './sim/systems/ai.js';
+import { makeObjectivesSystem } from './sim/systems/objectives.js';
+import { seedFromMission } from './sim/seedMission.js';
+import { loadMission } from './loaders/missions.js';
 import economyConstantsData from '../data/economyConstants.json' with { type: 'json' };
 import structuresData from '../data/structures.json' with { type: 'json' };
 import weaponsData from '../data/weapons.json' with { type: 'json' };
 import unitsData from '../data/units.json' with { type: 'json' };
+import skirmishData from '../data/missions/skirmish.json' with { type: 'json' };
 
 // Map configuration
 const MAP_WIDTH = 32;
@@ -62,118 +66,20 @@ const structures = loadStructures(structuresData);
 const weapons = loadWeapons(weaponsData);
 // Load units
 const units = loadUnits(unitsData);
-const victorySystem = makeVictorySystem();
 
-export function bootstrap(): void {
-  // Create sim state
+export function bootstrap(missionRaw: unknown = skirmishData): void {
+  const mission = loadMission(missionRaw);
+
+  // Create sim state from the mission map.
   const state = makeSimState({
-    seed: 42,
-    mapWidth: MAP_WIDTH,
-    mapHeight: MAP_HEIGHT,
+    seed: mission.map.seed,
+    mapWidth: mission.map.width,
+    mapHeight: mission.map.height,
   });
 
-  const cx = Math.floor(MAP_WIDTH / 2);
-  const cy = Math.floor(MAP_HEIGHT / 2);
-
-  // ── Economy seeding (P0c): a real, MATCH-SUSTAINING shard field ──
-  // Every natural SHARD tile carries a workable base density, and a dense field is
-  // planted next to the player base (east of the harvester) so continuous harvesting
-  // funds a full match — enough credits to train an army, not just the S1 demo.
-  for (let ty = 0; ty < state.grid.height; ty++) {
-    for (let tx = 0; tx < state.grid.width; tx++) {
-      if (state.grid.terrainAt({ tx, ty }) === 'SHARD') {
-        state.shardDensity.set(`${tx},${ty}`, 300);
-      }
-    }
-  }
-  // A rich home field: a 3×3 cluster ~2 tiles east of the harvester (the densest
-  // reachable, so the harvester works it first). ~9 × 800 ≈ 7,200 credits of income.
-  for (let dy = -1; dy <= 1; dy++) {
-    for (let dx = 0; dx <= 2; dx++) {
-      state.shardDensity.set(`${cx + 2 + dx},${cy + dy}`, 800);
-    }
-  }
-  // The AI's home field — a mirror 3×3 cluster next to the enemy base (~cx+10,cy-8),
-  // so the enemy harvester funds a real, ongoing economy (v0.24: symmetry). Placed east
-  // of the enemy refinery and far enough from the player field that neither harvester
-  // (search radius 10) poaches the other's tiles.
-  for (let dy = -1; dy <= 1; dy++) {
-    for (let dx = 0; dx <= 2; dx++) {
-      state.shardDensity.set(`${cx + 12 + dx},${cy - 8 + dy}`, 800);
-    }
-  }
-
-  // ── Warcraft-style opening: a base HUB + a worker, then you build up ──────────
-  // Refinery = your resource hub (the harvester docks credits here). Starts with
-  // enough cash to raise a Barracks (300) and train a few troops.
-  state.store.create({
-    position: tileToWorldCenter({ tx: cx, ty: cy }),
-    building: { onSlab: true, buildProgress: 100, powered: true },
-    faction: { team: 'player', faction: 'refinery' },
-    economy: { credits: 600, refineryStorage: 600, maxStorage: economy.refineryStorageCapacity },
-    // The Refinery builds Harvesters (C&C-accurate: available turn one, no Barracks
-    // gate). Combat units still come from the Barracks. Production is routed by unit
-    // type in the command system's 'train' handler.
-    production: { queue: [], progress: 0, current: null },
-    health: { hp: 1500, maxHp: 1500 },
-    armor: { armorClass: 'BUILDING' },
-  });
-
-  // Construction Yard already standing (the "town hall") — provides the build radius
-  // so you can raise a Barracks with B from turn one. No MCV-deploy step needed.
-  state.store.create({
-    position: tileToWorldCenter({ tx: cx - 2, ty: cy }),
-    building: { onSlab: true, buildProgress: 100, powered: true },
-    faction: { team: 'player', faction: 'construction_yard' },
-    construction: { queue: [], progress: 0, currentStructureId: null },
-    power: { powerSupply: 0, powerDemand: 0, powered: true },
-    health: { hp: 2000, maxHp: 2000 },
-    armor: { armorClass: 'BUILDING' },
-  });
-
-  // Harvester (your worker) — one tile east of the refinery, auto-mining Shard.
-  // Health + armor so it can be raided (E6) and flee when hit; matches produced harvesters.
-  state.store.create({
-    position: tileToWorldCenter({ tx: cx + 1, ty: cy }),
-    movement: { target: null, path: [], speed: 10 },
-    faction: { team: 'player', faction: 'harvester' },
-    health: { hp: 200, maxHp: 200 },
-    armor: { armorClass: 'MEDIUM' },
-    harvest: { state: 'SEEK', targetTile: null, targetRefinery: null, cargo: 0 },
-  });
-
-  // ── Match scene: player hub + worker + 2 starting troops vs an AI base ─────────
-  // Two starting soldiers so you're not defenceless while you build a Barracks.
-  for (const dx of [-3, -2]) {
-    state.store.create({ position: tileToWorldCenter({ tx: cx + dx, ty: cy + 2 }),
-      health: { hp: 20, maxHp: 20 }, armor: { armorClass: 'LIGHT' },
-      movement: { target: null, path: [], speed: 12 },
-      combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
-      faction: { team: 'player', faction: 'infantry' } });
-  }
-  // AI base ~10 tiles NE: refinery (bank + harvester producer) + barracks (unit producer).
-  // The refinery carries a production component so the AI can (re)build harvesters — its
-  // economy is now real (harvest → credits), not a static 600-credit allowance.
-  state.store.create({ position: tileToWorldCenter({ tx: cx + 10, ty: cy - 8 }),
-    building: { onSlab: true, buildProgress: 100, powered: true },
-    faction: { team: 'enemy', faction: 'refinery' },
-    economy: { credits: 600, refineryStorage: 600, maxStorage: 2000 },
-    production: { queue: [], progress: 0, current: null },
-    health: { hp: 1500, maxHp: 1500 },
-    armor: { armorClass: 'BUILDING' } });
-  state.store.create({ position: tileToWorldCenter({ tx: cx + 11, ty: cy - 7 }),
-    building: { onSlab: true, buildProgress: 100, powered: true },
-    faction: { team: 'enemy', faction: 'barracks' },
-    production: { queue: [], progress: 0 },
-    health: { hp: 800, maxHp: 800 },
-    armor: { armorClass: 'BUILDING' } });
-  // The AI's harvester — mines its home field into the enemy refinery, funding real income.
-  state.store.create({ position: tileToWorldCenter({ tx: cx + 11, ty: cy - 8 }),
-    movement: { target: null, path: [], speed: 10 },
-    faction: { team: 'enemy', faction: 'harvester' },
-    health: { hp: 200, maxHp: 200 },
-    armor: { armorClass: 'MEDIUM' },
-    harvest: { state: 'SEEK', targetTile: null, targetRefinery: null, cargo: 0 } });
+  // Seed fields + both sides from the mission definition (replaces the old hardcoded
+  // seeding; skirmish.json reproduces the original valley).
+  const meta = seedFromMission(state, mission, { units, structures, economy });
 
   // Create command queue (view writes, command system reads) + the command system.
   const commandQueue = makeCommandQueue();
@@ -185,9 +91,12 @@ export function bootstrap(): void {
   // Create power system
   const powerSystem = makePowerSystem();
 
-  // Register systems (command runs FIRST per SYSTEM_ORDER)
+  // Register systems (command runs FIRST per SYSTEM_ORDER; 'mission' objectives run in
+  // their reserved slot). One AI per enemy side; victory still owns culling.
   const fogSystem = makeFogSystem();
-  const aiSystem = makeAiSystem(units, { team: 'enemy', attackTile: { tx: cx, ty: cy } });
+  const victorySystem = makeVictorySystem();
+  const objectivesSystem = makeObjectivesSystem(mission.objectives, mission.failure);
+  const aiSystems = mission.enemies.map(e => makeAiSystem(units, { team: 'enemy', attackTile: meta.playerStartTile, ...(e.ai ?? {}) }));
   const systems = orderSystems([
     commandSystem,
     makeMovementSystem(),
@@ -197,10 +106,17 @@ export function bootstrap(): void {
     makeCombatTargetingSystem(weapons),
     makeDamageSystem(weapons),
     makeProductionSystem(units),
-    aiSystem,
+    ...aiSystems,
+    objectivesSystem,
     victorySystem,
     fogSystem,
   ]);
+
+  // Mission win/lose (authoritative for the view) derived from the objective system.
+  const missionResult = (): { over: boolean; winner: 'player' | 'enemy' | null } => {
+    const r = objectivesSystem.result;
+    return { over: r.won || r.lost, winner: r.won ? 'player' : (r.lost ? 'enemy' : null) };
+  };
 
   // Get canvas
   const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
@@ -208,8 +124,8 @@ export function bootstrap(): void {
   canvas.width = 800;
   canvas.height = 600;
 
-  // Onboarding: mission briefing (sim paused until dismissed) + staged objectives.
-  const onboarding = makeOnboarding();
+  // Onboarding: per-mission briefing (sim paused until dismissed) + objective banner.
+  const onboarding = makeOnboarding(mission.briefing, () => objectivesSystem.result.objectives);
 
   // Create the view — it reads the command system's confirmation markers and the
   // live selection box from input (both view-side; the sim stays screen-blind).
@@ -223,11 +139,11 @@ export function bootstrap(): void {
     getSelectionBox: () => input.getSelectionBox(),
     getPlacementMode: () => input.getPlacementMode(),
     structures,
-    getVictory: () => victorySystem.result,
+    getVictory: () => missionResult(),
     weapons,
     getFog: () => ({ visible: fogSystem.visible, explored: fogSystem.explored }),
     onboarding,
-    objectiveWorld: tileToWorldCenter({ tx: cx + 10, ty: cy - 8 }), // the enemy base = the goal
+    objectiveWorld: tileToWorldCenter(meta.objectiveTile), // the mission objective = the goal marker
     getHover: () => input.getCursor(),                               // sidebar hover highlight
     cargoCapacity: economy.cargoCapacity,                            // HUD cargo-bar denominator
   });
@@ -327,7 +243,7 @@ export function bootstrap(): void {
   };
 
   // Expose victory debug hook for S4A-5 liveness test
-  window.__debugVictory = () => ({ over: victorySystem.result.over, winner: victorySystem.result.winner });
+  window.__debugVictory = () => missionResult();
 
   // Expose match debug hook for S6A-3
   window.__debugMatch = () => {
@@ -375,7 +291,7 @@ export function bootstrap(): void {
   };
 
   // The AI's current FSM plan (Stabilize/Develop/Pressure/Raid/Assault/Recover/Expand).
-  window.__debugAiState = () => aiSystem.debugState();
+  window.__debugAiState = () => aiSystems[0]?.debugState() ?? 'none';
 
   // E10 economy telemetry: per-team snapshot for balance tuning (income is real, so
   // watching credits + harvesters + army over time proves the AI economy is alive).
@@ -400,7 +316,7 @@ export function bootstrap(): void {
   };
 }
 
-// Auto-bootstrap on load
+// Auto-bootstrap on load (wrap so the `load` Event isn't passed as the mission arg).
 if (typeof window !== 'undefined') {
-  window.addEventListener('load', bootstrap);
+  window.addEventListener('load', () => bootstrap());
 }

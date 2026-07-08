@@ -33,7 +33,10 @@ export type Failure =
 
 export interface ObjectiveStatus { id?: string; text: string; primary: boolean; complete: boolean }
 export interface ObjectivesResult { objectives: ObjectiveStatus[]; won: boolean; lost: boolean }
-export interface ObjectivesSystem { name: 'objectives'; run(state: SimState): void; result: ObjectivesResult }
+// The system's canonical name is the reserved 'mission' slot in SYSTEM_ORDER (runs early,
+// right after command) — evaluation lags actual deaths by one tick, which is immaterial
+// for win/lose and keeps the pinned loop contract untouched.
+export interface ObjectivesSystem { name: 'mission'; run(state: SimState): void; result: ObjectivesResult }
 
 // A living entity matching (team, kind?) — hp<=0 counts as dead (cull-timing safe).
 function anyLiving(state: SimState, team: Team, kind?: string): boolean {
@@ -136,7 +139,7 @@ export function makeObjectivesSystem(objectives: readonly Objective[], failures:
   }
 
   return {
-    name: 'objectives' as const,
+    name: 'mission' as const,
     result,
     run(state: SimState): void {
       if (result.won || result.lost) return; // decision is sticky

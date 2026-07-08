@@ -43,7 +43,13 @@ const BRIEF_HOWTO: readonly string[] = [
 ];
 const BRIEF_HINT = 'SCROLL: move mouse to a screen edge · wheel = zoom · click the radar to jump';
 
-export function makeOnboarding(): Onboarding {
+export interface BriefingText { title: string; story: readonly string[]; objectives: readonly string[] }
+export interface ObjStatus { text: string; primary: boolean; complete: boolean }
+
+export function makeOnboarding(
+  brief?: BriefingText,
+  getObjectives?: () => readonly ObjStatus[],
+): Onboarding {
   let briefing = true;
   let step = 0;
   // Latches: some conditions are momentary (a move marker lives ~0.5s), so once
@@ -100,10 +106,40 @@ export function makeOnboarding(): Onboarding {
     draw(ctx, canvas) {
       const W = canvas.width, H = canvas.height;
       if (briefing) { drawBriefing(ctx, W, H, pulse); return; }
-      // Don't draw the objective banner once the match is decided.
-      drawObjectiveBanner(ctx, W, step, pulse);
+      // Mission objectives (with live ✔/☐) take over the banner when available;
+      // otherwise fall back to the staged control-tutorial steps.
+      const objs = getObjectives?.() ?? [];
+      if (objs.length > 0) drawMissionObjectives(ctx, W, objs, pulse);
+      else drawObjectiveBanner(ctx, W, step, pulse);
     },
   };
+
+  function drawMissionObjectives(ctx: CanvasRenderingContext2D, W: number, objs: readonly ObjStatus[], p: number): void {
+    const primaries = objs.filter(o => o.primary);
+    const list = primaries.length ? primaries : [...objs];
+    ctx.font = '13px monospace';
+    const rows = list.map(o => `${o.complete ? '✔' : '☐'} ${o.text}`);
+    const boxW = Math.max(360, ...rows.map(r => ctx.measureText(r).width + 40));
+    const h = 24 + list.length * 18;
+    const x = (W - boxW) / 2, y = 8;
+    ctx.fillStyle = 'rgba(10,14,20,0.82)';
+    ctx.fillRect(x, y, boxW, h);
+    const a = 0.6 + 0.4 * Math.sin(p * 0.06);
+    ctx.strokeStyle = `rgba(255,211,77,${a.toFixed(3)})`;
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x + 0.5, y + 0.5, boxW - 1, h - 1);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillStyle = '#ffd34d'; ctx.font = 'bold 12px monospace';
+    ctx.fillText('OBJECTIVES', x + 12, y + 6);
+    ctx.font = '13px monospace';
+    let yy = y + 24;
+    for (const o of list) {
+      ctx.fillStyle = o.complete ? '#4caf50' : '#e7e2d6';
+      ctx.fillText(`${o.complete ? '✔' : '☐'} ${o.text}`, x + 12, yy);
+      yy += 18;
+    }
+    ctx.textBaseline = 'alphabetic';
+  }
 
   function drawBriefing(ctx: CanvasRenderingContext2D, W: number, H: number, p: number): void {
     // Dim the field behind the briefing.
@@ -122,7 +158,7 @@ export function makeOnboarding(): Onboarding {
     ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = '#ffd34d';
     ctx.font = 'bold 40px monospace';
-    ctx.fillText(BRIEF_TITLE, W / 2, pad + 62);
+    ctx.fillText(brief?.title ?? BRIEF_TITLE, W / 2, pad + 62);
     ctx.fillStyle = '#8fb7c9';
     ctx.font = '13px monospace';
     ctx.fillText('MISSION BRIEFING', W / 2, pad + 84);
@@ -134,14 +170,15 @@ export function makeOnboarding(): Onboarding {
     ctx.strokeRect(pad + 20, pad + 100, W - pad * 2 - 40, 30);
     ctx.fillStyle = '#ffd34d';
     ctx.font = 'bold 15px monospace';
-    ctx.fillText(BRIEF_GOAL, W / 2, pad + 120);
+    const goal = brief?.objectives?.[0] ? `GOAL:  ${brief.objectives[0]}` : BRIEF_GOAL;
+    ctx.fillText(goal, W / 2, pad + 120);
 
     // Story, left-aligned.
     ctx.textAlign = 'left';
     ctx.fillStyle = '#cfc9bd';
     ctx.font = '13px monospace';
     let y = pad + 158;
-    for (const line of BRIEF_STORY) { ctx.fillText(line, pad + 34, y); y += 20; }
+    for (const line of (brief?.story ?? BRIEF_STORY)) { ctx.fillText(line, pad + 34, y); y += 20; }
 
     // How to play — numbered steps (these ARE the controls).
     y += 8;
