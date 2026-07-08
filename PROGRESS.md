@@ -11,8 +11,20 @@
 
 ## Current state
 
-**SHIPPED PLAYABLE RTS — v0.24.0 live at speedrungames.net/games/shard-dominion/.** `pnpm run verify`:
-**125 unit tests** · `pnpm run test:live`: **13 Playwright gates** — all green.
+**SHIPPED PLAYABLE RTS — v0.25.0 live at speedrungames.net/games/shard-dominion/.** `pnpm run verify`:
+**143 unit tests** · `pnpm run test:live`: **14 Playwright gates** — all green.
+
+- **📖 v0.25.0 "STORY MODE" — CAMPAIGN CP-1 (2026-07-08):** the panel-reviewed campaign framework
+  (`docs/CAMPAIGN_DESIGN.md`) — a **title menu** (Campaign / Skirmish) → **Mission 1 "First Light"**
+  (briefing with Marshal Corr + Sera Vane → live objective banner → destroy the Emberhand watch-post →
+  Victory/Defeat debrief → Next/Retry/Menu). The whole game is now **mission-driven**: `bootstrap()` seeds any
+  match from a mission file via `src/sim/seedMission.ts` (skirmish.json reproduces the original valley, so all
+  pre-existing gates pass unchanged); a Zod **mission loader** (`src/loaders/missions.ts`) + `validate:missions`
+  gate; the **objective system** (`src/sim/systems/objectives.ts`) runs in the reserved `'mission'` SYSTEM_ORDER
+  slot and is authoritative for win/lose (typed objectives destroy/eliminate/survive/hold/accumulate/build/reach
+  + failures defend/defeated); `src/view/menu.ts` DOM overlays + `localStorage` progress (versioned, keyed by
+  mission id); `'?mission=<id>'` deep-links any mission. 12 objective unit tests + 6 mission-validation tests +
+  a `campaign` liveness gate. Skirmish preserved as the default mission. 143 unit + 14 liveness green.
 
 - **🤖 v0.24.0 "THE OPPONENT" — REAL AI ECONOMY + GOAL-DRIVEN FSM (2026-07-07):** Phase 1 of the panel-
   reviewed economy overhaul (`docs/ECONOMY_DESIGN.md`). Root cause of the operator's "AI too weak / economy
