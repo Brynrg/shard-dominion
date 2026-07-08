@@ -209,6 +209,67 @@ The campaign and the economy overhaul are **mutually reinforcing**, not competin
 
 ---
 
+## 10. Review round 2 (panel) — verified outcomes & revised plan
+
+Two panel reviews received and **adversarially verified** (not rubber-stamped). Dispositions:
+
+**Adopted into CP-1 (cheap, foundational, prevents rework):**
+- **Stable `id`** on every objective and every mission-authored entity (needed for triggers, rewards,
+  debrief refs, tests, save).
+- **Rename objective target param `faction` → `kind`** — in the ECS the inner `faction` field holds the
+  *type* string (`'barracks'`), which is confusing, and `type` would collide with the objective's own
+  discriminator. So `target: { team, kind? }`. (Update `objectives.ts` + its tests.)
+- **Rename failure `lose_all_producers` → `eliminated`** (clearer; it's the skirmish-defeat rule).
+- **`validate:missions` CI gate** — unique ids, valid `next` chain, legal entity types, in-bounds spawns,
+  a `destroy` target that matches ≥1 entity at start (unless `allowEmpty`), skirmish loads. High value:
+  same class of "one bad data file reds the whole build" the deploy pipeline already fears.
+- **Save keyed by mission id + versioned:** `{ version, completed[], unlocked[], medals{} }` (survives
+  reordering missions).
+- **Reserve (unused) schema fields now** so the format doesn't churn later: `triggers[]`, entity `tags[]`,
+  `secondaryObjectives[]`, `rewards[]`.
+
+**Adopted for CP-2+ (needs the trigger system to exist first):**
+- **Minimal deterministic trigger system** (`src/sim/systems/missionTriggers.ts`, kept separate from
+  objective evaluation): actions `message` / `spawn` / `reveal` / `grantCredits`; conditions read sim +
+  mission state only (no wall-clock, no DOM).
+- **Secondary objectives + small rewards** (+next-mission credits/units) — makes optional objectives matter.
+- **New objective types as needed:** `protect_count` (≥N of a group survive), `escort` (compose from
+  `reach` + `defend`, not a new primitive), **contested `hold`** (timer *pauses* while an enemy unit shares
+  the region).
+- **Per-mission mid-mission complications:** M2 raider warning @50% quota, M3 escalating labelled waves,
+  M4 over-harvest foreshadows a Riftmaw, M6 post-stronghold Riftmaw survival turn. All are trigger-driven.
+
+**Declined / simplified (adversarial pushback):**
+- **"Evaluate objectives once/second"** — *keep per-tick.* At this entity scale the cost is negligible, and
+  the `hold` counter is defined per-tick; sub-sampling would complicate determinism for no measurable gain.
+  Revisit only if profiling proves otherwise.
+- **`escort` as a brand-new primitive** — compose from `reach` + `defend` instead.
+- **Authored terrain (`layout_mask`)** — reserve the schema field; implement only when M3/M4 need real
+  chokepoints (M1 is open desert). Not a CP-1 blocker.
+
+**Narrative enrichments folded into §1 (the bible):**
+- **Strengthen the Concord's rationale** — they extract because the Reach may *collapse* without Shard, not
+  from greed. The campaign question sharpens to *"is survival elsewhere worth ecological death here?"* —
+  stronger than "empire bad, rebels good," and it keeps the Concord (you) sympathetic longer.
+- **Give Sera Vane early presence** — intercepted comms / battlefield taunts / debrief quotes from M1
+  onward (cheap: just text). e.g. *"You call it extraction. The planet calls it bloodletting."*
+- **Marshal Corr = competent but ideologically blind foil**, not a cartoon villain.
+- **New mission-design rule (see §3.1):** every mission carries 1 core mechanic + 1 narrative pressure +
+  1 mid-mission complication + 1 secondary objective + 1 clear failure + 1 debrief consequence.
+
+**§8 answers — LOCKED:** shaded tone ✓ · keep faction names (optional Corr first-name swap left to operator)
+· Concord-only for v1 ✓ · 6 missions + optional 7 ✓ · text-first briefings ✓ · **linear M7** ✓ ·
+**Q6 (the one review conflict): Mission 1 ships SIMPLE in CP-1 (destroy the watch-post, no scripted beat —
+the beat needs the trigger system); the reinforcement beat is ADDED in CP-2 once triggers land.** This
+resolves the text-vs-HTML disagreement by sequencing rather than choosing.
+
+## 3.1 Mission-design rules (added per review)
+Every mission must carry: **(1)** one core mechanic lesson, **(2)** one narrative pressure (why it's
+*urgent*, not "learn harvesters" but "fuel the fleet before the raiders arrive"), **(3)** one mid-mission
+complication (trigger-driven), **(4)** one optional secondary objective with a small reward, **(5)** one
+clear failure condition, **(6)** one debrief consequence (even if only narrative). This turns the arc from
+a tutorial list into an authored campaign.
+
 ## Appendix A — code seams (where each piece plugs in)
 - `src/main.ts` `bootstrap()` → refactor to `bootstrap(mission)` + `seedFromMission()`; skirmish = default.
 - `src/sim/systems/victory.ts` → generalized by `src/sim/systems/objectives.ts` (`eliminate` = today's rule).
