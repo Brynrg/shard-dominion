@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "verify": "pnpm run typecheck && pnpm run lint && pnpm run test",
+    "validate:missions": "vitest run tests/unit/missions.test.ts",
     "test:live": "playwright test"
   },
   "dependencies": {

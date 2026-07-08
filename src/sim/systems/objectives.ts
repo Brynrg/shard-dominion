@@ -6,6 +6,11 @@
 //
 // A mission passes `objectives` (primary ones must all complete to WIN) and `failures`
 // (any one firing = LOSE). The result is exposed for the HUD/objective tracker.
+//
+// NAMING (locked in CAMPAIGN_DESIGN.md §10 review): an entity's *kind* is its type
+// string ('barracks','refinery',…) — the ECS stores it in `faction.faction`, which is
+// confusingly named, so the mission schema uses `kind`. Every objective may carry a
+// stable authoring `id` (for the UI/triggers/rewards later).
 import type { SimState } from '../state.js';
 import { SIM_TICK_RATE } from '../loop.js';
 import { tileToWorldCenter, TILE_SUBUNITS } from '../coords.js';
@@ -14,28 +19,28 @@ export type Team = 'player' | 'enemy';
 export interface Region { tx: number; ty: number; r: number } // radius r in TILES
 
 export type Objective =
-  | { type: 'destroy'; team: Team; faction?: string; primary?: boolean; text: string }
-  | { type: 'eliminate'; team: Team; primary?: boolean; text: string }
-  | { type: 'survive'; seconds: number; primary?: boolean; text: string }
-  | { type: 'hold'; team: Team; region: Region; seconds: number; primary?: boolean; text: string }
-  | { type: 'accumulate'; team: Team; credits: number; primary?: boolean; text: string }
-  | { type: 'build'; team: Team; faction: string; primary?: boolean; text: string }
-  | { type: 'reach'; team: Team; region: Region; primary?: boolean; text: string };
+  | { type: 'destroy'; id?: string; team: Team; kind?: string; primary?: boolean; text: string }
+  | { type: 'eliminate'; id?: string; team: Team; primary?: boolean; text: string }
+  | { type: 'survive'; id?: string; seconds: number; primary?: boolean; text: string }
+  | { type: 'hold'; id?: string; team: Team; region: Region; seconds: number; primary?: boolean; text: string }
+  | { type: 'accumulate'; id?: string; team: Team; credits: number; primary?: boolean; text: string }
+  | { type: 'build'; id?: string; team: Team; kind: string; primary?: boolean; text: string }
+  | { type: 'reach'; id?: string; team: Team; region: Region; primary?: boolean; text: string };
 
 export type Failure =
-  | { type: 'defend'; team: Team; faction?: string }       // fires if the matched entity (having existed) is gone
-  | { type: 'lose_all_producers'; team: Team };            // fires if team has no producers AND no combat units
+  | { type: 'defend'; team: Team; kind?: string }   // fires if the matched entity (having existed) is gone
+  | { type: 'defeated'; team: Team };               // fires if team has no producers AND no combat units
 
-export interface ObjectiveStatus { text: string; primary: boolean; complete: boolean }
+export interface ObjectiveStatus { id?: string; text: string; primary: boolean; complete: boolean }
 export interface ObjectivesResult { objectives: ObjectiveStatus[]; won: boolean; lost: boolean }
 export interface ObjectivesSystem { name: 'objectives'; run(state: SimState): void; result: ObjectivesResult }
 
-// A living entity matching (team, faction?) — hp<=0 counts as dead (cull-timing safe).
-function anyLiving(state: SimState, team: Team, faction?: string): boolean {
+// A living entity matching (team, kind?) — hp<=0 counts as dead (cull-timing safe).
+function anyLiving(state: SimState, team: Team, kind?: string): boolean {
   for (const e of state.store.all()) {
     const f = e.components.faction;
     if (!f || f.team !== team) continue;
-    if (faction && f.faction !== faction) continue;
+    if (kind && f.faction !== kind) continue;
     const h = e.components.health;
     if (h && h.hp <= 0) continue;
     return true;
@@ -43,12 +48,12 @@ function anyLiving(state: SimState, team: Team, faction?: string): boolean {
   return false;
 }
 
-// Whether a (team, faction?) entity has EVER been present (existence, ignoring hp).
-function anyExists(state: SimState, team: Team, faction?: string): boolean {
+// Whether a (team, kind?) entity has EVER been present (existence, ignoring hp).
+function anyExists(state: SimState, team: Team, kind?: string): boolean {
   for (const e of state.store.all()) {
     const f = e.components.faction;
     if (!f || f.team !== team) continue;
-    if (faction && f.faction !== faction) continue;
+    if (kind && f.faction !== kind) continue;
     return true;
   }
   return false;
@@ -95,8 +100,8 @@ export function makeObjectivesSystem(objectives: readonly Objective[], failures:
   function completed(o: Objective, i: number, state: SimState): boolean {
     switch (o.type) {
       case 'destroy': {
-        if (anyExists(state, o.team, o.faction)) everSeen.set(i, true);
-        return (everSeen.get(i) ?? false) && !anyLiving(state, o.team, o.faction);
+        if (anyExists(state, o.team, o.kind)) everSeen.set(i, true);
+        return (everSeen.get(i) ?? false) && !anyLiving(state, o.team, o.kind);
       }
       case 'eliminate':
         return !teamHasProducerOrArmy(state, o.team);
@@ -105,7 +110,7 @@ export function makeObjectivesSystem(objectives: readonly Objective[], failures:
       case 'accumulate':
         return teamCredits(state, o.team) >= o.credits;
       case 'build':
-        return anyLiving(state, o.team, o.faction);
+        return anyLiving(state, o.team, o.kind);
       case 'reach': {
         if (teamUnitInRegion(state, o.team, o.region)) everReached.set(i, true);
         return everReached.get(i) ?? false;
@@ -122,10 +127,10 @@ export function makeObjectivesSystem(objectives: readonly Objective[], failures:
     switch (f.type) {
       case 'defend': {
         // Fires once the (previously-seen) defended entity is gone.
-        if (anyLiving(state, f.team, f.faction)) { everSeen.set(-1 - i, true); return false; }
+        if (anyLiving(state, f.team, f.kind)) { everSeen.set(-1 - i, true); return false; }
         return everSeen.get(-1 - i) ?? false;
       }
-      case 'lose_all_producers':
+      case 'defeated':
         return !teamHasProducerOrArmy(state, f.team);
     }
   }
@@ -136,7 +141,7 @@ export function makeObjectivesSystem(objectives: readonly Objective[], failures:
     run(state: SimState): void {
       if (result.won || result.lost) return; // decision is sticky
       const statuses: ObjectiveStatus[] = objectives.map((o, i) => ({
-        text: o.text, primary: o.primary ?? true, complete: completed(o, i, state),
+        id: o.id, text: o.text, primary: o.primary ?? true, complete: completed(o, i, state),
       }));
       result.objectives = statuses;
       // Lose takes priority over win if both resolve on the same tick.

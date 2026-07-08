@@ -38,7 +38,7 @@ describe('objectives — destroy / eliminate', () => {
   beforeEach(() => { state = makeSimState({ seed: 1, mapWidth: 32, mapHeight: 32 }); });
 
   it('destroy: incomplete while the target lives, complete once it is gone', () => {
-    const sys = makeObjectivesSystem([{ type: 'destroy', team: 'enemy', faction: 'barracks', primary: true, text: 'kill barracks' }]);
+    const sys = makeObjectivesSystem([{ type: 'destroy', team: 'enemy', kind: 'barracks', primary: true, text: 'kill barracks' }]);
     const b = addBuilding(state, 'enemy', 'barracks');
     sys.run(state);
     expect(sys.result.won).toBe(false);
@@ -48,7 +48,7 @@ describe('objectives — destroy / eliminate', () => {
   });
 
   it('destroy: a target already dead (hp<=0) counts as destroyed', () => {
-    const sys = makeObjectivesSystem([{ type: 'destroy', team: 'enemy', faction: 'barracks', primary: true, text: 'x' }]);
+    const sys = makeObjectivesSystem([{ type: 'destroy', team: 'enemy', kind: 'barracks', primary: true, text: 'x' }]);
     const b = addBuilding(state, 'enemy', 'barracks');
     state.store.get(b)!.components.health!.hp = 0;
     sys.run(state);
@@ -91,7 +91,7 @@ describe('objectives — survive / accumulate / build', () => {
   });
 
   it('build: complete once the team owns the structure', () => {
-    const sys = makeObjectivesSystem([{ type: 'build', team: 'player', faction: 'barracks', primary: true, text: 'build a barracks' }]);
+    const sys = makeObjectivesSystem([{ type: 'build', team: 'player', kind: 'barracks', primary: true, text: 'build a barracks' }]);
     sys.run(state);
     expect(sys.result.won).toBe(false);
     addBuilding(state, 'player', 'barracks');
@@ -142,7 +142,7 @@ describe('objectives — failures & win/lose interplay', () => {
   it('defend failure: losing the defended entity loses the mission', () => {
     const sys = makeObjectivesSystem(
       [{ type: 'survive', seconds: 999, primary: true, text: 'survive' }],
-      [{ type: 'defend', team: 'player', faction: 'construction_yard' }],
+      [{ type: 'defend', team: 'player', kind: 'construction_yard' }],
     );
     const hq = addBuilding(state, 'player', 'construction_yard');
     sys.run(state);
@@ -153,10 +153,10 @@ describe('objectives — failures & win/lose interplay', () => {
     expect(sys.result.won).toBe(false);
   });
 
-  it('lose_all_producers failure fires when the team is wiped out', () => {
+  it('defeated failure fires when the team is wiped out', () => {
     const sys = makeObjectivesSystem(
       [{ type: 'destroy', team: 'enemy', primary: true, text: 'destroy enemy' }],
-      [{ type: 'lose_all_producers', team: 'player' }],
+      [{ type: 'defeated', team: 'player' }],
     );
     const bar = addBuilding(state, 'player', 'barracks', true);
     sys.run(state);
@@ -168,7 +168,7 @@ describe('objectives — failures & win/lose interplay', () => {
 
   it('secondary (non-primary) objectives do not block the win', () => {
     const sys = makeObjectivesSystem([
-      { type: 'destroy', team: 'enemy', faction: 'barracks', primary: true, text: 'primary' },
+      { type: 'destroy', team: 'enemy', kind: 'barracks', primary: true, text: 'primary' },
       { type: 'accumulate', team: 'player', credits: 999999, primary: false, text: 'secondary (unmet)' },
     ]);
     const b = addBuilding(state, 'enemy', 'barracks');
@@ -180,7 +180,7 @@ describe('objectives — failures & win/lose interplay', () => {
   });
 
   it('the decision is sticky (won stays won even if state later changes)', () => {
-    const sys = makeObjectivesSystem([{ type: 'destroy', team: 'enemy', faction: 'barracks', primary: true, text: 'x' }]);
+    const sys = makeObjectivesSystem([{ type: 'destroy', team: 'enemy', kind: 'barracks', primary: true, text: 'x' }]);
     const b = addBuilding(state, 'enemy', 'barracks');
     sys.run(state);                     // target seen alive (latches everSeen; not yet won)
     expect(sys.result.won).toBe(false);
