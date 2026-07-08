@@ -11,8 +11,23 @@
 
 ## Current state
 
-**SHIPPED PLAYABLE RTS — v0.23.0 live at speedrungames.net/games/shard-dominion/.** `pnpm run verify`:
-**121 unit tests** · `pnpm run test:live`: **12 Playwright gates** — all green. **Read `HANDOFF.md` for how to
+**SHIPPED PLAYABLE RTS — v0.24.0 live at speedrungames.net/games/shard-dominion/.** `pnpm run verify`:
+**125 unit tests** · `pnpm run test:live`: **13 Playwright gates** — all green.
+
+- **🤖 v0.24.0 "THE OPPONENT" — REAL AI ECONOMY + GOAL-DRIVEN FSM (2026-07-07):** Phase 1 of the panel-
+  reviewed economy overhaul (`docs/ECONOMY_DESIGN.md`). Root cause of the operator's "AI too weak / economy
+  too fast / matches too short": the economy was a static allowance and **the AI had no economy** (a fixed
+  600cr, no harvester → ~6 infantry ever). Fixes: (1) the enemy now runs a **real economy** — own harvester +
+  home field → harvested income funds production. (2) `ai.ts` rewritten as a **goal-driven FSM** (Stabilize /
+  Recover / Raid / Assault / Pressure / Develop; Expand latent until v0.25) with **reactive composition**
+  (counters the player's mix) + **army-value assault thresholds** that escalate over time — sim-pure &
+  deterministic (throttled on `state.tick`, no RNG). (3) Economy tuning (data): start 700→600, dockRate
+  100→80, cargo 700→600, harvest fill ~1.4s→~5s (visible/raidable), harvester 400/8s→450/12s. (4) Harvesters
+  gain health+armor and **flee when hit** (E6); the AI rebuilds a lost harvester at its refinery. (5)
+  `shardDensity` folded into `stateHash` (determinism). (6) Per-team economy telemetry + AI-state debug hooks
+  (E10, `__debugEconomyTeams`/`__debugAiState`). Rewrote ai/ai_waves unit suites for the FSM; new
+  `ai_economy` liveness gate (AI harvests→funds an army→escalates, without instawinning). 125 unit + 13
+  liveness green. **Read `HANDOFF.md` for how to
 work + the deploy pipeline + open threads.** Feature set (v0.7→v0.23, newest entries below): Warcraft-style
 build-up opening; **real Grok painted sprites + seamless terrain tiles**; **clickable C&C build sidebar** (live
 progress fill + `×N` queue + context cursors); **edge-scroll + wheel-zoom + radar click-jump** camera (clamped);
