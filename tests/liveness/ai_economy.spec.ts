@@ -15,7 +15,7 @@ type Teams = Record<'player' | 'enemy', { credits: number; harvesters: number; a
 
 test.describe('AI economy gate', () => {
   test('the AI harvests, funds an army, and escalates to pressure — but does not instawin', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?mission=skirmish');
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
     await page.locator('#game-canvas').click({ position: { x: 400, y: 300 } }); // take command
     await page.waitForTimeout(400);

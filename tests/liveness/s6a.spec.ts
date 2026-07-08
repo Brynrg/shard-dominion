@@ -17,7 +17,7 @@ type Match = { enemyUnits: number; playerUnits: number; enemyCredits: number };
 test.describe('S6A liveness gate', () => {
   test('the AI buys units, marches on the player, and a fight breaks out', async ({ page }) => {
     test.setTimeout(90_000);
-    await page.goto('/');
+    await page.goto('/?mission=skirmish');
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
     // Dismiss the mission briefing (the player's "click to take command") — this
     // unpauses the sim AND grabs focus. Every gate must do it before the match runs.

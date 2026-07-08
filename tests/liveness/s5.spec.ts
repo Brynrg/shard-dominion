@@ -12,7 +12,7 @@ if (!fs.existsSync(SCREENSHOT_DIR)) {
 
 test.describe('S5 liveness gate', () => {
   test('fog shrouds the map: corners dark, base area lit', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?mission=skirmish');
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
     // Dismiss the mission briefing (the player's "click to take command") — this
     // unpauses the sim AND grabs focus. Every gate must do it before the match runs.

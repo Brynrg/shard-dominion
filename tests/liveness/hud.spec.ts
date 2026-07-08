@@ -13,7 +13,7 @@ const zero: Counts = { mcv: 0, conyard: 0, power_node: 0, barracks: 0 };
 
 test.describe('HUD build-button gate', () => {
   test('clicking the Barracks button in the sidebar builds one (no hotkey)', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?mission=skirmish');
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
     await page.locator('#game-canvas').click({ position: { x: 400, y: 300 } }); // take command
     await page.waitForTimeout(60);

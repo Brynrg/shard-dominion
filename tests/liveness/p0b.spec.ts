@@ -14,7 +14,7 @@ type Counts = { mcv: number; conyard: number; power_node: number; barracks: numb
 test.describe('P0b liveness gate', () => {
   test('build a Barracks then train infantry — the player unit count rises', async ({ page }) => {
     test.setTimeout(60_000);
-    await page.goto('/');
+    await page.goto('/?mission=skirmish');
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
     await page.locator('#game-canvas').click({ position: { x: 400, y: 300 } }); // take command
     await page.waitForTimeout(60);

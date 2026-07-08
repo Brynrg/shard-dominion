@@ -15,7 +15,7 @@ type Counts = { mcv: number; conyard: number; power_node: number; barracks: numb
 
 test.describe('Harvester-from-Refinery gate', () => {
   test('the Harvester builds at the Refinery turn one (no Barracks needed)', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?mission=skirmish');
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
     await page.locator('#game-canvas').click({ position: { x: 400, y: 300 } }); // take command
     await page.waitForTimeout(400);

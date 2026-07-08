@@ -13,7 +13,7 @@ if (!fs.existsSync(SCREENSHOT_DIR)) {
 test.describe('S2 liveness gate', () => {
   test('canvas exists, selection ring renders on click, move order issues confirmation marker', async ({ page }) => {
     // Navigate to the previewed bundle, then wait for the canvas to mount
-    await page.goto('/');
+    await page.goto('/?mission=skirmish');
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
     // Dismiss the mission briefing (the player's "click to take command") — this
     // unpauses the sim AND grabs focus. Every gate must do it before the match runs.
@@ -141,7 +141,7 @@ test.describe('S2 liveness gate', () => {
 
   test('box selection works', async ({ page }) => {
     // Navigate to the previewed bundle
-    await page.goto('/');
+    await page.goto('/?mission=skirmish');
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
     // Dismiss the mission briefing (the player's "click to take command") — this
     // unpauses the sim AND grabs focus. Every gate must do it before the match runs.

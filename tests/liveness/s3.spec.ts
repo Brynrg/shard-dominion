@@ -13,7 +13,7 @@ const zero: Counts = { mcv: 0, conyard: 0, power_node: 0, barracks: 0 };
 
 test.describe('S3 liveness gate', () => {
   test('build a Barracks from the Construction Yard (charges credits)', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?mission=skirmish');
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
     // Dismiss the mission briefing (unpauses the sim + grabs focus).
     await page.locator('#game-canvas').click({ position: { x: 400, y: 300 } });

@@ -6,7 +6,7 @@ type Cam = { x: number; y: number; zoom: number };
 test.describe('Camera navigation gate', () => {
   test('mouse at a screen edge scrolls the view; wheel zooms', async ({ page }) => {
     test.setTimeout(30_000);
-    await page.goto('/');
+    await page.goto('/?mission=skirmish');
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
     await page.locator('#game-canvas').click({ position: { x: 400, y: 300 } }); // take command
     await page.waitForTimeout(80);

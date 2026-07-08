@@ -24,11 +24,13 @@ import { makeAiSystem } from './sim/systems/ai.js';
 import { makeObjectivesSystem } from './sim/systems/objectives.js';
 import { seedFromMission } from './sim/seedMission.js';
 import { loadMission } from './loaders/missions.js';
+import { showTitleMenu, showEndScreen, markCompleted } from './view/menu.js';
 import economyConstantsData from '../data/economyConstants.json' with { type: 'json' };
 import structuresData from '../data/structures.json' with { type: 'json' };
 import weaponsData from '../data/weapons.json' with { type: 'json' };
 import unitsData from '../data/units.json' with { type: 'json' };
 import skirmishData from '../data/missions/skirmish.json' with { type: 'json' };
+import m1FirstLightData from '../data/missions/m1_first_light.json' with { type: 'json' };
 
 // Map configuration
 const MAP_WIDTH = 32;
@@ -51,6 +53,8 @@ declare global {
     __debugAiState?: () => string;
     __debugEconomyTeams?: () => Record<'player' | 'enemy', { credits: number; harvesters: number; army: number; armyValue: number }>;
     __debugBriefing?: () => boolean;
+    __debugObjectives?: () => { text: string; primary: boolean; complete: boolean }[];
+    __debugForceEnd?: (winner: 'player' | 'enemy') => void;
     __debugSprites?: unknown; // the sprite bank, for the real-asset loader smoke test
     __debugCamera?: () => { x: number; y: number; zoom: number };
   }
@@ -166,6 +170,27 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   input.setSimState(state); // wire the sim-state ref used by the ConYard check (for 'B' placement)
   input.start();
   view.start();
+
+  // ── Mission end → debrief screen + navigation ──────────────────────────────
+  // Poll the mission result; when the match is decided, stop the sim, record campaign
+  // progress on a win, and show the debrief with Next / Retry / Menu (reload-based nav).
+  const endWatch = window.setInterval(() => {
+    const r = missionResult();
+    if (!r.over) return;
+    window.clearInterval(endWatch);
+    view.stop();
+    const won = r.winner === 'player';
+    if (won && mission.id !== 'skirmish') markCompleted(mission.id);
+    const nextId = mission.next && MISSIONS[mission.next] ? mission.next : null;
+    showEndScreen({
+      won,
+      missionName: mission.name,
+      debrief: won ? mission.debrief.win : mission.debrief.lose,
+      onNext: won && nextId ? () => { location.search = `?mission=${nextId}`; } : undefined,
+      onRetry: !won ? () => location.reload() : undefined,
+      onMenu: () => { location.search = ''; },
+    });
+  }, 400);
 
   // Expose debug hook — a locator that reads post-render state through the SAME
   // contract transform the renderer uses (not a re-derived one).
@@ -293,6 +318,15 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // The AI's current FSM plan (Stabilize/Develop/Pressure/Raid/Assault/Recover/Expand).
   window.__debugAiState = () => aiSystems[0]?.debugState() ?? 'none';
 
+  // Current mission objective texts + completion (for the campaign liveness gate).
+  window.__debugObjectives = () => objectivesSystem.result.objectives.map(o => ({ text: o.text, primary: o.primary, complete: o.complete }));
+
+  // Test-only: force the mission to end so the debrief/flow can be exercised in a gate.
+  window.__debugForceEnd = (winner) => {
+    objectivesSystem.result.won = winner === 'player';
+    objectivesSystem.result.lost = winner === 'enemy';
+  };
+
   // E10 economy telemetry: per-team snapshot for balance tuning (income is real, so
   // watching credits + harvesters + army over time proves the AI economy is alive).
   window.__debugEconomyTeams = () => {
@@ -316,7 +350,24 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   };
 }
 
-// Auto-bootstrap on load (wrap so the `load` Event isn't passed as the mission arg).
+// ── Entry: mission registry + router ──────────────────────────────────────────
+// `?mission=<id>` boots that match directly (deep-linkable; the liveness gates use it);
+// with no param, the title menu chooses Campaign (Mission 1) or Skirmish.
+const MISSIONS: Record<string, unknown> = {
+  skirmish: skirmishData,
+  m1_first_light: m1FirstLightData,
+};
+
+function startMatch(missionId: string): void {
+  const raw = MISSIONS[missionId];
+  if (!raw) { showTitleMenu(id => { location.search = `?mission=${id}`; }); return; }
+  bootstrap(raw);
+}
+
 if (typeof window !== 'undefined') {
-  window.addEventListener('load', () => bootstrap());
+  window.addEventListener('load', () => {
+    const missionId = new URLSearchParams(location.search).get('mission');
+    if (missionId && MISSIONS[missionId]) startMatch(missionId);
+    else showTitleMenu(id => { location.search = `?mission=${id}`; });
+  });
 }

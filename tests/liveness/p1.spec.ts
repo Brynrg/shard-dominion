@@ -12,7 +12,7 @@ if (!fs.existsSync(SCREENSHOT_DIR)) fs.mkdirSync(SCREENSHOT_DIR, { recursive: tr
 test.describe('P1 onboarding gate', () => {
   test('briefing pauses the sim; take-command starts it; a click selects a unit', async ({ page }) => {
     test.setTimeout(30_000);
-    await page.goto('/');
+    await page.goto('/?mission=skirmish');
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
     const canvas = page.locator('#game-canvas');
     const box = (await canvas.boundingBox())!;

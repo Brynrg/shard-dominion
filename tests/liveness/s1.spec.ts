@@ -13,7 +13,7 @@ if (!fs.existsSync(SCREENSHOT_DIR)) {
 test.describe('S1 liveness gate', () => {
   test('canvas exists, HUD renders, credits change, shard density drops', async ({ page }) => {
     // Navigate to the previewed bundle, then wait for the canvas to mount
-    await page.goto('/');
+    await page.goto('/?mission=skirmish');
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
     // Dismiss the mission briefing (the player's "click to take command") — this
     // unpauses the sim AND grabs focus. Every gate must do it before the match runs.
