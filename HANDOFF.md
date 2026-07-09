@@ -6,7 +6,7 @@
 ## What this is
 **Shard Dominion** — an IP-clean, late-1990s Westwood-style (C&C / Red Alert / Dune 2000) web RTS.
 - **Repo:** `~/Code/games/shard-dominion` (TypeScript + Canvas2D + Vite + Vitest + zod + ESLint, single pnpm pkg).
-- **Live:** https://speedrungames.net/games/shard-dominion/ — currently **v0.32.0**.
+- **Live:** https://speedrungames.net/games/shard-dominion/ — currently **v0.33.0**.
 - **Your role now:** you (Claude) **build it directly** and verify. (Earlier plan was to delegate slices to a
   local Qwen builder; in practice Claude builds and only occasionally hands a tightly-scaffolded sub-task to
   `hermes-ask code` — e.g. the S6B AI waves. Default to building it yourself + verifying.)
@@ -25,7 +25,7 @@ Victory/Defeat debrief → Next/Retry/Menu); the whole game is now **mission-dri
 **pathfinding** (impassable mesas; deterministic; `src/sim/pathfind.ts`) + **unit separation**, **attack-move
 (A) / stop (S) / rally points / dbl-click select-type**, **death decals**, and a **600-tick full-stack
 determinism harness** (`tests/unit/determinism.test.ts` — the lockstep-MP substrate; keep it green).
-**185 unit tests + 21 Playwright gates green.** **FG-6 SHIPPED (v0.32):** 3 factions (data mods + palettes), Badlands map, difficulty select, save/continue via the command log. **FG-5 SHIPPED (v0.31):** Riftmaw creeps + capturable derricks + veterancy chevrons + the Warden hero (E). **FG-4 campaign SHIPPED (v0.30):** trigger system + mission select + rewards + missions 2-6 (full 6-mission arc, m6 ends on the Riftmaw hook). **FG-2 map economy SHIPPED (v0.28):** buildable Refinery (F) + Defense Turret (G) + repair (🔧) + per-team power w/ shortage penalties + flank/centre fields + distance-discounted harvesting + AI Expand.
+**187 unit tests + 22 Playwright gates green.** **FG-7 MULTIPLAYER SHIPPED (v0.33): 1v1 lockstep — run `node server/relay.mjs` (LAN/tailnet), both players open `?mp=1&room=<name>&relay=ws://<host>:8787`. THE FULL-GAME PLAN (FG-1→FG-7) IS COMPLETE.** **FG-6 SHIPPED (v0.32):** 3 factions (data mods + palettes), Badlands map, difficulty select, save/continue via the command log. **FG-5 SHIPPED (v0.31):** Riftmaw creeps + capturable derricks + veterancy chevrons + the Warden hero (E). **FG-4 campaign SHIPPED (v0.30):** trigger system + mission select + rewards + missions 2-6 (full 6-mission arc, m6 ends on the Riftmaw hook). **FG-2 map economy SHIPPED (v0.28):** buildable Refinery (F) + Defense Turret (G) + repair (🔧) + per-team power w/ shortage penalties + flank/centre fields + distance-discounted harvesting + AI Expand.
 
 ## How to work
 - **Architecture:** `src/sim/**` is the PURE deterministic core (no DOM/Date/Math.random — ESLint red-builds it;
@@ -34,7 +34,7 @@ determinism harness** (`tests/unit/determinism.test.ts` — the lockstep-MP subs
   → command intents), `spritebank.ts` (real-asset + terrain loader, chroma-key, zoom scaling), `onboarding.ts`
   (briefing + objectives). `src/sim/systems/**` = command, movement, harvest, production, construction, power,
   combatTargeting, damage, ai, victory, fog. `data/*.json` + `src/loaders/**` = tunables.
-- **Verify (non-negotiable):** `pnpm run verify` (typecheck + lint + 185 unit tests) AND `pnpm run test:live`
+- **Verify (non-negotiable):** `pnpm run verify` (typecheck + lint + 187 unit tests) AND `pnpm run test:live`
   (19 Playwright gates — the real-browser proof of interaction; add a gate for any new mechanic).
 - **Visual check:** claude-in-chrome on `localhost:5199` (preview_start "shard-dominion") or the preview MCP.
   **GOTCHA: a backgrounded Chrome tab throttles rAF → the sim FREEZES** (credits static, clicks don't process).
@@ -78,9 +78,10 @@ determinism harness** (`tests/unit/determinism.test.ts` — the lockstep-MP subs
    AI combined arms.** **FG-4 ✅ (v0.30): 6-mission campaign + triggers + mission select + rewards.**
    **FG-5 ✅ (v0.31): Riftmaws + derricks + veterancy + Warden hero.**
    **FG-6 ✅ (v0.32): factions/maps/difficulty/saves.**
-   NEXT (final committed phase): **FG-7 multiplayer** — 1v1 lockstep: thin WS relay (Fly.io, gctd-server
-   experience applies), input-delay lockstep on the command queue, desync detection via stateHash (the
-   determinism harness + the FG-6 command-log replay prove the substrate end-to-end).
+   **FG-7 ✅ (v0.33): 1v1 lockstep multiplayer. ALL COMMITTED PHASES OF FULL_GAME_PLAN.md ARE DONE.**
+   Remaining (stretch/operator-gated): FG-8 editor-lite; cloud relay deploy (fly launch server/relay.mjs);
+   painted art for new units/factions (ART_ASSETS_SPEC §0.5/§0.6 prompts ready); more asymmetric faction
+   mechanics (salvage/field-grown units per the plan's faction program).
 1. **Purple building base** — Grok's building sprites bake a purple base platform that reads oddly on tan sand.
    Fix: re-gen the 6 buildings with Grok ("no coloured base — sits flat on the ground, transparent to its
    footprint"), re-import. (Operator generating the re-gen art; drop into `~/Code/...`, then `import-art.mjs`.)

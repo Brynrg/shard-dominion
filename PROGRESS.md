@@ -11,6 +11,16 @@
 
 ## Current state
 
+**🌐 FG-7 "MULTIPLAYER" COMPLETE (2026-07-09, commit b0413be) — shipping as v0.33.0. THE FULL-GAME MASTER
+PLAN (FULL_GAME_PLAN.md) IS EXECUTED: every committed phase FG-1→FG-7 is built, verified, and live.**
+1v1 lockstep: `server/relay.mjs` (thin forwarding relay — rooms of 2, decides nothing; run
+`node server/relay.mjs`, LAN/tailnet-ready, one-file cloud deploy) + `src/net/lockstep.ts` (input-delay 3
+ticks; sim runs tick T only when both seats' bundles for T are known; stateHash exchanged every 2s, mismatch
+= loud desync halt). Seat plumbing: CommandIntent.team (one command system, actor-scoped), SEAT-SCOPED
+selection (the MP-critical fix the tests caught), viewer-team fog/HUD/banner. Entry:
+`?mp=1&room=<name>&relay=ws://host:8787`. Browser gate: real relay + two contexts → seats assigned, lockstep
+ticks, orders mirror across seats, zero desync. **187 unit + 22 liveness gates green.**
+
 **🏳️ FG-6 "FACTIONS + SAVES" COMPLETE (2026-07-09, commit 8fff349) — shipping as v0.32.0.** **Factions as
 data** (src/sim/factions.ts, placeholder-first): Concord / Emberhand (-20% cost, -15% hp, +15% speed) /
 Shardborn (+25% hp, -15% speed, +15% cost), applied at all three spawn sites + palette swap; the skirmish
