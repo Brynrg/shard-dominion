@@ -143,6 +143,54 @@
           "factionStripe": "player"
         }
       }
+    },
+    {
+      "id": "riftmaw",
+      "name": "Riftmaw",
+      "cost": 0,
+      "hp": 420,
+      "armorClass": "HEAVY",
+      "weaponId": "flame",
+      "speed": 8,
+      "buildTimeSeconds": 1,
+      "team": "neutral",
+      "graphics": {
+        "sprite_id": "riftmaw",
+        "fallback_geometry": {
+          "chassis": "TANK",
+          "chassisMod": "SWEPT_WEDGE",
+          "weaponGlyph": "NONE",
+          "barrelClass": "NONE",
+          "roleBadge": "RAIDER",
+          "rangeMarks": 1,
+          "hazard": "SPLASH",
+          "factionStripe": "neutral"
+        }
+      }
+    },
+    {
+      "id": "warden",
+      "name": "Warden",
+      "cost": 800,
+      "hp": 150,
+      "armorClass": "LIGHT",
+      "weaponId": "raider_cannon",
+      "speed": 13,
+      "buildTimeSeconds": 15,
+      "team": "player",
+      "graphics": {
+        "sprite_id": "warden",
+        "fallback_geometry": {
+          "chassis": "INFANTRY",
+          "chassisMod": "NONE",
+          "weaponGlyph": "ANTI_INFANTRY",
+          "barrelClass": "NONE",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 3,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      }
     }
   ]
 }

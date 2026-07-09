@@ -304,7 +304,7 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
       context.fillStyle = '#8894a4';
       context.font = '10px monospace';
       context.fillText('L-click select · R-click move/attack/mine', px + 10, py + ph - 42);
-      context.fillText('A attack-move · S stop · dbl-click = all type', px + 10, py + ph - 30);
+      context.fillText('A atk-move · S stop · E hero · dblclick=type', px + 10, py + ph - 30);
       context.fillText('Ctrl+1-3 set groups · 1-3 recall · P pause', px + 10, py + ph - 18);
 
       // Overflow warning (below panel, hard to miss).

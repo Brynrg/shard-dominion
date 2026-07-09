@@ -41,6 +41,7 @@ export function makeCombatTargetingSystem(weapons: WeaponsFile): { name: 'combat
           const of = other.components.faction; const oh = other.components.health; const op = other.components.position;
           if (!of || !oh || !op) continue;
           if (of.team === faction.team) continue;   // skip allies
+          if (of.team === 'neutral' && !other.components.combat) continue; // passive neutrals (derricks) aren't targets
           if (oh.hp <= 0) continue;                  // skip dead
           const d = distance(pos, op);
           if (d <= bestDist) { bestDist = d; bestId = other.id; }

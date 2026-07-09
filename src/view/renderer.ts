@@ -501,6 +501,35 @@ export function makeView(cfg: ViewConfig): View {
   }
 
   // Draw selection rings around selected entities
+  // Veterancy chevrons (FG-5): gold marks above ranked units; cyan halo = the hero.
+  function drawRankChevrons() {
+    for (const e of simState.store.all()) {
+      const pos = e.components.position;
+      if (!pos) continue;
+      const isHero = e.components.faction?.faction === 'warden';
+      const rank = e.components.experience?.rank ?? 0;
+      if (!isHero && rank <= 0) continue;
+      const p = worldToScreen(pos, camera);
+      if (isHero) {
+        context.strokeStyle = 'rgba(0,229,255,0.65)';
+        context.lineWidth = 1.5;
+        context.beginPath();
+        context.arc(p.sx, p.sy, 14 * camera.zoom, 0, Math.PI * 2);
+        context.stroke();
+      }
+      context.strokeStyle = '#ffd34d';
+      context.lineWidth = 2 * camera.zoom;
+      for (let r = 0; r < rank; r++) {
+        const y = p.sy - (16 + r * 5) * camera.zoom;
+        context.beginPath();
+        context.moveTo(p.sx - 4 * camera.zoom, y);
+        context.lineTo(p.sx, y - 3 * camera.zoom);
+        context.lineTo(p.sx + 4 * camera.zoom, y);
+        context.stroke();
+      }
+    }
+  }
+
   function drawSelectionRings() {
     for (const e of simState.store.all()) {
       if (!e.components.selection?.selected) continue;
@@ -998,6 +1027,7 @@ export function makeView(cfg: ViewConfig): View {
     drawProjectiles();
     drawEntities();
     drawParticles();
+    drawRankChevrons();
     drawSelectionRings();
     drawBoxSelection();
     drawConfirmationMarkers();

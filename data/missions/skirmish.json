@@ -136,5 +136,12 @@
       "team": "player"
     }
   ],
-  "next": null
+  "next": null,
+  "neutrals": [
+    {
+      "type": "derrick",
+      "tx": 13,
+      "ty": 12
+    }
+  ]
 }

@@ -20,6 +20,15 @@ export function makeDamageSystem(weapons: WeaponsFile): { name: 'damage'; run(st
   return {
     name: 'damage' as const,
     run(state: SimState): void {
+      // Hero aura (FG-5): a living Warden emboldens nearby friendlies (+15% damage).
+      const wardens: { team: string; pos: WorldPos }[] = [];
+      for (const w of state.store.all()) {
+        if (w.components.faction?.faction === 'warden' && (w.components.health?.hp ?? 0) > 0 && w.components.position) {
+          wardens.push({ team: w.components.faction.team, pos: w.components.position });
+        }
+      }
+      const AURA = 4 * TILE_SUBUNITS;
+
       for (const e of state.store.all()) {
         const combat = e.components.combat;
         const pos = e.components.position;
@@ -63,7 +72,20 @@ export function makeDamageSystem(weapons: WeaponsFile): { name: 'damage'; run(st
         } else {
           const armor = target.components.armor?.armorClass ?? 'NONE';
           const mult = weapons.matrix[weapon.type]?.[armor] ?? 0;
-          th.hp -= weapon.damage * mult;
+          // Veterancy (FG-5): +15% damage per rank (3 kills → rank 1, 8 → rank 2).
+          const kills = e.components.experience?.kills ?? 0;
+          const rank = kills >= 8 ? 2 : kills >= 3 ? 1 : 0;
+          // Hero aura: +15% when a friendly Warden stands within 4 tiles.
+          const team = e.components.faction?.team;
+          const inAura = wardens.some(w => w.team === team && distance(pos, w.pos) <= AURA);
+          th.hp -= weapon.damage * mult * (1 + 0.15 * rank) * (inAura ? 1.15 : 1);
+          // Kill attribution → the shooter's experience (projectile kills unattributed v1).
+          if (th.hp <= 0) {
+            const xp = e.components.experience ?? { kills: 0, rank: 0 };
+            xp.kills += 1;
+            xp.rank = xp.kills >= 8 ? 2 : xp.kills >= 3 ? 1 : 0;
+            e.components.experience = xp;
+          }
         }
 
         // 5) reset cooldown: weapon.cooldown seconds → ticks. Armed BUILDINGS

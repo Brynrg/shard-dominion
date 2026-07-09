@@ -23,6 +23,7 @@ import { makeProductionSystem } from './sim/systems/production.js';
 import { makeAiSystem } from './sim/systems/ai.js';
 import { makeObjectivesSystem } from './sim/systems/objectives.js';
 import { makeProjectileSystem } from './sim/systems/projectile.js';
+import { makePlanetEventSystem } from './sim/systems/planetEvent.js';
 import { seedFromMission } from './sim/seedMission.js';
 import { loadMission } from './loaders/missions.js';
 import { showTitleMenu, showEndScreen, showPauseMenu, showMissionSelect, markCompleted, addBonus, takeBonus, loadProgress } from './view/menu.js';
@@ -66,6 +67,7 @@ declare global {
     __debugTick?: () => number;
     __debugForceEnd?: (winner: 'player' | 'enemy') => void;
     __debugMessages?: () => { speaker: string; text: string }[];
+    __debugRiftmaws?: () => number;
     __debugUnitScreenPos?: (kind: string) => { x: number; y: number } | null;
     __debugSprites?: unknown; // the sprite bank, for the real-asset loader smoke test
     __debugCamera?: () => { x: number; y: number; zoom: number };
@@ -128,6 +130,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   const victorySystem = makeVictorySystem();
   const objectivesSystem = makeObjectivesSystem(mission.objectives, mission.failure, mission.triggers, units);
   const aiSystems = mission.enemies.map(e => makeAiSystem(units, { team: 'enemy', attackTile: meta.playerStartTile, ...(e.ai ?? {}) }));
+  const planetSystem = makePlanetEventSystem(units);
   const systems = orderSystems([
     commandSystem,
     makeMovementSystem(),
@@ -139,6 +142,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     makeDamageSystem(weapons),
     makeProductionSystem(units),
     ...aiSystems,
+    planetSystem,
     objectivesSystem,
     victorySystem,
     fogSystem,
@@ -410,6 +414,9 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     const { sx, sy } = worldToScreen(u.components.position!, view.getCamera());
     return { x: sx, y: sy };
   };
+
+  // Riftmaw awakenings counter (FG-5 gate).
+  window.__debugRiftmaws = () => planetSystem.debugRiftmaws();
 
   // Trigger comm messages (FG-4 gate).
   window.__debugMessages = () => objectivesSystem.messages.map(m => ({ speaker: m.speaker, text: m.text }));

@@ -82,6 +82,8 @@ export const MissionSchema = z.object({
   fields: z.array(Field).default([]),
   player: Side,
   enemies: z.array(Enemy).default([]),
+  // Neutral map features (FG-5): capturable derricks etc. Buildings only.
+  neutrals: z.array(Placed).default([]),
   objectives: z.array(ObjectiveSchema).min(1),
   failure: z.array(FailureSchema).default([]),
   next: z.string().nullable().default(null),

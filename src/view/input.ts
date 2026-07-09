@@ -354,6 +354,11 @@ export function makeInputHandlers(
         e.preventDefault();
         queue.push({ type: 'train', unitId: 'assault_tank' });
         return;
+      case 'e': // Train the Warden — the hero, one at a time (FG-5)
+      case 'E':
+        e.preventDefault();
+        queue.push({ type: 'train', unitId: 'warden' });
+        return;
       case 'Escape': // Cancel placement / attack-move mode
         e.preventDefault();
         setPlacementMode(null);

@@ -239,5 +239,12 @@
       }
     }
   ],
-  "next": "m5_iron_ash"
+  "next": "m5_iron_ash",
+  "neutrals": [
+    {
+      "type": "derrick",
+      "tx": 20,
+      "ty": 20
+    }
+  ]
 }

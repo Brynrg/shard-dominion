@@ -102,7 +102,18 @@ export function seedFromMission(state: SimState, mission: Mission, deps: SeedDep
   }
   for (const f of mission.fields) applyField(state, f);
 
-  // 2) Sides. Player first (matches original id ordering), then each enemy + its fields.
+  // 2) Neutral map features (FG-5): capturable derricks (planetEvent flips their team).
+  for (const n of mission.neutrals) {
+    state.store.create({
+      position: tileToWorldCenter({ tx: n.tx, ty: n.ty }),
+      building: { onSlab: true, buildProgress: 100, powered: true },
+      faction: { team: 'neutral', faction: n.type },
+      health: { hp: 1000, maxHp: 1000 },
+      armor: { armorClass: 'BUILDING' },
+    });
+  }
+
+  // 3) Sides. Player first (matches original id ordering), then each enemy + its fields.
   seedSide(state, 'player', mission.player.credits, mission.player.buildings, mission.player.units, deps);
   for (const enemy of mission.enemies) {
     seedSide(state, 'enemy', enemy.credits, enemy.buildings, enemy.units, deps);

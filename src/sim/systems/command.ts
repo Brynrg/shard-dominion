@@ -379,6 +379,14 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             break;
           }
           case 'train': {
+            // Hero cap (FG-5): ONE living Warden at a time (also not while queued).
+            if (intent.unitId === 'warden') {
+              const wardenExists = state.store.all().some(e =>
+                (e.components.faction?.team === 'player' && e.components.faction?.faction === 'warden' && (e.components.health?.hp ?? 0) > 0) ||
+                (e.components.faction?.team === 'player' && e.components.production &&
+                  (e.components.production.queue.includes('warden') || e.components.production.current === 'warden')));
+              if (wardenExists) break;
+            }
             // Route by unit type (FG-3): Harvesters → Refinery, vehicles → War
             // Factory, foot troops → Barracks. Find the matching player producer.
             const producerFaction =
