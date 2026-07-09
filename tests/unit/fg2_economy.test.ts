@@ -180,6 +180,13 @@ describe('FG-2 — AI Expand', () => {
   it('a fat bank + a rich unexploited field → the AI founds a second refinery near it', () => {
     const state = makeSimState({ seed: 5, mapWidth: 32, mapHeight: 32 });
     addBank(state, 2000, 'enemy', 26, 8); // AI home refinery + fat bank
+    state.store.create({ // its barracks (real AI bases have one; isolates this test)
+      position: tileToWorldCenter({ tx: 25, ty: 9 }),
+      building: { onSlab: true, buildProgress: 100, powered: true },
+      faction: { team: 'enemy', faction: 'barracks' },
+      production: { queue: [], progress: 0 },
+      health: { hp: 800, maxHp: 800 },
+    });
     state.store.create({ // its harvester (so Stabilize doesn't preempt)
       position: tileToWorldCenter({ tx: 27, ty: 8 }),
       movement: { target: null, path: [], speed: 10 },

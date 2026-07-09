@@ -134,6 +134,13 @@ describe('FG-3 — vehicle production routing', () => {
 describe('FG-3 — AI combined arms', () => {
   it('a rich AI with no expansion left founds a War Factory and queues vehicles', () => {
     const state = makeSimState({ seed: 11, mapWidth: 32, mapHeight: 32 });
+    state.store.create({ // its barracks (real AI bases have one; isolates this test)
+      position: tileToWorldCenter({ tx: 24, ty: 9 }),
+      building: { onSlab: true, buildProgress: 100, powered: true },
+      faction: { team: 'enemy', faction: 'barracks' },
+      production: { queue: [], progress: 0 },
+      health: { hp: 800, maxHp: 800 },
+    });
     state.store.create({
       position: tileToWorldCenter({ tx: 26, ty: 8 }),
       building: { onSlab: true, buildProgress: 100, powered: true },

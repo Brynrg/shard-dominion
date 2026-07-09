@@ -25,7 +25,7 @@ import type { WorldPos } from '../coords.js';
 export type AiState = 'Stabilize' | 'Recover' | 'Raid' | 'Assault' | 'Pressure' | 'Develop' | 'Expand';
 
 export interface AiConfig {
-  team: 'enemy';
+  team: 'player' | 'enemy'; // 'player' used by the AI-vs-AI balance harness
   attackTile: TilePos;                 // the player base the AI assaults
   evalInterval?: number;               // ticks between plan re-evaluations (default 10 = 0.5s)
   assaultValue?: number;               // army value that triggers an all-in assault (default 500)
@@ -157,6 +157,31 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig): { name: 
           yard.components.tech = { tier: yard.components.tech.tier, upgradingTo: 2, ticksLeft: 600 };
         }
       }
+      // Balance-sweep finding (2026-07-09): the AI could never BUILD a barracks —
+      // fine while every mission pre-seeds one, fatal the moment it's destroyed
+      // (or absent, as the AI-vs-AI harness proved). Found one whenever none stands.
+      const barracksAlive = state.store.all().some(e =>
+        e.components.faction?.team === team && e.components.faction?.faction === 'barracks' &&
+        (e.components.health?.hp ?? 0) > 0);
+      if (!barracksAlive && bank && bank.credits >= 500 && refinery?.components.position) {
+        const rt = worldToTile(refinery.components.position);
+        for (const [dx, dy] of [[0, 2], [2, 2], [-2, 0], [2, -2], [0, -2]] as const) {
+          const spot = { tx: rt.tx + dx, ty: rt.ty + dy };
+          if (!state.grid.isWalkable(spot)) continue;
+          if ((state.shardDensity.get(`${spot.tx},${spot.ty}`) ?? 0) > 0) continue;
+          bank.credits -= 300;
+          state.store.create({
+            position: tileToWorldCenter(spot),
+            building: { onSlab: false, buildProgress: 100, powered: true },
+            faction: { team, faction: 'barracks' },
+            production: { queue: [], progress: 0 },
+            health: { hp: 800, maxHp: 800 },
+            armor: { armorClass: 'BUILDING' },
+          });
+          break;
+        }
+      }
+
       // XP-2: with the WAR FACTORY standing and a fat bank, found ONE Processing
       // Plant (military first; Cells fund the
       // elite systems arriving in later phases; same 800 the player pays).

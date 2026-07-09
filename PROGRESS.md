@@ -11,6 +11,17 @@
 
 ## Current state
 
+**🔎 CONSOLIDATION PASS (2026-07-09, v0.41.1) — post-completion sweeps:**
+- **Boot smoke:** all 19 routes (title, editor, 4 skirmish configs, all 13 campaign missions) boot with
+  zero page errors and a ticking sim.
+- **Balance harness** (`tests/balance/sweep.test.ts`, runs with `BALANCE=1`): AI-vs-AI headless matchups
+  across factions on the skirmish valley. **First finding was gold:** seat-E won EVERY match including the
+  concord mirror — because **the AI could never BUILD a barracks** (every mission pre-seeds one, so it was
+  invisible in play; but it also meant the AI never REBUILT a destroyed barracks). Fixed: the AI founds a
+  barracks whenever none stands (500cr comfort, refinery-adjacent siting). Post-fix the mirror stalemates
+  symmetrically (seat bias gone); AI-vs-AI turtle-timeouts are a harness characteristic, not a live defect.
+- AiConfig.team loosened to 'player' | 'enemy' for the harness.
+
 **🏛️ XP-7 "FORGE & ARENA" (2026-07-09, v0.41.0) — THE EXPANSION PLAN IS COMPLETE. XP-1→XP-7 all shipped.**
 - **2v2 multiplayer:** the relay scales rooms (join `size`, 1v1 default / 4 for `?mp=1&mode=2v2`); lockstep
   generalized to N seats (tick runs when ALL bundles known; even seats = player side, odd = enemy —
