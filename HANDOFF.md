@@ -62,6 +62,10 @@ Victory/Defeat debrief → Next/Retry/Menu); the whole game is now **mission-dri
   sandbox shell** (EPERM/bun spam) — use `curl -w "%{http_code}"`, `python3`, `head` instead.
 
 ## Open threads (pick up here)
+0. **MASTER PLAN — `docs/FULL_GAME_PLAN.md` (2026-07-09):** front-to-back review + the phased roadmap to a
+   "WC3-class in kind, indie in scale" full game (FG-1 game-feel → FG-2 map economy → FG-3 combined arms →
+   FG-4 campaign arc → FG-5 heroes/creeps → FG-6 faction/maps/saves → FG-7 MP stretch → FG-8 editor
+   stretch). It absorbs the economy + campaign RFC phases; read it first when choosing what to build next.
 1. **Purple building base** — Grok's building sprites bake a purple base platform that reads oddly on tan sand.
    Fix: re-gen the 6 buildings with Grok ("no coloured base — sits flat on the ground, transparent to its
    footprint"), re-import. (Operator generating the re-gen art; drop into `~/Code/...`, then `import-art.mjs`.)
