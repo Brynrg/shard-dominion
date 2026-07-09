@@ -11,6 +11,17 @@
 
 ## Current state
 
+**💰 FG-2 "MAP ECONOMY" COMPLETE (2026-07-09, commit efebaaa) — shipping as v0.28.0.** The locked
+ECONOMY_DESIGN.md phases, delivered: RFC field layout in skirmish (home 3×3@600/side + safe flanks 3×2@650 +
+contested centre 3×3@800 at the inter-base midpoint); **buildable Refinery** (F, 1200, de-bundled: no free
+harvester/credits) and **Defense Turret** (G, 550, fights via raider_cannon); **distance-discounted harvest
+seek** (density − 100/tile → home-field-first, expansion is a decision); **per-team power** (power.ts was
+pooling both sides — fixed) with soft shortage penalties (production 60% speed, turrets +50% cooldown);
+**repair** (sidebar 🔧 toggle, heals ~20s, drains ~30% cost, auto-clears); **AI Expand ACTIVATED** (fat bank
++ rich unexploited field → founds a refinery at the same price the player pays). HUD: 7-row sidebar +
+repair row + summed multi-refinery storage. 6 new unit tests + fg2_economy gate; s1/p1 poll the first
+deposit. **163 unit + 17 liveness gates green.**
+
 **🏁 FG-1 "GAME FEEL" COMPLETE (2026-07-09) — shipping as v0.27.0.** Three slices on top of v0.26's
 audio+pause:
 - **🗺️ PATHFINDING + COLLISION (commit ec71fd5):** deterministic A* (`src/sim/pathfind.ts`: 8-dir, no
