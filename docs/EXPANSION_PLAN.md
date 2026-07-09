@@ -1,6 +1,6 @@
 # Shard Dominion — Expansion Master Plan ("Beyond the Classics")
 
-> **Status:** DRAFT FOR REVIEW · **Date:** 2026-07-09 · **Baseline:** v0.34.0 (FG-1→FG-7 complete, QA round 1 fixed)
+> **Status:** REVIEWED — decisions LOCKED in §11 (3-panel round, 2026-07-09); §8 phasing superseded by §11.6 · **Date:** 2026-07-09 · **Baseline:** v0.34.0 (FG-1→FG-7 complete, QA round 1 fixed)
 > **Operator directive:** *"expand the storyline and gameplay well beyond Dune 2000 / C&C Red Alert / Warcraft 3.
 > Story double the size, added complexity, more complex gameplay, economy, building and combat."*
 > **Companions:** `FULL_GAME_PLAN.md` (executed), `ECONOMY_DESIGN.md`, `CAMPAIGN_DESIGN.md`.
@@ -177,3 +177,91 @@ deployable alone; balance passes ride the autoplay harness from XP-2 onward.
 5. **Superweapons:** all three at XP-4 (recommended), or defer to post-Act-II balance?
 6. **The M14 Choice:** two-debrief branch (cheap, recommended) or two distinct final missions (expensive)?
 7. **2v2 + editor priority:** XP-7 as placed, or pull the editor earlier for community missions?
+
+---
+
+## 11. Review round 1 — three-panel synthesis, adversarially verified · DECISIONS LOCKED
+
+Three independent panel reviews returned. Convergence was strong; where they disagreed I verified against
+this codebase's actual costs. Dispositions:
+
+### 11.1 The 7 decisions — FINAL
+1. **Second resource → MODIFIED (narrowed), IN.** All three said "not money #2." Adopted the strongest
+   version: **Refined Cells are production CHARGES, not currency** — a Processing Plant converts Shard→Cells
+   on a visible deterministic queue; **low storage cap (~12)**; Cells are spent ONLY on elite systems
+   (superweapon charge, hero abilities, air rearm, T3/signature units). One sentence: *"Refineries turn
+   Shard into a few precious Cells; Cells arm your best weapons."* T1/T2 stay Shard-only. (Declined one
+   reviewer's "use Power upkeep instead" — upkeep taxation was already declined in ECONOMY_DESIGN, and
+   power is already the soft brake.)
+2. **Air → MODIFIED (shared-lite first), IN.** Unanimous against full per-faction air. Adopted: **one
+   shared gunship frame** (palette per faction) + **rearm pad** + AA answers; storms ground aircraft.
+   Faction air *flavor* arrives later as upgrades — and the "off-map orbital call-in" idea becomes
+   **Concord's** later flavor rather than the whole air system. (Verified pushback: "a new movement plane
+   breaks determinism/pathing" is overweighted here — air movement is straight-line, which this engine
+   already has; the real cost is unit count + AI behaviors, hence shared-lite.)
+3. **Persistence → MODIFIED, IN.** Unanimous: **no raw veteran-squad carryover** (it makes every mission a
+   multi-state balance problem). Adopted: **hero levels/kit persist** + **Veteran Reserve** — surviving
+   chevroned squads convert to capped points spent on a tiny **pre-mission Deployment panel** (one
+   reviewer's "missing system," which is the natural UI for another's "reserve currency"): +1 veteran
+   squad / +200 Shard / +1 hero ability point / reveal intel. Hard-capped; missions stay tuned from a
+   known-zero baseline.
+4. **Act II side → LOCKED (unanimous IN):** Emberhand/Vane throughout.
+5. **Superweapons → MODIFIED (campaign-scripted first), unanimous.** Debut as **scripted Act II set
+   pieces** (finale-centric: visible charge, map-wide alert, counter-OBJECTIVE — destroy the relay / power
+   it down). Skirmish/MP versions ship later behind a data flag once telemetry exists.
+6. **M14 Choice → UPGRADED (one reviewer's middle path).** One mission, but the Seal/Harness flag **gates
+   real gameplay content via triggers** (Seal: heavier Riftmaws/storms + defensive buffs; Harness:
+   overdrive units + faster corruption) — the choice changes play, not just debrief text, at one-mission
+   cost. Needs only a small trigger-condition extension (choice flags).
+7. **Editor → SPLIT VERDICT RESOLVED.** Adopted "internal mission kit EARLY, public editor late": schema
+   docs, validator (exists) + **trigger preview + play-from-JSON dev menu + mission template generator +
+   replay browser as a debug tool** land during XP-1..XP-5. Declined one reviewer's "full public editor at
+   XP-2" — community-content multiplication assumes a community; the near-term payoff is MY authoring
+   velocity for Act II.
+
+### 11.2 The market is CUT (three-way convergence)
+"Deterministic drifting prices" drew fire from all three (fake depth / solvable / AI can't use it /
+determinism risk). **Replaced by capturable Processing Relays** — neutral map structures that boost Cell
+conversion while held (reuses the derrick capture mechanic verbatim). Map fights instead of menu
+optimization. Broker Yssel survives as story (M9 re-themed: the Syndicate auctions RELAY access; you take
+it by force).
+
+### 11.3 NEW CORE SYSTEM — Resonance (two reviewers independently invented it)
+One called it "Planet Anger," the other "Shardborn Resonance"; same idea → strong signal. **Adopted as an
+Economy 2.0 pillar in the market's place:** each side's extraction RATE raises its Resonance; thresholds
+escalate storms/Riftmaw aggression **against the heaviest extractor**. Deterministic (pure function of
+mined totals), reuses existing hazards, is the anti-snowball brake, makes the Shardborn mechanically
+present all game, and is the thesis of the campaign ("the economy is power AND poison") expressed as a
+mechanic. Mission-local first; campaign-global (feeding the M14 Choice) later. One sentence: *"The harder
+you mine, the harder the planet hits back — at you specifically."*
+
+### 11.4 Asymmetry cost ordering (adopted)
+Faction mechanics are NOT equal-cost: **Emberhand first** (salvage rides existing wreck logic; needed for
+Act II), **Concord second** (shields/orbital are ability-driven), **Shardborn last** (living bases ≈ a
+second game mode; they're the campaign ANTAGONIST first, playable later).
+
+### 11.5 Adopted design laws (from the risk sections)
+- **Three-use rule:** a system isn't campaign-critical until it has a tutorial, a pressure, and a remix
+  mission — else defer it.
+- **AI-or-it-doesn't-ship:** every new system lands WITH its AI behavior rules (stealth needs AI detection
+  use; relays need AI capture logic).
+- **Determinism suite grows every phase** (already law; now explicit for storms/wrecks/Resonance/air).
+- **UI budget:** one new permanent HUD element per phase, max — readability is the law that gates all of it.
+- **Story beat adopted:** "Echoes of the Shard" — corrupted neutrals that pact or turn mid-mission (Act II
+  flavor via existing neutral + trigger systems).
+
+### 11.6 REVISED PHASING (supersedes §8)
+| Phase | Ships | Notes |
+|---|---|---|
+| **XP-1 "Foundations & Forge-lite"** (v0.35) | T1–T3 tiers, radar, walls/gates + **mission kit** (play-from-JSON dev menu, trigger preview, templates) | tooling multiplies everything after |
+| **XP-2 "Economy 2.0"** (v0.36) | Cells-as-charges + Processing Plant, salvage wrecks, **Resonance v1**, capturable Relays | the unique strategic loop, complete |
+| **XP-3 "Emberhand + Act II·1"** (v0.37) | Emberhand true asymmetry (salvage identity, Ghostwalker stealth+detection) + **M8–M10** | build the playable side, then teach it |
+| **XP-4 "Ground Depth"** (v0.38) | Artillery+counter-battery, stances, garrisons, transports, addons + balance validation sprint | deepen ground before air |
+| **XP-5 "Sky-lite"** (v0.39) | Shared gunship + rearm pad + AA; storms ground air; Concord shield mechanic | air after ground is stable |
+| **XP-6 "Act II·2 + Finale"** (v0.40) | **M11–M14**, scripted superweapons, choice-gated finale, campaign-global Resonance, credits | the payoff |
+| **XP-7 "Forge & Arena"** (v0.41) | Public editor, replay browser polish, 2v2, skirmish superweapons, Shardborn-playable groundwork | scale + community |
+
+### 11.7 The sharpened thesis (one reviewer said it best)
+> *"Do not try to beat Red Alert by adding every RTS feature. Beat it by making Shard extraction, Cell
+> tech, salvage, and Resonance form one tight strategic loop. That loop is unique."*
+That is now the plan's spine. Air, superweapons, and 2v2 are supporting cast.
