@@ -11,6 +11,15 @@
 
 ## Current state
 
+**🏳️ FG-6 "FACTIONS + SAVES" COMPLETE (2026-07-09, commit 8fff349) — shipping as v0.32.0.** **Factions as
+data** (src/sim/factions.ts, placeholder-first): Concord / Emberhand (-20% cost, -15% hp, +15% speed) /
+Shardborn (+25% hp, -15% speed, +15% cost), applied at all three spawn sites + palette swap; the skirmish
+enemy is canonically Emberhand; ?faction= picks yours. **Skirmish setup screen** (map pool: The Valley +
+Badlands; faction; difficulty easy/normal/hard scaling AI tempo, never economy). **SAVE/CONTINUE:** the
+recorded command log IS the save — CONTINUE fast-forwards it tick-for-tick (determinism = exact resume);
+💾 in pause, CONTINUE on title. 3 unit tests incl. live-vs-replay hash equality. **185 unit + 21 liveness
+gates green.**
+
 **🐛 FG-5 "THE PLANET FIGHTS BACK" COMPLETE (2026-07-09, commit e5c95db) — shipping as v0.31.0.** The WC3
 signature layer, through the lore: **Riftmaws** (planetEvent.ts in its reserved slot — every 3000cr mined
 map-wide wakes a neutral burrower, cap 2, at the most-bitten tile; aggros everyone), **capturable derricks**
