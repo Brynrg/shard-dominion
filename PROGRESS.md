@@ -11,6 +11,16 @@
 
 ## Current state
 
+**📖 FG-4 "CAMPAIGN ARC" COMPLETE (2026-07-09, commit ee161d3) — shipping as v0.30.0.** The story mode is
+REAL: **deterministic trigger system** (missionTriggers.ts, composed into the 'mission' slot — time/credits/
+objectiveComplete conditions; message/spawn/grantCredits actions, spawned waves arrive attack-moving and the
+AI never recalls them), **comm-message panel**, **mission select** (linear unlock, replayable, ✔/🔒),
+**secondary-objective rewards** (+credits banked for the next mission), and **missions 2–6 authored**:
+Lifeblood (quota + raids) → Hold the Line (4 trigger waves) → The Vein (hold the centre) → Iron & Ash
+(build armor, crack the fortress) → The Ashen Warlord (finale + Riftmaw sequel hook). Validation: chain
+integrity + trigger/reward references + walkability across all 7 missions. **175 unit + 19 liveness gates
+green.**
+
 **⚔️ FG-3 "COMBINED ARMS" COMPLETE (2026-07-09, commit 0f1d203) — shipping as v0.29.0.** The player (and
 AI) get vehicles: **War Factory** (W, 1000) produces **Scout Vehicle** (V, 350, fast anti-infantry) +
 **Assault Tank** (C, 700, HEAVY, tank_shell_v). Train routing is per-producer (harvester→Refinery,
