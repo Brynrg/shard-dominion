@@ -1,0 +1,241 @@
+{
+  "id": "m13_choir_of_glass",
+  "name": "Choir of Glass",
+  "order": 13,
+  "map": {
+    "width": 32,
+    "height": 32,
+    "seed": 1313
+  },
+  "briefing": {
+    "title": "CHOIR OF GLASS",
+    "story": [
+      "THE CHORUS: \"WE HAVE WORN YOUR DEAD. WE HAVE TASTED YOUR ENGINES. THE VEIN IS",
+      "NOT YOURS. THE VEIN IS NOT OURS. THE VEIN IS US.\"",
+      "",
+      "VANE: \"The lattice grows a spire an hour. Burn the growth, spare the deep root \u2014",
+      "we need it ANGRY, not awake.\""
+    ],
+    "objectives": [
+      "Destroy the three lattice spires"
+    ]
+  },
+  "debrief": {
+    "win": [
+      "The Choir goes quiet. Underfoot, something listens harder."
+    ],
+    "lose": [
+      "The lattice closes over the valley like an eyelid."
+    ]
+  },
+  "naturalShardDensity": 350,
+  "fields": [
+    {
+      "tx": 5,
+      "ty": 26,
+      "w": 2,
+      "h": 2,
+      "density": 650
+    }
+  ],
+  "player": {
+    "credits": 1600,
+    "factionId": "emberhand",
+    "techTier": 2,
+    "buildings": [
+      {
+        "type": "construction_yard",
+        "tx": 4,
+        "ty": 28
+      },
+      {
+        "type": "refinery",
+        "tx": 6,
+        "ty": 28
+      },
+      {
+        "type": "power_node",
+        "tx": 3,
+        "ty": 26
+      },
+      {
+        "type": "barracks",
+        "tx": 5,
+        "ty": 30
+      },
+      {
+        "type": "war_factory",
+        "tx": 7,
+        "ty": 30
+      }
+    ],
+    "units": [
+      {
+        "type": "harvester",
+        "tx": 7,
+        "ty": 28
+      },
+      {
+        "type": "ghostwalker",
+        "tx": 6,
+        "ty": 31
+      },
+      {
+        "type": "infantry",
+        "tx": 5,
+        "ty": 31
+      }
+    ]
+  },
+  "enemies": [
+    {
+      "team": "enemy",
+      "credits": 800,
+      "factionId": "shardborn",
+      "buildings": [
+        {
+          "type": "defense_turret",
+          "tx": 16,
+          "ty": 10
+        },
+        {
+          "type": "defense_turret",
+          "tx": 22,
+          "ty": 16
+        },
+        {
+          "type": "defense_turret",
+          "tx": 12,
+          "ty": 16
+        },
+        {
+          "type": "power_node",
+          "tx": 17,
+          "ty": 12
+        },
+        {
+          "type": "barracks",
+          "tx": 18,
+          "ty": 14
+        },
+        {
+          "type": "refinery",
+          "tx": 16,
+          "ty": 14
+        }
+      ],
+      "units": [
+        {
+          "type": "harvester",
+          "tx": 17,
+          "ty": 14
+        },
+        {
+          "type": "infantry",
+          "tx": 15,
+          "ty": 12
+        },
+        {
+          "type": "infantry",
+          "tx": 19,
+          "ty": 12
+        }
+      ],
+      "fields": [
+        {
+          "tx": 15,
+          "ty": 11,
+          "w": 4,
+          "h": 4,
+          "density": 900
+        }
+      ],
+      "ai": {
+        "graceTicks": 1800,
+        "assaultValue": 800
+      }
+    }
+  ],
+  "objectives": [
+    {
+      "type": "destroy",
+      "id": "spires",
+      "team": "enemy",
+      "kind": "defense_turret",
+      "primary": true,
+      "text": "Destroy the three lattice spires (their turrets)"
+    },
+    {
+      "type": "survive",
+      "id": "keep_harv",
+      "seconds": 270,
+      "primary": false,
+      "text": "Secondary: outlast the second surge (4:30)"
+    }
+  ],
+  "failure": [
+    {
+      "type": "defeated",
+      "team": "player"
+    }
+  ],
+  "triggers": [
+    {
+      "id": "t13_stir1",
+      "when": {
+        "timeSeconds": 90
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "THE CHORUS",
+          "text": "YOU PRUNE. WE GROW."
+        },
+        {
+          "type": "spawn",
+          "team": "neutral",
+          "units": [
+            {
+              "type": "riftmaw",
+              "tx": 16,
+              "ty": 12
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t13_stir2",
+      "when": {
+        "timeSeconds": 210
+      },
+      "actions": [
+        {
+          "type": "spawn",
+          "team": "neutral",
+          "units": [
+            {
+              "type": "riftmaw",
+              "tx": 14,
+              "ty": 15
+            },
+            {
+              "type": "riftmaw",
+              "tx": 19,
+              "ty": 15
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "rewards": [
+    {
+      "ifObjectiveComplete": "keep_harv",
+      "grant": {
+        "nextMissionCredits": 300
+      }
+    }
+  ],
+  "next": "m14_first_vein"
+}

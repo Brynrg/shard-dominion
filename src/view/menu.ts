@@ -354,3 +354,52 @@ export function showDeployment(reserve: number, apply: { vetSquad(): void; credi
   panel.appendChild(done);
   el.appendChild(panel);
 }
+
+/** XP-6: the pre-mission CHOICE panel (M14 Seal/Harness). Blocks over the briefing. */
+export function showChoice(prompt: string, options: readonly { id: string; label: string; blurb: string }[], onPick: (id: string) => void): void {
+  const el = overlay();
+  const panel = document.createElement('div');
+  panel.style.cssText = 'text-align:center;max-width:560px;padding:0 20px;';
+  panel.innerHTML =
+    '<div style="font-size:28px;font-weight:bold;color:#ffd34d;letter-spacing:2px;">THE CHOICE</div>' +
+    `<div style="color:#cfc9bd;margin:10px 0 18px;font-size:14px;line-height:1.5;">${escapeHtml(prompt)}</div>`;
+  for (const o of options) {
+    const b = button(o.label, true);
+    b.style.width = '360px';
+    b.onclick = () => { el.remove(); onPick(o.id); };
+    const blurb = document.createElement('div');
+    blurb.style.cssText = 'color:#8894a4;font-size:11px;margin:-4px auto 10px;max-width:360px;';
+    blurb.textContent = o.blurb;
+    panel.appendChild(b);
+    panel.appendChild(blurb);
+  }
+  el.appendChild(panel);
+}
+
+/** XP-6: the campaign credits roll. */
+export function showCredits(onDone: () => void): void {
+  const el = overlay();
+  const panel = document.createElement('div');
+  panel.style.cssText = 'text-align:center;max-width:560px;';
+  panel.innerHTML = [
+    '<div style="font-size:34px;font-weight:bold;color:#ffd34d;letter-spacing:3px;margin-bottom:18px;">SHARD DOMINION</div>',
+    '<div style="color:#8fb7c9;font-size:13px;margin-bottom:22px;">ACT I · OPERATION AETHER PRIME — ACT II · THE WAKING DEEP</div>',
+    '<div style="color:#cfc9bd;font-size:13px;line-height:2;">',
+    'A war for a planet that was never empty.<br><br>',
+    'THE WARDEN — you<br>',
+    'SERA VANE — the Ashen Warlord<br>',
+    'MARSHAL CORR — the renegade<br>',
+    'DIRECTOR HALEX — Project Cauterize<br>',
+    'BROKER YSSEL — the Syndicate<br>',
+    'THE CHORUS — the planet, listening<br><br>',
+    'Built slice by slice on a pure deterministic sim.<br>',
+    'Every mechanic verified before it shipped.<br><br>',
+    'AETHER PRIME WILL REMEMBER WHAT YOU CHOSE.',
+    '</div>',
+  ].join('');
+  const done = button('MAIN MENU', true);
+  done.style.marginTop = '24px';
+  done.onclick = () => { el.remove(); onDone(); };
+  panel.appendChild(done);
+  el.appendChild(panel);
+}

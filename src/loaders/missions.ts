@@ -15,13 +15,13 @@ const Region = z.object({ tx: z.number(), ty: z.number(), r: z.number().positive
 
 // ── Objectives / failures (discriminated on `type`) ──────────────────────────
 const ObjectiveSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('destroy'), id: z.string().optional(), team: Team, kind: z.string().optional(), primary: z.boolean().optional(), text: z.string() }),
-  z.object({ type: z.literal('eliminate'), id: z.string().optional(), team: Team, primary: z.boolean().optional(), text: z.string() }),
-  z.object({ type: z.literal('survive'), id: z.string().optional(), seconds: z.number().positive(), primary: z.boolean().optional(), text: z.string() }),
-  z.object({ type: z.literal('hold'), id: z.string().optional(), team: Team, region: Region, seconds: z.number().positive(), primary: z.boolean().optional(), text: z.string() }),
-  z.object({ type: z.literal('accumulate'), id: z.string().optional(), team: Team, credits: z.number().nonnegative(), primary: z.boolean().optional(), text: z.string() }),
-  z.object({ type: z.literal('build'), id: z.string().optional(), team: Team, kind: z.string(), primary: z.boolean().optional(), text: z.string() }),
-  z.object({ type: z.literal('reach'), id: z.string().optional(), team: Team, region: Region, primary: z.boolean().optional(), text: z.string() }),
+  z.object({ type: z.literal('destroy'), id: z.string().optional(), team: Team, kind: z.string().optional(), primary: z.boolean().optional(), text: z.string(), onlyIfChoice: z.string().optional() }),
+  z.object({ type: z.literal('eliminate'), id: z.string().optional(), team: Team, primary: z.boolean().optional(), text: z.string(), onlyIfChoice: z.string().optional() }),
+  z.object({ type: z.literal('survive'), id: z.string().optional(), seconds: z.number().positive(), primary: z.boolean().optional(), text: z.string(), onlyIfChoice: z.string().optional() }),
+  z.object({ type: z.literal('hold'), id: z.string().optional(), team: Team, region: Region, seconds: z.number().positive(), primary: z.boolean().optional(), text: z.string(), onlyIfChoice: z.string().optional() }),
+  z.object({ type: z.literal('accumulate'), id: z.string().optional(), team: Team, credits: z.number().nonnegative(), primary: z.boolean().optional(), text: z.string(), onlyIfChoice: z.string().optional() }),
+  z.object({ type: z.literal('build'), id: z.string().optional(), team: Team, kind: z.string(), primary: z.boolean().optional(), text: z.string(), onlyIfChoice: z.string().optional() }),
+  z.object({ type: z.literal('reach'), id: z.string().optional(), team: Team, region: Region, primary: z.boolean().optional(), text: z.string(), onlyIfChoice: z.string().optional() }),
 ]);
 const FailureSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('defend'), team: Team, kind: z.string().optional() }),
@@ -93,6 +93,12 @@ export const MissionSchema = z.object({
   objectives: z.array(ObjectiveSchema).min(1),
   failure: z.array(FailureSchema).default([]),
   next: z.string().nullable().default(null),
+  // XP-6: a pre-mission player CHOICE (the M14 Seal/Harness finale). The picked id
+  // filters `onlyIfChoice` objectives and satisfies `when.choice` triggers.
+  choice: z.object({
+    prompt: z.string(),
+    options: z.array(z.object({ id: z.string(), label: z.string(), blurb: z.string() })).min(2),
+  }).optional(),
   // Mission triggers (FG-4): deterministic mid-mission events.
   triggers: z.array(z.object({
     id: z.string().min(1),
@@ -100,6 +106,7 @@ export const MissionSchema = z.object({
       timeSeconds: z.number().positive().optional(),
       credits: z.object({ team: Team, gte: z.number() }).optional(),
       objectiveComplete: z.string().optional(),
+      choice: z.string().optional(), // XP-6: fires when the boot choice matches
     }),
     actions: z.array(z.discriminatedUnion('type', [
       z.object({ type: z.literal('message'), speaker: z.string().optional(), text: z.string() }),

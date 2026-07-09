@@ -22,13 +22,13 @@ export type Team = 'player' | 'enemy';
 export interface Region { tx: number; ty: number; r: number } // radius r in TILES
 
 export type Objective =
-  | { type: 'destroy'; id?: string; team: Team; kind?: string; primary?: boolean; text: string }
-  | { type: 'eliminate'; id?: string; team: Team; primary?: boolean; text: string }
-  | { type: 'survive'; id?: string; seconds: number; primary?: boolean; text: string }
-  | { type: 'hold'; id?: string; team: Team; region: Region; seconds: number; primary?: boolean; text: string }
-  | { type: 'accumulate'; id?: string; team: Team; credits: number; primary?: boolean; text: string }
-  | { type: 'build'; id?: string; team: Team; kind: string; primary?: boolean; text: string }
-  | { type: 'reach'; id?: string; team: Team; region: Region; primary?: boolean; text: string };
+  | { type: 'destroy'; id?: string; team: Team; kind?: string; primary?: boolean; text: string; onlyIfChoice?: string }
+  | { type: 'eliminate'; id?: string; team: Team; primary?: boolean; text: string; onlyIfChoice?: string }
+  | { type: 'survive'; id?: string; seconds: number; primary?: boolean; text: string; onlyIfChoice?: string }
+  | { type: 'hold'; id?: string; team: Team; region: Region; seconds: number; primary?: boolean; text: string; onlyIfChoice?: string }
+  | { type: 'accumulate'; id?: string; team: Team; credits: number; primary?: boolean; text: string; onlyIfChoice?: string }
+  | { type: 'build'; id?: string; team: Team; kind: string; primary?: boolean; text: string; onlyIfChoice?: string }
+  | { type: 'reach'; id?: string; team: Team; region: Region; primary?: boolean; text: string; onlyIfChoice?: string };
 
 export type Failure =
   | { type: 'defend'; team: Team; kind?: string }   // fires if the matched entity (having existed) is gone
@@ -113,8 +113,9 @@ export function makeObjectivesSystem(
   triggers: readonly MissionTrigger[] = [],
   units: readonly UnitDef[] = [],
   factions?: TeamFactions,
+  bootChoice: string | null = null,
 ): ObjectivesSystem {
-  const triggerRunner = makeTriggerRunner(triggers, units, factions);
+  const triggerRunner = makeTriggerRunner(triggers, units, factions, bootChoice);
   const completedIds = new Set<string>(); // last-known complete objective ids (for trigger conditions)
   // Latches for momentary / cumulative conditions (deterministic closure state).
   const everSeen = new Map<number, boolean>();   // destroy/defend: target has existed

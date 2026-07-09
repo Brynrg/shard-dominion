@@ -20,6 +20,8 @@ export interface TriggerWhen {
   credits?: { team: 'player' | 'enemy'; gte: number };
   /** Fire when the objective with this id completes. */
   objectiveComplete?: string;
+  /** XP-6: fire when the mission's boot choice matches (evaluated from tick 1). */
+  choice?: string;
 }
 export interface SpawnUnit { type: string; tx: number; ty: number }
 export type TriggerAction =
@@ -42,7 +44,7 @@ export interface TriggerRunner {
 
 const MESSAGE_SECONDS = 8;
 
-export function makeTriggerRunner(triggers: readonly MissionTrigger[], units: readonly UnitDef[], factions?: TeamFactions): TriggerRunner {
+export function makeTriggerRunner(triggers: readonly MissionTrigger[], units: readonly UnitDef[], factions?: TeamFactions, bootChoice: string | null = null): TriggerRunner {
   const factionFor = (team: string) => (team === 'player' ? (factions?.player ?? FACTIONS.concord) : (factions?.enemy ?? FACTIONS.concord));
   const fired = new Set<string>();
   const messages: MissionMessage[] = [];
@@ -105,7 +107,8 @@ export function makeTriggerRunner(triggers: readonly MissionTrigger[], units: re
         const due =
           (w.timeSeconds != null && state.tick >= Math.round(w.timeSeconds * SIM_TICK_RATE)) ||
           (w.credits != null && teamCredits(state, w.credits.team) >= w.credits.gte) ||
-          (w.objectiveComplete != null && isObjectiveComplete(w.objectiveComplete));
+          (w.objectiveComplete != null && isObjectiveComplete(w.objectiveComplete)) ||
+          (w.choice != null && w.choice === bootChoice);
         if (!due) continue;
         fired.add(t.id);
         for (const a of t.actions) act(state, a);

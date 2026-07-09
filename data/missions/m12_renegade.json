@@ -1,0 +1,272 @@
+{
+  "id": "m12_renegade",
+  "name": "The Renegade",
+  "order": 12,
+  "map": {
+    "width": 32,
+    "height": 32,
+    "seed": 1212
+  },
+  "briefing": {
+    "title": "THE RENEGADE",
+    "story": [
+      "MARSHAL CORR (open channel): \"Warden column, this is Corr. I have refused a",
+      "lawful order. The Directorate calls it treason; I call it the first sane thing",
+      "I've done on this planet. Vane \u2014 my guns are yours, if you'll have them.\"",
+      "",
+      "VANE: \"\u2026Park them where I can see them, Marshal.\""
+    ],
+    "objectives": [
+      "Destroy the Directorate forward base \u2014 and keep Corr's armor alive"
+    ]
+  },
+  "debrief": {
+    "win": [
+      "Two armies that spent a year killing each other camp under one storm-wall tonight."
+    ],
+    "lose": [
+      "The Directorate broadcasts Corr's execution at dawn."
+    ]
+  },
+  "naturalShardDensity": 300,
+  "fields": [
+    {
+      "tx": 6,
+      "ty": 25,
+      "w": 2,
+      "h": 2,
+      "density": 650
+    }
+  ],
+  "player": {
+    "credits": 1200,
+    "factionId": "emberhand",
+    "techTier": 2,
+    "buildings": [
+      {
+        "type": "construction_yard",
+        "tx": 5,
+        "ty": 27
+      },
+      {
+        "type": "refinery",
+        "tx": 7,
+        "ty": 27
+      },
+      {
+        "type": "power_node",
+        "tx": 4,
+        "ty": 25
+      },
+      {
+        "type": "barracks",
+        "tx": 6,
+        "ty": 29
+      },
+      {
+        "type": "war_factory",
+        "tx": 8,
+        "ty": 29
+      }
+    ],
+    "units": [
+      {
+        "type": "harvester",
+        "tx": 8,
+        "ty": 27
+      },
+      {
+        "type": "infantry",
+        "tx": 7,
+        "ty": 30
+      },
+      {
+        "type": "infantry",
+        "tx": 8,
+        "ty": 30
+      }
+    ]
+  },
+  "enemies": [
+    {
+      "team": "enemy",
+      "credits": 2000,
+      "factionId": "concord",
+      "buildings": [
+        {
+          "type": "construction_yard",
+          "tx": 26,
+          "ty": 6
+        },
+        {
+          "type": "refinery",
+          "tx": 24,
+          "ty": 6
+        },
+        {
+          "type": "barracks",
+          "tx": 27,
+          "ty": 8
+        },
+        {
+          "type": "war_factory",
+          "tx": 25,
+          "ty": 8
+        },
+        {
+          "type": "defense_turret",
+          "tx": 24,
+          "ty": 9
+        },
+        {
+          "type": "defense_turret",
+          "tx": 27,
+          "ty": 10
+        },
+        {
+          "type": "power_node",
+          "tx": 25,
+          "ty": 5
+        }
+      ],
+      "units": [
+        {
+          "type": "harvester",
+          "tx": 25,
+          "ty": 6
+        },
+        {
+          "type": "assault_tank",
+          "tx": 26,
+          "ty": 10
+        }
+      ],
+      "fields": [
+        {
+          "tx": 28,
+          "ty": 5,
+          "w": 2,
+          "h": 2,
+          "density": 650
+        }
+      ],
+      "ai": {
+        "graceTicks": 2400,
+        "assaultValue": 900,
+        "techTier": 2
+      }
+    }
+  ],
+  "objectives": [
+    {
+      "type": "destroy",
+      "id": "break_base",
+      "team": "enemy",
+      "kind": "construction_yard",
+      "primary": true,
+      "text": "Destroy the Directorate Construction Yard"
+    }
+  ],
+  "failure": [
+    {
+      "type": "defend",
+      "team": "player",
+      "kind": "assault_tank"
+    },
+    {
+      "type": "defeated",
+      "team": "player"
+    }
+  ],
+  "triggers": [
+    {
+      "id": "t12_gift",
+      "when": {
+        "timeSeconds": 20
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "CORR",
+          "text": "Renegade column, fall in. Two Bulwarks and my best rifles \u2014 treat them kindly."
+        },
+        {
+          "type": "spawn",
+          "team": "player",
+          "units": [
+            {
+              "type": "assault_tank",
+              "tx": 10,
+              "ty": 27
+            },
+            {
+              "type": "assault_tank",
+              "tx": 11,
+              "ty": 28
+            },
+            {
+              "type": "infantry",
+              "tx": 10,
+              "ty": 29
+            },
+            {
+              "type": "infantry",
+              "tx": 11,
+              "ty": 29
+            },
+            {
+              "type": "infantry",
+              "tx": 10,
+              "ty": 30
+            },
+            {
+              "type": "infantry",
+              "tx": 11,
+              "ty": 30
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t12_halex",
+      "when": {
+        "timeSeconds": 150
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "HALEX",
+          "text": "Marshal. Treason has a blast radius. You are standing in it."
+        },
+        {
+          "type": "spawn",
+          "team": "enemy",
+          "units": [
+            {
+              "type": "assault_tank",
+              "tx": 20,
+              "ty": 8
+            },
+            {
+              "type": "scout_vehicle",
+              "tx": 21,
+              "ty": 8
+            },
+            {
+              "type": "infantry",
+              "tx": 22,
+              "ty": 8
+            }
+          ],
+          "attackMoveTo": {
+            "tx": 10,
+            "ty": 27
+          }
+        }
+      ]
+    }
+  ],
+  "rewards": [],
+  "next": "m13_choir_of_glass"
+}

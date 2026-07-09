@@ -19,11 +19,16 @@ import m6 from '../../data/missions/m6_ashen_warlord.json' with { type: 'json' }
 import m8 from '../../data/missions/m8_ashfall.json' with { type: 'json' };
 import m9 from '../../data/missions/m9_the_exchange.json' with { type: 'json' };
 import m10 from '../../data/missions/m10_stormline.json' with { type: 'json' };
+import m11 from '../../data/missions/m11_cauterize.json' with { type: 'json' };
+import m12 from '../../data/missions/m12_renegade.json' with { type: 'json' };
+import m13 from '../../data/missions/m13_choir_of_glass.json' with { type: 'json' };
+import m14 from '../../data/missions/m14_first_vein.json' with { type: 'json' };
 
 const rawMissions: Record<string, unknown> = {
   skirmish, skirmish_badlands: badlands, m1_first_light: m1, m2_lifeblood: m2, m3_hold_the_line: m3,
   m4_the_vein: m4, m5_iron_ash: m5, m6_ashen_warlord: m6,
   m8_ashfall: m8, m9_the_exchange: m9, m10_stormline: m10,
+  m11_cauterize: m11, m12_renegade: m12, m13_choir_of_glass: m13, m14_first_vein: m14,
 };
 
 const units = loadUnits(unitsData);

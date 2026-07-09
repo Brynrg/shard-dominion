@@ -1,0 +1,292 @@
+{
+  "id": "m11_cauterize",
+  "name": "Cauterize",
+  "order": 11,
+  "map": {
+    "width": 32,
+    "height": 32,
+    "seed": 1111
+  },
+  "briefing": {
+    "title": "CAUTERIZE",
+    "story": [
+      "DIRECTOR HALEX: \"Survey complete. The continent is a tumor. Cauterize begins at",
+      "dawn \u2014 flights Alpha through Theta. Commander Corr's objections are noted and",
+      "irrelevant.\"",
+      "",
+      "VANE: \"They're going to burn the veins. OUR veins. Get AA steel into the sky's",
+      "way \u2014 whatever the Directorate throws, it lands here first.\""
+    ],
+    "objectives": [
+      "Survive the bombing runs for 5 minutes \u2014 keep the Refinery standing"
+    ]
+  },
+  "debrief": {
+    "win": [
+      "The fields still glow. Above them, wreckage rains. Halex marks Vane: PRIORITY."
+    ],
+    "lose": [
+      "Cauterize proceeds on schedule."
+    ]
+  },
+  "naturalShardDensity": 300,
+  "fields": [
+    {
+      "tx": 8,
+      "ty": 24,
+      "w": 3,
+      "h": 2,
+      "density": 650
+    }
+  ],
+  "player": {
+    "credits": 1400,
+    "factionId": "emberhand",
+    "techTier": 2,
+    "buildings": [
+      {
+        "type": "construction_yard",
+        "tx": 6,
+        "ty": 26
+      },
+      {
+        "type": "refinery",
+        "tx": 8,
+        "ty": 26
+      },
+      {
+        "type": "power_node",
+        "tx": 5,
+        "ty": 24
+      },
+      {
+        "type": "barracks",
+        "tx": 7,
+        "ty": 28
+      },
+      {
+        "type": "aa_turret",
+        "tx": 9,
+        "ty": 25
+      }
+    ],
+    "units": [
+      {
+        "type": "harvester",
+        "tx": 9,
+        "ty": 26
+      },
+      {
+        "type": "rocket_trooper",
+        "tx": 6,
+        "ty": 28
+      },
+      {
+        "type": "rocket_trooper",
+        "tx": 8,
+        "ty": 28
+      }
+    ]
+  },
+  "enemies": [
+    {
+      "team": "enemy",
+      "credits": 1000,
+      "factionId": "concord",
+      "buildings": [
+        {
+          "type": "skypad",
+          "tx": 26,
+          "ty": 5
+        },
+        {
+          "type": "skypad",
+          "tx": 28,
+          "ty": 5
+        },
+        {
+          "type": "power_node",
+          "tx": 27,
+          "ty": 4
+        },
+        {
+          "type": "refinery",
+          "tx": 25,
+          "ty": 7
+        },
+        {
+          "type": "construction_yard",
+          "tx": 27,
+          "ty": 7
+        }
+      ],
+      "units": [
+        {
+          "type": "harvester",
+          "tx": 26,
+          "ty": 7
+        }
+      ],
+      "fields": [
+        {
+          "tx": 29,
+          "ty": 6,
+          "w": 2,
+          "h": 2,
+          "density": 600
+        }
+      ],
+      "ai": {
+        "graceTicks": 6000,
+        "assaultValue": 2000,
+        "techTier": 2
+      }
+    }
+  ],
+  "objectives": [
+    {
+      "type": "survive",
+      "id": "outlast",
+      "seconds": 300,
+      "primary": true,
+      "text": "Survive Cauterize (5:00)"
+    },
+    {
+      "type": "destroy",
+      "id": "deny_pads",
+      "team": "enemy",
+      "kind": "skypad",
+      "primary": false,
+      "text": "Secondary: destroy the Directorate skypads"
+    }
+  ],
+  "failure": [
+    {
+      "type": "defend",
+      "team": "player",
+      "kind": "refinery"
+    },
+    {
+      "type": "defeated",
+      "team": "player"
+    }
+  ],
+  "triggers": [
+    {
+      "id": "t11_teach",
+      "when": {
+        "timeSeconds": 10
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "VANE",
+          "text": "Rockets and AA track the sky. Rifles barely scratch it. Build more AA."
+        }
+      ]
+    },
+    {
+      "id": "t11_wave1",
+      "when": {
+        "timeSeconds": 45
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "CORR (intercepted)",
+          "text": "Alpha flight, weapons free. \u2026May whatever's down there forgive us."
+        },
+        {
+          "type": "spawn",
+          "team": "enemy",
+          "units": [
+            {
+              "type": "gunship",
+              "tx": 26,
+              "ty": 6
+            }
+          ],
+          "attackMoveTo": {
+            "tx": 8,
+            "ty": 26
+          }
+        }
+      ]
+    },
+    {
+      "id": "t11_wave2",
+      "when": {
+        "timeSeconds": 120
+      },
+      "actions": [
+        {
+          "type": "spawn",
+          "team": "enemy",
+          "units": [
+            {
+              "type": "gunship",
+              "tx": 26,
+              "ty": 6
+            },
+            {
+              "type": "gunship",
+              "tx": 28,
+              "ty": 6
+            }
+          ],
+          "attackMoveTo": {
+            "tx": 8,
+            "ty": 24
+          }
+        }
+      ]
+    },
+    {
+      "id": "t11_wave3",
+      "when": {
+        "timeSeconds": 210
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "CORR (intercepted)",
+          "text": "I flew with Theta wing. Good people. Shoot them down anyway."
+        },
+        {
+          "type": "spawn",
+          "team": "enemy",
+          "units": [
+            {
+              "type": "gunship",
+              "tx": 26,
+              "ty": 6
+            },
+            {
+              "type": "gunship",
+              "tx": 28,
+              "ty": 6
+            },
+            {
+              "type": "gunship",
+              "tx": 27,
+              "ty": 6
+            }
+          ],
+          "attackMoveTo": {
+            "tx": 7,
+            "ty": 26
+          }
+        }
+      ]
+    }
+  ],
+  "rewards": [
+    {
+      "ifObjectiveComplete": "deny_pads",
+      "grant": {
+        "nextMissionCredits": 250
+      }
+    }
+  ],
+  "next": "m12_renegade"
+}

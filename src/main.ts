@@ -33,7 +33,7 @@ import { makeLockstep, type Lockstep } from './net/lockstep.js';
 import { stateHash } from './sim/state.js';
 import { runTick as simRunTick } from './sim/loop.js';
 import { loadMission } from './loaders/missions.js';
-import { showTitleMenu, showEndScreen, showPauseMenu, showMissionSelect, showSkirmishSetup, showDevMenu, showDeployment, markCompleted, addBonus, takeBonus, loadProgress, recordCampaignCarry } from './view/menu.js';
+import { showTitleMenu, showEndScreen, showPauseMenu, showMissionSelect, showSkirmishSetup, showDevMenu, showDeployment, showChoice, showCredits, markCompleted, addBonus, takeBonus, loadProgress, recordCampaignCarry } from './view/menu.js';
 import { makeAudioEngine } from './view/audio.js';
 import economyConstantsData from '../data/economyConstants.json' with { type: 'json' };
 import structuresData from '../data/structures.json' with { type: 'json' };
@@ -50,6 +50,10 @@ import m6Data from '../data/missions/m6_ashen_warlord.json' with { type: 'json' 
 import m8Data from '../data/missions/m8_ashfall.json' with { type: 'json' };
 import m9Data from '../data/missions/m9_the_exchange.json' with { type: 'json' };
 import m10Data from '../data/missions/m10_stormline.json' with { type: 'json' };
+import m11Data from '../data/missions/m11_cauterize.json' with { type: 'json' };
+import m12Data from '../data/missions/m12_renegade.json' with { type: 'json' };
+import m13Data from '../data/missions/m13_choir_of_glass.json' with { type: 'json' };
+import m14Data from '../data/missions/m14_first_vein.json' with { type: 'json' };
 
 // Map configuration
 const MAP_WIDTH = 32;
@@ -173,7 +177,10 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // their reserved slot). One AI per enemy side; victory still owns culling.
   const fogSystem = makeFogSystem(viewerTeam);
   const victorySystem = makeVictorySystem(units);
-  const objectivesSystem = makeObjectivesSystem(mission.objectives, mission.failure, mission.triggers, units, teamFactions);
+  // XP-6: the finale CHOICE — read what the panel stored; filter branch objectives.
+  const bootChoice = mission.choice ? localStorage.getItem(`shardDominion.choice.${mission.id}`) : null;
+  const liveObjectives = mission.objectives.filter(o => !o.onlyIfChoice || o.onlyIfChoice === bootChoice);
+  const objectivesSystem = makeObjectivesSystem(liveObjectives, mission.failure, mission.triggers, units, teamFactions, bootChoice);
   const aiSystems = mp ? [] : mission.enemies.map(e => {
     const base = { team: 'enemy' as const, attackTile: meta.playerStartTile, ...(e.ai ?? {}) };
     return makeAiSystem(units, {
@@ -338,6 +345,14 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // sees placement still active and yields to input's cancel instead of also pausing.
   window.addEventListener('keydown', onHotkey, { capture: true });
 
+  // ── The Choice (XP-6): the finale asks before anything moves. Reload applies it.
+  if (mission.choice && !bootChoice) {
+    showChoice(mission.choice.prompt, mission.choice.options, (id) => {
+      localStorage.setItem(`shardDominion.choice.${mission.id}`, id);
+      location.reload();
+    });
+  }
+
   // ── Deployment (XP-3): campaign missions offer the Veteran Reserve. The panel
   // overlays the (paused) briefing; spends apply live to the seeded match. ──────
   if (mission.id.startsWith('m')) {
@@ -395,6 +410,13 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
           if (obj?.complete) addBonus(mission.next, rw.grant.nextMissionCredits);
         }
       }
+    }
+    // The finale rolls credits on a win; retry/menu clears the stored choice.
+    if (mission.choice) localStorage.removeItem(`shardDominion.choice.${mission.id}`);
+    const isFinale = mission.id === 'm14_first_vein';
+    if (won && isFinale) {
+      showCredits(() => { location.search = ''; });
+      return;
     }
     const nextId = mission.next && MISSIONS[mission.next] ? mission.next : null;
     showEndScreen({
@@ -639,6 +661,10 @@ const MISSIONS: Record<string, unknown> = {
   m8_ashfall: m8Data,
   m9_the_exchange: m9Data,
   m10_stormline: m10Data,
+  m11_cauterize: m11Data,
+  m12_renegade: m12Data,
+  m13_choir_of_glass: m13Data,
+  m14_first_vein: m14Data,
 };
 /** Campaign order (linear unlock: each mission unlocks the next). */
 const CAMPAIGN: { id: string; name: string; order: number }[] = [
@@ -651,6 +677,10 @@ const CAMPAIGN: { id: string; name: string; order: number }[] = [
   { id: 'm8_ashfall', name: 'Act II · Ashfall', order: 8 },
   { id: 'm9_the_exchange', name: 'Act II · The Exchange', order: 9 },
   { id: 'm10_stormline', name: 'Act II · Stormline', order: 10 },
+  { id: 'm11_cauterize', name: 'Act II · Cauterize', order: 11 },
+  { id: 'm12_renegade', name: 'Act II · The Renegade', order: 12 },
+  { id: 'm13_choir_of_glass', name: 'Act II · Choir of Glass', order: 13 },
+  { id: 'm14_first_vein', name: 'FINALE · The First Vein', order: 14 },
 ];
 
 function openMissionSelect(): void {

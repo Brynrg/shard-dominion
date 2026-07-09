@@ -11,6 +11,21 @@
 
 ## Current state
 
+**🌋 XP-6 "ACT II · THE DEEP" (2026-07-09, v0.40.0) — THE CAMPAIGN IS COMPLETE: 13 missions, two acts,
+a real player choice, and credits.**
+- **The Choice machinery (data-driven):** missions may carry `choice: {prompt, options[]}` — a DOM panel
+  asks BEFORE the briefing; the pick stores + reboots the branch. `objectives[].onlyIfChoice` filters
+  branch objectives at boot; trigger `when.choice` fires branch openers. Retry clears the pick.
+- **M11 Cauterize** (survive 5:00 of escalating Directorate gunship waves + keep the refinery; teaches AA),
+  **M12 The Renegade** (Corr defects — trigger-gifted tanks the mission FAILS if you lose; break the
+  Directorate base), **M13 Choir of Glass** (destroy the Shardborn lattice spires under scripted Riftmaw
+  surges), **M14 The First Vein** — SEAL (hold the Vein 4:00 vs Riftmaws + the Orbital-Lance wave) vs
+  HARNESS (+800⬡ overdrive open, destroy the Directorate before the Clutch answers). **Superweapons debut
+  as scripted set pieces** (Lance/Clutch) per the locked panel decision.
+- **Credits roll** after a finale win. m10→m11→…→m14 chained; mission select carries all 13 (Act I 1-6,
+  Act II 8-14). M13's illegal defend-objective caught by the validator and re-typed.
+2 choice unit tests + 2-scenario xp6_finale gate. **220 unit + 31 liveness green.**
+
 **🚁 XP-5 "SKY-LITE" (2026-07-09, v0.39.0) — the sky opens (shared-lite per the panel).**
 - **Gunship** (900, T2, AIR armor, quad_missile, **6-shot sorties**): built at the **Skypad** (600, T2);
   flyers **ignore pathing and walls** (straight-line movement plane), draw lifted with a ground shadow.
