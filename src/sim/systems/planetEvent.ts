@@ -63,7 +63,7 @@ export function makePlanetEventSystem(units: readonly UnitDef[]): { name: 'plane
           }
           if (best) {
             const [txs, tys] = best.key.split(',');
-            const spot = nearestWalkable(state.grid, { tx: Number(txs), ty: Number(tys) }, 3);
+            const spot = nearestWalkable(state.grid, { tx: Number(txs), ty: Number(tys) }, undefined, 3);
             if (spot) {
               awakenings += 1;
               state.store.create({

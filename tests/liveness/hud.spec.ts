@@ -19,13 +19,19 @@ test.describe('HUD build-button gate', () => {
     await page.waitForTimeout(60);
     const canvas = page.locator('#game-canvas');
     const box = (await canvas.boundingBox())!;
+    // XP-1 tabs: click sidebar buttons via their LIVE rects.
+    const clickAction = async (action: string) => {
+      const r = await page.evaluate((a) => (window as { __debugButtonRect?: (x: string) => { x: number; y: number; w: number; h: number } | null }).__debugButtonRect?.(a) ?? null, action);
+      if (!r) throw new Error(`no rect for ${action}`);
+      await page.mouse.click(box.x + r.x + r.w / 2, box.y + r.y + r.h / 2);
+      await page.waitForTimeout(80);
+    };
     await page.waitForTimeout(400);
 
     const credits0 = await page.evaluate(() => (window as { __debugEconomy?: () => { credits: number } }).__debugEconomy?.().credits ?? 0);
 
-    // The Barracks button is the 4th build row (Infantry/Rocket/Harvester/Barracks/Power)
-    // in the right panel (canvas 800×600). Centre ≈ (700, 263) — click it (NOT the 'b' key).
-    await page.mouse.click(box.x + 700, box.y + 263);
+    // Click the Barracks button on the STRUCT tab (NOT the 'b' key).
+    await clickAction('build:barracks');
     await page.waitForTimeout(80);
 
     // Now in placement mode → click a tile near the ConYard to place the barracks.

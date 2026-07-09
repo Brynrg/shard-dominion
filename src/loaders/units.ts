@@ -11,6 +11,7 @@ export const UnitSchema = z.object({
   weaponId: z.string().min(1),
   speed: z.number().positive(),
   buildTimeSeconds: z.number().positive(),
+  tier: z.number().int().min(1).max(3).default(1),
   team: z.enum(['player', 'enemy', 'neutral']),
   graphics: z.object({
     sprite_id: z.string().min(1),

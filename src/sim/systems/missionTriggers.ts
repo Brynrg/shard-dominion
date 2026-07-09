@@ -35,6 +35,8 @@ export interface MissionMessage { speaker: string; text: string; expiresAtTick: 
 export interface TriggerRunner {
   /** Fired-message queue for the view (comm panel); pruned by tick. */
   readonly messages: MissionMessage[];
+  /** Dev kit (XP-1): trigger ids that have fired. */
+  firedIds(): string[];
   run(state: SimState, isObjectiveComplete: (id: string) => boolean): void;
 }
 
@@ -90,6 +92,8 @@ export function makeTriggerRunner(triggers: readonly MissionTrigger[], units: re
 
   return {
     messages,
+    /** Dev kit (XP-1): which trigger ids have fired (for the trigger preview hook). */
+    firedIds: (): string[] => [...fired],
     run(state, isObjectiveComplete): void {
       // Prune expired messages (view reads live ones).
       for (let i = messages.length - 1; i >= 0; i--) {

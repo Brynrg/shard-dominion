@@ -42,6 +42,16 @@ export function makeConstructionSystem(
     name: 'construction' as const,
     output: { buildQueue: [], readyStructures: [] },
     run(state: SimState): void {
+      // HQ tier upgrades (XP-1): tick every conyard's in-flight upgrade.
+      for (const e of state.store.all()) {
+        const t = e.components.tech;
+        if (!t || t.upgradingTo == null) continue;
+        const left = t.ticksLeft - 1;
+        e.components.tech = left <= 0
+          ? { tier: t.upgradingTo, upgradingTo: null, ticksLeft: 0 }
+          : { ...t, ticksLeft: left };
+      }
+
       // ── Repair pass (FG-2): toggled buildings heal over ~20s of full-hp time,
       // draining ~30% of the structure's cost per full heal from the team bank.
       // Auto-clears at full hp or an empty bank. Deterministic (no wall-clock).

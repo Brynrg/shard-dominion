@@ -4,6 +4,7 @@
 // camera, no DOM. Confirmation markers are exposed on the returned object for the
 // renderer to draw — they are NOT stashed on SimState.
 import type { SimState } from '../state.js';
+import { teamTier } from '../tech.js';
 import type { CommandIntent } from '../../view/input.js';
 import { TILE_SUBUNITS, tileToWorldCenter, worldToTile } from '../coords.js';
 import type { StructureDef } from '../../loaders/structures.js';
@@ -299,6 +300,8 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
           case 'place-structure': {
             const structure = structures.find((s) => s.id === intent.structureId);
             if (!structure) break;
+            // Tech gate (XP-1): T2/T3 structures need the HQ tier. Sim-authoritative.
+            if ((structure.tier ?? 1) > teamTier(state, actor)) break;
 
             const result = validatePlacement(state, structure, intent.tile);
             if (!result.valid) break;
@@ -329,7 +332,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             }
             state.store.create({
               position: tileCenter,
-              building: { onSlab: false, buildProgress: 100, powered: true },
+              building: { onSlab: false, buildProgress: 100, powered: true, ...(structure.blocksPath ? { blocksPath: true } : {}) },
               faction: { team: actor, faction: intent.structureId },
               power: { powerSupply: structure.powerSupply, powerDemand: structure.powerDemand, powered: true },
               health: { hp: structure.hp, maxHp: structure.hp },
@@ -381,6 +384,24 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
                 }
               }
             }
+            break;
+          }
+          case 'upgrade-hq': {
+            // Advance the actor's Construction Yard one tier (charged up-front,
+            // ticked by the construction system). One upgrade at a time.
+            const yard = state.store.all().find(e =>
+              e.components.faction?.team === actor &&
+              e.components.faction?.faction === 'construction_yard' && e.components.tech);
+            const techC = yard?.components.tech;
+            if (!yard || !techC || techC.upgradingTo != null || techC.tier >= 3) break;
+            const yardDef = structures.find(st => st.id === 'construction_yard');
+            const step = yardDef?.tierUpgrades?.find(u => u.toTier === techC.tier + 1);
+            if (!step) break;
+            const bank = state.store.all().find(e =>
+              e.components.faction?.team === actor && e.components.economy)?.components.economy;
+            if (!bank || bank.credits < step.cost) break;
+            bank.credits -= step.cost;
+            yard.components.tech = { tier: techC.tier, upgradingTo: step.toTier, ticksLeft: Math.max(1, Math.round(step.seconds * 20)) };
             break;
           }
           case 'train': {

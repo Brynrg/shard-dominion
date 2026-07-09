@@ -93,7 +93,8 @@
         "tx": 9,
         "ty": 26
       }
-    ]
+    ],
+    "techTier": 2
   },
   "enemies": [
     {
@@ -172,7 +173,8 @@
         "assaultEscalationPerMin": 80,
         "pressureValue": 250,
         "raidUnitCap": 3
-      }
+      },
+      "techTier": 2
     }
   ],
   "objectives": [

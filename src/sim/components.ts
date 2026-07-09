@@ -38,6 +38,8 @@ export interface BuildingComponent {
   /** Repair toggle (FG-2): while set and damaged, hp regenerates and credits drain
    *  (construction system). Cleared automatically at full hp / empty bank. Additive. */
   repairing?: boolean;
+  /** Walls (XP-1): units path around this building while it stands. Additive. */
+  blocksPath?: boolean;
 }
 export interface ProductionComponent {
   queue: readonly string[];
@@ -100,6 +102,10 @@ export interface PowerComponent {
 }
 
 /** The component bag. All optional: an entity has only the components it needs. */
+/** HQ tech level (XP-1). Lives on the Construction Yard; a team's tier is its
+ *  highest conyard tier. `upgradingTo` + `ticksLeft` track an upgrade in progress. */
+export interface TechComponent { tier: number; upgradingTo: number | null; ticksLeft: number }
+
 export interface Components {
   position?: PositionComponent;
   velocity?: VelocityComponent;
@@ -119,6 +125,7 @@ export interface Components {
   construction?: ConstructionComponent;
   power?: PowerComponent;
   projectile?: ProjectileComponent;
+  tech?: TechComponent;
 }
 
 export type ComponentKey = keyof Components;

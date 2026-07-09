@@ -113,6 +113,7 @@ describe('FG-3 — vehicle production routing', () => {
       building: { onSlab: true, buildProgress: 100, powered: true },
       faction: { team: 'player', faction: 'war_factory' },
       production: { queue: [], progress: 0 },
+      tech: { tier: 2, upgradingTo: null, ticksLeft: 0 }, // XP-1: vehicles are T2
       health: { hp: 1300, maxHp: 1300 },
     });
     queue.push({ type: 'train', unitId: 'scout_vehicle' });
@@ -147,6 +148,15 @@ describe('FG-3 — AI combined arms', () => {
       faction: { team: 'enemy', faction: 'harvester' },
       health: { hp: 200, maxHp: 200 },
       harvest: { state: 'IDLE', targetTile: null, targetRefinery: null, cargo: 0 },
+    });
+    // XP-1: the factory is T2 — give the AI an already-upgraded HQ (the upgrade
+    // path itself is covered in tiers.test.ts).
+    state.store.create({
+      position: tileToWorldCenter({ tx: 25, ty: 9 }),
+      building: { onSlab: true, buildProgress: 100, powered: true },
+      faction: { team: 'enemy', faction: 'construction_yard' },
+      tech: { tier: 2, upgradingTo: null, ticksLeft: 0 },
+      health: { hp: 2000, maxHp: 2000 },
     });
     // NO rich fields anywhere → expansion unavailable → factory threshold 1300.
     const ai = makeAiSystem(units, { team: 'enemy', attackTile: { tx: 5, ty: 5 } });

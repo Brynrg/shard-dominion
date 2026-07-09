@@ -25,12 +25,13 @@ import { makeObjectivesSystem } from './sim/systems/objectives.js';
 import { makeProjectileSystem } from './sim/systems/projectile.js';
 import { makePlanetEventSystem } from './sim/systems/planetEvent.js';
 import { seedFromMission } from './sim/seedMission.js';
+import { teamTier } from './sim/tech.js';
 import { makeTeamFactions, modCost, type FactionId } from './sim/factions.js';
 import { makeLockstep, type Lockstep } from './net/lockstep.js';
 import { stateHash } from './sim/state.js';
 import { runTick as simRunTick } from './sim/loop.js';
 import { loadMission } from './loaders/missions.js';
-import { showTitleMenu, showEndScreen, showPauseMenu, showMissionSelect, showSkirmishSetup, markCompleted, addBonus, takeBonus, loadProgress } from './view/menu.js';
+import { showTitleMenu, showEndScreen, showPauseMenu, showMissionSelect, showSkirmishSetup, showDevMenu, markCompleted, addBonus, takeBonus, loadProgress } from './view/menu.js';
 import { makeAudioEngine } from './view/audio.js';
 import economyConstantsData from '../data/economyConstants.json' with { type: 'json' };
 import structuresData from '../data/structures.json' with { type: 'json' };
@@ -70,6 +71,9 @@ declare global {
     __debugAudio?: () => { state: string; played: number; muted: boolean };
     __debugTimeScale?: () => number;
     __debugTick?: () => number;
+    __debugTier?: () => { player: number; enemy: number };
+    __debugButtonRect?: (action: string) => { x: number; y: number; w: number; h: number } | null;
+    __debugTriggersFired?: () => string[];
     __debugForceEnd?: (winner: 'player' | 'enemy') => void;
     __debugMessages?: () => { speaker: string; text: string }[];
     __debugRiftmaws?: () => number;
@@ -252,6 +256,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     jump: (sx, sy) => view.minimapJump(sx, sy),
   }, {
     buttonAt: (sx, sy) => view.hudButtonAt(sx, sy),
+    setTab: (tab) => view.hudSetTab(tab),
   }, audio);
   // ── Continue (FG-6): replay the saved command log tick-for-tick, then go live.
   // Determinism makes the fast-forward EXACT (same mission + same log → same state).
@@ -518,6 +523,11 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // Trigger comm messages (FG-4 gate).
   window.__debugMessages = () => objectivesSystem.messages.map(m => ({ speaker: m.speaker, text: m.text }));
 
+  // XP-1: tech tier + sidebar rect hooks (gates use these).
+  window.__debugTier = () => ({ player: teamTier(state, 'player'), enemy: teamTier(state, 'enemy') });
+  window.__debugButtonRect = (action: string) => view.hudButtonRect(action);
+  window.__debugTriggersFired = () => objectivesSystem.firedTriggerIds();
+
   // Audio + time-scale + tick hooks (FG-1 gates).
   window.__debugAudio = () => audio.debug();
   window.__debugTimeScale = () => (paused ? 0 : speed);
@@ -634,8 +644,29 @@ if (typeof window !== 'undefined') {
   window.addEventListener('load', () => {
     const params = new URLSearchParams(location.search);
     const missionId = params.get('mission');
-    if (params.get('mp') === '1') startMultiplayer(params);
-    else if (missionId && MISSIONS[missionId]) bootstrap(MISSIONS[missionId]);
+    if (params.get('mp') === '1') { startMultiplayer(params); return; }
+    // Mission kit (XP-1): '__dev__' boots the mission JSON staged in localStorage
+    // (by the ?dev=1 panel or a test); ?dev=1 opens the kit panel.
+    if (missionId === '__dev__') {
+      const raw = localStorage.getItem('shardDominion.devMission');
+      if (raw) { try { bootstrap(JSON.parse(raw)); return; } catch { /* fall through */ } }
+    }
+    if (params.get('dev') === '1') {
+      showDevMenu({
+        missions: Object.keys(MISSIONS).map(id => ({ id, name: id })),
+        onLaunch: (id) => { location.search = `?mission=${id}`; },
+        validate: (raw) => {
+          try { loadMission(JSON.parse(raw)); return null; }
+          catch (e) { return e instanceof Error ? e.message : String(e); }
+        },
+        onLaunchJson: (raw) => {
+          localStorage.setItem('shardDominion.devMission', raw);
+          location.search = '?mission=__dev__';
+        },
+      });
+      return;
+    }
+    if (missionId && MISSIONS[missionId]) bootstrap(MISSIONS[missionId]);
     else openTitle();
   });
 }

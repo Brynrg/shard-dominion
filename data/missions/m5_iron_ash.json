@@ -87,7 +87,8 @@
         "tx": 9,
         "ty": 19
       }
-    ]
+    ],
+    "techTier": 2
   },
   "enemies": [
     {
@@ -144,7 +145,8 @@
       "ai": {
         "assaultValue": 600,
         "pressureValue": 300
-      }
+      },
+      "techTier": 2
     }
   ],
   "objectives": [

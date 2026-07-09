@@ -49,6 +49,9 @@ const Side = z.object({
   units: z.array(Placed).default([]),
   // Faction identity (FG-6): stat modifiers + palette. Defaults to 'concord'.
   factionId: z.enum(['concord', 'emberhand', 'shardborn']).optional(),
+  // Starting HQ tech tier (XP-1). Missions that assume T2 content (e.g. M5's War
+  // Factory objective) start higher instead of re-tuning for the upgrade cost.
+  techTier: z.number().int().min(1).max(3).optional(),
 });
 // AI tunables per enemy side (all optional — see ai.ts AiConfig). attackTile defaults
 // to the player start at seed time when omitted.

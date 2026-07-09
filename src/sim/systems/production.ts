@@ -4,6 +4,7 @@ import type { SimState } from '../state.js';
 import type { UnitDef } from '../../loaders/units.js';
 import { SIM_TICK_RATE } from '../loop.js';
 import { worldToTile, tileToWorldCenter } from '../coords.js';
+import { teamTier } from '../tech.js';
 import type { EntityId } from '../ids.js';
 import { teamPowerShortage } from './power.js';
 import { modCost, modHp, modSpeed, FACTIONS, type TeamFactions } from '../factions.js';
@@ -29,6 +30,10 @@ export function makeProductionSystem(units: readonly UnitDef[], factions?: TeamF
           const unitId = prod.queue[0]!;
           const def = units.find(u => u.id === unitId);
           if (!def) { producer.components.production = { ...prod, queue: prod.queue.slice(1) }; continue; }
+          // Tech gate (XP-1): drop queued units above the team's HQ tier (sim-authoritative).
+          if ((def.tier ?? 1) > teamTier(state, team as 'player' | 'enemy')) {
+            producer.components.production = { ...prod, queue: prod.queue.slice(1) }; continue;
+          }
           // find the team's credits pool
           const bank = state.store.all().find(e => e.components.faction?.team === team && e.components.economy)?.components.economy;
           const price = modCost(def.cost, factionFor(team)); // faction pricing (FG-6)

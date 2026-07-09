@@ -17,6 +17,23 @@ import type { Entity } from '../components.js';
 import { world, worldToTile, tileToWorldCenter, TILE_SUBUNITS } from '../coords.js';
 import { findPath } from '../pathfind.js';
 
+// Walls (XP-1): tiles occupied by living path-blocking buildings. Computed at most
+// once per tick (cached on the tick number) — deterministic, cheap.
+let wallCacheTick = -1;
+let wallCache: Set<string> = new Set();
+function wallTiles(state: SimState): Set<string> {
+  if (state.tick === wallCacheTick) return wallCache;
+  wallCacheTick = state.tick;
+  wallCache = new Set();
+  for (const e of state.store.all()) {
+    if (!e.components.building?.blocksPath) continue;
+    if ((e.components.health?.hp ?? 1) <= 0) continue;
+    const p = e.components.position;
+    if (p) wallCache.add(`${worldToTile(p).tx},${worldToTile(p).ty}`);
+  }
+  return wallCache;
+}
+
 const SEPARATION_DIST = Math.floor(TILE_SUBUNITS * 0.45); // min unit spacing (world units)
 
 function samePos(a: { wx: number; wy: number } | null | undefined, b: { wx: number; wy: number } | null): boolean {
@@ -40,7 +57,7 @@ export function makeMovementSystem(): { name: 'movement'; run(state: SimState): 
         // (Re)plan: no path for THIS target yet → run A* tile-to-tile. The final
         // waypoint is replaced with the exact world target so arrival is precise.
         if (!samePos(movement.pathGoal, movement.target)) {
-          const tilePath = findPath(state.grid, worldToTile(pos), worldToTile(movement.target));
+          const tilePath = findPath(state.grid, worldToTile(pos), worldToTile(movement.target), wallTiles(state));
           const waypoints = tilePath === null
             ? [] // unreachable → empty path = straight-line fallback below
             : tilePath.map(t => tileToWorldCenter(t));

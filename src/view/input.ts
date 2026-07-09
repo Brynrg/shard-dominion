@@ -31,6 +31,8 @@ export type CommandIntent = { team?: 'player' | 'enemy' } & (
   | { type: 'select-type'; target: WorldPos }
   // Repair toggle (FG-2): flips `repairing` on the selected damaged player buildings.
   | { type: 'repair' }
+  // HQ tech upgrade (XP-1): advance the Construction Yard to the next tier.
+  | { type: 'upgrade-hq' }
   | { type: 'deploy' }
   | { type: 'place-structure'; structureId: string; tile: TilePos }
   | { type: 'assign-group'; group: number }
@@ -91,7 +93,7 @@ export function makeInputHandlers(
   minimap?: { jump(sx: number, sy: number): boolean },
   /** Optional sidebar build menu: a left-click on a build button queues a unit /
    *  enters structure placement (C&C-style), instead of selecting on the field. */
-  hud?: { buttonAt(sx: number, sy: number): string | null },
+  hud?: { buttonAt(sx: number, sy: number): string | null; setTab?(tab: 'struct' | 'units'): void },
   /** Optional UI sounds: button click / selection blip / order acknowledgment. */
   sfx?: { click(): void; select(): void; ack(): void; place(): void },
 ): InputHandlers {
@@ -108,6 +110,8 @@ export function makeInputHandlers(
   function doBuildAction(action: string): void {
     const [kind, id] = action.split(':');
     if (kind === 'train' && id) queue.push({ type: 'train', unitId: id });
+    else if (kind === 'tab' && (id === 'struct' || id === 'units')) hud?.setTab?.(id);
+    else if (kind === 'upgrade') queue.push({ type: 'upgrade-hq' });
     else if (kind === 'build' && id) setPlacementMode(id);
     else if (kind === 'repair') queue.push({ type: 'repair' });
   }
@@ -337,6 +341,16 @@ export function makeInputHandlers(
         e.preventDefault();
         if (hasConYard()) setPlacementMode('refinery');
         return;
+      case 'l': // Build a Wall segment (XP-1)
+      case 'L':
+        e.preventDefault();
+        if (hasConYard()) setPlacementMode('wall');
+        break;
+      case 'j': // Build a Radar (XP-1, T2)
+      case 'J':
+        e.preventDefault();
+        if (hasConYard()) setPlacementMode('radar');
+        break;
       case 'g': // Build a Defense Turret (FG-2)
       case 'G':
         e.preventDefault();

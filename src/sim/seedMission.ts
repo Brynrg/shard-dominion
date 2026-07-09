@@ -32,10 +32,11 @@ function applyField(state: SimState, f: FieldSpec): void {
 
 // Kind → building components (mirrors the original hardcoded seeding). `takeCredits`
 // puts the side's bank on its FIRST refinery; later refineries start at 0.
-function makeBuilding(kind: string, team: Team, deps: SeedDeps, sideCredits: number, takeCredits: boolean): { components: Record<string, unknown>; tookCredits: boolean } {
+function makeBuilding(kind: string, team: Team, deps: SeedDeps, sideCredits: number, takeCredits: boolean, techTier = 1): { components: Record<string, unknown>; tookCredits: boolean } {
   const hp = structureHp(kind, deps.structures);
+  const blocks = deps.structures.find(s => s.id === kind)?.blocksPath;
   const components: Record<string, unknown> = {
-    building: { onSlab: true, buildProgress: 100, powered: true },
+    building: { onSlab: true, buildProgress: 100, powered: true, ...(blocks ? { blocksPath: true } : {}) },
     faction: { team, faction: kind },
     health: { hp, maxHp: hp },
     armor: { armorClass: 'BUILDING' },
@@ -53,6 +54,7 @@ function makeBuilding(kind: string, team: Team, deps: SeedDeps, sideCredits: num
   } else if (kind === 'construction_yard') {
     components.construction = { queue: [], progress: 0, currentStructureId: null };
     components.power = { powerSupply: 0, powerDemand: 0, powered: true };
+    components.tech = { tier: techTier, upgradingTo: null, ticksLeft: 0 };
   } else if (kind === 'power_node') {
     const def = deps.structures.find(s => s.id === kind);
     components.power = { powerSupply: def?.powerSupply ?? 100, powerDemand: def?.powerDemand ?? 0, powered: true };
@@ -78,11 +80,16 @@ function makeUnit(kind: string, team: Team, deps: SeedDeps, fm = FACTIONS.concor
   return base;
 }
 
-function seedSide(state: SimState, team: Team, credits: number, buildings: readonly Placed[], units: readonly Placed[], deps: SeedDeps, fm = FACTIONS.concord): void {
+function seedSide(state: SimState, team: Team, credits: number, buildings: readonly Placed[], units: readonly Placed[], deps: SeedDeps, fm = FACTIONS.concord, techTier = 1): void {
   let creditsAssigned = false;
+  const hasYard = buildings.some(b => b.type === 'construction_yard');
+  let first = true;
   for (const b of buildings) {
-    const { components, tookCredits } = makeBuilding(b.type, team, deps, credits, !creditsAssigned);
+    const { components, tookCredits } = makeBuilding(b.type, team, deps, credits, !creditsAssigned, techTier);
     if (tookCredits) creditsAssigned = true;
+    // Tier anchor (XP-1): a side with no ConYard carries its tech tier on its first
+    // building, so mission-seeded T2 content (e.g. an enemy War Factory) still works.
+    if (!hasYard && first) { components.tech = { tier: techTier, upgradingTo: null, ticksLeft: 0 }; first = false; }
     state.store.create({ position: tileToWorldCenter({ tx: b.tx, ty: b.ty }), ...components });
   }
   for (const u of units) {
@@ -115,9 +122,9 @@ export function seedFromMission(state: SimState, mission: Mission, deps: SeedDep
   }
 
   // 3) Sides. Player first (matches original id ordering), then each enemy + its fields.
-  seedSide(state, 'player', mission.player.credits, mission.player.buildings, mission.player.units, deps, factions?.player ?? FACTIONS.concord);
+  seedSide(state, 'player', mission.player.credits, mission.player.buildings, mission.player.units, deps, factions?.player ?? FACTIONS.concord, mission.player.techTier ?? 1);
   for (const enemy of mission.enemies) {
-    seedSide(state, 'enemy', enemy.credits, enemy.buildings, enemy.units, deps, factions?.enemy ?? FACTIONS.concord);
+    seedSide(state, 'enemy', enemy.credits, enemy.buildings, enemy.units, deps, factions?.enemy ?? FACTIONS.concord, enemy.techTier ?? 1);
     for (const f of enemy.fields) applyField(state, f);
   }
 

@@ -15,6 +15,7 @@
 // The AI's economy is REAL: production is paid from its harvested credits (the production
 // system charges the bank). The AI never receives hidden/recurring income here.
 import type { SimState } from '../state.js';
+import { teamTier } from '../tech.js';
 import type { UnitDef } from '../../loaders/units.js';
 import { tileToWorldCenter, worldToTile, TILE_SUBUNITS, type TilePos } from '../coords.js';
 import { SIM_TICK_RATE } from '../loop.js';
@@ -146,7 +147,17 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig): { name: 
       // waits for a much fatter bank so Expand keeps priority over military tech.
       // The AI pays the same 1000 the player pays; siting is deterministic.
       const factoryThreshold = findExpansionTile(state, team) !== null ? 2500 : 1300;
-      if (!factory && bank && bank.credits >= factoryThreshold && refinery?.components.position) {
+      // Tech first (XP-1): the factory is T2 — upgrade the HQ before founding it.
+      const tier = teamTier(state, team);
+      if (!factory && tier < 2 && bank && bank.credits >= factoryThreshold) {
+        const yard = state.store.all().find(e =>
+          e.components.faction?.team === team && e.components.tech && e.components.tech.upgradingTo == null);
+        if (yard?.components.tech && yard.components.tech.tier < 2) {
+          bank.credits -= 1000;
+          yard.components.tech = { tier: yard.components.tech.tier, upgradingTo: 2, ticksLeft: 600 };
+        }
+      }
+      if (!factory && tier >= 2 && bank && bank.credits >= factoryThreshold && refinery?.components.position) {
         const rt = worldToTile(refinery.components.position);
         for (const [dx, dy] of [[-2, 0], [0, -2], [2, 2], [-2, -2]] as const) {
           const spot = { tx: rt.tx + dx, ty: rt.ty + dy };

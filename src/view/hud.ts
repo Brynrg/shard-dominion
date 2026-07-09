@@ -25,24 +25,40 @@ export interface HUDConfig {
 
 /** The C&C-style sidebar build menu. `kind` decides the click action:
  *  train → queue a unit at the barracks; build → enter placement mode. */
-interface BuildItem { id: string; key: string; name: string; cost: number; kind: 'train' | 'build' }
-const BUILD_MENU: readonly BuildItem[] = [
-  { id: 'infantry', key: 'T', name: 'Infantry', cost: 100, kind: 'train' },
-  { id: 'rocket_trooper', key: 'R', name: 'Rocket', cost: 200, kind: 'train' },
-  { id: 'harvester', key: 'H', name: 'Harvester', cost: 400, kind: 'train' },
+interface BuildItem { id: string; key: string; name: string; cost: number; kind: 'train' | 'build'; tier?: number }
+// Split across two tabs (XP-1) — [S]TRUCTURES and [U]NITS — so the roster can grow.
+// `tier` mirrors data/{structures,units}.json (view-side copy, like cost).
+const STRUCT_MENU: readonly BuildItem[] = [
   { id: 'barracks', key: 'B', name: 'Barracks', cost: 300, kind: 'build' },
   { id: 'power_node', key: 'N', name: 'Power', cost: 400, kind: 'build' },
   { id: 'refinery', key: 'F', name: 'Refinery', cost: 1200, kind: 'build' },
   { id: 'defense_turret', key: 'G', name: 'Turret', cost: 550, kind: 'build' },
-  { id: 'war_factory', key: 'W', name: 'War Fctry', cost: 1000, kind: 'build' },
-  { id: 'scout_vehicle', key: 'V', name: 'Scout', cost: 350, kind: 'train' },
-  { id: 'assault_tank', key: 'C', name: 'Tank', cost: 700, kind: 'train' },
+  { id: 'wall', key: 'L', name: 'Wall', cost: 50, kind: 'build' },
+  { id: 'radar', key: 'J', name: 'Radar', cost: 600, kind: 'build', tier: 2 },
+  { id: 'war_factory', key: 'W', name: 'War Fctry', cost: 1000, kind: 'build', tier: 2 },
 ];
+const UNIT_MENU: readonly BuildItem[] = [
+  { id: 'infantry', key: 'T', name: 'Infantry', cost: 100, kind: 'train' },
+  { id: 'rocket_trooper', key: 'R', name: 'Rocket', cost: 200, kind: 'train' },
+  { id: 'harvester', key: 'H', name: 'Harvester', cost: 400, kind: 'train' },
+  { id: 'scout_vehicle', key: 'V', name: 'Scout', cost: 350, kind: 'train', tier: 2 },
+  { id: 'assault_tank', key: 'C', name: 'Tank', cost: 700, kind: 'train', tier: 2 },
+  { id: 'warden', key: 'E', name: 'Warden ★', cost: 800, kind: 'train' },
+];
+// HQ upgrade ladder (view-side mirror of construction_yard.tierUpgrades).
+const HQ_UPGRADES = [{ toTier: 2, cost: 1000, seconds: 30 }, { toTier: 3, cost: 2000, seconds: 45 }];
 
 /** A build-menu button hit-test result: `"train:infantry"`, `"build:barracks"`, … */
 export type BuildAction = string;
 
-export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy: number): BuildAction | null; panelRect(): { x: number; y: number; w: number; h: number } } {
+export function makeHUD(cfg: HUDConfig): {
+  draw(): void;
+  buttonAt(sx: number, sy: number): BuildAction | null;
+  panelRect(): { x: number; y: number; w: number; h: number };
+  setTab(tab: 'struct' | 'units'): void;
+  rectOf(action: BuildAction): { x: number; y: number; w: number; h: number } | null;
+} {
+  let activeTab: 'struct' | 'units' = 'struct';
   const { canvas, simState } = cfg;
   const viewerTeam = cfg.viewerTeam ?? 'player';
   const cargoCapacity = cfg.cargoCapacity ?? 600;
@@ -169,6 +185,15 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
       if (e.components.faction?.team === viewerTeam && e.components.faction?.faction === 'barracks') return true;
     return false;
   }
+  // XP-1: the viewer's HQ tech state (tier + in-flight upgrade) from tech components.
+  function getTech(): { tier: number; upgradingTo: number | null; ticksLeft: number } {
+    let best: { tier: number; upgradingTo: number | null; ticksLeft: number } | null = null;
+    for (const e of simState.store.all()) {
+      if (e.components.faction?.team !== viewerTeam || !e.components.tech) continue;
+      if (!best || e.components.tech.tier > best.tier) best = e.components.tech;
+    }
+    return best ?? { tier: 1, upgradingTo: null, ticksLeft: 0 };
+  }
   function hasWarFactory(): boolean {
     for (const e of simState.store.all())
       if (e.components.faction?.team === viewerTeam && e.components.faction?.faction === 'war_factory') return true;
@@ -223,6 +248,11 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
     panelRect(): { x: number; y: number; w: number; h: number } {
       return { x: canvas.width - 184 - 8, y: 8, w: 184 + 8, h: 380 };
     },
+    setTab(tab: 'struct' | 'units'): void { activeTab = tab; },
+    rectOf(action: BuildAction): { x: number; y: number; w: number; h: number } | null {
+      const r = rects.find(r => r.action === action);
+      return r ? { x: r.x, y: r.y, w: r.w, h: r.h } : null;
+    },
     buttonAt(sx: number, sy: number): BuildAction | null {
       for (const r of rects) if (r.enabled && sx >= r.x && sx <= r.x + r.w && sy >= r.y && sy <= r.y + r.h) return r.action;
       return null;
@@ -275,16 +305,55 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
           refinery.storage >= refinery.maxStorage ? COLORS.warning : COLORS.success);
       }
 
-      // Build menu — clickable C&C-style buttons with live progress + queue count.
-      drawText('BUILD  (click or hotkey)', px + 10, py + 120, '#9fb4cc');
+      // Build menu (XP-1): two tabs — STRUCT / UNITS — + the HQ upgrade row.
       const hover = cfg.getHover?.() ?? null;
       const barracksUp = hasBarracks();
       const factoryUp = hasWarFactory();
       const warFactoryProd = getProducer('war_factory');
       const isVehicle = (id: string): boolean => id === 'scout_vehicle' || id === 'assault_tank';
+      const tech = getTech();
       const bw = pw - 16;
-      let by = py + 138;
-      for (const item of BUILD_MENU) {
+      // Tab row.
+      const tabY = py + 118, tabH = 22, tabW = Math.floor(bw / 2) - 2;
+      for (const [i, tab] of (['struct', 'units'] as const).entries()) {
+        const tx0 = px + 8 + i * (tabW + 4);
+        const active = activeTab === tab;
+        rects.push({ action: `tab:${tab}`, x: tx0, y: tabY, w: tabW, h: tabH, enabled: true });
+        context.fillStyle = active ? 'rgba(0,229,255,0.18)' : 'rgba(20,26,34,0.9)';
+        context.fillRect(tx0, tabY, tabW, tabH);
+        context.strokeStyle = active ? '#00e5ff' : '#3a4a5a';
+        context.strokeRect(tx0 + 0.5, tabY + 0.5, tabW - 1, tabH - 1);
+        context.fillStyle = active ? '#00e5ff' : '#8fa3b8';
+        context.font = 'bold 11px monospace'; context.textBaseline = 'top';
+        context.fillText(tab === 'struct' ? 'STRUCT' : 'UNITS', tx0 + 18, tabY + 6);
+      }
+      let by = py + 146;
+      // HQ tier row (STRUCT tab): tier readout + the upgrade button.
+      if (activeTab === 'struct') {
+        const step = HQ_UPGRADES.find(u => u.toTier === tech.tier + 1);
+        const upgrading = tech.upgradingTo != null;
+        const label = upgrading ? `⬆ UPGRADING… T${tech.upgradingTo}`
+          : step ? `⬆ HQ TIER ${step.toTier}` : 'HQ AT MAX TIER';
+        const cost = step?.cost ?? 0;
+        const enabled = !upgrading && !!step && credits >= cost;
+        rects.push({ action: 'upgrade:hq', x: px + 8, y: by, w: bw, h: 30, enabled });
+        // Progress fill while upgrading.
+        if (upgrading && step) {
+          const total = (HQ_UPGRADES.find(u => u.toTier === tech.upgradingTo)?.seconds ?? 30) * 20;
+          const pct = Math.max(0, Math.min(1, 1 - tech.ticksLeft / total));
+          context.fillStyle = 'rgba(0,229,255,0.25)';
+          context.fillRect(px + 8, by, Math.floor(bw * pct), 30);
+        }
+        context.strokeStyle = enabled ? '#ffd34d' : '#3a4a5a';
+        context.strokeRect(px + 8.5, by + 0.5, bw - 1, 29);
+        context.fillStyle = enabled ? '#ffd34d' : (upgrading ? '#00e5ff' : '#68727e');
+        context.font = 'bold 12px monospace'; context.textBaseline = 'top';
+        context.fillText(`${label}  T${tech.tier}`, px + 14, by + 4);
+        if (step && !upgrading) { context.font = '11px monospace'; context.fillText(`◈${cost}`, px + bw - 36, by + 4); }
+        by += 34;
+      }
+      const menu = activeTab === 'struct' ? STRUCT_MENU : UNIT_MENU;
+      for (const item of menu) {
         // Which building makes this item? Harvester ← Refinery, vehicles ← War
         // Factory (FG-3), foot troops ← Barracks; structures are placed (no producer).
         const producer = item.kind !== 'train' ? null
@@ -299,11 +368,16 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
         // Predictive power warning (QA BUG-4): building this would exceed supply.
         const itemDemand = item.kind === 'build' ? (cfg.powerDemandOf?.(item.id) ?? 0) : 0;
         const powerWarn = itemDemand > 0 && power.supply < power.demand + itemDemand;
-        const enabled = credits >= shownCost && prereqMet;
+        const tierOk = (item.tier ?? 1) <= tech.tier;
+        const enabled = credits >= shownCost && prereqMet && tierOk;
         const hovered = !!hover && hover.sx >= px + 8 && hover.sx <= px + 8 + bw && hover.sy >= by && hover.sy <= by + 30;
         const progress = producer?.current === item.id ? (producer?.progress ?? 0) : 0;
         const queued = producer ? producer.queue.filter(q => q === item.id).length : 0;
         drawBuildButton({ ...item, cost: shownCost }, px + 8, by, bw, 30, enabled, hovered, progress, queued, powerWarn);
+        if (!tierOk) { // tier chip: teaches WHY it's grey (XP-1)
+          context.fillStyle = '#c9a24a'; context.font = 'bold 10px monospace';
+          context.fillText(`T${item.tier}`, px + 8 + bw - 70, by + 4);
+        }
         by += 34;
       }
 

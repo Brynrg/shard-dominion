@@ -268,3 +268,49 @@ export function showEndScreen(o: EndOpts): void {
   panel.appendChild(menu);
   el.appendChild(panel);
 }
+
+export interface DevMenuOpts {
+  missions: readonly { id: string; name: string }[];
+  onLaunch: (id: string) => void;
+  /** Validate pasted mission JSON; return an error string or null when valid. */
+  validate: (raw: string) => string | null;
+  onLaunchJson: (raw: string) => void;
+}
+
+/** Dev mission kit (XP-1): launch any registered mission, or paste mission JSON. */
+export function showDevMenu(o: DevMenuOpts): void {
+  const el = overlay();
+  const panel = document.createElement('div');
+  panel.style.cssText = 'text-align:center;max-width:640px;width:90%;';
+  panel.innerHTML =
+    '<div style="font-size:30px;font-weight:bold;color:#ffd34d;letter-spacing:2px;">MISSION KIT</div>' +
+    '<div style="color:#8fb7c9;margin:4px 0 14px;font-size:12px;">dev tooling — launch registered missions or paste mission JSON (validated)</div>';
+  const list = document.createElement('div');
+  list.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:14px;';
+  for (const m of o.missions) {
+    const b = document.createElement('button');
+    b.textContent = m.name;
+    b.style.cssText = 'font-family:monospace;font-size:11px;padding:5px 10px;cursor:pointer;border:1px solid #3a4a5a;background:rgba(20,26,34,0.9);color:#cfe0ee;border-radius:4px;';
+    b.onclick = () => o.onLaunch(m.id);
+    list.appendChild(b);
+  }
+  panel.appendChild(list);
+  const ta = document.createElement('textarea');
+  ta.placeholder = '{ "id": "my_test", "name": "…", … }  — paste a mission JSON here';
+  ta.style.cssText = 'width:100%;height:220px;background:#0a0d12;color:#cfe0ee;border:1px solid #3a4a5a;border-radius:6px;font-family:monospace;font-size:11px;padding:8px;box-sizing:border-box;';
+  panel.appendChild(ta);
+  const err = document.createElement('div');
+  err.style.cssText = 'color:#e24a4a;font-size:11px;min-height:16px;margin:6px 0;text-align:left;font-family:monospace;';
+  panel.appendChild(err);
+  const launch = button('▶  VALIDATE + LAUNCH JSON', true);
+  launch.onclick = () => {
+    const msg = o.validate(ta.value);
+    if (msg) { err.textContent = msg; return; }
+    o.onLaunchJson(ta.value);
+  };
+  const back = button('MAIN MENU');
+  back.onclick = () => { location.search = ''; };
+  panel.appendChild(launch);
+  panel.appendChild(back);
+  el.appendChild(panel);
+}

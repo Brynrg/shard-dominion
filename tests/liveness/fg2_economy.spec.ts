@@ -10,12 +10,21 @@ test.describe('FG-2 economy gate', () => {
     await page.locator('#game-canvas').click({ position: { x: 400, y: 300 } }); // take command
     await page.waitForTimeout(400);
     const box = (await page.locator('#game-canvas').boundingBox())!;
+    // XP-1 tabs: click sidebar buttons via their LIVE rects (canvas px == CSS px at
+    // the gate viewport), switching tabs first when the item lives on UNITS.
+    const clickAction = async (action: string) => {
+      const r = await page.evaluate((a) => (window as { __debugButtonRect?: (x: string) => { x: number; y: number; w: number; h: number } | null }).__debugButtonRect?.(a) ?? null, action);
+      if (!r) throw new Error(`no rect for ${action}`);
+      await page.mouse.click(box.x + r.x + r.w / 2, box.y + r.y + r.h / 2);
+      await page.waitForTimeout(80);
+    };
+
 
     const credits0 = await page.evaluate(() => (window as { __debugEconomy?: () => { credits: number } }).__debugEconomy?.().credits ?? 0);
     expect(credits0).toBeGreaterThanOrEqual(550); // turret affordable turn one
 
-    // Turret button = row 7 in the sidebar (rows start y≈146, +34 each → centre ≈ 365).
-    await page.mouse.click(box.x + 700, box.y + 365);
+    // Turret button via its live rect (XP-1 tabs).
+    await clickAction('build:defense_turret');
     await page.waitForTimeout(80);
 
     // Placement mode → click a tile near the ConYard.

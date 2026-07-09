@@ -11,6 +11,33 @@
 
 ## Current state
 
+**🏗️ XP-1 "FOUNDATIONS & FORGE-LITE" (2026-07-09) — the EXPANSION begins (v0.35.0).** First phase of the
+panel-locked EXPANSION_PLAN §11.6:
+- **HQ tech tiers T1→T3:** `TechComponent` on the ConYard; `upgrade-hq` intent (charged up-front, ticked by
+  construction: T2 1000/30s, T3 2000/45s from `construction_yard.tierUpgrades` in data); sim-authoritative
+  gates (place-structure rejects above-tier builds uncharged; production drops above-tier jobs). War Factory
+  + Scout/Tank are T2. `teamTier()` = max tech across living conyards; sides without a yard anchor tier on
+  their first building (mission enemies keep working). M5/M6 start at techTier 2 (missions unchanged).
+  **AI upgrades its HQ before founding its factory**; skirmish enemies now seed a ConYard.
+- **Sidebar TABS (STRUCT/UNITS):** the roster outgrew one column. Tab row + ⬆ HQ TIER upgrade button (with
+  progress fill + tier readout) + T2 chips on gated buttons. New `rectOf(action)`/`setTab` HUD API;
+  `__debugButtonRect` hook — the 4 coordinate-clicking gates migrated to live-rect clicks (never breaks on
+  layout again).
+- **Radar (new T2 structure, 600/20s, 20 power):** the minimap requires a living POWERED radar — dark
+  "NO RADAR / build one (J, T2)" panel until then; radar-click navigation disabled while dark. Classic C&C
+  tech reward. Hotkey J.
+- **Walls (50cr, hotkey L):** `blocksPath` structures; A* + nearestWalkable take a blocked-tile set
+  (per-tick cached from living wall entities). Units route around wall lines; unit-tested both at the
+  pathfind and movement-system level. **Gates (auto-open) deferred to XP-4** (needs per-team dynamic
+  pathing; scope-pruned per the three-use rule).
+- **MISSION KIT (internal tooling, per review):** `?dev=1` panel — launch any registered mission or PASTE
+  mission JSON (zod-validated inline) → boots as `?mission=__dev__` from localStorage;
+  `scripts/new-mission.mjs <defense|assault|harvest> <id>` template stamper; `__debugTriggersFired()` hook;
+  `docs/MISSION_KIT.md`. The XP-1 gate itself runs on a kit-loaded custom mission — the kit is load-bearing
+  from day one.
+New: tiers.test (5), walls.test (2), xp1_foundations gate (tiers→upgrade→radar→minimap live). FG-3 tests
+made tier-honest. **200 unit + 24 liveness gates green.**
+
 **✨ v0.34.1 (2026-07-09): QA polish + THE EXPANSION PLAN.** (1) **Canvas fills the viewport** (CSS width
 min(100vw, 4:3-of-height); input already maps CSS→backing px; playwright viewport pinned 800×640 so
 coordinate gates keep CSS==backing). (2) **Edge-scroll tamed**: band 28→16px, 180ms dwell before scrolling,

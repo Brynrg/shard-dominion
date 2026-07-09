@@ -28,7 +28,19 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "tierUpgrades": [
+        {
+          "toTier": 2,
+          "cost": 1000,
+          "seconds": 30
+        },
+        {
+          "toTier": 3,
+          "cost": 2000,
+          "seconds": 45
+        }
+      ]
     },
     {
       "id": "barracks",
@@ -232,6 +244,70 @@
         "fallback_geometry": {
           "chassis": "BUILDING",
           "chassisMod": "HEAVY_BLOCK",
+          "weaponGlyph": "NONE",
+          "barrelClass": "NONE",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 0,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      },
+      "tier": 2
+    },
+    {
+      "id": "radar",
+      "name": "Radar",
+      "cost": 600,
+      "buildTimeSeconds": 20,
+      "hp": 700,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "powerSupply": 0,
+      "powerDemand": 20,
+      "onSlabHpFraction": 1.0,
+      "offSlabHpFraction": 0.7,
+      "providesBuildRadius": false,
+      "isDeployable": false,
+      "tier": 2,
+      "graphics": {
+        "sprite_id": "radar",
+        "fallback_geometry": {
+          "chassis": "BUILDING",
+          "chassisMod": "NONE",
+          "weaponGlyph": "NONE",
+          "barrelClass": "NONE",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 0,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      }
+    },
+    {
+      "id": "wall",
+      "name": "Wall",
+      "cost": 50,
+      "buildTimeSeconds": 3,
+      "hp": 300,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "powerSupply": 0,
+      "powerDemand": 0,
+      "onSlabHpFraction": 1.0,
+      "offSlabHpFraction": 0.7,
+      "providesBuildRadius": false,
+      "isDeployable": false,
+      "tier": 1,
+      "blocksPath": true,
+      "graphics": {
+        "sprite_id": "wall",
+        "fallback_geometry": {
+          "chassis": "BUILDING",
+          "chassisMod": "NONE",
           "weaponGlyph": "NONE",
           "barrelClass": "NONE",
           "roleBadge": "SUPPORT",

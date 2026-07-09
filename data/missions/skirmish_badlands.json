@@ -95,6 +95,11 @@
           "type": "barracks",
           "tx": 27,
           "ty": 9
+        },
+        {
+          "type": "construction_yard",
+          "tx": 25,
+          "ty": 10
         }
       ],
       "units": [

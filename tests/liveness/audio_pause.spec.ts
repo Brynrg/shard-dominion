@@ -9,6 +9,15 @@ test.describe('Audio + pause gate', () => {
     await page.goto('/?mission=skirmish');
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
     const box = (await page.locator('#game-canvas').boundingBox())!;
+    // XP-1 tabs: click sidebar buttons via their LIVE rects (canvas px == CSS px at
+    // the gate viewport), switching tabs first when the item lives on UNITS.
+    const clickAction = async (action: string) => {
+      const r = await page.evaluate((a) => (window as { __debugButtonRect?: (x: string) => { x: number; y: number; w: number; h: number } | null }).__debugButtonRect?.(a) ?? null, action);
+      if (!r) throw new Error(`no rect for ${action}`);
+      await page.mouse.click(box.x + r.x + r.w / 2, box.y + r.y + r.h / 2);
+      await page.waitForTimeout(80);
+    };
+
 
     // Take command — this user gesture resumes the AudioContext + starts music.
     await page.locator('#game-canvas').click({ position: { x: 400, y: 300 } });
@@ -18,7 +27,7 @@ test.describe('Audio + pause gate', () => {
     ).toBe('running');
 
     // A HUD button click plays the UI voice → played count rises.
-    await page.mouse.click(box.x + 700, box.y + 263); // Barracks button
+    await clickAction('build:barracks');
     const audio = await page.evaluate(() => (window as { __debugAudio?: () => { state: string; played: number } }).__debugAudio?.());
     expect(audio!.played).toBeGreaterThan(0);
 

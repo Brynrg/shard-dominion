@@ -27,14 +27,15 @@ function heuristic(ax: number, ay: number, bx: number, by: number): number {
 
 /** If `goal` is unwalkable, ring-search (deterministic order) for the nearest
  *  walkable tile within `maxR`; returns null if none. */
-export function nearestWalkable(grid: GridManager, goal: TilePos, maxR = 6): TilePos | null {
-  if (grid.isWalkable(goal)) return goal;
+export function nearestWalkable(grid: GridManager, goal: TilePos, blocked?: ReadonlySet<string>, maxR = 6): TilePos | null {
+  const passable = (t: TilePos): boolean => grid.isWalkable(t) && !(blocked?.has(`${t.tx},${t.ty}`) ?? false);
+  if (passable(goal)) return goal;
   for (let r = 1; r <= maxR; r++) {
     for (let dy = -r; dy <= r; dy++) {
       for (let dx = -r; dx <= r; dx++) {
         if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue; // ring only
         const t = { tx: goal.tx + dx, ty: goal.ty + dy };
-        if (grid.isWalkable(t)) return t;
+        if (passable(t)) return t;
       }
     }
   }
@@ -46,10 +47,11 @@ export function nearestWalkable(grid: GridManager, goal: TilePos, maxR = 6): Til
  * Returns the waypoint list EXCLUDING the start tile, or null when unreachable.
  * An empty array means "already there".
  */
-export function findPath(grid: GridManager, from: TilePos, to: TilePos): TilePos[] | null {
-  const goal = nearestWalkable(grid, to);
+export function findPath(grid: GridManager, from: TilePos, to: TilePos, blocked?: ReadonlySet<string>): TilePos[] | null {
+  const passable = (t: TilePos): boolean => grid.isWalkable(t) && !(blocked?.has(`${t.tx},${t.ty}`) ?? false);
+  const goal = nearestWalkable(grid, to, blocked);
   if (!goal) return null;
-  const start = grid.isWalkable(from) ? from : nearestWalkable(grid, from);
+  const start = passable(from) ? from : nearestWalkable(grid, from, blocked);
   if (!start) return null;
   if (start.tx === goal.tx && start.ty === goal.ty) return [];
 
@@ -106,10 +108,10 @@ export function findPath(grid: GridManager, from: TilePos, to: TilePos): TilePos
       const nx = cx + d.dx, ny = cy + d.dy;
       if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
       const t = { tx: nx, ty: ny };
-      if (!grid.isWalkable(t)) continue;
+      if (!passable(t)) continue;
       // No corner cutting: a diagonal needs both orthogonal neighbours open.
       if (d.cost === DIAG_COST &&
-          (!grid.isWalkable({ tx: cx + d.dx, ty: cy }) || !grid.isWalkable({ tx: cx, ty: cy + d.dy }))) continue;
+          (!passable({ tx: cx + d.dx, ty: cy }) || !passable({ tx: cx, ty: cy + d.dy }))) continue;
       const ni = idx(nx, ny);
       if (closed[ni]) continue;
       const ng = g[cur.i]! + d.cost;

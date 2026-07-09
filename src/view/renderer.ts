@@ -119,6 +119,10 @@ export interface View {
   minimapJump(sx: number, sy: number): boolean;
   /** Hit-test the sidebar build buttons; returns "train:infantry" / "build:barracks" / null. */
   hudButtonAt(sx: number, sy: number): string | null;
+  /** Switch the sidebar tab (XP-1: STRUCT / UNITS). */
+  hudSetTab(tab: 'struct' | 'units'): void;
+  /** The live rect of a sidebar button by action id (gates + tools). */
+  hudButtonRect(action: string): { x: number; y: number; w: number; h: number } | null;
   /** The sprite bank (exposed for the real-asset loader + tests). */
   readonly spriteBank: SpriteBank;
 }
@@ -184,9 +188,35 @@ export function makeView(cfg: ViewConfig): View {
     return cv;
   }
 
+  // XP-1: the minimap needs a living, POWERED radar on the viewer's side.
+  function viewerHasRadar(): boolean {
+    for (const e of simState.store.all()) {
+      if (e.components.faction?.team !== (cfg.viewerTeam ?? 'player')) continue;
+      if (e.components.faction?.faction !== 'radar') continue;
+      if ((e.components.health?.hp ?? 0) <= 0) continue;
+      if (e.components.power && e.components.power.powered === false) continue;
+      return true;
+    }
+    return false;
+  }
   function drawMinimap(): void {
     if (!mmTerrain) mmTerrain = bakeMinimapTerrain();
     const { x, y, w, h } = minimapRect();
+    if (!viewerHasRadar()) {
+      // No radar → static-dark panel (classic C&C: the map is a reward for tech).
+      context.fillStyle = '#0a0d12';
+      context.fillRect(x - 3, y - 16, w + 6, h + 19);
+      context.fillStyle = '#8fb7c9'; context.font = '11px monospace'; context.textAlign = 'left';
+      context.textBaseline = 'alphabetic';
+      context.fillText('RADAR', x, y - 5);
+      context.fillStyle = '#05070a';
+      context.fillRect(x, y, w, h);
+      context.fillStyle = '#4a5a68'; context.font = 'bold 11px monospace';
+      context.fillText('NO RADAR', x + w / 2 - 28, y + h / 2 - 2);
+      context.font = '10px monospace';
+      context.fillText('build one (J, T2)', x + w / 2 - 44, y + h / 2 + 12);
+      return;
+    }
     const fog = getFog?.();
 
     // Frame + backing.
@@ -1145,9 +1175,12 @@ export function makeView(cfg: ViewConfig): View {
     },
     spriteBank: sprites,
     hudButtonAt: (sx, sy) => hud.buttonAt(sx, sy),
+    hudSetTab: (tab) => hud.setTab(tab),
+    hudButtonRect: (action) => hud.rectOf(action),
     minimapRect,
     minimapJump(sx: number, sy: number): boolean {
       if (onboarding?.briefingActive()) return false;
+      if (!viewerHasRadar()) return false; // XP-1: dark radar doesn't navigate
       const r = minimapRect();
       if (sx < r.x || sx > r.x + r.w || sy < r.y || sy > r.y + r.h) return false;
       centerOn(((sx - r.x) / r.w) * worldW, ((sy - r.y) / r.h) * worldH);

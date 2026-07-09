@@ -20,6 +20,15 @@ test.describe('Harvester-from-Refinery gate', () => {
     await page.locator('#game-canvas').click({ position: { x: 400, y: 300 } }); // take command
     await page.waitForTimeout(400);
     const box = (await page.locator('#game-canvas').boundingBox())!;
+    // XP-1 tabs: click sidebar buttons via their LIVE rects (canvas px == CSS px at
+    // the gate viewport), switching tabs first when the item lives on UNITS.
+    const clickAction = async (action: string) => {
+      const r = await page.evaluate((a) => (window as { __debugButtonRect?: (x: string) => { x: number; y: number; w: number; h: number } | null }).__debugButtonRect?.(a) ?? null, action);
+      if (!r) throw new Error(`no rect for ${action}`);
+      await page.mouse.click(box.x + r.x + r.w / 2, box.y + r.y + r.h / 2);
+      await page.waitForTimeout(80);
+    };
+
 
     // Sanity: no Barracks on the field yet, and we start with exactly one Harvester.
     const counts0 = await page.evaluate(() => (window as { __debugBuildingCount?: () => Counts }).__debugBuildingCount?.() ?? { mcv: 0, conyard: 0, power_node: 0, barracks: 0 });
@@ -29,7 +38,8 @@ test.describe('Harvester-from-Refinery gate', () => {
 
     // Click the Harvester button — the 3rd build row (Infantry/Rocket/Harvester/…)
     // in the right panel. Rows start at y≈146, +34 each → Harvester centre ≈ 229.
-    await page.mouse.click(box.x + 700, box.y + 229);
+    await clickAction('tab:units');
+    await clickAction('train:harvester');
 
     // Harvester builds in 8s (160 ticks). Poll for the count to reach 2 (margin 14s).
     await expect.poll(

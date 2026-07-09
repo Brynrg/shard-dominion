@@ -46,6 +46,8 @@ export interface ObjectivesSystem {
   result: ObjectivesResult;
   /** Live trigger messages for the view (comm panel). */
   messages: MissionMessage[];
+  /** Dev kit (XP-1): trigger ids that have fired. */
+  firedTriggerIds(): string[];
 }
 
 // A living entity matching (team, kind?) — hp<=0 counts as dead (cull-timing safe).
@@ -162,6 +164,7 @@ export function makeObjectivesSystem(
     name: 'mission' as const,
     result,
     messages: triggerRunner.messages,
+    firedTriggerIds: triggerRunner.firedIds,
     run(state: SimState): void {
       if (result.won || result.lost) return; // decision is sticky
       triggerRunner.run(state, (id) => completedIds.has(id));
