@@ -194,15 +194,16 @@ are indicative; each phase is 1–3 deploys.
 - Campaign M5 (Iron & Ash) ships here using heroes+vehicles.
 
 ### FG-6 · "Faction, Maps & Permanence" (v0.35–v0.36)
-- **Emberhand as a playable asymmetric faction** (raider identity: cheaper/faster/fragile, salvage
-  economy twist) + faction select.
+- **Faction program (§6.4):** Emberhand playable (FG-6a), then the Shardborn (FG-6b), optional Reach
+  Syndicate (FG-6c) — each ships placeholder-first via procedural fallback chassis + palette, painted art
+  swaps in later.
 - **Skirmish setup screen:** map pool (3–4 authored maps via mission format), difficulty, faction.
 - **Save/load + replays:** command-log capture (determinism pays off), post-match stats screen.
 - Campaign M6 + optional M7 finale (Shardstorm hazard via `planetEvent` slot).
 
-### FG-7 · "Multiplayer" (stretch, v0.4x)
+### FG-7 · "Multiplayer" (COMMITTED, v0.37+)
 - 1v1 **lockstep** over WebSocket (Fly.io relay), input-delay model, `stateHash` desync detection,
-  reconnect. Feasible *because* of the deterministic core; scoped only after FG-1..5 prove retention.
+  reconnect. Feasible *because* of the deterministic core. Promoted from stretch by operator decision (§6.3).
 
 ### FG-8 · "Editor & Modding" (stretch)
 - In-browser mission/map editor emitting the existing mission JSON; share via URL/file. The validator
@@ -226,15 +227,28 @@ are indicative; each phase is 1–3 deploys.
 4. **MP and editor last:** highest cost, and only worth it on a proven-fun single-player game — but the
    deterministic core means nothing done earlier blocks them.
 
-## 6. Decision points for the operator/panel
+## 6. Decisions — LOCKED (operator, 2026-07-09)
 
-1. **Scope ratification:** accept the §1 calibration ("WC3-class in kind, indie in scale")?
-2. **Hero system (FG-5):** in or out? It's the WC3 signature and I recommend **in**; cutting it makes this
-   a very good C&C instead.
-3. **Multiplayer:** keep as stretch (recommended) or promote/delete?
-4. **Second playable faction (FG-6):** full asymmetric Emberhand vs campaign-only antagonist?
-5. **Art ambition:** stay with single-frame Grok sprites + procedural FX through FG-4, or invest in
-   animation frames earlier?
+1. **Scope: RATIFIED** — keep the current theme (Aether Prime / Shard), scale in kind per §1.
+2. **Hero system: IN** — FG-5 as planned.
+3. **Multiplayer: PROMOTED** — FG-7 is now a **committed phase**, not a stretch goal. Implications threaded
+   earlier: determinism stays a hard gate every phase (already enforced); FG-6's command-log capture/replay
+   is now *required* (it is the lockstep substrate); add a determinism-hash liveness gate when pathfinding
+   lands (FG-1's riskiest change to sim determinism).
+4. **Factions: 3–4 TOTAL, placeholder art.** FG-6 expands from "add Emberhand" to a faction program:
+   - **Meridian Concord** (baseline): industrial, disciplined — versatile mid-cost units.
+   - **The Emberhand** (FG-6a): raider identity — cheaper/faster/fragile, salvage-from-wrecks economy twist.
+   - **The Shardborn** (FG-6b): the planet answering — crystalline/bio units grown from Shard fields
+     (Riftmaw-aligned; converges with the creep/hazard lore). Unorthodox economy (units seeded ON fields).
+   - **(Optional 4th, FG-6c) The Reach Syndicate:** mercenary/tech — expensive elites, capturables, intel.
+   - **Placeholder-art policy:** the engine's `graphics.fallback_geometry` procedural chassis system IS the
+     placeholder mechanism — every new faction ships with distinct procedural silhouettes + team palettes
+     first; Grok painted sets are generated separately and swap in via the existing manifest path with no
+     code change.
+5. **Animation frames: SOONER.** The sprite loader already supports multi-frame sheets + fps sidecars
+   (built at v0.13, unused). Actions: extend `ART_ASSETS_SPEC.md` with paste-ready Grok prompts for
+   walk/fire/death strips (operator generates alongside the purple-base re-gen); engine wiring + procedural
+   interim animation lands during FG-1–FG-2 rather than post-FG-4.
 
 ---
 
