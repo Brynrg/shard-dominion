@@ -11,6 +11,25 @@
 
 ## Current state
 
+**🏁 FG-1 "GAME FEEL" COMPLETE (2026-07-09) — shipping as v0.27.0.** Three slices on top of v0.26's
+audio+pause:
+- **🗺️ PATHFINDING + COLLISION (commit ec71fd5):** deterministic A* (`src/sim/pathfind.ts`: 8-dir, no
+  corner-cutting, octile, int costs, stable ties) + `movement.ts` path-following (computed once per ORDER
+  via additive `MovementComponent.pathGoal`; unreachable → straight-line fallback) + unit separation
+  (centre-line push, id-tie-broken, never onto unwalkable; HARVEST/DOCK harvesters exempt). Mapgen now
+  scatters IMPASSABLE mesas APPENDED after the original scatters (rng stream unchanged → existing mission
+  terrain identical + new obstacles). **determinism.test.ts: 600 ticks, full stack, two rigs, identical
+  stateHash — the lockstep-MP substrate gate.** 8 pathfind tests incl. mission-map sanity (skirmish+M1).
+- **⚔️ COMMAND VOCABULARY (commit abdfe59):** attack-move (A+click; holds to fight whatever
+  combatTargeting acquires, resumes when it dies — `movement.attackMove`), stop (S), rally points
+  (ground-order on a selected producer → `production.rally`, additive; fresh combat units move there,
+  drawn as dashed line + pennant), double-click select-all-of-type. Esc yields placement→attack-move→pause.
+  5 unit tests + commands.spec.ts gate; determinism script covers the new intents.
+- **💀 DEATH FEEL:** persistent fading scorch + wreck-chunk decals where things die (view-only, drawn
+  under entities, capped at 60).
+**157 unit + 16 liveness gates green.** FG-1 exit criteria from FULL_GAME_PLAN.md all met: sound, pause/
+speed, pathfinding, no unit-stacking, attack-move/stop/rally, death persistence, determinism harness.
+
 **v0.26.0 SLICE BUILT + VERIFIED (2026-07-09, pending operator deploy OK) — FG-1 "game feel" begins:**
 - **🔊 AUDIO (grade was F → the game makes sound):** `src/view/audio.ts` — procedural WebAudio engine, zero
   asset files (all synthesized; voices individually replaceable later). SFX: UI click / select / order-ack /
@@ -32,7 +51,7 @@
   4-frame walk-strip Grok prompts; loader has supported frames+fps sidecars since v0.13).
 
 **SHIPPED PLAYABLE RTS — v0.25.0 live at speedrungames.net/games/shard-dominion/.** `pnpm run verify`:
-**143 unit tests** · `pnpm run test:live`: **15 Playwright gates** — all green.
+**157 unit tests** · `pnpm run test:live`: **16 Playwright gates** — all green.
 
 - **📖 v0.25.0 "STORY MODE" — CAMPAIGN CP-1 (2026-07-08):** the panel-reviewed campaign framework
   (`docs/CAMPAIGN_DESIGN.md`) — a **title menu** (Campaign / Skirmish) → **Mission 1 "First Light"**

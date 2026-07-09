@@ -402,11 +402,58 @@ export function makeView(cfg: ViewConfig): View {
     // Deaths: anything we saw last tick that's gone now.
     if (fxSeeded) {
       for (const [id, info] of prevAlive) {
-        if (!alive.has(id)) { spawnExplosion(info.wx, info.wy, info.big); audio?.explosion(info.big); }
+        if (!alive.has(id)) { spawnExplosion(info.wx, info.wy, info.big); spawnDecal(info.wx, info.wy, info.big); audio?.explosion(info.big); }
       }
     }
     for (const id of prevAlive.keys()) if (!alive.has(id)) { prevAlive.delete(id); prevCooldown.delete(id); prevHp.delete(id); prevHarvest.delete(id); }
     fxSeeded = true;
+  }
+
+  // ── Death decals (FG-1 "death feel"): scorch + wreck marks that persist and
+  // fade where things died, drawn UNDER entities. View-only; frame-based life.
+  interface Decal { wx: number; wy: number; big: boolean; life: number; max: number;
+    chunks: { dx: number; dy: number; w: number; h: number; hue: string }[] }
+  const decals: Decal[] = [];
+  function spawnDecal(wx: number, wy: number, big: boolean): void {
+    const chunks = [];
+    const n = big ? 7 : 3;
+    for (let i = 0; i < n; i++) {
+      chunks.push({
+        dx: (Math.random() - 0.5) * (big ? 22 : 10),
+        dy: (Math.random() - 0.5) * (big ? 18 : 8),
+        w: 2 + Math.random() * (big ? 6 : 3),
+        h: 2 + Math.random() * (big ? 5 : 3),
+        hue: Math.random() < 0.5 ? '#3a332c' : '#57493a',
+      });
+    }
+    const max = big ? 1400 : 700; // frames (~23s / ~12s at 60fps)
+    decals.push({ wx, wy, big, life: max, max, chunks });
+    if (decals.length > 60) decals.shift(); // cap
+  }
+  function stepDecals(): void {
+    for (let i = decals.length - 1; i >= 0; i--) {
+      const d = decals[i]!;
+      d.life -= 1;
+      if (d.life <= 0) decals.splice(i, 1);
+    }
+  }
+  function drawDecals(): void {
+    for (const d of decals) {
+      const p = worldToScreen({ wx: d.wx, wy: d.wy }, camera);
+      const a = Math.min(0.55, (d.life / d.max) * 0.7);
+      const r = (d.big ? 16 : 8) * camera.zoom;
+      context.save();
+      context.globalAlpha = a;
+      context.fillStyle = '#14100c';
+      context.beginPath();
+      context.ellipse(p.sx, p.sy, r, r * 0.7, 0, 0, Math.PI * 2);
+      context.fill();
+      for (const c of d.chunks) {
+        context.fillStyle = c.hue;
+        context.fillRect(p.sx + c.dx * camera.zoom, p.sy + c.dy * camera.zoom, c.w * camera.zoom, c.h * camera.zoom);
+      }
+      context.restore();
+    }
   }
 
   function stepParticles(): void {
@@ -926,6 +973,7 @@ export function makeView(cfg: ViewConfig): View {
 
     drawTerrain();
     drawSlabs();
+    drawDecals();
     drawEntities();
     drawParticles();
     drawSelectionRings();
@@ -976,6 +1024,7 @@ export function makeView(cfg: ViewConfig): View {
     }
 
     stepParticles();
+    stepDecals();
     render();
     requestAnimationFrame(loop);
   }

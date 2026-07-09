@@ -6,7 +6,7 @@
 ## What this is
 **Shard Dominion** — an IP-clean, late-1990s Westwood-style (C&C / Red Alert / Dune 2000) web RTS.
 - **Repo:** `~/Code/games/shard-dominion` (TypeScript + Canvas2D + Vite + Vitest + zod + ESLint, single pnpm pkg).
-- **Live:** https://speedrungames.net/games/shard-dominion/ — currently **v0.25.0**.
+- **Live:** https://speedrungames.net/games/shard-dominion/ — currently **v0.27.0**.
 - **Your role now:** you (Claude) **build it directly** and verify. (Earlier plan was to delegate slices to a
   local Qwen builder; in practice Claude builds and only occasionally hands a tightly-scaffolded sub-task to
   `hermes-ask code` — e.g. the S6B AI waves. Default to building it yourself + verifying.)
@@ -20,10 +20,12 @@ sidebar** with live progress fill + `×N` queue + context cursors; **edge-scroll
 camera (clamped to map); mission briefing (goal-first + how-to). **STORY MODE (v0.25.0):** a **title menu**
 (Campaign / Skirmish) → **Mission 1 "First Light"** (briefing → objective banner → destroy the watch-post →
 Victory/Defeat debrief → Next/Retry/Menu); the whole game is now **mission-driven** (`data/missions/*.json` +
-`seedFromMission`; skirmish = the default mission). **NEW (v0.26.0 slice, built + verified, PENDING DEPLOY):**
-the game has **sound** — procedural WebAudio SFX (shots, explosions, UI, train-ready, dock chime, under-attack
-klaxons) + a generative music bed — and a **pause menu** (P/Esc: volume/mute, 0.5–2× game speed, Restart, Main
-Menu; +/− speed hotkeys). **143 unit tests + 15 Playwright gates green.**
+`seedFromMission`; skirmish = the default mission). **FG-1 "game feel" SHIPPED (v0.26–v0.27):**
+**sound** (procedural WebAudio SFX + generative music), **pause/game-speed** (P/Esc menu, 0.5–2×), **A***
+**pathfinding** (impassable mesas; deterministic; `src/sim/pathfind.ts`) + **unit separation**, **attack-move
+(A) / stop (S) / rally points / dbl-click select-type**, **death decals**, and a **600-tick full-stack
+determinism harness** (`tests/unit/determinism.test.ts` — the lockstep-MP substrate; keep it green).
+**157 unit tests + 16 Playwright gates green.**
 
 ## How to work
 - **Architecture:** `src/sim/**` is the PURE deterministic core (no DOM/Date/Math.random — ESLint red-builds it;
@@ -32,8 +34,8 @@ Menu; +/− speed hotkeys). **143 unit tests + 15 Playwright gates green.**
   → command intents), `spritebank.ts` (real-asset + terrain loader, chroma-key, zoom scaling), `onboarding.ts`
   (briefing + objectives). `src/sim/systems/**` = command, movement, harvest, production, construction, power,
   combatTargeting, damage, ai, victory, fog. `data/*.json` + `src/loaders/**` = tunables.
-- **Verify (non-negotiable):** `pnpm run verify` (typecheck + lint + 143 unit tests) AND `pnpm run test:live`
-  (15 Playwright gates — the real-browser proof of interaction; add a gate for any new mechanic).
+- **Verify (non-negotiable):** `pnpm run verify` (typecheck + lint + 157 unit tests) AND `pnpm run test:live`
+  (16 Playwright gates — the real-browser proof of interaction; add a gate for any new mechanic).
 - **Visual check:** claude-in-chrome on `localhost:5199` (preview_start "shard-dominion") or the preview MCP.
   **GOTCHA: a backgrounded Chrome tab throttles rAF → the sim FREEZES** (credits static, clicks don't process).
   Dismiss the briefing by dispatching a real `mousedown/up` on the canvas; rely on Playwright gates for interaction
@@ -71,10 +73,10 @@ Menu; +/− speed hotkeys). **143 unit tests + 15 Playwright gates green.**
    placeholder-first) → FG-7 MP (COMMITTED) → FG-8 editor stretch). Operator locked: theme ratified, heroes
    IN, MP promoted, 3–4 factions w/ placeholder art, animation frames sooner (§0.6 of ART_ASSETS_SPEC has the
    strip prompts). Read it first when choosing what to build next.
-   **FG-1 slice 1 ✅ (v0.26.0, pending deploy): audio engine (`src/view/audio.ts`) + pause/game-speed.**
-   **FG-1 next slices:** (a) pathfinding (A* on the tile grid) + unit collision/separation — the movement
-   system is still 35-line straight-line; (b) attack-move + stop + rally points; (c) death feel (wrecks/
-   corpses). Gate each; pathfinding must add a determinism-hash gate (MP prep).
+   **FG-1 ✅ COMPLETE (v0.26–v0.27 shipped): audio, pause/speed, A* pathfinding + separation, attack-move/
+   stop/rally/select-type, death decals, determinism harness.** NEXT PHASE: **FG-2 map economy** (split
+   fields + buildable Refinery + dock saturation + turret + repair + power penalties + AI Expand — the
+   locked ECONOMY_DESIGN.md phases), then FG-3 combined arms.
 1. **Purple building base** — Grok's building sprites bake a purple base platform that reads oddly on tan sand.
    Fix: re-gen the 6 buildings with Grok ("no coloured base — sits flat on the ground, transparent to its
    footprint"), re-import. (Operator generating the re-gen art; drop into `~/Code/...`, then `import-art.mjs`.)
