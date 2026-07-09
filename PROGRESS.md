@@ -11,6 +11,14 @@
 
 ## Current state
 
+**🐛 FG-5 "THE PLANET FIGHTS BACK" COMPLETE (2026-07-09, commit e5c95db) — shipping as v0.31.0.** The WC3
+signature layer, through the lore: **Riftmaws** (planetEvent.ts in its reserved slot — every 3000cr mined
+map-wide wakes a neutral burrower, cap 2, at the most-bitten tile; aggros everyone), **capturable derricks**
+(neutral rigs in mission `neutrals`; 5s lone presence flips, 5cr/s income; troops don't auto-shred passive
+neutrals), **veterancy** (kill attribution → the dormant-since-S0 ExperienceComponent: 3/8 kills → +15%/+30%
+damage, gold chevrons), and **the Warden hero** (E, 800cr, capped at one, +15% friendly-damage aura in 4
+tiles, cyan halo). 6 unit tests. **181 unit + 19 liveness gates green.**
+
 **📖 FG-4 "CAMPAIGN ARC" COMPLETE (2026-07-09, commit ee161d3) — shipping as v0.30.0.** The story mode is
 REAL: **deterministic trigger system** (missionTriggers.ts, composed into the 'mission' slot — time/credits/
 objectiveComplete conditions; message/spawn/grantCredits actions, spawned waves arrive attack-moving and the

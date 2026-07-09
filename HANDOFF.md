@@ -6,7 +6,7 @@
 ## What this is
 **Shard Dominion** — an IP-clean, late-1990s Westwood-style (C&C / Red Alert / Dune 2000) web RTS.
 - **Repo:** `~/Code/games/shard-dominion` (TypeScript + Canvas2D + Vite + Vitest + zod + ESLint, single pnpm pkg).
-- **Live:** https://speedrungames.net/games/shard-dominion/ — currently **v0.30.0**.
+- **Live:** https://speedrungames.net/games/shard-dominion/ — currently **v0.31.0**.
 - **Your role now:** you (Claude) **build it directly** and verify. (Earlier plan was to delegate slices to a
   local Qwen builder; in practice Claude builds and only occasionally hands a tightly-scaffolded sub-task to
   `hermes-ask code` — e.g. the S6B AI waves. Default to building it yourself + verifying.)
@@ -25,7 +25,7 @@ Victory/Defeat debrief → Next/Retry/Menu); the whole game is now **mission-dri
 **pathfinding** (impassable mesas; deterministic; `src/sim/pathfind.ts`) + **unit separation**, **attack-move
 (A) / stop (S) / rally points / dbl-click select-type**, **death decals**, and a **600-tick full-stack
 determinism harness** (`tests/unit/determinism.test.ts` — the lockstep-MP substrate; keep it green).
-**175 unit tests + 19 Playwright gates green.** **FG-4 campaign SHIPPED (v0.30):** trigger system + mission select + rewards + missions 2-6 (full 6-mission arc, m6 ends on the Riftmaw hook). **FG-2 map economy SHIPPED (v0.28):** buildable Refinery (F) + Defense Turret (G) + repair (🔧) + per-team power w/ shortage penalties + flank/centre fields + distance-discounted harvesting + AI Expand.
+**181 unit tests + 19 Playwright gates green.** **FG-5 SHIPPED (v0.31):** Riftmaw creeps + capturable derricks + veterancy chevrons + the Warden hero (E). **FG-4 campaign SHIPPED (v0.30):** trigger system + mission select + rewards + missions 2-6 (full 6-mission arc, m6 ends on the Riftmaw hook). **FG-2 map economy SHIPPED (v0.28):** buildable Refinery (F) + Defense Turret (G) + repair (🔧) + per-team power w/ shortage penalties + flank/centre fields + distance-discounted harvesting + AI Expand.
 
 ## How to work
 - **Architecture:** `src/sim/**` is the PURE deterministic core (no DOM/Date/Math.random — ESLint red-builds it;
@@ -34,7 +34,7 @@ determinism harness** (`tests/unit/determinism.test.ts` — the lockstep-MP subs
   → command intents), `spritebank.ts` (real-asset + terrain loader, chroma-key, zoom scaling), `onboarding.ts`
   (briefing + objectives). `src/sim/systems/**` = command, movement, harvest, production, construction, power,
   combatTargeting, damage, ai, victory, fog. `data/*.json` + `src/loaders/**` = tunables.
-- **Verify (non-negotiable):** `pnpm run verify` (typecheck + lint + 175 unit tests) AND `pnpm run test:live`
+- **Verify (non-negotiable):** `pnpm run verify` (typecheck + lint + 181 unit tests) AND `pnpm run test:live`
   (19 Playwright gates — the real-browser proof of interaction; add a gate for any new mechanic).
 - **Visual check:** claude-in-chrome on `localhost:5199` (preview_start "shard-dominion") or the preview MCP.
   **GOTCHA: a backgrounded Chrome tab throttles rAF → the sim FREEZES** (credits static, clicks don't process).
@@ -76,8 +76,10 @@ determinism harness** (`tests/unit/determinism.test.ts` — the lockstep-MP subs
    **FG-1 ✅ COMPLETE (v0.26–v0.27 shipped): audio, pause/speed, A* pathfinding + separation, attack-move/
    stop/rally/select-type, death decals, determinism harness.** **FG-2 ✅ (v0.28) · FG-3 ✅ (v0.29): War Factory (W) + Scout (V) + Tank (C), projectile shells + splash,
    AI combined arms.** **FG-4 ✅ (v0.30): 6-mission campaign + triggers + mission select + rewards.**
-   NEXT: **FG-5 heroes/creeps/planet** (hero unit w/ XP+abilities, Riftmaw creeps on rich fields via the
-   reserved 'planetEvent' slot — m6's hook, neutral capturable), then FG-6 factions/maps/saves, FG-7 MP.
+   **FG-5 ✅ (v0.31): Riftmaws + derricks + veterancy + Warden hero.**
+   NEXT: **FG-6 factions/maps/saves** (Emberhand playable via placeholder chassis + palette, map pool +
+   difficulty select, mid-match save + replay via the command log), then **FG-7 multiplayer** (lockstep;
+   the determinism harness is the substrate).
 1. **Purple building base** — Grok's building sprites bake a purple base platform that reads oddly on tan sand.
    Fix: re-gen the 6 buildings with Grok ("no coloured base — sits flat on the ground, transparent to its
    footprint"), re-import. (Operator generating the re-gen art; drop into `~/Code/...`, then `import-art.mjs`.)
