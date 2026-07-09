@@ -56,6 +56,31 @@ PNG, 16/8 facings, animation rows). Higher fidelity; more work. The loader suppo
 > background PNG per asset, named `assetId__team__state.png`, unit facing up. That's it —
 > I generate the JSON + manifest via `scripts/import-art.mjs`.
 
+## 0.6 Animation strips via PATH A (operator decision 2026-07-09: "invest in frames sooner")
+
+The loader has supported multi-frame sheets since v0.13 (frames + fps sidecars) — we just
+never fed it frames. Image models CAN do a short **horizontal strip of the same sprite in
+N poses** reliably (it's pose variation, not rotation — the engine still rotates to heading).
+
+**Deliver per animated asset:** ONE PNG, **4 equal-width frames in a single horizontal row**,
+same character/scale/position in every frame, **facing straight UP**, magenta `#FF00FF`
+background everywhere, named `assetId__team__walk.png` (or `__fire` / `__die`).
+Priority order: infantry walk → rocket_trooper walk → harvester drive (wheel/tread shift) →
+vehicle drive → infantry fire (1 recoil frame) → deaths later.
+
+**Paste-ready Grok prompt (walk):**
+> A 4-frame walk-cycle sprite strip of the SAME character: [UNIT DESCRIPTION — e.g. "a tiny
+> sci-fi desert infantry soldier in steel-blue armor, top-down view"], viewed directly from
+> above, facing straight up, late-1990s RTS pixel-painted style. FOUR frames side by side in
+> one horizontal row, identical character and size in each frame, only the legs/pose change
+> mid-stride between frames. Character centered in each quarter of the image. Solid pure
+> magenta #FF00FF background filling every non-character pixel. No shadows outside the
+> character, no grid lines, no labels. Wide image, 4:1 aspect ratio.
+
+Same rules as §0.5 otherwise (PNG, no "transparent background", generous margin). Drop the
+folder in `~/Code/...` as usual — I split the strip, write the frames/fps sidecars, and merge
+the manifest via `scripts/import-art.mjs`; walking units animate immediately, no code change.
+
 ## 1. Global technical requirements
 
 | Property | Requirement |
