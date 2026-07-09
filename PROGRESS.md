@@ -11,6 +11,10 @@
 
 ## Current state
 
+**🔇 v0.33.1 (2026-07-09): live mute.** Operator feedback: no way to mute without pausing. Fix: **M** toggles
+mute anywhere (capture-phase hotkey in main.ts), red "🔇 MUTED (M)" chip beside the credits, legend updated,
+`__debugAudio().muted` exposed + gate asserts M toggles WITHOUT pausing the sim.
+
 **🌐 FG-7 "MULTIPLAYER" COMPLETE (2026-07-09, commit b0413be) — shipping as v0.33.0. THE FULL-GAME MASTER
 PLAN (FULL_GAME_PLAN.md) IS EXECUTED: every committed phase FG-1→FG-7 is built, verified, and live.**
 1v1 lockstep: `server/relay.mjs` (thin forwarding relay — rooms of 2, decides nothing; run
