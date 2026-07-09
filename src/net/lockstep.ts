@@ -29,7 +29,7 @@ type Wire =
   | { type: 'peer-left' };
 
 export interface Lockstep {
-  /** My seat: 0 = 'player' team, 1 = 'enemy' team. */
+  /** My seat: even seats = 'player' side, odd = 'enemy' (2v2 pairs co-command). */
   readonly seat: number;
   readonly team: 'player' | 'enemy';
   /** Queue a locally-issued intent (tagged + scheduled + broadcast). */
@@ -45,9 +45,9 @@ export interface Lockstep {
   status(): { desynced: boolean; peerLeft: boolean };
 }
 
-export function makeLockstep(seat: number, transport: Transport): Lockstep {
-  const team: 'player' | 'enemy' = seat === 0 ? 'player' : 'enemy';
-  const otherSeat = 1 - seat;
+export function makeLockstep(seat: number, transport: Transport, seatCount = 2): Lockstep {
+  const team: 'player' | 'enemy' = seat % 2 === 0 ? 'player' : 'enemy';
+  const allSeats = Array.from({ length: seatCount }, (_, i) => i); // XP-7: 2v2 = 4 seats
 
   // tick → per-seat bundles. A tick is runnable when BOTH seats are present.
   const bundles = new Map<number, Map<number, CommandIntent[]>>();
@@ -85,7 +85,7 @@ export function makeLockstep(seat: number, transport: Transport): Lockstep {
   // Seed the pipeline: ticks 0..DELAY-1 have no inputs from either seat by
   // construction (both agree without a message).
   for (let t = 0; t < INPUT_DELAY_TICKS; t++) {
-    bundleFor(t, 0); bundleFor(t, 1);
+    for (const sIdx of allSeats) bundleFor(t, sIdx);
   }
 
   return {
@@ -101,13 +101,13 @@ export function makeLockstep(seat: number, transport: Transport): Lockstep {
     canRun(tick): boolean {
       if (desynced) return false; // halt loudly rather than diverge
       const byTick = bundles.get(tick);
-      return !!byTick && byTick.has(seat) && byTick.has(otherSeat);
+      return !!byTick && allSeats.every(sIdx => byTick.has(sIdx));
     },
     takeDue(tick): CommandIntent[] {
       const byTick = bundles.get(tick);
       if (!byTick) return [];
-      // Deterministic apply order: seat 0's intents, then seat 1's.
-      const out = [...(byTick.get(0) ?? []), ...(byTick.get(1) ?? [])];
+      // Deterministic apply order: ascending seat index.
+      const out = allSeats.flatMap(sIdx => byTick.get(sIdx) ?? []);
       bundles.delete(tick);
       return out;
     },

@@ -11,6 +11,21 @@
 
 ## Current state
 
+**🏛️ XP-7 "FORGE & ARENA" (2026-07-09, v0.41.0) — THE EXPANSION PLAN IS COMPLETE. XP-1→XP-7 all shipped.**
+- **2v2 multiplayer:** the relay scales rooms (join `size`, 1v1 default / 4 for `?mp=1&mode=2v2`); lockstep
+  generalized to N seats (tick runs when ALL bundles known; even seats = player side, odd = enemy —
+  co-command pairs). 4-seat unit-tested.
+- **Faction Strike (skirmish superweapons, data-flagged per the locked decision):** ☄ STRIKE on the DEF tab —
+  **T3 + 5 Cells**, arms the cursor, 3s telegraphed reticle (a long-lived marker BOTH players see), then a
+  250-dmg 2.5-tile falloff splash. Sim-authoritative (tier + cells checked in command), deterministic,
+  MP-safe. One sentence: "T3 + five Cells calls down the sky."
+- **Replay browser:** every pause-menu save also lands in a 5-slot history; the title's 🎞 REPLAYS lists
+  them — the deterministic sim replays each exactly (the command log IS the replay).
+- **Editor (public alias):** `?editor=1` opens the mission kit (launch registered missions, paste/validate/
+  run mission JSON, template stamper documented in MISSION_KIT.md). Shardborn groundwork: already a
+  selectable faction (stat identity); full living-bases mechanic remains the sequel hook by design.
+3 unit tests (4-seat lockstep, strike charge+splash, strike refusals). **223 unit + 31 liveness green.**
+
 **🌋 XP-6 "ACT II · THE DEEP" (2026-07-09, v0.40.0) — THE CAMPAIGN IS COMPLETE: 13 missions, two acts,
 a real player choice, and credits.**
 - **The Choice machinery (data-driven):** missions may carry `choice: {prompt, options[]}` — a DOM panel

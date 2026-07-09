@@ -84,6 +84,12 @@ const MARKER_LIFETIME = 10 as const; // ~0.5s at 20Hz
 export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structures: StructureDef[], heroIds: readonly string[] = ['warden', 'vane']): CommandSystem {
   const markers: ConfirmationMarker[] = [];
   const groups = new Map<number, EntityId[]>();
+  // XP-7 Faction Strike: pending orbital splashes { at, ticksLeft } (deterministic).
+  const strikes: { wx: number; wy: number; ticksLeft: number }[] = [];
+  const STRIKE_COST_CELLS = 5;
+  const STRIKE_DELAY = 60;      // 3s of warning
+  const STRIKE_RADIUS = 2.5 * TILE_SUBUNITS;
+  const STRIKE_DAMAGE = 250;
 
   return {
     name: 'command' as const,
@@ -97,6 +103,20 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
         if (!m) continue;
         m.remaining -= 1;
         if (m.remaining <= 0) markers.splice(i, 1);
+      }
+
+      // Resolve pending strikes (before new intents — deterministic order).
+      for (let i = strikes.length - 1; i >= 0; i--) {
+        const st = strikes[i]!;
+        st.ticksLeft -= 1;
+        if (st.ticksLeft > 0) continue;
+        for (const e of state.store.all()) {
+          const p = e.components.position; const h = e.components.health;
+          if (!p || !h) continue;
+          const d = Math.hypot(p.wx - st.wx, p.wy - st.wy);
+          if (d <= STRIKE_RADIUS) h.hp -= STRIKE_DAMAGE * (1 - 0.5 * (d / STRIKE_RADIUS));
+        }
+        strikes.splice(i, 1);
       }
 
       for (const intent of queue.drain()) {
@@ -407,6 +427,18 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
                 }
               }
             }
+            break;
+          }
+          case 'strike': {
+            // XP-7: T3 + 5 Cells → a 3s-telegraphed orbital splash. The long-lived
+            // marker doubles as the warning reticle for BOTH players.
+            if (teamTier(state, actor) < 3) break;
+            const bank = state.store.all().find(e =>
+              e.components.faction?.team === actor && e.components.economy)?.components.economy;
+            if (!bank || (bank.cells ?? 0) < STRIKE_COST_CELLS) break;
+            bank.cells = (bank.cells ?? 0) - STRIKE_COST_CELLS;
+            strikes.push({ wx: intent.target.wx, wy: intent.target.wy, ticksLeft: STRIKE_DELAY });
+            markers.push({ target: intent.target, remaining: STRIKE_DELAY });
             break;
           }
           case 'stance': {

@@ -1,6 +1,6 @@
 # Shard Dominion — Expansion Master Plan ("Beyond the Classics")
 
-> **Status:** REVIEWED — decisions LOCKED in §11 (3-panel round, 2026-07-09); §8 phasing superseded by §11.6 · **Date:** 2026-07-09 · **Baseline:** v0.34.0 (FG-1→FG-7 complete, QA round 1 fixed)
+> **Status:** ✅ EXECUTED IN FULL — XP-1→XP-7 shipped v0.35.0→v0.41.0 (2026-07-09); decisions locked in §11 · **Date:** 2026-07-09 · **Baseline:** v0.34.0 (FG-1→FG-7 complete, QA round 1 fixed)
 > **Operator directive:** *"expand the storyline and gameplay well beyond Dune 2000 / C&C Red Alert / Warcraft 3.
 > Story double the size, added complexity, more complex gameplay, economy, building and combat."*
 > **Companions:** `FULL_GAME_PLAN.md` (executed), `ECONOMY_DESIGN.md`, `CAMPAIGN_DESIGN.md`.
@@ -260,7 +260,7 @@ second game mode; they're the campaign ANTAGONIST first, playable later).
 | **XP-4 "Ground Depth"** ✅ SHIPPED v0.38.0 | Artillery+counter-battery, stances, garrisons, transports, addons + balance validation sprint | deepen ground before air |
 | **XP-5 "Sky-lite"** ✅ SHIPPED v0.39.0 | Shared gunship + rearm pad + AA; storms ground air; Concord shield mechanic | air after ground is stable |
 | **XP-6 "Act II·2 + Finale"** ✅ SHIPPED v0.40.0 | **M11–M14**, scripted superweapons, choice-gated finale, campaign-global Resonance, credits | the payoff |
-| **XP-7 "Forge & Arena"** (v0.41) | Public editor, replay browser polish, 2v2, skirmish superweapons, Shardborn-playable groundwork | scale + community |
+| **XP-7 "Forge & Arena"** ✅ SHIPPED v0.41.0 | Public editor, replay browser polish, 2v2, skirmish superweapons, Shardborn-playable groundwork | scale + community |
 
 ### 11.7 The sharpened thesis (one reviewer said it best)
 > *"Do not try to beat Red Alert by adding every RTS feature. Beat it by making Shard extraction, Cell

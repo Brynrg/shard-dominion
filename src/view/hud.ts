@@ -49,6 +49,7 @@ const DEF_MENU: readonly BuildItem[] = [
   { id: 'bunker', key: '', name: 'Bunker', cost: 450, kind: 'build' },
   { id: 'infirmary', key: '', name: 'Infirmary', cost: 500, kind: 'build' },
   { id: 'machine_shop', key: '', name: 'Mach Shop', cost: 600, kind: 'build', tier: 2 },
+  { id: 'hq', key: '', name: '☄ STRIKE', cost: 0, kind: 'build', tier: 3, cellCost: 5 },
 ];
 const UNIT_MENU: readonly BuildItem[] = [
   { id: 'infantry', key: 'T', name: 'Infantry', cost: 100, kind: 'train' },

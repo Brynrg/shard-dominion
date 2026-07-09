@@ -36,6 +36,8 @@ export type CommandIntent = { team?: 'player' | 'enemy' } & (
   // XP-4: cycle stance / unload a container.
   | { type: 'stance' }
   | { type: 'unload' }
+  // XP-7: the faction strike (T3 + 5 Cells) — a delayed orbital splash at a point.
+  | { type: 'strike'; target: WorldPos }
   | { type: 'deploy' }
   | { type: 'place-structure'; structureId: string; tile: TilePos }
   | { type: 'assign-group'; group: number }
@@ -109,11 +111,13 @@ export function makeInputHandlers(
   let panLast: { x: number; y: number } | null = null; // middle-drag pan anchor
   let lastCursor: ScreenPos | null = null;             // for HUD hover + context cursor
   let attackMoveMode = false;                          // 'A' pressed → next click = attack-move
+  let strikeArmed = false;                             // XP-7: STRIKE armed → next click targets it
   let lastClick: { at: number; sx: number; sy: number } | null = null; // dblclick detect
 
   // C&C-style build-button click: queue a unit or enter structure placement.
   function doBuildAction(action: string): void {
     const [kind, id] = action.split(':');
+    if (kind === 'strike') { strikeArmed = true; return; }
     if (kind === 'train' && id) queue.push({ type: 'train', unitId: id });
     else if (kind === 'tab' && (id === 'base' || id === 'def' || id === 'units')) hud?.setTab?.(id);
     else if (kind === 'upgrade') queue.push({ type: 'upgrade-hq' });
@@ -265,6 +269,11 @@ export function makeInputHandlers(
         queue.push({ type: 'place-structure', structureId: placementMode.structureId, tile: placementMode.tile });
         sfx?.place();
         setPlacementMode(null); // Exit placement mode after placing
+      } else if (strikeArmed) {
+        // XP-7: the armed STRIKE fires at the clicked point.
+        queue.push({ type: 'strike', target: screenToWorld(start, camera) });
+        sfx?.ack();
+        strikeArmed = false;
       } else if (attackMoveMode) {
         // Attack-move click: advance-and-engage toward the point.
         queue.push({ type: 'attack-move', target: screenToWorld(start, camera), tile: screenToTile(start, camera) });

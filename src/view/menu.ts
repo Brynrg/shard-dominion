@@ -153,6 +153,33 @@ export function showTitleMenu(onSelect: (missionId: string) => void, campaignMis
   skirmish.onclick = () => { el.remove(); onSelect('skirmish'); };
   panel.appendChild(campaign);
   panel.appendChild(skirmish);
+  // REPLAYS (XP-7): the save history — pick one, it becomes the quick save + boots.
+  try {
+    const hist = JSON.parse(localStorage.getItem('shardDominion.saves') ?? '[]') as { label: string; payload: { missionId: string; faction?: string; difficulty?: string } }[];
+    if (hist.length > 0) {
+      const rb = button(`🎞 REPLAYS (${hist.length})`);
+      rb.onclick = () => {
+        el.remove();
+        const rl = overlay();
+        const rp = document.createElement('div');
+        rp.style.textAlign = 'center';
+        rp.innerHTML = '<div style="font-size:30px;font-weight:bold;color:#ffd34d;letter-spacing:2px;">REPLAYS</div><div style="color:#8fb7c9;margin:4px 0 16px;font-size:12px;">deterministic sim — every save replays exactly</div>';
+        for (const h of hist) {
+          const b = button(h.label);
+          b.onclick = () => {
+            localStorage.setItem('shardDominion.save', JSON.stringify(h.payload));
+            location.search = `?mission=${h.payload.missionId}&continue=1&faction=${h.payload.faction ?? 'concord'}&difficulty=${h.payload.difficulty ?? 'normal'}`;
+          };
+          rp.appendChild(b);
+        }
+        const back = button('BACK');
+        back.onclick = () => { rl.remove(); showTitleMenu(onSelect, campaignMissionId); };
+        rp.appendChild(back);
+        rl.appendChild(rp);
+      };
+      panel.appendChild(rb);
+    }
+  } catch { /* no history */ }
   // CONTINUE (FG-6): resume the saved match by replaying its command log.
   try {
     const raw = localStorage.getItem('shardDominion.save');

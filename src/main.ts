@@ -315,10 +315,17 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
         setSpeed: (sp) => { speed = sp; },
         onSave: () => {
           try {
-            localStorage.setItem('shardDominion.save', JSON.stringify({
+            const payload = {
               version: 1, missionId: mission.id, faction: playerFaction, difficulty,
               tick: state.tick, log: intentLog,
-            }));
+            };
+            localStorage.setItem('shardDominion.save', JSON.stringify(payload));
+            // XP-7 replay history: last 5 saves, newest first.
+            try {
+              const hist = JSON.parse(localStorage.getItem('shardDominion.saves') ?? '[]') as { label: string; payload: unknown }[];
+              hist.unshift({ label: `${mission.name} · tick ${state.tick}`, payload });
+              localStorage.setItem('shardDominion.saves', JSON.stringify(hist.slice(0, 5)));
+            } catch { /* ignore */ }
           } catch { /* storage unavailable */ }
         },
       });
@@ -715,6 +722,7 @@ function startMultiplayer(params: URLSearchParams): void {
   const relay = params.get('relay') ?? `ws://${location.hostname}:8787`;
   const room = params.get('room') ?? 'duel';
   const missionId = params.get('mission') ?? 'skirmish';
+  const size = params.get('mode') === '2v2' ? 4 : 2; // XP-7
   const ws = new WebSocket(relay);
   let seat = -1;
   const listeners: ((msg: string) => void)[] = [];
@@ -727,14 +735,14 @@ function startMultiplayer(params: URLSearchParams): void {
       const lockstep = makeLockstep(seat, {
         send: (m) => ws.send(m),
         onMessage: (cb) => listeners.push(cb),
-      });
+      }, size);
       mpSession = { lockstep, seat };
       bootstrap(MISSIONS[missionId] ?? MISSIONS.skirmish);
       return;
     }
     for (const cb of listeners) cb(raw);
   };
-  ws.onopen = () => ws.send(JSON.stringify({ type: 'join', room }));
+  ws.onopen = () => ws.send(JSON.stringify({ type: 'join', room, size }));
   ws.onclose = () => { if (seat === -1) alert('Relay unreachable / room full.'); };
 }
 
@@ -749,7 +757,7 @@ if (typeof window !== 'undefined') {
       const raw = localStorage.getItem('shardDominion.devMission');
       if (raw) { try { bootstrap(JSON.parse(raw)); return; } catch { /* fall through */ } }
     }
-    if (params.get('dev') === '1') {
+    if (params.get('dev') === '1' || params.get('editor') === '1') { // XP-7: ?editor=1 = public alias
       showDevMenu({
         missions: Object.keys(MISSIONS).map(id => ({ id, name: id })),
         onLaunch: (id) => { location.search = `?mission=${id}`; },

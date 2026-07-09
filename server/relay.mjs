@@ -13,7 +13,7 @@ import { WebSocketServer } from 'ws';
 const PORT = Number(process.argv[2] ?? process.env.PORT ?? 8787);
 const wss = new WebSocketServer({ port: PORT });
 
-/** room → [slot0Socket, slot1Socket] */
+/** room → { size, peers[] } */
 const rooms = new Map();
 
 wss.on('connection', (sock) => {
@@ -25,30 +25,32 @@ wss.on('connection', (sock) => {
     try { msg = JSON.parse(String(data)); } catch { return; }
 
     if (msg.type === 'join' && typeof msg.room === 'string' && room === null) {
-      const peers = rooms.get(msg.room) ?? [];
-      if (peers.length >= 2) { sock.send(JSON.stringify({ type: 'full' })); return; }
+      // XP-7: rooms scale — 1v1 (size 2, default) or 2v2 (size 4). The first
+      // joiner's requested size fixes the room.
+      const entry = rooms.get(msg.room) ?? { size: Math.max(2, Math.min(4, msg.size ?? 2)), peers: [] };
+      if (entry.peers.length >= entry.size) { sock.send(JSON.stringify({ type: 'full' })); return; }
       room = msg.room;
-      slot = peers.length;
-      peers.push(sock);
-      rooms.set(room, peers);
-      sock.send(JSON.stringify({ type: 'joined', slot }));
-      if (peers.length === 2) {
-        // Both seats filled → tell both sides to start (slot 0 = 'player' team).
-        for (const p of peers) p.send(JSON.stringify({ type: 'start' }));
+      slot = entry.peers.length;
+      entry.peers.push(sock);
+      rooms.set(room, entry);
+      sock.send(JSON.stringify({ type: 'joined', slot, size: entry.size }));
+      if (entry.peers.length === entry.size) {
+        // All seats filled → start (even slots = 'player' side, odd = 'enemy').
+        for (const p of entry.peers) p.send(JSON.stringify({ type: 'start' }));
       }
       return;
     }
 
     // Everything else (cmd bundles, hashes, resign) → forward to the other seat.
     if (room !== null) {
-      const peers = rooms.get(room) ?? [];
+      const peers = rooms.get(room)?.peers ?? [];
       for (const p of peers) if (p !== sock && p.readyState === 1) p.send(String(data));
     }
   });
 
   sock.on('close', () => {
     if (room === null) return;
-    const peers = rooms.get(room) ?? [];
+    const peers = rooms.get(room)?.peers ?? [];
     for (const p of peers) if (p !== sock && p.readyState === 1) {
       p.send(JSON.stringify({ type: 'peer-left' }));
     }
