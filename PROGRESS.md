@@ -11,6 +11,16 @@
 
 ## Current state
 
+**⚔️ FG-3 "COMBINED ARMS" COMPLETE (2026-07-09, commit 0f1d203) — shipping as v0.29.0.** The player (and
+AI) get vehicles: **War Factory** (W, 1000) produces **Scout Vehicle** (V, 350, fast anti-infantry) +
+**Assault Tank** (C, 700, HEAVY, tank_shell_v). Train routing is per-producer (harvester→Refinery,
+vehicles→War Factory, foot→Barracks). The reserved **projectile slot is live**: SHELL/SIEGE weapons launch
+real shells at the target's position-at-fire — dodgeable, and they **splash** (matrix-scaled, weapon.splash
+∕ 0.6-tile default) so clumps and buildings suffer; bullets/rockets stay hitscan. Shells render as tracers;
+impact FX/audio ride the existing id-vanish diff. AI founds one War Factory (economy-first: waits for a
+2500 bank while an expansion is still open) and salts tanks every 3rd vehicle. 4 new unit tests; projectile
+system added to the determinism rig. **167 unit + 17 liveness gates green.**
+
 **💰 FG-2 "MAP ECONOMY" COMPLETE (2026-07-09, commit efebaaa) — shipping as v0.28.0.** The locked
 ECONOMY_DESIGN.md phases, delivered: RFC field layout in skirmish (home 3×3@600/side + safe flanks 3×2@650 +
 contested centre 3×3@800 at the inter-base midpoint); **buildable Refinery** (F, 1200, de-bundled: no free
