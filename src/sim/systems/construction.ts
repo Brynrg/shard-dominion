@@ -42,6 +42,28 @@ export function makeConstructionSystem(
     name: 'construction' as const,
     output: { buildQueue: [], readyStructures: [] },
     run(state: SimState): void {
+      // Aura addons (XP-4): infirmaries heal nearby own infantry, machine shops
+      // heal own vehicles (1.5 hp/s within 3 tiles; needs power).
+      for (const src of state.store.all()) {
+        const kind = src.components.faction?.faction;
+        if (kind !== 'infirmary' && kind !== 'machine_shop') continue;
+        if ((src.components.health?.hp ?? 0) <= 0) continue;
+        if (src.components.power && src.components.power.powered === false) continue;
+        const sp = src.components.position; const team = src.components.faction?.team;
+        if (!sp || !team) continue;
+        const R = 3 * 256; const RATE = 1.5 / 20;
+        for (const u of state.store.all()) {
+          if (u.components.faction?.team !== team || u.components.building) continue;
+          const h = u.components.health; const up = u.components.position;
+          if (!h || !up || h.hp <= 0 || h.hp >= h.maxHp) continue;
+          const cls = u.components.armor?.armorClass;
+          const wants = kind === 'infirmary' ? cls === 'LIGHT' : (cls === 'MEDIUM' || cls === 'HEAVY');
+          if (!wants) continue;
+          const dx = up.wx - sp.wx, dy = up.wy - sp.wy;
+          if (dx * dx + dy * dy <= R * R) h.hp = Math.min(h.maxHp, h.hp + RATE);
+        }
+      }
+
       // HQ tier upgrades (XP-1): tick every conyard's in-flight upgrade.
       for (const e of state.store.all()) {
         const t = e.components.tech;

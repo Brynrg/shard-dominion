@@ -201,7 +201,8 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig): { name: 
       }
       if (factory && bank && factory.components.production && factory.components.production.queue.length === 0) {
         const evalIndex = Math.floor(state.tick / evalInterval);
-        const pick = evalIndex % 3 === 2 ? 'assault_tank' : 'scout_vehicle';
+        // XP-4: salt a Longbow into the vehicle mix every 4th pick (siege pressure).
+        const pick = evalIndex % 4 === 3 ? 'longbow' : evalIndex % 3 === 2 ? 'assault_tank' : 'scout_vehicle';
         if (bank.credits >= costOf(pick) + 200) {
           factory.components.production = { ...factory.components.production, queue: [pick] };
         }

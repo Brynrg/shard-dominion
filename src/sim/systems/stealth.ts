@@ -26,6 +26,9 @@ export function makeStealthSystem(): { name: 'agitation'; run(state: SimState): 
         else detectors.push({ team: f.team, wx: p.wx, wy: p.wy, r: PROXIMITY_DETECT });
       }
       for (const e of state.store.all()) {
+        // XP-4 counter-battery decay (shared slot: unit-state upkeep).
+        const cb = e.components.combat;
+        if (cb?.revealedTicks) cb.revealedTicks = Math.max(0, cb.revealedTicks - 1);
         const st = e.components.stealth;
         if (!st) continue;
         const f = e.components.faction; const p = e.components.position;

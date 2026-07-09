@@ -348,6 +348,143 @@
           "factionStripe": "player"
         }
       }
+    },
+    {
+      "id": "bunker",
+      "name": "Bunker",
+      "cost": 450,
+      "buildTimeSeconds": 15,
+      "hp": 600,
+      "powerDemand": 0,
+      "tier": 1,
+      "container": 4,
+      "graphics": {
+        "sprite_id": "bunker",
+        "fallback_geometry": {
+          "chassis": "BUILDING",
+          "chassisMod": "NONE",
+          "weaponGlyph": "NONE",
+          "barrelClass": "NONE",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 0,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      },
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "powerSupply": 0,
+      "onSlabHpFraction": 1.0,
+      "offSlabHpFraction": 0.7,
+      "providesBuildRadius": false,
+      "isDeployable": false
+    },
+    {
+      "id": "infirmary",
+      "name": "Infirmary",
+      "cost": 500,
+      "buildTimeSeconds": 18,
+      "hp": 600,
+      "powerDemand": 10,
+      "tier": 1,
+      "aura": {
+        "heals": "infantry",
+        "radiusTiles": 3,
+        "hpPerSec": 1.5
+      },
+      "graphics": {
+        "sprite_id": "infirmary",
+        "fallback_geometry": {
+          "chassis": "BUILDING",
+          "chassisMod": "NONE",
+          "weaponGlyph": "NONE",
+          "barrelClass": "NONE",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 0,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      },
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "powerSupply": 0,
+      "onSlabHpFraction": 1.0,
+      "offSlabHpFraction": 0.7,
+      "providesBuildRadius": false,
+      "isDeployable": false
+    },
+    {
+      "id": "machine_shop",
+      "name": "Mach Shop",
+      "cost": 600,
+      "buildTimeSeconds": 20,
+      "hp": 700,
+      "powerDemand": 15,
+      "tier": 2,
+      "aura": {
+        "heals": "vehicles",
+        "radiusTiles": 3,
+        "hpPerSec": 1.5
+      },
+      "graphics": {
+        "sprite_id": "machine_shop",
+        "fallback_geometry": {
+          "chassis": "BUILDING",
+          "chassisMod": "NONE",
+          "weaponGlyph": "NONE",
+          "barrelClass": "NONE",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 0,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      },
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "powerSupply": 0,
+      "onSlabHpFraction": 1.0,
+      "offSlabHpFraction": 0.7,
+      "providesBuildRadius": false,
+      "isDeployable": false
+    },
+    {
+      "id": "gate",
+      "name": "Gate",
+      "cost": 100,
+      "buildTimeSeconds": 4,
+      "hp": 350,
+      "powerDemand": 0,
+      "tier": 1,
+      "blocksPath": true,
+      "teamPass": true,
+      "graphics": {
+        "sprite_id": "gate",
+        "fallback_geometry": {
+          "chassis": "BUILDING",
+          "chassisMod": "NONE",
+          "weaponGlyph": "NONE",
+          "barrelClass": "NONE",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 0,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      },
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "powerSupply": 0,
+      "onSlabHpFraction": 1.0,
+      "offSlabHpFraction": 0.7,
+      "providesBuildRadius": false,
+      "isDeployable": false
     }
   ]
 }

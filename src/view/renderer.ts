@@ -122,7 +122,7 @@ export interface View {
   /** Hit-test the sidebar build buttons; returns "train:infantry" / "build:barracks" / null. */
   hudButtonAt(sx: number, sy: number): string | null;
   /** Switch the sidebar tab (XP-1: STRUCT / UNITS). */
-  hudSetTab(tab: 'struct' | 'units'): void;
+  hudSetTab(tab: 'base' | 'def' | 'units'): void;
   /** The live rect of a sidebar button by action id (gates + tools). */
   hudButtonRect(action: string): { x: number; y: number; w: number; h: number } | null;
   /** The sprite bank (exposed for the real-asset loader + tests). */

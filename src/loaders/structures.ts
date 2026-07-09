@@ -10,6 +10,12 @@ export const StructureSchema = z.object({
   tier: z.number().int().min(1).max(3).default(1),
   /** Walls (XP-1): this structure blocks unit pathing while alive. */
   blocksPath: z.boolean().optional(),
+  /** XP-4 gates: own-team units path THROUGH this blocker. */
+  teamPass: z.boolean().optional(),
+  /** XP-4 garrison capacity (bunkers). */
+  container: z.number().int().positive().optional(),
+  /** XP-4 aura addons: heal nearby own units of a class. */
+  aura: z.object({ heals: z.enum(['infantry', 'vehicles']), radiusTiles: z.number().positive(), hpPerSec: z.number().positive() }).optional(),
   /** ConYard only: the HQ upgrade ladder (XP-1). */
   tierUpgrades: z.array(z.object({ toTier: z.number().int().min(2).max(3), cost: z.number().positive(), seconds: z.number().positive(), cells: z.number().int().nonnegative().optional() })).optional(),
   hp: z.number().positive(),

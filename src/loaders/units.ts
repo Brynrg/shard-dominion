@@ -22,6 +22,8 @@ export const UnitSchema = z.object({
   factionLock: z.enum(['concord', 'emberhand', 'shardborn']).optional(),
   /** XP-3: spawns cloaked; decloaks on firing / near detectors. */
   stealth: z.boolean().optional(),
+  /** XP-4 transports: passenger capacity. */
+  container: z.number().int().positive().optional(),
   team: z.enum(['player', 'enemy', 'neutral']),
   graphics: z.object({
     sprite_id: z.string().min(1),

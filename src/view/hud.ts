@@ -30,15 +30,21 @@ export interface HUDConfig {
 interface BuildItem { id: string; key: string; name: string; cost: number; kind: 'train' | 'build'; tier?: number; cellCost?: number; factionLock?: string }
 // Split across two tabs (XP-1) — [S]TRUCTURES and [U]NITS — so the roster can grow.
 // `tier` mirrors data/{structures,units}.json (view-side copy, like cost).
-const STRUCT_MENU: readonly BuildItem[] = [
+const BASE_MENU: readonly BuildItem[] = [
   { id: 'barracks', key: 'B', name: 'Barracks', cost: 300, kind: 'build' },
   { id: 'power_node', key: 'N', name: 'Power', cost: 400, kind: 'build' },
   { id: 'refinery', key: 'F', name: 'Refinery', cost: 1200, kind: 'build' },
-  { id: 'defense_turret', key: 'G', name: 'Turret', cost: 550, kind: 'build' },
-  { id: 'wall', key: 'L', name: 'Wall', cost: 50, kind: 'build' },
   { id: 'radar', key: 'J', name: 'Radar', cost: 600, kind: 'build', tier: 2 },
   { id: 'processing_plant', key: 'K', name: 'Proc Plant', cost: 800, kind: 'build', tier: 2 },
   { id: 'war_factory', key: 'W', name: 'War Fctry', cost: 1000, kind: 'build', tier: 2 },
+];
+const DEF_MENU: readonly BuildItem[] = [
+  { id: 'defense_turret', key: 'G', name: 'Turret', cost: 550, kind: 'build' },
+  { id: 'wall', key: 'L', name: 'Wall', cost: 50, kind: 'build' },
+  { id: 'gate', key: '', name: 'Gate', cost: 100, kind: 'build' },
+  { id: 'bunker', key: '', name: 'Bunker', cost: 450, kind: 'build' },
+  { id: 'infirmary', key: '', name: 'Infirmary', cost: 500, kind: 'build' },
+  { id: 'machine_shop', key: '', name: 'Mach Shop', cost: 600, kind: 'build', tier: 2 },
 ];
 const UNIT_MENU: readonly BuildItem[] = [
   { id: 'infantry', key: 'T', name: 'Infantry', cost: 100, kind: 'train' },
@@ -46,6 +52,8 @@ const UNIT_MENU: readonly BuildItem[] = [
   { id: 'harvester', key: 'H', name: 'Harvester', cost: 400, kind: 'train' },
   { id: 'scout_vehicle', key: 'V', name: 'Scout', cost: 350, kind: 'train', tier: 2 },
   { id: 'assault_tank', key: 'C', name: 'Tank', cost: 700, kind: 'train', tier: 2 },
+  { id: 'longbow', key: '', name: 'Longbow', cost: 900, kind: 'train', tier: 2 },
+  { id: 'skimmer_apc', key: '', name: 'APC', cost: 500, kind: 'train', tier: 2 },
   { id: 'warden', key: 'E', name: 'Warden ★', cost: 800, kind: 'train', cellCost: 2, factionLock: 'concord' },
   { id: 'ghostwalker', key: '', name: 'Ghostwalkr', cost: 350, kind: 'train', tier: 2, factionLock: 'emberhand' },
   { id: 'vane', key: 'E', name: 'Vane ★', cost: 800, kind: 'train', cellCost: 2, factionLock: 'emberhand' },
@@ -60,10 +68,10 @@ export function makeHUD(cfg: HUDConfig): {
   draw(): void;
   buttonAt(sx: number, sy: number): BuildAction | null;
   panelRect(): { x: number; y: number; w: number; h: number };
-  setTab(tab: 'struct' | 'units'): void;
+  setTab(tab: 'base' | 'def' | 'units'): void;
   rectOf(action: BuildAction): { x: number; y: number; w: number; h: number } | null;
 } {
-  let activeTab: 'struct' | 'units' = 'struct';
+  let activeTab: 'base' | 'def' | 'units' = 'base';
   const { canvas, simState } = cfg;
   const viewerTeam = cfg.viewerTeam ?? 'player';
   const cargoCapacity = cfg.cargoCapacity ?? 600;
@@ -255,7 +263,7 @@ export function makeHUD(cfg: HUDConfig): {
     panelRect(): { x: number; y: number; w: number; h: number } {
       return { x: canvas.width - 184 - 8, y: 8, w: 184 + 8, h: 380 };
     },
-    setTab(tab: 'struct' | 'units'): void { activeTab = tab; },
+    setTab(tab: 'base' | 'def' | 'units'): void { activeTab = tab; },
     rectOf(action: BuildAction): { x: number; y: number; w: number; h: number } | null {
       const r = rects.find(r => r.action === action);
       return r ? { x: r.x, y: r.y, w: r.w, h: r.h } : null;
@@ -331,8 +339,8 @@ export function makeHUD(cfg: HUDConfig): {
       const tech = getTech();
       const bw = pw - 16;
       // Tab row.
-      const tabY = py + 118, tabH = 22, tabW = Math.floor(bw / 2) - 2;
-      for (const [i, tab] of (['struct', 'units'] as const).entries()) {
+      const tabY = py + 118, tabH = 22, tabW = Math.floor(bw / 3) - 3;
+      for (const [i, tab] of (['base', 'def', 'units'] as const).entries()) {
         const tx0 = px + 8 + i * (tabW + 4);
         const active = activeTab === tab;
         rects.push({ action: `tab:${tab}`, x: tx0, y: tabY, w: tabW, h: tabH, enabled: true });
@@ -341,12 +349,12 @@ export function makeHUD(cfg: HUDConfig): {
         context.strokeStyle = active ? '#00e5ff' : '#3a4a5a';
         context.strokeRect(tx0 + 0.5, tabY + 0.5, tabW - 1, tabH - 1);
         context.fillStyle = active ? '#00e5ff' : '#8fa3b8';
-        context.font = 'bold 11px monospace'; context.textBaseline = 'top';
-        context.fillText(tab === 'struct' ? 'STRUCT' : 'UNITS', tx0 + 18, tabY + 6);
+        context.font = 'bold 10px monospace'; context.textBaseline = 'top';
+        context.fillText(tab === 'base' ? 'BASE' : tab === 'def' ? 'DEF' : 'UNITS', tx0 + 12, tabY + 6);
       }
       let by = py + 146;
       // HQ tier row (STRUCT tab): tier readout + the upgrade button.
-      if (activeTab === 'struct') {
+      if (activeTab === 'base') {
         const step = HQ_UPGRADES.find(u => u.toTier === tech.tier + 1);
         const upgrading = tech.upgradingTo != null;
         const label = upgrading ? `⬆ UPGRADING… T${tech.upgradingTo}`
@@ -370,7 +378,7 @@ export function makeHUD(cfg: HUDConfig): {
         by += 34;
       }
       const fid = cfg.playerFactionId ?? 'concord';
-      const menu = (activeTab === 'struct' ? STRUCT_MENU : UNIT_MENU)
+      const menu = (activeTab === 'base' ? BASE_MENU : activeTab === 'def' ? DEF_MENU : UNIT_MENU)
         .filter(i => !i.factionLock || i.factionLock === fid); // XP-3 asymmetric rosters
       for (const item of menu) {
         // Which building makes this item? Harvester ← Refinery, vehicles ← War
@@ -430,7 +438,7 @@ export function makeHUD(cfg: HUDConfig): {
       context.font = '10px monospace';
       context.fillText('L-click select · R-click move/attack/mine', px + 10, py + ph - 42);
       context.fillText('A atk-move · S stop · E hero · dblclick=type', px + 10, py + ph - 30);
-      context.fillText('Ctrl+1-3 groups · P pause · M mute', px + 10, py + ph - 18);
+      context.fillText('X stance · U unload · P pause · M mute', px + 10, py + ph - 18);
 
       // Overflow warning (below panel, hard to miss).
       if (refinery && refinery.storage >= refinery.maxStorage) {

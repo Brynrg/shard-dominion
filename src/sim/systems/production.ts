@@ -77,6 +77,7 @@ export function makeProductionSystem(units: readonly UnitDef[], factions?: TeamF
             movement: { target: rally ? { ...rally } : null, path: [], speed: modSpeed(def.speed, fm) },
             faction: { team, faction: def.id },
             ...(def.stealth ? { stealth: { cloaked: true, decloakTicks: 0 } } : {}),
+            ...(def.container ? { container: { capacity: def.container, stored: [] } } : {}),
             ...(def.hero && heroCarryKills > 0 && team === 'player'
               ? { experience: { kills: heroCarryKills, rank: heroCarryKills >= 8 ? 2 : heroCarryKills >= 3 ? 1 : 0 } } : {}),
             ...(isHarvester

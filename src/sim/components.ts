@@ -26,9 +26,18 @@ export interface MovementComponent {
    *  acquires en route, resuming toward `target` when the target dies/leaves.
    *  A plain move order clears it (forced move). Additive (FG-1). */
   attackMove?: boolean;
+  boardTargetId?: import('./ids.js').EntityId | null;
 }
 export interface ResourceComponent { cargo: number; capacity: number } // harvester
-export interface CombatComponent { weaponId: string | null; cooldownRemaining: number; targetId: EntityId | null }
+// XP-4 additive combat fields: stance (targeting posture) + revealedTicks
+// (counter-battery: siege fire pings the minimap through fog).
+export interface CombatComponent {
+  weaponId: string | null;
+  cooldownRemaining: number;
+  targetId: EntityId | null;
+  stance?: 'aggressive' | 'defensive' | 'hold';
+  revealedTicks?: number;
+}
 export interface ExperienceComponent { kills: number; rank: number } // veterancy (dormant by default)
 export interface RenderableComponent { spriteId: string }
 export interface BuildingComponent {
@@ -40,6 +49,8 @@ export interface BuildingComponent {
   repairing?: boolean;
   /** Walls (XP-1): units path around this building while it stands. Additive. */
   blocksPath?: boolean;
+  /** Gates (XP-4): the owner's units pass through despite blocksPath. Additive. */
+  teamPass?: boolean;
 }
 export interface ProductionComponent {
   queue: readonly string[];
@@ -116,6 +127,9 @@ export interface TechComponent { tier: number; upgradingTo: number | null; ticks
  *  detectors (radar 8t, scouts 5t, anything 1.5t) reveal. Additive. */
 export interface StealthComponent { cloaked: boolean; decloakTicks: number }
 
+/** Garrison/transport (XP-4): stored passengers as respawnable snapshots. */
+export interface ContainerComponent { capacity: number; stored: { kind: string; hp: number }[] }
+
 export interface Components {
   position?: PositionComponent;
   velocity?: VelocityComponent;
@@ -137,6 +151,7 @@ export interface Components {
   projectile?: ProjectileComponent;
   tech?: TechComponent;
   stealth?: StealthComponent;
+  container?: ContainerComponent;
 }
 
 export type ComponentKey = keyof Components;

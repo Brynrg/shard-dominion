@@ -184,6 +184,16 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             }
             const key = `${intent.tile.tx},${intent.tile.ty}`;
             const isShard = state.grid.terrainAt(intent.tile) === 'SHARD' || (state.shardDensity.get(key) ?? 0) > 0;
+            // Garrison (XP-4): right-click an OWN container (bunker/APC) → board it.
+            let container: ReturnType<typeof state.store.all>[number] | null = null;
+            let cd0 = TILE_SUBUNITS * 0.9;
+            for (const e of state.store.all()) {
+              if (e.components.faction?.team !== actor || !e.components.container) continue;
+              const pos = e.components.position;
+              if (!pos || (e.components.health && e.components.health.hp <= 0)) continue;
+              const d = Math.hypot(pos.wx - intent.target.wx, pos.wy - intent.target.wy);
+              if (d < cd0) { cd0 = d; container = e; }
+            }
 
             for (const e of state.store.all()) {
               if (!e.components.selection?.selected) continue;
@@ -194,6 +204,14 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
                 if (e.components.production && !enemy && !isShard) {
                   e.components.production = { ...e.components.production, rally: intent.target };
                 }
+                continue;
+              }
+              if (container && !e.components.building && e.components.faction?.faction === 'infantry') {
+                // Walk to the container; the movement system boards on arrival.
+                if (!e.components.movement) e.components.movement = { target: null, path: [], speed: 10 };
+                e.components.movement.target = container.components.position!;
+                e.components.movement.boardTargetId = container.id;
+                markers.push({ target: container.components.position!, remaining: MARKER_LIFETIME });
                 continue;
               }
               if (enemy && e.components.combat) {
@@ -330,9 +348,10 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             } else if (structure.id === 'defense_turret') {
               extras.combat = { weaponId: 'raider_cannon', cooldownRemaining: 0, targetId: null };
             }
+            if (structure.container) extras.container = { capacity: structure.container, stored: [] }; // XP-4
             state.store.create({
               position: tileCenter,
-              building: { onSlab: false, buildProgress: 100, powered: true, ...(structure.blocksPath ? { blocksPath: true } : {}) },
+              building: { onSlab: false, buildProgress: 100, powered: true, ...(structure.blocksPath ? { blocksPath: true } : {}), ...(structure.teamPass ? { teamPass: true } : {}) },
               faction: { team: actor, faction: intent.structureId },
               power: { powerSupply: structure.powerSupply, powerDemand: structure.powerDemand, powered: true },
               health: { hp: structure.hp, maxHp: structure.hp },
@@ -383,6 +402,45 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
                   e.components.selection.selected = true;
                 }
               }
+            }
+            break;
+          }
+          case 'stance': {
+            // XP-4: cycle aggressive → defensive → hold on the selection.
+            const order = ['aggressive', 'defensive', 'hold'] as const;
+            for (const e of state.store.all()) {
+              if (!e.components.selection?.selected || e.components.faction?.team !== actor) continue;
+              const c = e.components.combat;
+              if (!c || e.components.building) continue;
+              const cur = c.stance ?? 'aggressive';
+              c.stance = order[(order.indexOf(cur) + 1) % 3];
+            }
+            break;
+          }
+          case 'unload': {
+            // XP-4: spill a selected container's passengers onto adjacent tiles.
+            for (const e of state.store.all()) {
+              if (!e.components.selection?.selected || e.components.faction?.team !== actor) continue;
+              const box = e.components.container; const pos = e.components.position;
+              if (!box || !pos || box.stored.length === 0) continue;
+              const t = worldToTile(pos);
+              let i = 0;
+              for (const passenger of box.stored) {
+                const ring = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]][i % 8]!;
+                const spot = { tx: t.tx + ring[0]!, ty: t.ty + ring[1]! };
+                state.store.create({
+                  position: tileToWorldCenter(spot),
+                  health: { hp: passenger.hp, maxHp: 20 },
+                  armor: { armorClass: 'LIGHT' },
+                  movement: { target: null, path: [], speed: 12 },
+                  combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
+                  faction: { team: actor, faction: passenger.kind },
+                });
+                i += 1;
+              }
+              e.components.container = { ...box, stored: [] };
+              // An emptied bunker stops fighting.
+              if (e.components.building && e.components.combat) delete e.components.combat;
             }
             break;
           }

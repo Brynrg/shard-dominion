@@ -20,18 +20,28 @@ import { findPath } from '../pathfind.js';
 // Walls (XP-1): tiles occupied by living path-blocking buildings. Computed at most
 // once per tick (cached on the tick number) — deterministic, cheap.
 let wallCacheTick = -1;
-let wallCache: Set<string> = new Set();
-function wallTiles(state: SimState): Set<string> {
-  if (state.tick === wallCacheTick) return wallCache;
-  wallCacheTick = state.tick;
-  wallCache = new Set();
-  for (const e of state.store.all()) {
-    if (!e.components.building?.blocksPath) continue;
-    if ((e.components.health?.hp ?? 1) <= 0) continue;
-    const p = e.components.position;
-    if (p) wallCache.add(`${worldToTile(p).tx},${worldToTile(p).ty}`);
+const wallCacheByTeam = new Map<string, Set<string>>();
+function wallTiles(state: SimState, team: string): Set<string> {
+  if (state.tick !== wallCacheTick) {
+    wallCacheTick = state.tick;
+    wallCacheByTeam.clear();
+    for (const t of ['player', 'enemy', 'neutral']) wallCacheByTeam.set(t, new Set());
+    for (const e of state.store.all()) {
+      if (!e.components.building?.blocksPath) continue;
+      if ((e.components.health?.hp ?? 1) <= 0) continue;
+      const p = e.components.position;
+      if (!p) continue;
+      const key = `${worldToTile(p).tx},${worldToTile(p).ty}`;
+      const ownerTeam = e.components.faction?.team ?? 'neutral';
+      const teamPass = e.components.building.teamPass === true;
+      for (const t of ['player', 'enemy', 'neutral']) {
+        // Gates (XP-4): the owner's units path THROUGH their own gates.
+        if (teamPass && t === ownerTeam) continue;
+        wallCacheByTeam.get(t)!.add(key);
+      }
+    }
   }
-  return wallCache;
+  return wallCacheByTeam.get(team) ?? wallCacheByTeam.get('neutral')!;
 }
 
 const SEPARATION_DIST = Math.floor(TILE_SUBUNITS * 0.45); // min unit spacing (world units)
@@ -57,7 +67,7 @@ export function makeMovementSystem(): { name: 'movement'; run(state: SimState): 
         // (Re)plan: no path for THIS target yet → run A* tile-to-tile. The final
         // waypoint is replaced with the exact world target so arrival is precise.
         if (!samePos(movement.pathGoal, movement.target)) {
-          const tilePath = findPath(state.grid, worldToTile(pos), worldToTile(movement.target), wallTiles(state));
+          const tilePath = findPath(state.grid, worldToTile(pos), worldToTile(movement.target), wallTiles(state, e.components.faction?.team ?? 'neutral'));
           const waypoints = tilePath === null
             ? [] // unreachable → empty path = straight-line fallback below
             : tilePath.map(t => tileToWorldCenter(t));
@@ -67,6 +77,27 @@ export function makeMovementSystem(): { name: 'movement'; run(state: SimState): 
         }
 
         const m = e.components.movement!;
+        // Boarding (XP-4): adjacent to the target container → step inside (the unit
+        // becomes a stored snapshot; the entity is removed).
+        if (m.boardTargetId != null) {
+          const box = state.store.get(m.boardTargetId);
+          const boxPos = box?.components.position;
+          const store = box?.components.container;
+          if (!box || !boxPos || !store || (box.components.health?.hp ?? 0) <= 0) {
+            m.boardTargetId = null;
+          } else if (Math.hypot(boxPos.wx - pos.wx, boxPos.wy - pos.wy) <= TILE_SUBUNITS * 1.4) {
+            if (store.stored.length < store.capacity) {
+              store.stored.push({ kind: e.components.faction?.faction ?? 'infantry', hp: e.components.health?.hp ?? 20 });
+              // A garrisoned bunker fights (one rifle regardless of count, v1).
+              if (box.components.building && !box.components.combat) {
+                box.components.combat = { weaponId: 'rifle', cooldownRemaining: 0, targetId: null };
+              }
+              state.store.remove(e.id);
+              continue;
+            }
+            m.boardTargetId = null; // full — stand down
+          }
+        }
         // Current waypoint: head of the path, or the raw target (unreachable fallback).
         const wp = m.path.length > 0 ? m.path[0]! : m.target!;
         const dx = wp.wx - pos.wx;

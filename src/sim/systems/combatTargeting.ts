@@ -20,10 +20,14 @@ export function makeCombatTargetingSystem(weapons: WeaponsFile): { name: 'combat
         const pos = e.components.position;
         const faction = e.components.faction;
         if (!combat || !pos || !faction || combat.weaponId === null) continue;
+        // Stances (XP-4): hold-fire never acquires (and drops any current target).
+        if (combat.stance === 'hold') { combat.targetId = null; continue; }
 
         const weapon = weapons.weapons[combat.weaponId];
         if (!weapon) continue;
-        const rangeWorld = weapon.range * TILE_SUBUNITS;
+        // Defensive stance (XP-4): only engage well inside range (no edge-chasing).
+        const rangeWorld = weapon.range * TILE_SUBUNITS * (combat.stance === 'defensive' ? 0.7 : 1);
+        const minRangeWorld = (weapon.minRange ?? 0) * TILE_SUBUNITS;
 
         // 1) If the current target is still valid (exists, alive, in range), keep it.
         const cur = combat.targetId !== null ? state.store.get(combat.targetId) : undefined;
@@ -46,6 +50,7 @@ export function makeCombatTargetingSystem(weapons: WeaponsFile): { name: 'combat
           if (oh.hp <= 0) continue;                  // skip dead
           if (other.components.stealth?.cloaked) continue; // XP-3: can't target the unseen
           const d = distance(pos, op);
+          if (d < minRangeWorld) continue; // artillery ignores what's under its barrel
           if (d <= bestDist) { bestDist = d; bestId = other.id; }
         }
         combat.targetId = bestId; // null clears the target when nothing is in range

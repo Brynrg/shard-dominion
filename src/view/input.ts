@@ -33,6 +33,9 @@ export type CommandIntent = { team?: 'player' | 'enemy' } & (
   | { type: 'repair' }
   // HQ tech upgrade (XP-1): advance the Construction Yard to the next tier.
   | { type: 'upgrade-hq' }
+  // XP-4: cycle stance / unload a container.
+  | { type: 'stance' }
+  | { type: 'unload' }
   | { type: 'deploy' }
   | { type: 'place-structure'; structureId: string; tile: TilePos }
   | { type: 'assign-group'; group: number }
@@ -93,7 +96,7 @@ export function makeInputHandlers(
   minimap?: { jump(sx: number, sy: number): boolean },
   /** Optional sidebar build menu: a left-click on a build button queues a unit /
    *  enters structure placement (C&C-style), instead of selecting on the field. */
-  hud?: { buttonAt(sx: number, sy: number): string | null; setTab?(tab: 'struct' | 'units'): void },
+  hud?: { buttonAt(sx: number, sy: number): string | null; setTab?(tab: 'base' | 'def' | 'units'): void },
   /** Optional UI sounds: button click / selection blip / order acknowledgment. */
   sfx?: { click(): void; select(): void; ack(): void; place(): void },
   /** XP-3: which hero the E hotkey trains (faction-dependent; default warden). */
@@ -112,7 +115,7 @@ export function makeInputHandlers(
   function doBuildAction(action: string): void {
     const [kind, id] = action.split(':');
     if (kind === 'train' && id) queue.push({ type: 'train', unitId: id });
-    else if (kind === 'tab' && (id === 'struct' || id === 'units')) hud?.setTab?.(id);
+    else if (kind === 'tab' && (id === 'base' || id === 'def' || id === 'units')) hud?.setTab?.(id);
     else if (kind === 'upgrade') queue.push({ type: 'upgrade-hq' });
     else if (kind === 'build' && id) setPlacementMode(id);
     else if (kind === 'repair') queue.push({ type: 'repair' });
@@ -343,6 +346,16 @@ export function makeInputHandlers(
         e.preventDefault();
         if (hasConYard()) setPlacementMode('refinery');
         return;
+      case 'x': // Cycle stance (XP-4)
+      case 'X':
+        e.preventDefault();
+        queue.push({ type: 'stance' });
+        break;
+      case 'u': // Unload a container (XP-4)
+      case 'U':
+        e.preventDefault();
+        queue.push({ type: 'unload' });
+        break;
       case 'l': // Build a Wall segment (XP-1)
       case 'L':
         e.preventDefault();

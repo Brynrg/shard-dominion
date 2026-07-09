@@ -60,6 +60,8 @@ export function makeDamageSystem(weapons: WeaponsFile): { name: 'damage'; run(st
         // target's CURRENT position — the projectile system flies it and splashes
         // at impact (dodgeable, punishes clumps/buildings). Everything else stays
         // instant-hit: damage = weapon.damage × matrix[weapon.type][armor].
+        // Artillery (XP-4): can't fire inside its minimum range.
+        if (weapon.minRange != null && dist < weapon.minRange * TILE_SUBUNITS) continue;
         if (weapon.type === 'SHELL' || weapon.type === 'SIEGE') {
           const team = e.components.faction?.team ?? 'neutral';
           state.store.create({
@@ -97,6 +99,8 @@ export function makeDamageSystem(weapons: WeaponsFile): { name: 'damage'; run(st
         combat.cooldownRemaining = Math.round(weapon.cooldown * SIM_TICK_RATE * (lowPowerTurret ? 1.5 : 1));
         // XP-3: firing breaks stealth for 5s (the stealth system counts it down).
         if (e.components.stealth) e.components.stealth = { cloaked: false, decloakTicks: 100 };
+        // XP-4 counter-battery: siege fire pings the radar through fog for 3s.
+        if (weapon.type === 'SIEGE') combat.revealedTicks = 60;
       }
     },
   };

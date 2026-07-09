@@ -11,6 +11,23 @@
 
 ## Current state
 
+**⚔️ XP-4 "GROUND DEPTH" (2026-07-09, v0.38.0):**
+- **Longbow artillery** (900, T2, siege_cannon: 60dmg/r7/**minRange 2**/splash): damage + targeting honor
+  minRange (no lock-and-sulk under the barrel); **counter-battery** — siege fire sets `revealedTicks` (3s
+  radar ping through fog, decayed in the shared stealth slot). AI salts Longbows every 4th vehicle.
+- **Stances** (X cycles aggressive→defensive→hold): hold never acquires (drops targets); defensive engages
+  only ≤0.7× range. Sim-authoritative in combatTargeting.
+- **Garrison + transport via ONE Container mechanic:** Bunker (450, cap 4) + Skimmer APC (500, T2, cap 5).
+  Right-click an own container with infantry → they walk in (movement boards on arrival, stored as
+  {kind,hp} snapshots); an occupied bunker ARMS (rifle), an emptied one disarms; **U** spills passengers
+  onto the adjacent ring. Container dies → passengers die (RA rule).
+- **Aura addons:** Infirmary (500, heals LIGHT 1.5hp/s r3) + Machine Shop (600 T2, heals MEDIUM/HEAVY) —
+  powered, own-team, in the construction system's aura pass.
+- **Gates** (100): blocksPath + **teamPass** — per-team blocked-tile caches; the owner's units path
+  THROUGH their own gates, enemies path around (the XP-1 deferral, landed).
+- HUD grew to **three tabs (BASE/DEF/UNITS)**; legend: "X stance · U unload".
+6 unit tests + xp4_ground gate (live garrison + unload). **214 unit + 28 liveness green.**
+
 **🔥 XP-3 "EMBERHAND + ACT II·1" (2026-07-09, v0.37.0) — the campaign switches sides.**
 - **True asymmetry:** `factionLock` on units (production drops foreign jobs; the HUD hides foreign rosters);
   **Ghostwalker** (Emberhand T2 stealth infantry) + **Sera Vane** (Emberhand hero, 2⬡, aura like the

@@ -254,6 +254,59 @@
           "factionStripe": "player"
         }
       }
+    },
+    {
+      "id": "longbow",
+      "name": "Longbow",
+      "cost": 900,
+      "hp": 90,
+      "armorClass": "HEAVY",
+      "weaponId": "siege_cannon",
+      "speed": 7,
+      "buildTimeSeconds": 16,
+      "team": "player",
+      "tier": 2,
+      "leavesWreck": true,
+      "graphics": {
+        "sprite_id": "longbow",
+        "fallback_geometry": {
+          "chassis": "LIGHT_VEHICLE",
+          "chassisMod": "CHAMFER",
+          "weaponGlyph": "SIEGE",
+          "barrelClass": "LONG",
+          "roleBadge": "SIEGE",
+          "rangeMarks": 4,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      }
+    },
+    {
+      "id": "skimmer_apc",
+      "name": "Skimmer APC",
+      "cost": 500,
+      "hp": 140,
+      "armorClass": "MEDIUM",
+      "weaponId": "rifle",
+      "speed": 16,
+      "buildTimeSeconds": 10,
+      "team": "player",
+      "tier": 2,
+      "leavesWreck": true,
+      "container": 5,
+      "graphics": {
+        "sprite_id": "skimmer_apc",
+        "fallback_geometry": {
+          "chassis": "LIGHT_VEHICLE",
+          "chassisMod": "HEAVY_BLOCK",
+          "weaponGlyph": "NONE",
+          "barrelClass": "NONE",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 0,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      }
     }
   ]
 }

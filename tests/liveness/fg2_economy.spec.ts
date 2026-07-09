@@ -24,6 +24,7 @@ test.describe('FG-2 economy gate', () => {
     expect(credits0).toBeGreaterThanOrEqual(550); // turret affordable turn one
 
     // Turret button via its live rect (XP-1 tabs).
+    await clickAction('tab:def');
     await clickAction('build:defense_turret');
     await page.waitForTimeout(80);
 

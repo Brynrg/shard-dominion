@@ -34,9 +34,11 @@ function applyField(state: SimState, f: FieldSpec): void {
 // puts the side's bank on its FIRST refinery; later refineries start at 0.
 function makeBuilding(kind: string, team: Team, deps: SeedDeps, sideCredits: number, takeCredits: boolean, techTier = 1): { components: Record<string, unknown>; tookCredits: boolean } {
   const hp = structureHp(kind, deps.structures);
-  const blocks = deps.structures.find(s => s.id === kind)?.blocksPath;
+  const sdef = deps.structures.find(s => s.id === kind);
+  const blocks = sdef?.blocksPath;
   const components: Record<string, unknown> = {
-    building: { onSlab: true, buildProgress: 100, powered: true, ...(blocks ? { blocksPath: true } : {}) },
+    building: { onSlab: true, buildProgress: 100, powered: true, ...(blocks ? { blocksPath: true } : {}), ...(sdef?.teamPass ? { teamPass: true } : {}) },
+    ...(sdef?.container ? { container: { capacity: sdef.container, stored: [] } } : {}),
     faction: { team, faction: kind },
     health: { hp, maxHp: hp },
     armor: { armorClass: 'BUILDING' },
