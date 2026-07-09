@@ -11,6 +11,27 @@
 
 ## Current state
 
+**🧪 v0.34.0 (2026-07-09): QA round 1 — all 6 play-test findings fixed.** First external QA (Claude-in-Chrome
+drove the full charter on the live build; report in the session log). Dispositions:
+- **BUG-1 (setup screen bypassed):** root cause = mission-select's BACK rebuilt the title with a DIVERGENT
+  inline callback that launched skirmish directly. Fix: BACK → `openTitle()` (single source of truth).
+  Regression gate added (title → CAMPAIGN → BACK → SKIRMISH → setup visible).
+- **BUG-2 (stale faction prices):** HUD labels + affordability now use the SAME `modCost` the production
+  system charges (threaded `unitCost` through ViewConfig → HUD).
+- **BUG-3 (harvester-loss soft-lock, HIGH):** **emergency salvage trickle** — a side with a refinery but
+  zero living harvesters trickles `salvageRatePerSec` (10/s) up to `salvageTrickleCap` (500), both in
+  economyConstants.json. Symmetric (AI too), deterministic, capped = comeback mechanic not AFK income.
+- **BUG-4 (silent power cliff):** build buttons for power-hungry structures show an amber `⚡◈cost` warning
+  when the build would exceed supply — the player learns BEFORE spending 550.
+- **BUG-5 (AI opens Assault in minute one, even on Easy):** **difficulty grace period** — no
+  Assault/Raid/Pressure before `graceTicks` (easy 3600 = 3min, normal 1500 = 75s, hard 480 = 24s;
+  mission-authorable override). Defence (Stabilize/Recover) stays live; aggressive plans downgrade to
+  Expand/Develop, so the AI builds through the grace instead of idling.
+- **BUG-6 (M2 raider wave skippable by a fast economy):** raid triggers now fire on CREDIT thresholds
+  (600 / 1100 of the 1500 quota) instead of wall-time — guaranteed to precede victory.
+6 new unit tests (`qa_round1.test.ts`); ai_economy + s6a gates pinned to `difficulty=hard` (they test
+aggression mechanics, not pacing) with widened windows. **193 unit + 22 liveness green.**
+
 **🔇 v0.33.1 (2026-07-09): live mute.** Operator feedback: no way to mute without pausing. Fix: **M** toggles
 mute anywhere (capture-phase hotkey in main.ts), red "🔇 MUTED (M)" chip beside the credits, legend updated,
 `__debugAudio().muted` exposed + gate asserts M toggles WITHOUT pausing the sim.

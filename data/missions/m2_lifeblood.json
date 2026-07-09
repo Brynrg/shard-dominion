@@ -164,7 +164,10 @@
     {
       "id": "t_raid_1",
       "when": {
-        "timeSeconds": 75
+        "credits": {
+          "team": "player",
+          "gte": 600
+        }
       },
       "actions": [
         {
@@ -202,7 +205,10 @@
     {
       "id": "t_raid_2",
       "when": {
-        "timeSeconds": 160
+        "credits": {
+          "team": "player",
+          "gte": 1100
+        }
       },
       "actions": [
         {

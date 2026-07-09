@@ -59,6 +59,7 @@ const AiConfig = z.object({
   assaultEscalationPerMin: z.number().nonnegative().optional(),
   pressureValue: z.number().positive().optional(),
   raidUnitCap: z.number().int().positive().optional(),
+  graceTicks: z.number().int().nonnegative().optional(),
   defendRadiusTiles: z.number().positive().optional(),
 }).optional();
 const Enemy = Side.extend({

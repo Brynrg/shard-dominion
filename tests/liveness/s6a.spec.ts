@@ -16,8 +16,8 @@ type Match = { enemyUnits: number; playerUnits: number; enemyCredits: number };
 
 test.describe('S6A liveness gate', () => {
   test('the AI buys units, marches on the player, and a fight breaks out', async ({ page }) => {
-    test.setTimeout(90_000);
-    await page.goto('/?mission=skirmish');
+    test.setTimeout(150_000);
+    await page.goto('/?mission=skirmish&difficulty=hard'); // hard = 24s grace — this gate tests AI aggression mechanics, not difficulty pacing
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
     // Dismiss the mission briefing (the player's "click to take command") — this
     // unpauses the sim AND grabs focus. Every gate must do it before the match runs.
@@ -51,7 +51,7 @@ test.describe('S6A liveness gate', () => {
       peakEnemy = Math.max(peakEnemy, m.enemyUnits);
       const casualties = m.playerUnits < 2 || m.enemyUnits < peakEnemy;
       return casualties;
-    }, { timeout: 45_000, message: 'the AI wave should reach the base and fight' }).toBe(true);
+    }, { timeout: 100_000, message: 'the AI wave should reach the base and fight' }).toBe(true); // widened for the 24s hard-difficulty grace period (QA BUG-5)
 
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, 's6a-match-capture.png'), fullPage: true });
   });

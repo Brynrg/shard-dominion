@@ -99,6 +99,10 @@ export interface ViewConfig {
   viewerTeam?: 'player' | 'enemy';
   /** Live mute state for the HUD chip (M toggles). */
   isMuted?: () => boolean;
+  /** Faction-adjusted unit price (QA BUG-2): label + affordability match what's charged. */
+  unitCost?: (base: number) => number;
+  /** Structure power demand lookup (QA BUG-4): drives the ⚡ low-power warning on build buttons. */
+  powerDemandOf?: (structureId: string) => number;
   /** Faction palettes (FG-6): override the default team styles. */
   playerPalette?: { hull: string; hullDark: string; accent: string; stripe: string };
   enemyPalette?: { hull: string; hullDark: string; accent: string; stripe: string };
@@ -141,7 +145,7 @@ export function makeView(cfg: ViewConfig): View {
   const context = ctx as CanvasRenderingContext2D;
 
   // Create HUD (clickable C&C-style build sidebar; getHover drives button highlight)
-  const hud = makeHUD({ canvas, simState, camera, getHover, cargoCapacity, viewerTeam: cfg.viewerTeam, isMuted: cfg.isMuted });
+  const hud = makeHUD({ canvas, simState, camera, getHover, cargoCapacity, viewerTeam: cfg.viewerTeam, isMuted: cfg.isMuted, unitCost: cfg.unitCost, powerDemandOf: cfg.powerDemandOf });
 
   // Pre-bake the directional sprite bank once (S7-2). Units get DIRS fixed-lit
   // facings; buildings get a lit body. Animated accents are drawn live on top.

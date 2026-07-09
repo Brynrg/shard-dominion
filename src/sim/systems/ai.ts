@@ -31,6 +31,7 @@ export interface AiConfig {
   assaultEscalationPerMin?: number;    // assault threshold decay per elapsed minute (default 60)
   pressureValue?: number;              // army value that starts harassment (default 250)
   raidUnitCap?: number;                // units peeled for a harvester raid (default 2)
+  graceTicks?: number;                 // no Assault/Raid/Pressure before this tick (difficulty grace)
   defendRadiusTiles?: number;          // player unit within this of the AI base → defend (default 8)
 }
 
@@ -43,6 +44,7 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig): { name: 
   const escalationPerMin = cfg.assaultEscalationPerMin ?? 60;
   const pressureValue = cfg.pressureValue ?? 250;
   const raidUnitCap = cfg.raidUnitCap ?? 2;
+  const graceTicks = cfg.graceTicks ?? 0;
   const defendRadius = (cfg.defendRadiusTiles ?? 8) * TILE_SUBUNITS;
 
   const infantry = units.find(u => u.id === 'infantry');
@@ -115,6 +117,13 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig): { name: 
       else if (armyValue >= pressureValue) plan = 'Pressure';
       else if (bank && bank.credits >= EXPAND_COST + EXPAND_RESERVE && findExpansionTile(state, team) !== null) plan = 'Expand';
       else plan = 'Develop';
+
+      // Difficulty grace (QA BUG-5): before graceTicks the AI builds but does not
+      // attack — aggressive plans downgrade to economy. Defence (Stabilize/Recover)
+      // stays available so it can still protect itself if rushed.
+      if (state.tick < graceTicks && (plan === 'Assault' || plan === 'Raid' || plan === 'Pressure')) {
+        plan = (bank && bank.credits >= EXPAND_COST + EXPAND_RESERVE && findExpansionTile(state, team) !== null) ? 'Expand' : 'Develop';
+      }
 
       // ── Economy: keep the harvester alive, keep production busy ──────────────
       // (1) Rebuild a lost harvester at the refinery (its economy, not the barracks).

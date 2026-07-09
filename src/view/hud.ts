@@ -17,6 +17,10 @@ export interface HUDConfig {
   cargoCapacity?: number;
   /** Live mute state (FG-polish): draws a 🔇 chip by the credits; M toggles. */
   isMuted?: () => boolean;
+  /** Faction-adjusted unit price (QA BUG-2) — falls back to the base cost. */
+  unitCost?: (base: number) => number;
+  /** Structure power demand (QA BUG-4) — >0 + shortfall draws the ⚡ warning. */
+  powerDemandOf?: (structureId: string) => number;
 }
 
 /** The C&C-style sidebar build menu. `kind` decides the click action:
@@ -175,7 +179,7 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
   // `progress` 0-100 = the item currently building (draws a fill); `queued` = how many
   // more of it are waiting.
   const rects: { action: BuildAction; x: number; y: number; w: number; h: number; enabled: boolean }[] = [];
-  function drawBuildButton(item: BuildItem, x: number, y: number, w: number, h: number, enabled: boolean, hovered: boolean, progress: number, queued: number): void {
+  function drawBuildButton(item: BuildItem, x: number, y: number, w: number, h: number, enabled: boolean, hovered: boolean, progress: number, queued: number, powerWarn = false): void {
     rects.push({ action: `${item.kind}:${item.id}`, x, y, w, h, enabled });
     context.fillStyle = !enabled ? 'rgba(70,72,82,0.20)' : hovered ? 'rgba(74,144,226,0.50)' : 'rgba(74,144,226,0.22)';
     context.fillRect(x, y, w, h);
@@ -198,7 +202,14 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
     context.fillText(item.name, x + 30, y + 9);
     context.font = '12px monospace';
     context.fillStyle = enabled ? '#ffd34a' : '#6d6d75';
-    context.fillText(`◈${item.cost}`, x + w - 44, y + 9);
+    if (powerWarn) {
+      // Predictive low-power warning: this build would exceed supply → it will idle
+      // until a Power Node goes up. Amber, so the player learns BEFORE spending.
+      context.fillStyle = '#ffb04a';
+      context.fillText(`⚡◈${item.cost}`, x + w - 52, y + 9);
+    } else {
+      context.fillText(`◈${item.cost}`, x + w - 44, y + 9);
+    }
     // Building/queue badge on the right.
     if (progress > 0) { context.fillStyle = COLORS.success; context.font = 'bold 11px monospace'; context.fillText(`${progress}%`, x + w - 30, y + 9); }
     if (queued > 0) { context.fillStyle = COLORS.text; context.font = 'bold 12px monospace'; context.fillText(`×${queued}`, x + w - 16, y + 9); }
@@ -277,11 +288,17 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
         // Factory, foot troops a Barracks; builds just need credits.
         const prereqMet = item.kind === 'build' ? true
           : (item.id === 'harvester' ? !!refineryProd : isVehicle(item.id) ? factoryUp : barracksUp);
-        const enabled = credits >= item.cost && prereqMet;
+        // Faction pricing (QA BUG-2): the label + affordability use the SAME adjusted
+        // price the production system charges (Emberhand 0.8×, Shardborn 1.15×, …).
+        const shownCost = item.kind === 'train' ? (cfg.unitCost?.(item.cost) ?? item.cost) : item.cost;
+        // Predictive power warning (QA BUG-4): building this would exceed supply.
+        const itemDemand = item.kind === 'build' ? (cfg.powerDemandOf?.(item.id) ?? 0) : 0;
+        const powerWarn = itemDemand > 0 && power.supply < power.demand + itemDemand;
+        const enabled = credits >= shownCost && prereqMet;
         const hovered = !!hover && hover.sx >= px + 8 && hover.sx <= px + 8 + bw && hover.sy >= by && hover.sy <= by + 30;
         const progress = producer?.current === item.id ? (producer?.progress ?? 0) : 0;
         const queued = producer ? producer.queue.filter(q => q === item.id).length : 0;
-        drawBuildButton(item, px + 8, by, bw, 30, enabled, hovered, progress, queued);
+        drawBuildButton({ ...item, cost: shownCost }, px + 8, by, bw, 30, enabled, hovered, progress, queued, powerWarn);
         by += 34;
       }
 

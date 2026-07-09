@@ -22,6 +22,24 @@ export function makeHarvestSystem(economy: EconomyConstants): { name: 'harvest';
   return {
     name: 'harvest' as const,
     run(state: SimState): void {
+      // ── Emergency salvage (QA BUG-3): a side with a refinery but ZERO living
+      // harvesters trickles a small income until it can afford a replacement —
+      // kills the "harvester died at 230 credits, game unwinnable" soft-lock.
+      // Applies to both teams (symmetric); stops at the cap so it is a comeback
+      // mechanic, not free AFK income. Deterministic (pure state read + tick math).
+      for (const team of ['player', 'enemy'] as const) {
+        let hasHarvester = false; let bank: { credits: number } | null = null;
+        for (const e of state.store.all()) {
+          const f = e.components.faction;
+          if (!f || f.team !== team) continue;
+          if (f.faction === 'harvester' && (e.components.health?.hp ?? 1) > 0) { hasHarvester = true; break; }
+          if (!bank && e.components.building && e.components.economy) bank = e.components.economy;
+        }
+        if (!hasHarvester && bank && bank.credits < economy.salvageTrickleCap) {
+          bank.credits = Math.min(economy.salvageTrickleCap, bank.credits + economy.salvageRatePerSec / SIM_TICK_RATE);
+        }
+      }
+
       // Track dock usage per refinery to prevent deadlock
       const dockUsage = new Map<EntityId, number>();
 

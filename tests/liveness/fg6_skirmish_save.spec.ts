@@ -19,6 +19,18 @@ test.describe('FG-6 skirmish + save gate', () => {
     expect(tick).toBeGreaterThanOrEqual(0);
   });
 
+  test('QA BUG-1 regression: SKIRMISH still opens the setup screen after mission-select → BACK', async ({ page }) => {
+    // The exact QA repro: the title rebuilt by mission-select's BACK used a divergent
+    // callback that launched skirmish directly, bypassing map/faction/difficulty.
+    await page.goto('/');
+    await page.getByRole('button', { name: /CAMPAIGN/ }).click();
+    await expect(page.locator('.sd-overlay')).toContainText('First Light');
+    await page.getByRole('button', { name: 'BACK' }).click();
+    await page.getByRole('button', { name: 'SKIRMISH' }).click();
+    await expect(page.locator('.sd-overlay')).toContainText('choose your ground');
+    await expect(page.getByRole('button', { name: 'The Emberhand' })).toBeVisible();
+  });
+
   test('save in the pause menu, then CONTINUE fast-forwards past the saved tick', async ({ page }) => {
     await page.goto('/?mission=skirmish');
     await page.waitForSelector('#game-canvas', { timeout: 10000 });

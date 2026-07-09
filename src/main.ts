@@ -25,7 +25,7 @@ import { makeObjectivesSystem } from './sim/systems/objectives.js';
 import { makeProjectileSystem } from './sim/systems/projectile.js';
 import { makePlanetEventSystem } from './sim/systems/planetEvent.js';
 import { seedFromMission } from './sim/seedMission.js';
-import { makeTeamFactions, type FactionId } from './sim/factions.js';
+import { makeTeamFactions, modCost, type FactionId } from './sim/factions.js';
 import { makeLockstep, type Lockstep } from './net/lockstep.js';
 import { stateHash } from './sim/state.js';
 import { runTick as simRunTick } from './sim/loop.js';
@@ -106,9 +106,9 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
 
   // ── Difficulty (FG-6): scales the AI's tempo + thresholds, never its economy. ──
   const difficulty = params.get('difficulty') ?? 'normal';
-  const D = difficulty === 'easy' ? { int: 2, av: 1.5, esc: 0.5, raid: -1 }
-    : difficulty === 'hard' ? { int: 0.5, av: 0.7, esc: 1.5, raid: 1 }
-    : { int: 1, av: 1, esc: 1, raid: 0 };
+  const D = difficulty === 'easy' ? { int: 2, av: 1.5, esc: 0.5, raid: -1, grace: 3600 }
+    : difficulty === 'hard' ? { int: 0.5, av: 0.7, esc: 1.5, raid: 1, grace: 480 }
+    : { int: 1, av: 1, esc: 1, raid: 0, grace: 1500 };
 
   // Create sim state from the mission map.
   const state = makeSimState({
@@ -170,6 +170,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
       assaultValue: Math.round((base.assaultValue ?? 500) * D.av),
       assaultEscalationPerMin: Math.round((base.assaultEscalationPerMin ?? 60) * D.esc),
       raidUnitCap: Math.max(1, (base.raidUnitCap ?? 2) + D.raid),
+      graceTicks: base.graceTicks ?? D.grace,
     });
   });
   const planetSystem = makePlanetEventSystem(units);
@@ -230,6 +231,8 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     enemyPalette: teamFactions.enemy.palette,
     viewerTeam,                                                      // MP seat (FG-7)
     isMuted: () => audio.isMuted(),                                  // HUD mute chip
+    unitCost: (base) => modCost(base, teamFactions.player),          // faction pricing on labels (QA BUG-2)
+    powerDemandOf: (id) => structures.find(st => st.id === id)?.powerDemand ?? 0, // ⚡ warning (QA BUG-4)
     canRunTick: mp ? (t) => mp.lockstep.canRun(t) : undefined,
     onBeforeTick: mp ? (t) => { for (const i of mp.lockstep.takeDue(t)) rawQueue.push(i); } : undefined,
     onAfterTick: mp ? (t) => mp.lockstep.afterTick(t, stateHash(state)) : undefined,
@@ -579,9 +582,9 @@ function openMissionSelect(): void {
     completed: progress.completed.includes(m.id),
     unlocked: i === 0 || progress.completed.includes(CAMPAIGN[i - 1]!.id),
   }));
-  showMissionSelect(entries, id => { location.search = `?mission=${id}`; }, () => {
-    showTitleMenu(id => (id === '__campaign__' ? openMissionSelect() : (location.search = `?mission=${id}`)), '__campaign__');
-  });
+  // BACK returns through openTitle() so SKIRMISH always routes via the setup screen
+  // (a divergent inline callback here used to bypass it — QA BUG-1).
+  showMissionSelect(entries, id => { location.search = `?mission=${id}`; }, () => openTitle());
 }
 
 // Title menu: Campaign → mission select; Skirmish → setup (map/faction/difficulty).
