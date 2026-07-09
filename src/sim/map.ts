@@ -37,5 +37,10 @@ export function generateMap(cfg: MapConfig): TerrainGrid {
   scatter('DEEP_SAND', Math.max(2, (width * height) / 1200), 3);
   scatter('SHARD', Math.max(2, (width * height) / 1500), 2);
 
+  // Impassable mesas (FG-1 pathfinding): APPENDED after the original scatters so
+  // the rng stream — and therefore every previously-generated map — is unchanged;
+  // existing missions keep their exact terrain plus new obstacles to route around.
+  scatter('IMPASSABLE', Math.max(2, (width * height) / 512), 1);
+
   return grid;
 }

@@ -15,7 +15,14 @@ export type PositionComponent = WorldPos; // { wx, wy } in WORLD fixed-point
 export interface VelocityComponent { vx: number; vy: number } // world units / tick
 export interface HealthComponent { hp: number; maxHp: number }
 export interface FactionComponent { team: Team; faction: string }
-export interface MovementComponent { target: WorldPos | null; path: readonly WorldPos[]; speed: number }
+export interface MovementComponent {
+  target: WorldPos | null;
+  path: readonly WorldPos[];
+  speed: number;
+  /** The target the current `path` was computed for — movement recomputes the path
+   *  when target no longer matches (orders can retarget at any time). Additive (FG-1). */
+  pathGoal?: WorldPos | null;
+}
 export interface ResourceComponent { cargo: number; capacity: number } // harvester
 export interface CombatComponent { weaponId: string | null; cooldownRemaining: number; targetId: EntityId | null }
 export interface ExperienceComponent { kills: number; rank: number } // veterancy (dormant by default)
