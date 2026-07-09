@@ -96,6 +96,8 @@ export function makeInputHandlers(
   hud?: { buttonAt(sx: number, sy: number): string | null; setTab?(tab: 'struct' | 'units'): void },
   /** Optional UI sounds: button click / selection blip / order acknowledgment. */
   sfx?: { click(): void; select(): void; ack(): void; place(): void },
+  /** XP-3: which hero the E hotkey trains (faction-dependent; default warden). */
+  heroUnitId = 'warden',
 ): InputHandlers {
   let selectStart: ScreenPos | null = null;
   let selectCurrent: ScreenPos | null = null;
@@ -374,7 +376,7 @@ export function makeInputHandlers(
       case 'e': // Train the Warden — the hero, one at a time (FG-5)
       case 'E':
         e.preventDefault();
-        queue.push({ type: 'train', unitId: 'warden' });
+        queue.push({ type: 'train', unitId: heroUnitId });
         return;
       case 'Escape': // Cancel placement / attack-move mode
         e.preventDefault();

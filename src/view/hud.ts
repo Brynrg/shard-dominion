@@ -21,11 +21,13 @@ export interface HUDConfig {
   unitCost?: (base: number) => number;
   /** Structure power demand (QA BUG-4) — >0 + shortfall draws the ⚡ warning. */
   powerDemandOf?: (structureId: string) => number;
+  /** XP-3: the viewer's faction id — faction-locked buttons of OTHER factions hide. */
+  playerFactionId?: string;
 }
 
 /** The C&C-style sidebar build menu. `kind` decides the click action:
  *  train → queue a unit at the barracks; build → enter placement mode. */
-interface BuildItem { id: string; key: string; name: string; cost: number; kind: 'train' | 'build'; tier?: number; cellCost?: number }
+interface BuildItem { id: string; key: string; name: string; cost: number; kind: 'train' | 'build'; tier?: number; cellCost?: number; factionLock?: string }
 // Split across two tabs (XP-1) — [S]TRUCTURES and [U]NITS — so the roster can grow.
 // `tier` mirrors data/{structures,units}.json (view-side copy, like cost).
 const STRUCT_MENU: readonly BuildItem[] = [
@@ -44,7 +46,9 @@ const UNIT_MENU: readonly BuildItem[] = [
   { id: 'harvester', key: 'H', name: 'Harvester', cost: 400, kind: 'train' },
   { id: 'scout_vehicle', key: 'V', name: 'Scout', cost: 350, kind: 'train', tier: 2 },
   { id: 'assault_tank', key: 'C', name: 'Tank', cost: 700, kind: 'train', tier: 2 },
-  { id: 'warden', key: 'E', name: 'Warden ★', cost: 800, kind: 'train', cellCost: 2 },
+  { id: 'warden', key: 'E', name: 'Warden ★', cost: 800, kind: 'train', cellCost: 2, factionLock: 'concord' },
+  { id: 'ghostwalker', key: '', name: 'Ghostwalkr', cost: 350, kind: 'train', tier: 2, factionLock: 'emberhand' },
+  { id: 'vane', key: 'E', name: 'Vane ★', cost: 800, kind: 'train', cellCost: 2, factionLock: 'emberhand' },
 ];
 // HQ upgrade ladder (view-side mirror of construction_yard.tierUpgrades).
 const HQ_UPGRADES = [{ toTier: 2, cost: 1000, seconds: 30 }, { toTier: 3, cost: 2000, seconds: 45 }];
@@ -365,7 +369,9 @@ export function makeHUD(cfg: HUDConfig): {
         if (step && !upgrading) { context.font = '11px monospace'; context.fillText(`◈${cost}`, px + bw - 36, by + 4); }
         by += 34;
       }
-      const menu = activeTab === 'struct' ? STRUCT_MENU : UNIT_MENU;
+      const fid = cfg.playerFactionId ?? 'concord';
+      const menu = (activeTab === 'struct' ? STRUCT_MENU : UNIT_MENU)
+        .filter(i => !i.factionLock || i.factionLock === fid); // XP-3 asymmetric rosters
       for (const item of menu) {
         // Which building makes this item? Harvester ← Refinery, vehicles ← War
         // Factory (FG-3), foot troops ← Barracks; structures are placed (no producer).

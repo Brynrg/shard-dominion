@@ -24,7 +24,7 @@ export interface TriggerWhen {
 export interface SpawnUnit { type: string; tx: number; ty: number }
 export type TriggerAction =
   | { type: 'message'; speaker?: string; text: string }
-  | { type: 'spawn'; team: 'player' | 'enemy'; units: SpawnUnit[]; attackMoveTo?: { tx: number; ty: number } }
+  | { type: 'spawn'; team: 'player' | 'enemy' | 'neutral'; units: SpawnUnit[]; attackMoveTo?: { tx: number; ty: number } }
   | { type: 'grantCredits'; team: 'player' | 'enemy'; amount: number }
   | { type: 'reveal'; region?: { tx: number; ty: number; r: number } }; // v1 no-op
 

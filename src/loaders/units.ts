@@ -16,6 +16,12 @@ export const UnitSchema = z.object({
   leavesWreck: z.boolean().optional(),
   /** XP-2: Refined Cells charged at production start (elite systems only). */
   cellCost: z.number().int().nonnegative().optional(),
+  /** XP-3: hero unit — capped at ONE living/queued per side; aura carrier. */
+  hero: z.boolean().optional(),
+  /** XP-3: only this faction may produce the unit. */
+  factionLock: z.enum(['concord', 'emberhand', 'shardborn']).optional(),
+  /** XP-3: spawns cloaked; decloaks on firing / near detectors. */
+  stealth: z.boolean().optional(),
   team: z.enum(['player', 'enemy', 'neutral']),
   graphics: z.object({
     sprite_id: z.string().min(1),

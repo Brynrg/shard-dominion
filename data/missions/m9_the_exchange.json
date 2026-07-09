@@ -1,0 +1,237 @@
+{
+  "id": "m9_the_exchange",
+  "name": "The Exchange",
+  "order": 9,
+  "map": {
+    "width": 32,
+    "height": 32,
+    "seed": 909
+  },
+  "briefing": {
+    "title": "THE EXCHANGE",
+    "story": [
+      "BROKER YSSEL: \"Relays, dear Vane. Processing relays. The Syndicate leases Cell",
+      "conversion to whoever HOLDS them. The Concord pays in scrip. You'll pay in blood,",
+      "I assume? Delightful. The centre relay is yours... if you can keep it.\"",
+      "",
+      "VANE: \"Hold the relay. Trust the broker as far as a thrown knife.\""
+    ],
+    "objectives": [
+      "Hold the central relay for 90 seconds"
+    ]
+  },
+  "debrief": {
+    "win": [
+      "The relay hums for the Emberhand. Yssel sends a bill \u2014 and a warning."
+    ],
+    "lose": [
+      "The Syndicate leases to the other side."
+    ]
+  },
+  "naturalShardDensity": 300,
+  "fields": [
+    {
+      "tx": 6,
+      "ty": 26,
+      "w": 2,
+      "h": 2,
+      "density": 600
+    }
+  ],
+  "player": {
+    "credits": 700,
+    "factionId": "emberhand",
+    "techTier": 2,
+    "buildings": [
+      {
+        "type": "construction_yard",
+        "tx": 5,
+        "ty": 27
+      },
+      {
+        "type": "refinery",
+        "tx": 7,
+        "ty": 27
+      },
+      {
+        "type": "power_node",
+        "tx": 4,
+        "ty": 25
+      },
+      {
+        "type": "barracks",
+        "tx": 6,
+        "ty": 29
+      }
+    ],
+    "units": [
+      {
+        "type": "harvester",
+        "tx": 8,
+        "ty": 27
+      },
+      {
+        "type": "infantry",
+        "tx": 7,
+        "ty": 29
+      },
+      {
+        "type": "infantry",
+        "tx": 8,
+        "ty": 29
+      }
+    ]
+  },
+  "enemies": [
+    {
+      "team": "enemy",
+      "credits": 900,
+      "factionId": "concord",
+      "buildings": [
+        {
+          "type": "refinery",
+          "tx": 27,
+          "ty": 5
+        },
+        {
+          "type": "barracks",
+          "tx": 28,
+          "ty": 6
+        },
+        {
+          "type": "construction_yard",
+          "tx": 26,
+          "ty": 7
+        }
+      ],
+      "units": [
+        {
+          "type": "harvester",
+          "tx": 28,
+          "ty": 5
+        },
+        {
+          "type": "infantry",
+          "tx": 26,
+          "ty": 8
+        }
+      ],
+      "fields": [
+        {
+          "tx": 29,
+          "ty": 4,
+          "w": 2,
+          "h": 2,
+          "density": 600
+        }
+      ],
+      "ai": {
+        "graceTicks": 1200,
+        "assaultValue": 600,
+        "attackTile": {
+          "tx": 16,
+          "ty": 16
+        }
+      }
+    }
+  ],
+  "neutrals": [
+    {
+      "type": "relay",
+      "tx": 16,
+      "ty": 16
+    },
+    {
+      "type": "relay",
+      "tx": 9,
+      "ty": 12
+    },
+    {
+      "type": "relay",
+      "tx": 23,
+      "ty": 21
+    }
+  ],
+  "objectives": [
+    {
+      "type": "hold",
+      "id": "hold_relay",
+      "team": "player",
+      "region": {
+        "tx": 16,
+        "ty": 16,
+        "r": 3
+      },
+      "seconds": 90,
+      "primary": true,
+      "text": "Hold the central relay for 90s (keep troops beside it)"
+    },
+    {
+      "type": "reach",
+      "id": "scout_north",
+      "team": "player",
+      "region": {
+        "tx": 9,
+        "ty": 12,
+        "r": 2
+      },
+      "primary": false,
+      "text": "Secondary: survey the northern relay"
+    }
+  ],
+  "failure": [
+    {
+      "type": "defeated",
+      "team": "player"
+    }
+  ],
+  "triggers": [
+    {
+      "id": "t9_betrayal",
+      "when": {
+        "timeSeconds": 100
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "YSSEL",
+          "text": "Terribly sorry \u2014 the Concord counter-bid. Coordinates: yours."
+        },
+        {
+          "type": "spawn",
+          "team": "enemy",
+          "units": [
+            {
+              "type": "infantry",
+              "tx": 16,
+              "ty": 8
+            },
+            {
+              "type": "infantry",
+              "tx": 17,
+              "ty": 8
+            },
+            {
+              "type": "vehicle",
+              "tx": 18,
+              "ty": 8
+            }
+          ],
+          "attackMoveTo": {
+            "tx": 16,
+            "ty": 16
+          }
+        }
+      ]
+    }
+  ],
+  "rewards": [
+    {
+      "ifObjectiveComplete": "scout_north",
+      "grant": {
+        "nextMissionCredits": 150
+      }
+    }
+  ],
+  "next": "m10_stormline"
+}

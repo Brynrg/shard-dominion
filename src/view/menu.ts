@@ -3,7 +3,7 @@
 // win/lose debrief. Navigation between missions is reload-based (set location) so
 // each match starts from a clean sim — no in-page teardown to leak listeners.
 
-export interface CampaignProgress { version: number; completed: string[]; bonus?: Record<string, number> }
+export interface CampaignProgress { version: number; completed: string[]; bonus?: Record<string, number>; heroKills?: number; reserve?: number }
 const PROGRESS_KEY = 'shardDominion.campaign';
 
 export function loadProgress(): CampaignProgress {
@@ -122,7 +122,7 @@ export function showSkirmishSetup(o: SkirmishSetup): void {
 function overlay(): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'sd-overlay';
-  el.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(6,5,10,0.92);z-index:1000;font-family:monospace;color:#e7e2d6;';
+  el.style.cssText = 'position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;background:rgba(6,5,10,0.92);z-index:1000;font-family:monospace;color:#e7e2d6;overflow-y:auto;padding:24px 0;box-sizing:border-box;';
   document.body.appendChild(el);
   return el;
 }
@@ -312,5 +312,45 @@ export function showDevMenu(o: DevMenuOpts): void {
   back.onclick = () => { location.search = ''; };
   panel.appendChild(launch);
   panel.appendChild(back);
+  el.appendChild(panel);
+}
+
+/** XP-3: bank end-of-mission carry — the hero's kill count + veteran reserve points. */
+export function recordCampaignCarry(heroKills: number, vetPoints: number): void {
+  const p = loadProgress();
+  p.heroKills = Math.max(p.heroKills ?? 0, heroKills);
+  p.reserve = Math.min(5, (p.reserve ?? 0) + vetPoints);
+  try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(p)); } catch { /* ignore */ }
+}
+export function spendReserve(points: number): void {
+  const p = loadProgress();
+  p.reserve = Math.max(0, (p.reserve ?? 0) - points);
+  try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(p)); } catch { /* ignore */ }
+}
+
+/** XP-3: pre-mission Deployment panel — spend Veteran Reserve on starting bonuses.
+ *  Shown over the (paused) briefing; each spend applies live via the callbacks. */
+export function showDeployment(reserve: number, apply: { vetSquad(): void; credits(): void }): void {
+  const el = overlay();
+  let left = reserve;
+  const panel = document.createElement('div');
+  panel.style.cssText = 'text-align:center;max-width:460px;';
+  const title = document.createElement('div');
+  title.innerHTML = '<div style="font-size:30px;font-weight:bold;color:#ffd34d;letter-spacing:2px;">DEPLOYMENT</div>';
+  const count = document.createElement('div');
+  count.style.cssText = 'color:#8fb7c9;margin:4px 0 14px;font-size:13px;';
+  const upd = (): void => { count.textContent = `VETERAN RESERVE: ${left} pt${left === 1 ? '' : 's'} — survivors of past battles`; };
+  upd();
+  panel.appendChild(title); panel.appendChild(count);
+  const mk = (label: string, fn: () => void): HTMLButtonElement => {
+    const b = button(label, true);
+    b.onclick = () => { if (left <= 0) return; left -= 1; spendReserve(1); fn(); upd(); if (left <= 0) { el.remove(); } };
+    panel.appendChild(b); return b;
+  };
+  mk('⚔ DEPLOY A VETERAN SQUAD  (−1)', apply.vetSquad);
+  mk('◈ +200 STARTING CREDITS  (−1)', apply.credits);
+  const done = button('BEGIN MISSION');
+  done.onclick = () => el.remove();
+  panel.appendChild(done);
   el.appendChild(panel);
 }

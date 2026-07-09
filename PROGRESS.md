@@ -11,6 +11,25 @@
 
 ## Current state
 
+**🔥 XP-3 "EMBERHAND + ACT II·1" (2026-07-09, v0.37.0) — the campaign switches sides.**
+- **True asymmetry:** `factionLock` on units (production drops foreign jobs; the HUD hides foreign rosters);
+  **Ghostwalker** (Emberhand T2 stealth infantry) + **Sera Vane** (Emberhand hero, 2⬡, aura like the
+  Warden's, cap generalized via `hero` flags). E trains your FACTION's hero.
+- **Stealth/detection** (the reserved 'agitation' slot): cloaked units cannot be TARGETED; firing decloaks
+  5s (damage system); detectors reveal — radar 8 tiles, scouts 5, anything point-blank 1.5. Foe's cloaked
+  units are invisible; your own render ghosted. Deterministic scan order.
+- **Persistence (locked §11.1.3):** on campaign WIN the hero's kills + up-to-3 surviving veterans bank into
+  `campaignProgress` (heroKills, reserve ≤5). Campaign boots offer the **DEPLOYMENT panel** — spend reserve
+  on a veteran squad (2 rank-1 infantry) or +200 credits, applied live over the paused briefing. The next
+  hero you train spawns with the carried kills (production).
+- **ACT II M8–M10 authored** (Emberhand player, Concord antagonist): **Ashfall** (wreck-graveyard salvage
+  economy, mission-seeded wrecks, survey-raid trigger), **The Exchange** (hold the centre relay 90s, Yssel's
+  betrayal wave, 3 relays), **Stormline** (slip cloaked Ghostwalkers past a picket line to the deep vein;
+  scripted neutral Riftmaw stirring via trigger `team: neutral`; storm beat itself lands with XP-5 per
+  plan adaptation). m6→m8 chained; Act II rows in mission select; rewards wired.
+3 stealth unit tests + missions validation + xp3_act2 gate (M8 boots Emberhand + salvage flows + comms fire;
+M10 cloaked ghostwalkers). **208 unit + 27 liveness green.**
+
 **⬡ XP-2 "ECONOMY 2.0" (2026-07-09, v0.36.0) — the unique loop lands.** Per the locked plan (§11):
 - **Refined Cells (charges, not money #2):** the T2 **Processing Plant** (K, 800/25s, 25 pwr) converts
   100 credits → 1 Cell every 8s while powered, **cap 12**, never draining the bank below 200. Cells charge

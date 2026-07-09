@@ -1,0 +1,234 @@
+{
+  "id": "m8_ashfall",
+  "name": "Ashfall",
+  "order": 8,
+  "map": {
+    "width": 32,
+    "height": 32,
+    "seed": 808
+  },
+  "briefing": {
+    "title": "ASHFALL",
+    "story": [
+      "SERA VANE: \"They burned our strongholds and called it peace. Look around you \u2014",
+      "this graveyard of machines is what peace looks like. Strip it. Every wreck they",
+      "left is a gift; the Emberhand rebuilds from ash. All of us \u2014 every hand salvages.\"",
+      "",
+      "Intercepted \u2014 DIRECTOR HALEX: \"Initiate Project Cauterize survey flights.\""
+    ],
+    "objectives": [
+      "Bank 900 credits from the wreck fields and Shard"
+    ]
+  },
+  "debrief": {
+    "win": [
+      "From ash, an army. Vane smiles for the first time in months."
+    ],
+    "lose": [
+      "The graveyard claims its own."
+    ]
+  },
+  "naturalShardDensity": 250,
+  "fields": [
+    {
+      "tx": 8,
+      "ty": 22,
+      "w": 2,
+      "h": 2,
+      "density": 500
+    }
+  ],
+  "player": {
+    "credits": 250,
+    "factionId": "emberhand",
+    "buildings": [
+      {
+        "type": "construction_yard",
+        "tx": 6,
+        "ty": 24
+      },
+      {
+        "type": "refinery",
+        "tx": 8,
+        "ty": 24
+      }
+    ],
+    "units": [
+      {
+        "type": "harvester",
+        "tx": 9,
+        "ty": 24
+      },
+      {
+        "type": "infantry",
+        "tx": 6,
+        "ty": 26
+      },
+      {
+        "type": "infantry",
+        "tx": 7,
+        "ty": 26
+      }
+    ]
+  },
+  "enemies": [
+    {
+      "team": "enemy",
+      "credits": 500,
+      "factionId": "concord",
+      "buildings": [
+        {
+          "type": "refinery",
+          "tx": 26,
+          "ty": 6
+        },
+        {
+          "type": "barracks",
+          "tx": 27,
+          "ty": 7
+        }
+      ],
+      "units": [
+        {
+          "type": "harvester",
+          "tx": 27,
+          "ty": 6
+        }
+      ],
+      "fields": [
+        {
+          "tx": 28,
+          "ty": 5,
+          "w": 2,
+          "h": 2,
+          "density": 500
+        }
+      ],
+      "ai": {
+        "graceTicks": 2400,
+        "assaultValue": 700
+      }
+    }
+  ],
+  "neutrals": [
+    {
+      "type": "wreck",
+      "tx": 12,
+      "ty": 20
+    },
+    {
+      "type": "wreck",
+      "tx": 13,
+      "ty": 21
+    },
+    {
+      "type": "wreck",
+      "tx": 14,
+      "ty": 19
+    },
+    {
+      "type": "wreck",
+      "tx": 15,
+      "ty": 21
+    },
+    {
+      "type": "wreck",
+      "tx": 13,
+      "ty": 18
+    },
+    {
+      "type": "wreck",
+      "tx": 16,
+      "ty": 20
+    }
+  ],
+  "objectives": [
+    {
+      "type": "accumulate",
+      "id": "ash_bank",
+      "team": "player",
+      "credits": 900,
+      "primary": true,
+      "text": "Bank 900 credits \u2014 salvage the graveyard (any Emberhand unit can)"
+    },
+    {
+      "type": "destroy",
+      "id": "deny_harv",
+      "team": "enemy",
+      "kind": "harvester",
+      "primary": false,
+      "text": "Secondary: destroy the Concord harvester"
+    }
+  ],
+  "failure": [
+    {
+      "type": "defeated",
+      "team": "player"
+    }
+  ],
+  "triggers": [
+    {
+      "id": "t8_teach",
+      "when": {
+        "timeSeconds": 8
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "VANE",
+          "text": "Walk ANY unit onto a wreck \u2014 we waste nothing."
+        }
+      ]
+    },
+    {
+      "id": "t8_raid",
+      "when": {
+        "credits": {
+          "team": "player",
+          "gte": 500
+        }
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "VANE",
+          "text": "Concord survey team inbound \u2014 they want our graveyard."
+        },
+        {
+          "type": "spawn",
+          "team": "enemy",
+          "units": [
+            {
+              "type": "infantry",
+              "tx": 20,
+              "ty": 10
+            },
+            {
+              "type": "infantry",
+              "tx": 21,
+              "ty": 10
+            },
+            {
+              "type": "vehicle",
+              "tx": 22,
+              "ty": 10
+            }
+          ],
+          "attackMoveTo": {
+            "tx": 13,
+            "ty": 20
+          }
+        }
+      ]
+    }
+  ],
+  "rewards": [
+    {
+      "ifObjectiveComplete": "deny_harv",
+      "grant": {
+        "nextMissionCredits": 150
+      }
+    }
+  ],
+  "next": "m9_the_exchange"
+}

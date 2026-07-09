@@ -9,7 +9,7 @@ import type { EntityId } from '../ids.js';
 import { teamPowerShortage } from './power.js';
 import { modCost, modHp, modSpeed, FACTIONS, type TeamFactions } from '../factions.js';
 
-export function makeProductionSystem(units: readonly UnitDef[], factions?: TeamFactions): { name: 'production'; run(state: SimState): void } {
+export function makeProductionSystem(units: readonly UnitDef[], factions?: TeamFactions, heroCarryKills = 0): { name: 'production'; run(state: SimState): void } {
   const factionFor = (team: string) => (team === 'player' ? (factions?.player ?? FACTIONS.concord) : (factions?.enemy ?? FACTIONS.concord));
   // Progress state per producer entity id — MUST live in the factory closure (one
   // per sim), not at module scope, or jobs leak across sims/matches and break
@@ -32,6 +32,10 @@ export function makeProductionSystem(units: readonly UnitDef[], factions?: TeamF
           if (!def) { producer.components.production = { ...prod, queue: prod.queue.slice(1) }; continue; }
           // Tech gate (XP-1): drop queued units above the team's HQ tier (sim-authoritative).
           if ((def.tier ?? 1) > teamTier(state, team as 'player' | 'enemy')) {
+            producer.components.production = { ...prod, queue: prod.queue.slice(1) }; continue;
+          }
+          // Faction lock (XP-3): drop units another faction owns (e.g. Ghostwalker = Emberhand).
+          if (def.factionLock && factionFor(team).id !== def.factionLock) {
             producer.components.production = { ...prod, queue: prod.queue.slice(1) }; continue;
           }
           // find the team's credits pool
@@ -72,6 +76,9 @@ export function makeProductionSystem(units: readonly UnitDef[], factions?: TeamF
             armor: { armorClass: def.armorClass },
             movement: { target: rally ? { ...rally } : null, path: [], speed: modSpeed(def.speed, fm) },
             faction: { team, faction: def.id },
+            ...(def.stealth ? { stealth: { cloaked: true, decloakTicks: 0 } } : {}),
+            ...(def.hero && heroCarryKills > 0 && team === 'player'
+              ? { experience: { kills: heroCarryKills, rank: heroCarryKills >= 8 ? 2 : heroCarryKills >= 3 ? 1 : 0 } } : {}),
             ...(isHarvester
               ? { harvest: { state: 'SEEK' as const, targetTile: null, targetRefinery: null, cargo: 0 } }
               : { combat: { weaponId: def.weaponId, cooldownRemaining: 0, targetId: null } }),

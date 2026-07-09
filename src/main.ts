@@ -22,6 +22,7 @@ import { makeFogSystem } from './sim/systems/fog.js';
 import { makeProductionSystem } from './sim/systems/production.js';
 import { makeAiSystem } from './sim/systems/ai.js';
 import { makeObjectivesSystem } from './sim/systems/objectives.js';
+import { makeStealthSystem } from './sim/systems/stealth.js';
 import { makeProjectileSystem } from './sim/systems/projectile.js';
 import { makePlanetEventSystem } from './sim/systems/planetEvent.js';
 import { seedFromMission } from './sim/seedMission.js';
@@ -31,7 +32,7 @@ import { makeLockstep, type Lockstep } from './net/lockstep.js';
 import { stateHash } from './sim/state.js';
 import { runTick as simRunTick } from './sim/loop.js';
 import { loadMission } from './loaders/missions.js';
-import { showTitleMenu, showEndScreen, showPauseMenu, showMissionSelect, showSkirmishSetup, showDevMenu, markCompleted, addBonus, takeBonus, loadProgress } from './view/menu.js';
+import { showTitleMenu, showEndScreen, showPauseMenu, showMissionSelect, showSkirmishSetup, showDevMenu, showDeployment, markCompleted, addBonus, takeBonus, loadProgress, recordCampaignCarry } from './view/menu.js';
 import { makeAudioEngine } from './view/audio.js';
 import economyConstantsData from '../data/economyConstants.json' with { type: 'json' };
 import structuresData from '../data/structures.json' with { type: 'json' };
@@ -45,6 +46,9 @@ import m3Data from '../data/missions/m3_hold_the_line.json' with { type: 'json' 
 import m4Data from '../data/missions/m4_the_vein.json' with { type: 'json' };
 import m5Data from '../data/missions/m5_iron_ash.json' with { type: 'json' };
 import m6Data from '../data/missions/m6_ashen_warlord.json' with { type: 'json' };
+import m8Data from '../data/missions/m8_ashfall.json' with { type: 'json' };
+import m9Data from '../data/missions/m9_the_exchange.json' with { type: 'json' };
+import m10Data from '../data/missions/m10_stormline.json' with { type: 'json' };
 
 // Map configuration
 const MAP_WIDTH = 32;
@@ -189,7 +193,8 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     makeCombatTargetingSystem(weapons),
     makeProjectileSystem(weapons),
     makeDamageSystem(weapons),
-    makeProductionSystem(units, teamFactions),
+    makeProductionSystem(units, teamFactions, mission.id.startsWith('m') ? (loadProgress().heroKills ?? 0) : 0),
+    makeStealthSystem(),
     ...aiSystems,
     planetSystem,
     objectivesSystem,
@@ -233,6 +238,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     cargoCapacity: economy.cargoCapacity,                            // HUD cargo-bar denominator
     audio,                                                           // FX diff emits SFX
     getTimeScale: () => (paused ? 0 : speed),                        // pause/speed (FG-1)
+    playerFactionId: teamFactions.player.id,
     playerPalette: teamFactions.player.palette,                      // faction colours (FG-6)
     enemyPalette: teamFactions.enemy.palette,
     viewerTeam,                                                      // MP seat (FG-7)
@@ -259,7 +265,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   }, {
     buttonAt: (sx, sy) => view.hudButtonAt(sx, sy),
     setTab: (tab) => view.hudSetTab(tab),
-  }, audio);
+  }, audio, teamFactions.player.id === 'emberhand' ? 'vane' : 'warden');
   // ── Continue (FG-6): replay the saved command log tick-for-tick, then go live.
   // Determinism makes the fast-forward EXACT (same mission + same log → same state).
   if (params.get('continue') === '1') {
@@ -329,6 +335,32 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // sees placement still active and yields to input's cancel instead of also pausing.
   window.addEventListener('keydown', onHotkey, { capture: true });
 
+  // ── Deployment (XP-3): campaign missions offer the Veteran Reserve. The panel
+  // overlays the (paused) briefing; spends apply live to the seeded match. ──────
+  if (mission.id.startsWith('m')) {
+    const reserve = loadProgress().reserve ?? 0;
+    if (reserve > 0) {
+      showDeployment(reserve, {
+        vetSquad: () => {
+          for (const dx of [0, 1]) {
+            state.store.create({
+              position: tileToWorldCenter({ tx: meta.playerStartTile.tx + dx, ty: meta.playerStartTile.ty + 2 }),
+              health: { hp: 20, maxHp: 20 }, armor: { armorClass: 'LIGHT' },
+              movement: { target: null, path: [], speed: 12 },
+              combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
+              experience: { kills: 3, rank: 1 },
+              faction: { team: 'player', faction: 'infantry' },
+            });
+          }
+        },
+        credits: () => {
+          const bank = state.store.all().find(e => e.components.faction?.team === 'player' && e.components.economy)?.components.economy;
+          if (bank) bank.credits += 200;
+        },
+      });
+    }
+  }
+
   // ── Mission end → debrief screen + navigation ──────────────────────────────
   // Poll the mission result; when the match is decided, stop the sim, record campaign
   // progress on a win, and show the debrief with Next / Retry / Menu (reload-based nav).
@@ -342,6 +374,17 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     audio.matchEnd(won);
     if (won && mission.id !== 'skirmish') {
       markCompleted(mission.id);
+      // XP-3 persistence: the hero's kills + surviving veterans carry forward.
+      let heroKills = 0; let vets = 0;
+      for (const e of state.store.all()) {
+        if (e.components.faction?.team !== 'player') continue;
+        if ((e.components.health?.hp ?? 0) <= 0) continue;
+        const kills = e.components.experience?.kills ?? 0;
+        const kind = e.components.faction?.faction ?? '';
+        if (kind === 'warden' || kind === 'vane') heroKills = Math.max(heroKills, kills);
+        else if (kills >= 3) vets += 1;
+      }
+      recordCampaignCarry(heroKills, Math.min(3, vets));
       // Bank secondary-objective rewards for the NEXT mission (FG-4).
       if (mission.next) {
         for (const rw of mission.rewards) {
@@ -589,6 +632,9 @@ const MISSIONS: Record<string, unknown> = {
   m4_the_vein: m4Data,
   m5_iron_ash: m5Data,
   m6_ashen_warlord: m6Data,
+  m8_ashfall: m8Data,
+  m9_the_exchange: m9Data,
+  m10_stormline: m10Data,
 };
 /** Campaign order (linear unlock: each mission unlocks the next). */
 const CAMPAIGN: { id: string; name: string; order: number }[] = [
@@ -598,6 +644,9 @@ const CAMPAIGN: { id: string; name: string; order: number }[] = [
   { id: 'm4_the_vein', name: 'The Vein', order: 4 },
   { id: 'm5_iron_ash', name: 'Iron & Ash', order: 5 },
   { id: 'm6_ashen_warlord', name: 'The Ashen Warlord', order: 6 },
+  { id: 'm8_ashfall', name: 'Act II · Ashfall', order: 8 },
+  { id: 'm9_the_exchange', name: 'Act II · The Exchange', order: 9 },
+  { id: 'm10_stormline', name: 'Act II · Stormline', order: 10 },
 ];
 
 function openMissionSelect(): void {

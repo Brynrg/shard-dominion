@@ -197,7 +197,63 @@
           "factionStripe": "player"
         }
       },
-      "cellCost": 2
+      "cellCost": 2,
+      "hero": true
+    },
+    {
+      "id": "ghostwalker",
+      "name": "Ghostwalker",
+      "cost": 350,
+      "hp": 30,
+      "armorClass": "LIGHT",
+      "weaponId": "rifle",
+      "speed": 15,
+      "buildTimeSeconds": 8,
+      "team": "player",
+      "tier": 2,
+      "factionLock": "emberhand",
+      "stealth": true,
+      "graphics": {
+        "sprite_id": "ghostwalker",
+        "fallback_geometry": {
+          "chassis": "INFANTRY",
+          "chassisMod": "NONE",
+          "weaponGlyph": "ANTI_INFANTRY",
+          "barrelClass": "NONE",
+          "roleBadge": "SCOUT",
+          "rangeMarks": 2,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      }
+    },
+    {
+      "id": "vane",
+      "name": "Sera Vane",
+      "cost": 800,
+      "hp": 170,
+      "armorClass": "LIGHT",
+      "weaponId": "raider_cannon",
+      "speed": 14,
+      "buildTimeSeconds": 15,
+      "team": "player",
+      "cellCost": 2,
+      "hero": true,
+      "factionLock": "emberhand",
+      "stealth": true,
+      "graphics": {
+        "sprite_id": "vane",
+        "fallback_geometry": {
+          "chassis": "INFANTRY",
+          "chassisMod": "NONE",
+          "weaponGlyph": "ANTI_INFANTRY",
+          "barrelClass": "NONE",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 2,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      }
     }
   ]
 }

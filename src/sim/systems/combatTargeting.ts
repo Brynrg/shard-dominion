@@ -29,7 +29,8 @@ export function makeCombatTargetingSystem(weapons: WeaponsFile): { name: 'combat
         const cur = combat.targetId !== null ? state.store.get(combat.targetId) : undefined;
         const curHealth = cur?.components.health;
         const curPos = cur?.components.position;
-        if (cur && curHealth && curHealth.hp > 0 && curPos && distance(pos, curPos) <= rangeWorld) {
+        if (cur && curHealth && curHealth.hp > 0 && curPos && distance(pos, curPos) <= rangeWorld
+            && !cur.components.stealth?.cloaked) { // XP-3: a target that cloaks is LOST
           continue;
         }
 
@@ -43,6 +44,7 @@ export function makeCombatTargetingSystem(weapons: WeaponsFile): { name: 'combat
           if (of.team === faction.team) continue;   // skip allies
           if (of.team === 'neutral' && !other.components.combat) continue; // passive neutrals (derricks) aren't targets
           if (oh.hp <= 0) continue;                  // skip dead
+          if (other.components.stealth?.cloaked) continue; // XP-3: can't target the unseen
           const d = distance(pos, op);
           if (d <= bestDist) { bestDist = d; bestId = other.id; }
         }

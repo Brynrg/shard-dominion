@@ -103,6 +103,8 @@ export interface ViewConfig {
   unitCost?: (base: number) => number;
   /** Structure power demand lookup (QA BUG-4): drives the ⚡ low-power warning on build buttons. */
   powerDemandOf?: (structureId: string) => number;
+  /** XP-3: viewer's faction id (asymmetric build menu). */
+  playerFactionId?: string;
   /** Faction palettes (FG-6): override the default team styles. */
   playerPalette?: { hull: string; hullDark: string; accent: string; stripe: string };
   enemyPalette?: { hull: string; hullDark: string; accent: string; stripe: string };
@@ -149,7 +151,7 @@ export function makeView(cfg: ViewConfig): View {
   const context = ctx as CanvasRenderingContext2D;
 
   // Create HUD (clickable C&C-style build sidebar; getHover drives button highlight)
-  const hud = makeHUD({ canvas, simState, camera, getHover, cargoCapacity, viewerTeam: cfg.viewerTeam, isMuted: cfg.isMuted, unitCost: cfg.unitCost, powerDemandOf: cfg.powerDemandOf });
+  const hud = makeHUD({ canvas, simState, camera, getHover, cargoCapacity, viewerTeam: cfg.viewerTeam, isMuted: cfg.isMuted, unitCost: cfg.unitCost, powerDemandOf: cfg.powerDemandOf, playerFactionId: cfg.playerFactionId });
 
   // Pre-bake the directional sprite bank once (S7-2). Units get DIRS fixed-lit
   // facings; buildings get a lit body. Animated accents are drawn live on top.
@@ -1004,6 +1006,12 @@ export function makeView(cfg: ViewConfig): View {
       if (!pos) continue;
       // Shells in flight draw separately (drawProjectiles), not as units.
       if (e.components.projectile) continue;
+      // Stealth (XP-3): the foe's cloaked units are INVISIBLE; your own render
+      // ghosted so you can still command them.
+      const cloaked = e.components.stealth?.cloaked === true;
+      const mine = e.components.faction?.team === (cfg.viewerTeam ?? 'player');
+      if (cloaked && !mine) continue;
+      if (cloaked && mine) { context.globalAlpha = 0.45; }
 
       // Hide entities in unseen fog (player units always sit in visible tiles).
       if (fog) {
@@ -1033,6 +1041,7 @@ export function makeView(cfg: ViewConfig): View {
         drawUnitUnderlay(e, kind, sx, sy, camera.zoom);
         sprites.drawUnit(context, kind, teamKey, undefined, facingAngle(e, interp), sx, sy, frame, camera.zoom);
       }
+      context.globalAlpha = 1; // reset the stealth ghosting (XP-3)
     }
   }
 

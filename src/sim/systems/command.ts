@@ -81,7 +81,7 @@ export interface CommandSystem {
 
 const MARKER_LIFETIME = 10 as const; // ~0.5s at 20Hz
 
-export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structures: StructureDef[]): CommandSystem {
+export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structures: StructureDef[], heroIds: readonly string[] = ['warden', 'vane']): CommandSystem {
   const markers: ConfirmationMarker[] = [];
   const groups = new Map<number, EntityId[]>();
 
@@ -408,12 +408,13 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
           }
           case 'train': {
             // Hero cap (FG-5): ONE living Warden at a time (also not while queued).
-            if (intent.unitId === 'warden') {
-              const wardenExists = state.store.all().some(e =>
-                (e.components.faction?.team === actor && e.components.faction?.faction === 'warden' && (e.components.health?.hp ?? 0) > 0) ||
+            if (heroIds.includes(intent.unitId)) { // XP-3: ONE living/queued hero per side
+              const heroId = intent.unitId;
+              const heroExists = state.store.all().some(e =>
+                (e.components.faction?.team === actor && e.components.faction?.faction === heroId && (e.components.health?.hp ?? 0) > 0) ||
                 (e.components.faction?.team === actor && e.components.production &&
-                  (e.components.production.queue.includes('warden') || e.components.production.current === 'warden')));
-              if (wardenExists) break;
+                  (e.components.production.queue.includes(heroId) || e.components.production.current === heroId)));
+              if (heroExists) break;
             }
             // Route by unit type (FG-3): Harvesters → Refinery, vehicles → War
             // Factory, foot troops → Barracks. Find the matching player producer.

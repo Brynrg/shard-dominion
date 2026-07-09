@@ -77,6 +77,7 @@ function makeUnit(kind: string, team: Team, deps: SeedDeps, fm = FACTIONS.concor
   } else {
     base.combat = { weaponId: def.weaponId, cooldownRemaining: 0, targetId: null };
   }
+  if (def.stealth) base.stealth = { cloaked: true, decloakTicks: 0 }; // XP-3
   return base;
 }
 
@@ -112,6 +113,15 @@ export function seedFromMission(state: SimState, mission: Mission, deps: SeedDep
 
   // 2) Neutral map features (FG-5): capturable derricks (planetEvent flips their team).
   for (const n of mission.neutrals) {
+    if (n.type === 'wreck') {
+      // XP-3: authored salvage fields (Act II's Ashfall graveyard).
+      state.store.create({
+        position: tileToWorldCenter({ tx: n.tx, ty: n.ty }),
+        faction: { team: 'neutral', faction: 'wreck' },
+        resource: { cargo: 120, capacity: 120 },
+      });
+      continue;
+    }
     state.store.create({
       position: tileToWorldCenter({ tx: n.tx, ty: n.ty }),
       building: { onSlab: true, buildProgress: 100, powered: true },

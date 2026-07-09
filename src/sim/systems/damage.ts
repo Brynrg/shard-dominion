@@ -23,8 +23,10 @@ export function makeDamageSystem(weapons: WeaponsFile): { name: 'damage'; run(st
       // Hero aura (FG-5): a living Warden emboldens nearby friendlies (+15% damage).
       const wardens: { team: string; pos: WorldPos }[] = [];
       for (const w of state.store.all()) {
-        if (w.components.faction?.faction === 'warden' && (w.components.health?.hp ?? 0) > 0 && w.components.position) {
-          wardens.push({ team: w.components.faction.team, pos: w.components.position });
+        const wf = w.components.faction;
+        const wk = wf?.faction;
+        if (wf && (wk === 'warden' || wk === 'vane') && (w.components.health?.hp ?? 0) > 0 && w.components.position) {
+          wardens.push({ team: wf.team, pos: w.components.position });
         }
       }
       const AURA = 4 * TILE_SUBUNITS;
@@ -93,6 +95,8 @@ export function makeDamageSystem(weapons: WeaponsFile): { name: 'damage'; run(st
         const lowPowerTurret = e.components.building &&
           teamPowerShortage(state, e.components.faction?.team ?? '');
         combat.cooldownRemaining = Math.round(weapon.cooldown * SIM_TICK_RATE * (lowPowerTurret ? 1.5 : 1));
+        // XP-3: firing breaks stealth for 5s (the stealth system counts it down).
+        if (e.components.stealth) e.components.stealth = { cloaked: false, decloakTicks: 100 };
       }
     },
   };

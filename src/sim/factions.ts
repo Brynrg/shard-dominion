@@ -9,6 +9,7 @@
 export type FactionId = 'concord' | 'emberhand' | 'shardborn';
 
 export interface FactionMods {
+  id: FactionId;
   name: string;
   costMult: number;   // production price
   hpMult: number;     // spawn hp
@@ -22,18 +23,21 @@ export interface FactionMods {
 export const FACTIONS: Record<FactionId, FactionMods> = {
   // The baseline coalition military: disciplined, standard-issue everything.
   concord: {
+    id: 'concord',
     name: 'Meridian Concord',
     costMult: 1, hpMult: 1, speedMult: 1,
     palette: { hull: '#3d7fd6', hullDark: '#28568f', accent: '#a7d6ff', stripe: '#00e5ff' },
   },
   // The raider insurgency: cheap, fast, fragile — swarm and slash.
   emberhand: {
+    id: 'emberhand',
     name: 'The Emberhand',
     costMult: 0.8, hpMult: 0.85, speedMult: 1.15, salvageAll: true,
     palette: { hull: '#d1503a', hullDark: '#8f3020', accent: '#ffb08f', stripe: '#ff4a3d' },
   },
   // The planet's chosen: tough, slow, expensive — living crystal (FG-6b preview).
   shardborn: {
+    id: 'shardborn',
     name: 'The Shardborn',
     costMult: 1.15, hpMult: 1.25, speedMult: 0.85,
     palette: { hull: '#7d5fae', hullDark: '#54407a', accent: '#d9c2ff', stripe: '#c9a6ff' },

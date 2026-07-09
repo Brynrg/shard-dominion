@@ -112,6 +112,10 @@ export interface PowerComponent {
  *  highest conyard tier. `upgradingTo` + `ticksLeft` track an upgrade in progress. */
 export interface TechComponent { tier: number; upgradingTo: number | null; ticksLeft: number }
 
+/** Stealth (XP-3): cloaked units can't be TARGETED; firing decloaks for a window;
+ *  detectors (radar 8t, scouts 5t, anything 1.5t) reveal. Additive. */
+export interface StealthComponent { cloaked: boolean; decloakTicks: number }
+
 export interface Components {
   position?: PositionComponent;
   velocity?: VelocityComponent;
@@ -132,6 +136,7 @@ export interface Components {
   power?: PowerComponent;
   projectile?: ProjectileComponent;
   tech?: TechComponent;
+  stealth?: StealthComponent;
 }
 
 export type ComponentKey = keyof Components;

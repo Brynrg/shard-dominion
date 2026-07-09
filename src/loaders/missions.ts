@@ -103,7 +103,7 @@ export const MissionSchema = z.object({
     }),
     actions: z.array(z.discriminatedUnion('type', [
       z.object({ type: z.literal('message'), speaker: z.string().optional(), text: z.string() }),
-      z.object({ type: z.literal('spawn'), team: Team, units: z.array(z.object({ type: z.string(), tx: z.number().int(), ty: z.number().int() })), attackMoveTo: z.object({ tx: z.number().int(), ty: z.number().int() }).optional() }),
+      z.object({ type: z.literal('spawn'), team: z.enum(['player', 'enemy', 'neutral']), units: z.array(z.object({ type: z.string(), tx: z.number().int(), ty: z.number().int() })), attackMoveTo: z.object({ tx: z.number().int(), ty: z.number().int() }).optional() }),
       z.object({ type: z.literal('grantCredits'), team: Team, amount: z.number() }),
       z.object({ type: z.literal('reveal'), region: Region.optional() }),
     ])).min(1),
