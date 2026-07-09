@@ -22,6 +22,17 @@ test.describe('Audio + pause gate', () => {
     const audio = await page.evaluate(() => (window as { __debugAudio?: () => { state: string; played: number } }).__debugAudio?.());
     expect(audio!.played).toBeGreaterThan(0);
 
+    // ── Mute: M toggles live, without pausing (the sim keeps ticking). ──
+    const muted = () => page.evaluate(() => (window as { __debugAudio?: () => { muted: boolean } }).__debugAudio?.().muted ?? null);
+    const before = await muted();
+    await page.keyboard.press('m');
+    await expect.poll(muted, { timeout: 2000, intervals: [100] }).toBe(!before);
+    const tickM1 = await page.evaluate(() => (window as { __debugTick?: () => number }).__debugTick?.() ?? -1);
+    await page.waitForTimeout(500);
+    const tickM2 = await page.evaluate(() => (window as { __debugTick?: () => number }).__debugTick?.() ?? -1);
+    expect(tickM2).toBeGreaterThan(tickM1); // muting did NOT pause the game
+    await page.keyboard.press('m'); // restore
+
     // ── Pause: P freezes the tick and shows the overlay. ──
     await page.keyboard.press('Escape'); // also cancels the placement mode we just entered
     await page.keyboard.press('p');

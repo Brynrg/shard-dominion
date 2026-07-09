@@ -67,7 +67,7 @@ declare global {
     __debugEconomyTeams?: () => Record<'player' | 'enemy', { credits: number; harvesters: number; army: number; armyValue: number }>;
     __debugBriefing?: () => boolean;
     __debugObjectives?: () => { text: string; primary: boolean; complete: boolean }[];
-    __debugAudio?: () => { state: string; played: number };
+    __debugAudio?: () => { state: string; played: number; muted: boolean };
     __debugTimeScale?: () => number;
     __debugTick?: () => number;
     __debugForceEnd?: (winner: 'player' | 'enemy') => void;
@@ -229,6 +229,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     playerPalette: teamFactions.player.palette,                      // faction colours (FG-6)
     enemyPalette: teamFactions.enemy.palette,
     viewerTeam,                                                      // MP seat (FG-7)
+    isMuted: () => audio.isMuted(),                                  // HUD mute chip
     canRunTick: mp ? (t) => mp.lockstep.canRun(t) : undefined,
     onBeforeTick: mp ? (t) => { for (const i of mp.lockstep.takeDue(t)) rawQueue.push(i); } : undefined,
     onAfterTick: mp ? (t) => mp.lockstep.afterTick(t, stateHash(state)) : undefined,
@@ -303,6 +304,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   const SPEEDS = [0.5, 1, 1.5, 2];
   const onHotkey = (e: KeyboardEvent): void => {
     if (onboarding.briefingActive()) return;      // briefing owns the screen
+    if (e.key === 'm' || e.key === 'M') { audio.setMuted(!audio.isMuted()); return; }
     if (e.key === 'p' || e.key === 'P') { togglePause(); }
     else if (e.key === 'Escape') {
       // Placement/attack-move cancel wins (input handles it); else toggle pause.

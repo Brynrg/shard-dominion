@@ -97,6 +97,8 @@ export interface ViewConfig {
   onAfterTick?: (tick: number) => void;
   /** The side this screen belongs to (FG-7 seats; default 'player'). */
   viewerTeam?: 'player' | 'enemy';
+  /** Live mute state for the HUD chip (M toggles). */
+  isMuted?: () => boolean;
   /** Faction palettes (FG-6): override the default team styles. */
   playerPalette?: { hull: string; hullDark: string; accent: string; stripe: string };
   enemyPalette?: { hull: string; hullDark: string; accent: string; stripe: string };
@@ -139,7 +141,7 @@ export function makeView(cfg: ViewConfig): View {
   const context = ctx as CanvasRenderingContext2D;
 
   // Create HUD (clickable C&C-style build sidebar; getHover drives button highlight)
-  const hud = makeHUD({ canvas, simState, camera, getHover, cargoCapacity, viewerTeam: cfg.viewerTeam });
+  const hud = makeHUD({ canvas, simState, camera, getHover, cargoCapacity, viewerTeam: cfg.viewerTeam, isMuted: cfg.isMuted });
 
   // Pre-bake the directional sprite bank once (S7-2). Units get DIRS fixed-lit
   // facings; buildings get a lit body. Animated accents are drawn live on top.

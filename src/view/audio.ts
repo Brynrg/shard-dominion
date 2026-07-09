@@ -32,8 +32,8 @@ export interface AudioEngine {
   baseUnderAttack(): void;
   harvesterUnderAttack(): void;
   matchEnd(won: boolean): void;
-  /** For gates/telemetry: context state + how many voices have played. */
-  debug(): { state: string; played: number };
+  /** For gates/telemetry: context state, voices played, mute state. */
+  debug(): { state: string; played: number; muted: boolean };
 }
 
 const STORE_KEY = 'shardDominion.audio';
@@ -196,6 +196,6 @@ export function makeAudioEngine(): AudioEngine {
       if (won) motif([392, 523, 659, 784], 0.14, 0.5, 'triangle', 0.16);
       else motif([330, 262, 196], 0.2, 0.6, 'triangle', 0.14);
     },
-    debug: () => ({ state: ctx?.state ?? 'none', played }),
+    debug: () => ({ state: ctx?.state ?? 'none', played, muted }),
   };
 }
