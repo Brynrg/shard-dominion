@@ -60,6 +60,65 @@ export function showMissionSelect(missions: readonly MissionEntry[], onPick: (id
   el.appendChild(panel);
 }
 
+export interface SkirmishSetup {
+  maps: readonly { id: string; name: string }[];
+  onStart: (mapId: string, faction: string, difficulty: string) => void;
+  onBack: () => void;
+}
+
+/** Skirmish setup (FG-6): map pool + faction + difficulty, then launch. */
+export function showSkirmishSetup(o: SkirmishSetup): void {
+  const el = overlay();
+  const panel = document.createElement('div');
+  panel.style.textAlign = 'center';
+  panel.innerHTML =
+    '<div style="font-size:34px;font-weight:bold;color:#ffd34d;letter-spacing:2px;">SKIRMISH</div>' +
+    '<div style="color:#8fb7c9;margin:4px 0 16px;font-size:13px;">choose your ground</div>';
+  let mapId = o.maps[0]?.id ?? 'skirmish';
+  let faction = 'concord';
+  let difficulty = 'normal';
+  const group = (label: string, opts: { id: string; name: string }[], get: () => string, set: (v: string) => void): HTMLDivElement => {
+    const row = document.createElement('div');
+    row.style.cssText = 'margin:8px 0;color:#cfe0ee;font-size:12px;';
+    row.innerHTML = `<div style="color:#9fb4cc;margin-bottom:4px;">${label}</div>`;
+    const btns = document.createElement('div');
+    btns.style.cssText = 'display:flex;gap:6px;justify-content:center;flex-wrap:wrap;';
+    const style = (active: boolean): string =>
+      `font-family:monospace;font-size:12px;padding:6px 12px;cursor:pointer;border-radius:4px;border:1px solid ${active ? '#00e5ff' : '#3a4a5a'};background:${active ? 'rgba(0,229,255,0.14)' : 'rgba(20,26,34,0.9)'};color:${active ? '#00e5ff' : '#cfe0ee'};`;
+    for (const opt of opts) {
+      const b = document.createElement('button');
+      b.textContent = opt.name;
+      b.dataset.v = opt.id;
+      b.style.cssText = style(get() === opt.id);
+      b.onclick = () => {
+        set(opt.id);
+        for (const c of Array.from(btns.querySelectorAll('button'))) {
+          (c as HTMLButtonElement).style.cssText = style((c as HTMLButtonElement).dataset.v === get());
+        }
+      };
+      btns.appendChild(b);
+    }
+    row.appendChild(btns);
+    return row;
+  };
+  panel.appendChild(group('MAP', [...o.maps], () => mapId, v => { mapId = v; }));
+  panel.appendChild(group('FACTION', [
+    { id: 'concord', name: 'Meridian Concord' },
+    { id: 'emberhand', name: 'The Emberhand' },
+    { id: 'shardborn', name: 'The Shardborn' },
+  ], () => faction, v => { faction = v; }));
+  panel.appendChild(group('DIFFICULTY', [
+    { id: 'easy', name: 'Easy' }, { id: 'normal', name: 'Normal' }, { id: 'hard', name: 'Hard' },
+  ], () => difficulty, v => { difficulty = v; }));
+  const start = button('▶  START', true);
+  start.onclick = () => o.onStart(mapId, faction, difficulty);
+  const back = button('BACK');
+  back.onclick = () => { el.remove(); o.onBack(); };
+  panel.appendChild(start);
+  panel.appendChild(back);
+  el.appendChild(panel);
+}
+
 function overlay(): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'sd-overlay';
@@ -94,6 +153,18 @@ export function showTitleMenu(onSelect: (missionId: string) => void, campaignMis
   skirmish.onclick = () => { el.remove(); onSelect('skirmish'); };
   panel.appendChild(campaign);
   panel.appendChild(skirmish);
+  // CONTINUE (FG-6): resume the saved match by replaying its command log.
+  try {
+    const raw = localStorage.getItem('shardDominion.save');
+    if (raw) {
+      const save = JSON.parse(raw) as { missionId: string; faction?: string; difficulty?: string };
+      const cont = button('⏵ CONTINUE SAVED MATCH');
+      cont.onclick = () => {
+        location.search = `?mission=${save.missionId}&continue=1&faction=${save.faction ?? 'concord'}&difficulty=${save.difficulty ?? 'normal'}`;
+      };
+      panel.appendChild(cont);
+    }
+  } catch { /* no save */ }
   el.appendChild(panel);
 }
 
@@ -101,6 +172,8 @@ export interface PauseOpts {
   onResume: () => void;
   onRestart: () => void;
   onMenu: () => void;
+  /** Save the match (command-log snapshot, FG-6). */
+  onSave?: () => void;
   audio: { getVolume(): number; setVolume(v: number): void; isMuted(): boolean; setMuted(m: boolean): void };
   getSpeed: () => number;
   setSpeed: (s: number) => void;
@@ -154,6 +227,11 @@ export function showPauseMenu(o: PauseOpts): () => void {
 
   const resume = button('▶  RESUME', true);
   resume.onclick = () => o.onResume();
+  if (o.onSave) {
+    const save = button('💾 SAVE MATCH');
+    save.onclick = () => { o.onSave!(); save.textContent = '💾 SAVED ✓'; };
+    panel.appendChild(save);
+  }
   const restart = button('RESTART MISSION');
   restart.onclick = () => o.onRestart();
   const menu = button('MAIN MENU');

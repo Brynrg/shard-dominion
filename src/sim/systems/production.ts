@@ -6,8 +6,10 @@ import { SIM_TICK_RATE } from '../loop.js';
 import { worldToTile, tileToWorldCenter } from '../coords.js';
 import type { EntityId } from '../ids.js';
 import { teamPowerShortage } from './power.js';
+import { modCost, modHp, modSpeed, FACTIONS, type TeamFactions } from '../factions.js';
 
-export function makeProductionSystem(units: readonly UnitDef[]): { name: 'production'; run(state: SimState): void } {
+export function makeProductionSystem(units: readonly UnitDef[], factions?: TeamFactions): { name: 'production'; run(state: SimState): void } {
+  const factionFor = (team: string) => (team === 'player' ? (factions?.player ?? FACTIONS.concord) : (factions?.enemy ?? FACTIONS.concord));
   // Progress state per producer entity id — MUST live in the factory closure (one
   // per sim), not at module scope, or jobs leak across sims/matches and break
   // determinism (module-scope version caused free spawns under reused entity ids).
@@ -29,8 +31,9 @@ export function makeProductionSystem(units: readonly UnitDef[]): { name: 'produc
           if (!def) { producer.components.production = { ...prod, queue: prod.queue.slice(1) }; continue; }
           // find the team's credits pool
           const bank = state.store.all().find(e => e.components.faction?.team === team && e.components.economy)?.components.economy;
-          if (!bank || bank.credits < def.cost) continue; // PAUSED — insufficient credits
-          bank.credits -= def.cost;                        // pay ONCE, in full
+          const price = modCost(def.cost, factionFor(team)); // faction pricing (FG-6)
+          if (!bank || bank.credits < price) continue; // PAUSED — insufficient credits
+          bank.credits -= price;                        // pay ONCE, in full
           job = { unitId, ticksLeft: Math.max(1, Math.round(def.buildTimeSeconds * SIM_TICK_RATE)) };
           active.set(producer.id, job);
           producer.components.production = { ...prod, queue: prod.queue.slice(1), progress: 0, current: unitId };
@@ -55,11 +58,12 @@ export function makeProductionSystem(units: readonly UnitDef[]): { name: 'produc
           // Rally point (FG-1): fresh combat units move to the producer's rally;
           // harvesters ignore it and auto-mine (C&C behaviour).
           const rally = !isHarvester ? (producer.components.production?.rally ?? null) : null;
+          const fm = factionFor(team);
           state.store.create({
             position: tileToWorldCenter({ tx: t.tx, ty: t.ty + 1 }),
-            health: { hp: def.hp, maxHp: def.hp },
+            health: { hp: modHp(def.hp, fm), maxHp: modHp(def.hp, fm) },
             armor: { armorClass: def.armorClass },
-            movement: { target: rally ? { ...rally } : null, path: [], speed: def.speed },
+            movement: { target: rally ? { ...rally } : null, path: [], speed: modSpeed(def.speed, fm) },
             faction: { team, faction: def.id },
             ...(isHarvester
               ? { harvest: { state: 'SEEK' as const, targetTile: null, targetRefinery: null, cargo: 0 } }

@@ -16,6 +16,7 @@ import { SIM_TICK_RATE } from '../loop.js';
 import { tileToWorldCenter, TILE_SUBUNITS } from '../coords.js';
 import { makeTriggerRunner, type MissionTrigger, type MissionMessage } from './missionTriggers.js';
 import type { UnitDef } from '../../loaders/units.js';
+import type { TeamFactions } from '../factions.js';
 
 export type Team = 'player' | 'enemy';
 export interface Region { tx: number; ty: number; r: number } // radius r in TILES
@@ -109,8 +110,9 @@ export function makeObjectivesSystem(
   // objective evaluation (a spawn this tick is visible to objectives this tick).
   triggers: readonly MissionTrigger[] = [],
   units: readonly UnitDef[] = [],
+  factions?: TeamFactions,
 ): ObjectivesSystem {
-  const triggerRunner = makeTriggerRunner(triggers, units);
+  const triggerRunner = makeTriggerRunner(triggers, units, factions);
   const completedIds = new Set<string>(); // last-known complete objective ids (for trigger conditions)
   // Latches for momentary / cumulative conditions (deterministic closure state).
   const everSeen = new Map<number, boolean>();   // destroy/defend: target has existed

@@ -9,6 +9,7 @@ import { loadStructures } from '../../src/loaders/structures.js';
 import unitsData from '../../data/units.json' with { type: 'json' };
 import structuresData from '../../data/structures.json' with { type: 'json' };
 import skirmish from '../../data/missions/skirmish.json' with { type: 'json' };
+import badlands from '../../data/missions/skirmish_badlands.json' with { type: 'json' };
 import m1 from '../../data/missions/m1_first_light.json' with { type: 'json' };
 import m2 from '../../data/missions/m2_lifeblood.json' with { type: 'json' };
 import m3 from '../../data/missions/m3_hold_the_line.json' with { type: 'json' };
@@ -17,7 +18,7 @@ import m5 from '../../data/missions/m5_iron_ash.json' with { type: 'json' };
 import m6 from '../../data/missions/m6_ashen_warlord.json' with { type: 'json' };
 
 const rawMissions: Record<string, unknown> = {
-  skirmish, m1_first_light: m1, m2_lifeblood: m2, m3_hold_the_line: m3,
+  skirmish, skirmish_badlands: badlands, m1_first_light: m1, m2_lifeblood: m2, m3_hold_the_line: m3,
   m4_the_vein: m4, m5_iron_ash: m5, m6_ashen_warlord: m6,
 };
 

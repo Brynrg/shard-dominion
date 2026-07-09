@@ -1,17 +1,17 @@
 {
-  "id": "skirmish",
-  "name": "Skirmish",
+  "id": "skirmish_badlands",
+  "name": "Skirmish \u2014 Badlands",
   "order": 0,
   "map": {
     "width": 32,
     "height": 32,
-    "seed": 42
+    "seed": 3131
   },
   "briefing": {
-    "title": "SKIRMISH",
+    "title": "BADLANDS",
     "story": [
-      "A single valley on Aether Prime. One rival warband holds the north-east.",
-      "Harvest Shard, raise an army, and destroy their base to take the field."
+      "Broken mesa country \u2014 tight corridors, rich veins, nowhere to hide.",
+      "The Emberhand hold the north-east. Take the badlands or die in them."
     ],
     "objectives": [
       "Destroy the enemy base"
@@ -30,23 +30,23 @@
     {
       "tx": 18,
       "ty": 15,
-      "w": 3,
+      "w": 2,
       "h": 3,
-      "density": 600
+      "density": 650
     },
     {
-      "tx": 7,
-      "ty": 24,
-      "w": 3,
+      "tx": 6,
+      "ty": 22,
+      "w": 2,
       "h": 2,
-      "density": 650
+      "density": 700
     },
     {
       "tx": 21,
       "ty": 10,
-      "w": 3,
+      "w": 2,
       "h": 3,
-      "density": 800
+      "density": 850
     }
   ],
   "player": {
@@ -108,16 +108,16 @@
         {
           "tx": 28,
           "ty": 7,
-          "w": 3,
+          "w": 2,
           "h": 3,
-          "density": 600
+          "density": 650
         },
         {
           "tx": 24,
           "ty": 2,
-          "w": 3,
+          "w": 2,
           "h": 2,
-          "density": 650
+          "density": 700
         }
       ],
       "factionId": "emberhand"

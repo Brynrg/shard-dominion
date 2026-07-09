@@ -25,14 +25,17 @@ import { makeObjectivesSystem } from './sim/systems/objectives.js';
 import { makeProjectileSystem } from './sim/systems/projectile.js';
 import { makePlanetEventSystem } from './sim/systems/planetEvent.js';
 import { seedFromMission } from './sim/seedMission.js';
+import { makeTeamFactions, type FactionId } from './sim/factions.js';
+import { runTick as simRunTick } from './sim/loop.js';
 import { loadMission } from './loaders/missions.js';
-import { showTitleMenu, showEndScreen, showPauseMenu, showMissionSelect, markCompleted, addBonus, takeBonus, loadProgress } from './view/menu.js';
+import { showTitleMenu, showEndScreen, showPauseMenu, showMissionSelect, showSkirmishSetup, markCompleted, addBonus, takeBonus, loadProgress } from './view/menu.js';
 import { makeAudioEngine } from './view/audio.js';
 import economyConstantsData from '../data/economyConstants.json' with { type: 'json' };
 import structuresData from '../data/structures.json' with { type: 'json' };
 import weaponsData from '../data/weapons.json' with { type: 'json' };
 import unitsData from '../data/units.json' with { type: 'json' };
 import skirmishData from '../data/missions/skirmish.json' with { type: 'json' };
+import skirmishBadlandsData from '../data/missions/skirmish_badlands.json' with { type: 'json' };
 import m1FirstLightData from '../data/missions/m1_first_light.json' with { type: 'json' };
 import m2Data from '../data/missions/m2_lifeblood.json' with { type: 'json' };
 import m3Data from '../data/missions/m3_hold_the_line.json' with { type: 'json' };
@@ -87,6 +90,17 @@ const units = loadUnits(unitsData);
 
 export function bootstrap(missionRaw: unknown = skirmishData): void {
   const mission = loadMission(missionRaw);
+  const params = new URLSearchParams(location.search);
+
+  // ── Factions (FG-6): mission defaults, URL ?faction= overrides the player. ──
+  const playerFaction = (params.get('faction') as FactionId | null) ?? mission.player.factionId ?? 'concord';
+  const teamFactions = makeTeamFactions(playerFaction, mission.enemies[0]?.factionId ?? 'concord');
+
+  // ── Difficulty (FG-6): scales the AI's tempo + thresholds, never its economy. ──
+  const difficulty = params.get('difficulty') ?? 'normal';
+  const D = difficulty === 'easy' ? { int: 2, av: 1.5, esc: 0.5, raid: -1 }
+    : difficulty === 'hard' ? { int: 0.5, av: 0.7, esc: 1.5, raid: 1 }
+    : { int: 1, av: 1, esc: 1, raid: 0 };
 
   // Create sim state from the mission map.
   const state = makeSimState({
@@ -97,7 +111,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
 
   // Seed fields + both sides from the mission definition (replaces the old hardcoded
   // seeding; skirmish.json reproduces the original valley).
-  const meta = seedFromMission(state, mission, { units, structures, economy });
+  const meta = seedFromMission(state, mission, { units, structures, economy }, teamFactions);
 
   // Secondary-objective reward (FG-4): apply any banked bonus credits for this mission.
   const bonus = takeBonus(mission.id);
@@ -115,7 +129,14 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   let closePauseMenu: (() => void) | null = null;
 
   // Create command queue (view writes, command system reads) + the command system.
-  const commandQueue = makeCommandQueue();
+  // FG-6: every pushed intent is RECORDED with its tick — the command log IS the
+  // save file (determinism: replaying the log reproduces the match exactly).
+  const rawQueue = makeCommandQueue();
+  const intentLog: { t: number; i: Parameters<typeof rawQueue.push>[0] }[] = [];
+  const commandQueue: typeof rawQueue = {
+    push: (i) => { intentLog.push({ t: state.tick, i }); rawQueue.push(i); },
+    drain: () => rawQueue.drain(),
+  };
   const commandSystem = makeCommandSystem(commandQueue, structures);
 
   // Create construction system
@@ -128,8 +149,17 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // their reserved slot). One AI per enemy side; victory still owns culling.
   const fogSystem = makeFogSystem();
   const victorySystem = makeVictorySystem();
-  const objectivesSystem = makeObjectivesSystem(mission.objectives, mission.failure, mission.triggers, units);
-  const aiSystems = mission.enemies.map(e => makeAiSystem(units, { team: 'enemy', attackTile: meta.playerStartTile, ...(e.ai ?? {}) }));
+  const objectivesSystem = makeObjectivesSystem(mission.objectives, mission.failure, mission.triggers, units, teamFactions);
+  const aiSystems = mission.enemies.map(e => {
+    const base = { team: 'enemy' as const, attackTile: meta.playerStartTile, ...(e.ai ?? {}) };
+    return makeAiSystem(units, {
+      ...base,
+      evalInterval: Math.max(2, Math.round((base.evalInterval ?? 10) * D.int)),
+      assaultValue: Math.round((base.assaultValue ?? 500) * D.av),
+      assaultEscalationPerMin: Math.round((base.assaultEscalationPerMin ?? 60) * D.esc),
+      raidUnitCap: Math.max(1, (base.raidUnitCap ?? 2) + D.raid),
+    });
+  });
   const planetSystem = makePlanetEventSystem(units);
   const systems = orderSystems([
     commandSystem,
@@ -140,7 +170,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     makeCombatTargetingSystem(weapons),
     makeProjectileSystem(weapons),
     makeDamageSystem(weapons),
-    makeProductionSystem(units),
+    makeProductionSystem(units, teamFactions),
     ...aiSystems,
     planetSystem,
     objectivesSystem,
@@ -184,6 +214,8 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     cargoCapacity: economy.cargoCapacity,                            // HUD cargo-bar denominator
     audio,                                                           // FX diff emits SFX
     getTimeScale: () => (paused ? 0 : speed),                        // pause/speed (FG-1)
+    playerPalette: teamFactions.player.palette,                      // faction colours (FG-6)
+    enemyPalette: teamFactions.enemy.palette,
   });
 
   // Camera panning is a pure view action — never a sim command.
@@ -201,6 +233,25 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   }, {
     buttonAt: (sx, sy) => view.hudButtonAt(sx, sy),
   }, audio);
+  // ── Continue (FG-6): replay the saved command log tick-for-tick, then go live.
+  // Determinism makes the fast-forward EXACT (same mission + same log → same state).
+  if (params.get('continue') === '1') {
+    try {
+      const raw = localStorage.getItem('shardDominion.save');
+      if (raw) {
+        const save = JSON.parse(raw) as { missionId: string; tick: number; log: { t: number; i: Parameters<typeof rawQueue.push>[0] }[] };
+        if (save.missionId === mission.id) {
+          onboarding.dismissBriefing(); // straight back into the fight
+          let li = 0;
+          for (let t = 0; t < save.tick; t++) {
+            while (li < save.log.length && save.log[li]!.t === t) { rawQueue.push(save.log[li]!.i); intentLog.push(save.log[li]!); li++; }
+            simRunTick(state, systems);
+          }
+        }
+      }
+    } catch { /* corrupt save → fresh start */ }
+  }
+
   input.setSimState(state); // wire the sim-state ref used by the ConYard check (for 'B' placement)
   input.start();
   view.start();
@@ -219,6 +270,14 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
         audio,
         getSpeed: () => speed,
         setSpeed: (sp) => { speed = sp; },
+        onSave: () => {
+          try {
+            localStorage.setItem('shardDominion.save', JSON.stringify({
+              version: 1, missionId: mission.id, faction: playerFaction, difficulty,
+              tick: state.tick, log: intentLog,
+            }));
+          } catch { /* storage unavailable */ }
+        },
       });
     } else {
       closePauseMenu?.();
@@ -460,6 +519,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
 // with no param, the title menu chooses Campaign (Mission 1) or Skirmish.
 const MISSIONS: Record<string, unknown> = {
   skirmish: skirmishData,
+  skirmish_badlands: skirmishBadlandsData,
   m1_first_light: m1FirstLightData,
   m2_lifeblood: m2Data,
   m3_hold_the_line: m3Data,
@@ -489,9 +549,20 @@ function openMissionSelect(): void {
   });
 }
 
-// Title menu: Campaign opens the mission-select screen; Skirmish boots directly.
+// Title menu: Campaign → mission select; Skirmish → setup (map/faction/difficulty).
+const SKIRMISH_MAPS = [
+  { id: 'skirmish', name: 'The Valley' },
+  { id: 'skirmish_badlands', name: 'Badlands' },
+];
 function openTitle(): void {
-  showTitleMenu(id => (id === '__campaign__' ? openMissionSelect() : (location.search = `?mission=${id}`)), '__campaign__');
+  showTitleMenu(id => {
+    if (id === '__campaign__') { openMissionSelect(); return; }
+    showSkirmishSetup({
+      maps: SKIRMISH_MAPS,
+      onStart: (mapId, faction, difficulty) => { location.search = `?mission=${mapId}&faction=${faction}&difficulty=${difficulty}`; },
+      onBack: () => openTitle(),
+    });
+  }, '__campaign__');
 }
 
 if (typeof window !== 'undefined') {

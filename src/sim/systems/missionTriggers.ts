@@ -11,6 +11,7 @@ import type { SimState } from '../state.js';
 import type { UnitDef } from '../../loaders/units.js';
 import { tileToWorldCenter } from '../coords.js';
 import { SIM_TICK_RATE } from '../loop.js';
+import { modHp, modSpeed, FACTIONS, type TeamFactions } from '../factions.js';
 
 export interface TriggerWhen {
   /** Fire at N seconds of match time. */
@@ -39,7 +40,8 @@ export interface TriggerRunner {
 
 const MESSAGE_SECONDS = 8;
 
-export function makeTriggerRunner(triggers: readonly MissionTrigger[], units: readonly UnitDef[]): TriggerRunner {
+export function makeTriggerRunner(triggers: readonly MissionTrigger[], units: readonly UnitDef[], factions?: TeamFactions): TriggerRunner {
+  const factionFor = (team: string) => (team === 'player' ? (factions?.player ?? FACTIONS.concord) : (factions?.enemy ?? FACTIONS.concord));
   const fired = new Set<string>();
   const messages: MissionMessage[] = [];
 
@@ -62,11 +64,12 @@ export function makeTriggerRunner(triggers: readonly MissionTrigger[], units: re
           if (!def) continue;
           const isHarvester = def.id === 'harvester';
           const target = a.attackMoveTo ? tileToWorldCenter(a.attackMoveTo) : null;
+          const fm = factionFor(a.team);
           state.store.create({
             position: tileToWorldCenter({ tx: su.tx, ty: su.ty }),
-            health: { hp: def.hp, maxHp: def.hp },
+            health: { hp: modHp(def.hp, fm), maxHp: modHp(def.hp, fm) },
             armor: { armorClass: def.armorClass },
-            movement: { target, path: [], speed: def.speed, attackMove: target != null },
+            movement: { target, path: [], speed: modSpeed(def.speed, fm), attackMove: target != null },
             faction: { team: a.team, faction: def.id },
             ...(isHarvester
               ? { harvest: { state: 'SEEK' as const, targetTile: null, targetRefinery: null, cargo: 0 } }

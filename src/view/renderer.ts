@@ -87,6 +87,9 @@ export interface ViewConfig {
   };
   /** Sim time scale: 1 = normal, 0 = paused, 2 = double speed. Render continues. */
   getTimeScale?: () => number;
+  /** Faction palettes (FG-6): override the default team styles. */
+  playerPalette?: { hull: string; hullDark: string; accent: string; stripe: string };
+  enemyPalette?: { hull: string; hullDark: string; accent: string; stripe: string };
 }
 
 export interface View {
@@ -130,7 +133,11 @@ export function makeView(cfg: ViewConfig): View {
 
   // Pre-bake the directional sprite bank once (S7-2). Units get DIRS fixed-lit
   // facings; buildings get a lit body. Animated accents are drawn live on top.
-  const sprites = makeSpriteBank(TEAM, NEUTRAL_TEAM, weapons);
+  const teamStyles: Record<string, TeamStyle> = {
+    player: cfg.playerPalette ?? TEAM.player!,
+    enemy: cfg.enemyPalette ?? TEAM.enemy!,
+  };
+  const sprites = makeSpriteBank(teamStyles, NEUTRAL_TEAM, weapons);
   // Best-effort: swap in any delivered real sprite sheets (docs/ART_ASSETS_SPEC.md).
   // No manifest / missing sheets → silently stays procedural. Exposed for testing.
   void sprites.loadManifest('art');

@@ -8,6 +8,7 @@ import type { UnitDef } from '../loaders/units.js';
 import type { StructureDef } from '../loaders/structures.js';
 import type { EconomyConstants } from '../loaders/economyConstants.js';
 import { tileToWorldCenter } from './coords.js';
+import { modHp, modSpeed, FACTIONS, type TeamFactions } from './factions.js';
 
 type Team = 'player' | 'enemy';
 interface Placed { type: string; tx: number; ty: number }
@@ -60,14 +61,14 @@ function makeBuilding(kind: string, team: Team, deps: SeedDeps, sideCredits: num
 }
 
 // Kind → unit components. Harvesters get a harvest FSM; everything else a combat weapon.
-function makeUnit(kind: string, team: Team, deps: SeedDeps): Record<string, unknown> {
+function makeUnit(kind: string, team: Team, deps: SeedDeps, fm = FACTIONS.concord): Record<string, unknown> {
   const def = deps.units.find(u => u.id === kind);
   if (!def) throw new Error(`[seedMission] unknown unit kind "${kind}"`);
   const base: Record<string, unknown> = {
     faction: { team, faction: kind },
-    health: { hp: def.hp, maxHp: def.hp },
+    health: { hp: modHp(def.hp, fm), maxHp: modHp(def.hp, fm) },
     armor: { armorClass: def.armorClass },
-    movement: { target: null, path: [], speed: def.speed },
+    movement: { target: null, path: [], speed: modSpeed(def.speed, fm) },
   };
   if (kind === 'harvester') {
     base.harvest = { state: 'SEEK', targetTile: null, targetRefinery: null, cargo: 0 };
@@ -77,7 +78,7 @@ function makeUnit(kind: string, team: Team, deps: SeedDeps): Record<string, unkn
   return base;
 }
 
-function seedSide(state: SimState, team: Team, credits: number, buildings: readonly Placed[], units: readonly Placed[], deps: SeedDeps): void {
+function seedSide(state: SimState, team: Team, credits: number, buildings: readonly Placed[], units: readonly Placed[], deps: SeedDeps, fm = FACTIONS.concord): void {
   let creditsAssigned = false;
   for (const b of buildings) {
     const { components, tookCredits } = makeBuilding(b.type, team, deps, credits, !creditsAssigned);
@@ -85,11 +86,11 @@ function seedSide(state: SimState, team: Team, credits: number, buildings: reado
     state.store.create({ position: tileToWorldCenter({ tx: b.tx, ty: b.ty }), ...components });
   }
   for (const u of units) {
-    state.store.create({ position: tileToWorldCenter({ tx: u.tx, ty: u.ty }), ...makeUnit(u.type, team, deps) });
+    state.store.create({ position: tileToWorldCenter({ tx: u.tx, ty: u.ty }), ...makeUnit(u.type, team, deps, fm) });
   }
 }
 
-export function seedFromMission(state: SimState, mission: Mission, deps: SeedDeps): SeededMeta {
+export function seedFromMission(state: SimState, mission: Mission, deps: SeedDeps, factions?: TeamFactions): SeededMeta {
   // 1) Shard fields: ambient density on every SHARD terrain tile, then explicit clusters.
   if (mission.naturalShardDensity != null) {
     for (let ty = 0; ty < state.grid.height; ty++) {
@@ -114,9 +115,9 @@ export function seedFromMission(state: SimState, mission: Mission, deps: SeedDep
   }
 
   // 3) Sides. Player first (matches original id ordering), then each enemy + its fields.
-  seedSide(state, 'player', mission.player.credits, mission.player.buildings, mission.player.units, deps);
+  seedSide(state, 'player', mission.player.credits, mission.player.buildings, mission.player.units, deps, factions?.player ?? FACTIONS.concord);
   for (const enemy of mission.enemies) {
-    seedSide(state, 'enemy', enemy.credits, enemy.buildings, enemy.units, deps);
+    seedSide(state, 'enemy', enemy.credits, enemy.buildings, enemy.units, deps, factions?.enemy ?? FACTIONS.concord);
     for (const f of enemy.fields) applyField(state, f);
   }
 

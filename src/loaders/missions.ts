@@ -47,6 +47,8 @@ const Side = z.object({
   credits: z.number().nonnegative().default(0),
   buildings: z.array(Placed).default([]),
   units: z.array(Placed).default([]),
+  // Faction identity (FG-6): stat modifiers + palette. Defaults to 'concord'.
+  factionId: z.enum(['concord', 'emberhand', 'shardborn']).optional(),
 });
 // AI tunables per enemy side (all optional — see ai.ts AiConfig). attackTile defaults
 // to the player start at seed time when omitted.
