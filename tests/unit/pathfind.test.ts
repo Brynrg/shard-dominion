@@ -16,6 +16,11 @@ import structuresData from '../../data/structures.json' with { type: 'json' };
 import economyData from '../../data/economyConstants.json' with { type: 'json' };
 import skirmish from '../../data/missions/skirmish.json' with { type: 'json' };
 import m1 from '../../data/missions/m1_first_light.json' with { type: 'json' };
+import m2 from '../../data/missions/m2_lifeblood.json' with { type: 'json' };
+import m3 from '../../data/missions/m3_hold_the_line.json' with { type: 'json' };
+import m4 from '../../data/missions/m4_the_vein.json' with { type: 'json' };
+import m5 from '../../data/missions/m5_iron_ash.json' with { type: 'json' };
+import m6 from '../../data/missions/m6_ashen_warlord.json' with { type: 'json' };
 
 const units = loadUnits(unitsData);
 const structures = loadStructures(structuresData);
@@ -128,7 +133,7 @@ describe('pathfind — movement integration', () => {
 });
 
 describe('pathfind — mission map sanity (mesas must not break the shipped missions)', () => {
-  for (const [name, raw] of [['skirmish', skirmish], ['m1_first_light', m1]] as const) {
+  for (const [name, raw] of [['skirmish', skirmish], ['m1_first_light', m1], ['m2', m2], ['m3', m3], ['m4', m4], ['m5', m5], ['m6', m6]] as const) {
     it(`${name}: seeded entities + fields on walkable tiles; base→base path exists`, () => {
       const mission = loadMission(raw);
       const state = makeSimState({ seed: mission.map.seed, mapWidth: mission.map.width, mapHeight: mission.map.height });

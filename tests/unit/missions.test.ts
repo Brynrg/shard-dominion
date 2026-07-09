@@ -10,8 +10,16 @@ import unitsData from '../../data/units.json' with { type: 'json' };
 import structuresData from '../../data/structures.json' with { type: 'json' };
 import skirmish from '../../data/missions/skirmish.json' with { type: 'json' };
 import m1 from '../../data/missions/m1_first_light.json' with { type: 'json' };
+import m2 from '../../data/missions/m2_lifeblood.json' with { type: 'json' };
+import m3 from '../../data/missions/m3_hold_the_line.json' with { type: 'json' };
+import m4 from '../../data/missions/m4_the_vein.json' with { type: 'json' };
+import m5 from '../../data/missions/m5_iron_ash.json' with { type: 'json' };
+import m6 from '../../data/missions/m6_ashen_warlord.json' with { type: 'json' };
 
-const rawMissions: Record<string, unknown> = { skirmish, m1_first_light: m1 };
+const rawMissions: Record<string, unknown> = {
+  skirmish, m1_first_light: m1, m2_lifeblood: m2, m3_hold_the_line: m3,
+  m4_the_vein: m4, m5_iron_ash: m5, m6_ashen_warlord: m6,
+};
 
 const units = loadUnits(unitsData);
 const structures = loadStructures(structuresData);
@@ -66,9 +74,28 @@ describe('missions — schema + integrity', () => {
     }
   });
 
-  it('next pointers are null or well-formed ids', () => {
+  it('next pointers resolve to registered missions (unbroken campaign chain)', () => {
+    const ids = new Set(missions.map(m => m.id));
     for (const m of missions) {
-      if (m.next !== null) expect(typeof m.next === 'string' && m.next.length > 0).toBe(true);
+      if (m.next !== null) expect(ids.has(m.next), `${m.id}: next "${m.next}" not registered`).toBe(true);
+    }
+  });
+
+  it('trigger ids are unique per mission; spawn kinds + tiles are legal', () => {
+    for (const m of missions) {
+      const tids = m.triggers.map(t => t.id);
+      expect(new Set(tids).size).toBe(tids.length);
+      for (const t of m.triggers) for (const a of t.actions) {
+        if (a.type === 'spawn') {
+          for (const su of a.units) {
+            expect(validKinds.has(su.type), `${m.id}/${t.id}: unknown spawn kind "${su.type}"`).toBe(true);
+            expect(su.tx >= 0 && su.tx < m.map.width && su.ty >= 0 && su.ty < m.map.height, `${m.id}/${t.id}: spawn out of bounds`).toBe(true);
+          }
+        }
+      }
+      for (const rw of m.rewards) {
+        expect(m.objectives.some(o => o.id === rw.ifObjectiveComplete), `${m.id}: reward references unknown objective "${rw.ifObjectiveComplete}"`).toBe(true);
+      }
     }
   });
 

@@ -14,6 +14,8 @@
 import type { SimState } from '../state.js';
 import { SIM_TICK_RATE } from '../loop.js';
 import { tileToWorldCenter, TILE_SUBUNITS } from '../coords.js';
+import { makeTriggerRunner, type MissionTrigger, type MissionMessage } from './missionTriggers.js';
+import type { UnitDef } from '../../loaders/units.js';
 
 export type Team = 'player' | 'enemy';
 export interface Region { tx: number; ty: number; r: number } // radius r in TILES
@@ -33,10 +35,17 @@ export type Failure =
 
 export interface ObjectiveStatus { id?: string; text: string; primary: boolean; complete: boolean }
 export interface ObjectivesResult { objectives: ObjectiveStatus[]; won: boolean; lost: boolean }
+export type { MissionTrigger, MissionMessage } from './missionTriggers.js';
 // The system's canonical name is the reserved 'mission' slot in SYSTEM_ORDER (runs early,
 // right after command) — evaluation lags actual deaths by one tick, which is immaterial
 // for win/lose and keeps the pinned loop contract untouched.
-export interface ObjectivesSystem { name: 'mission'; run(state: SimState): void; result: ObjectivesResult }
+export interface ObjectivesSystem {
+  name: 'mission';
+  run(state: SimState): void;
+  result: ObjectivesResult;
+  /** Live trigger messages for the view (comm panel). */
+  messages: MissionMessage[];
+}
 
 // A living entity matching (team, kind?) — hp<=0 counts as dead (cull-timing safe).
 function anyLiving(state: SimState, team: Team, kind?: string): boolean {
@@ -93,7 +102,16 @@ function teamUnitInRegion(state: SimState, team: Team, region: Region): boolean 
   return false;
 }
 
-export function makeObjectivesSystem(objectives: readonly Objective[], failures: readonly Failure[] = []): ObjectivesSystem {
+export function makeObjectivesSystem(
+  objectives: readonly Objective[],
+  failures: readonly Failure[] = [],
+  // FG-4: mission triggers run in the same reserved 'mission' slot, BEFORE the
+  // objective evaluation (a spawn this tick is visible to objectives this tick).
+  triggers: readonly MissionTrigger[] = [],
+  units: readonly UnitDef[] = [],
+): ObjectivesSystem {
+  const triggerRunner = makeTriggerRunner(triggers, units);
+  const completedIds = new Set<string>(); // last-known complete objective ids (for trigger conditions)
   // Latches for momentary / cumulative conditions (deterministic closure state).
   const everSeen = new Map<number, boolean>();   // destroy/defend: target has existed
   const everReached = new Map<number, boolean>(); // reach: region entered
@@ -141,12 +159,15 @@ export function makeObjectivesSystem(objectives: readonly Objective[], failures:
   return {
     name: 'mission' as const,
     result,
+    messages: triggerRunner.messages,
     run(state: SimState): void {
       if (result.won || result.lost) return; // decision is sticky
+      triggerRunner.run(state, (id) => completedIds.has(id));
       const statuses: ObjectiveStatus[] = objectives.map((o, i) => ({
         id: o.id, text: o.text, primary: o.primary ?? true, complete: completed(o, i, state),
       }));
       result.objectives = statuses;
+      for (const st of statuses) if (st.id && st.complete) completedIds.add(st.id);
       // Lose takes priority over win if both resolve on the same tick.
       const lost = failures.some((f, i) => failed(f, i, state));
       if (lost) { result.lost = true; return; }

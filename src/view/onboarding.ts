@@ -46,9 +46,12 @@ const BRIEF_HINT = 'SCROLL: move mouse to a screen edge · wheel = zoom · click
 export interface BriefingText { title: string; story: readonly string[]; objectives: readonly string[] }
 export interface ObjStatus { text: string; primary: boolean; complete: boolean }
 
+export interface CommMessage { speaker: string; text: string }
+
 export function makeOnboarding(
   brief?: BriefingText,
   getObjectives?: () => readonly ObjStatus[],
+  getMessages?: () => readonly CommMessage[],
 ): Onboarding {
   let briefing = true;
   let step = 0;
@@ -111,8 +114,33 @@ export function makeOnboarding(
       const objs = getObjectives?.() ?? [];
       if (objs.length > 0) drawMissionObjectives(ctx, W, objs, pulse);
       else drawObjectiveBanner(ctx, W, step, pulse);
+      drawCommMessages(ctx, W, H, getMessages?.() ?? []);
     },
   };
+
+  // Trigger comm panel (FG-4): speaker-tagged lines, bottom-centre, above the HUD.
+  function drawCommMessages(ctx: CanvasRenderingContext2D, W: number, H: number, msgs: readonly CommMessage[]): void {
+    if (msgs.length === 0) return;
+    ctx.font = '13px monospace';
+    const shown = msgs.slice(-3); // newest 3
+    const wMax = Math.max(...shown.map(m => ctx.measureText(`${m.speaker}: ${m.text}`).width)) + 24;
+    const lineH = 20;
+    const boxW = Math.min(W - 220, Math.max(320, wMax));
+    const x = (W - boxW) / 2, y = H - 64 - shown.length * lineH;
+    ctx.fillStyle = 'rgba(8,12,18,0.85)';
+    ctx.fillRect(x, y, boxW, shown.length * lineH + 10);
+    ctx.strokeStyle = 'rgba(0,229,255,0.5)'; ctx.lineWidth = 1;
+    ctx.strokeRect(x + 0.5, y + 0.5, boxW - 1, shown.length * lineH + 9);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    let yy = y + 6;
+    for (const m of shown) {
+      ctx.fillStyle = '#7fd6ff';
+      ctx.fillText(`${m.speaker}:`, x + 10, yy);
+      ctx.fillStyle = '#e7e2d6';
+      ctx.fillText(m.text, x + 14 + ctx.measureText(`${m.speaker}:`).width, yy);
+      yy += lineH;
+    }
+  }
 
   function drawMissionObjectives(ctx: CanvasRenderingContext2D, W: number, objs: readonly ObjStatus[], p: number): void {
     const primaries = objs.filter(o => o.primary);

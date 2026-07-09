@@ -170,8 +170,11 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig): { name: 
       switch (plan) {
         case 'Stabilize':
         case 'Recover': {
-          // Pull un-engaged units home to defend / preserve; drop their standing orders.
+          // Pull un-engaged units home to defend / preserve; drop their standing
+          // orders. Attack-movers are COMMITTED (e.g. trigger-spawned assault
+          // waves, FG-4) — never recalled.
           for (const u of army) {
+            if (u.components.movement?.attackMove) continue;
             if ((u.components.combat?.targetId ?? null) === null && u.components.movement) {
               u.components.movement.target = basePos;
               committed.delete(u.id);

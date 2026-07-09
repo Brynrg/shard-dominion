@@ -3,7 +3,7 @@
 // win/lose debrief. Navigation between missions is reload-based (set location) so
 // each match starts from a clean sim — no in-page teardown to leak listeners.
 
-export interface CampaignProgress { version: number; completed: string[] }
+export interface CampaignProgress { version: number; completed: string[]; bonus?: Record<string, number> }
 const PROGRESS_KEY = 'shardDominion.campaign';
 
 export function loadProgress(): CampaignProgress {
@@ -11,7 +11,7 @@ export function loadProgress(): CampaignProgress {
     const raw = localStorage.getItem(PROGRESS_KEY);
     if (raw) {
       const p = JSON.parse(raw) as Partial<CampaignProgress>;
-      if (p && Array.isArray(p.completed)) return { version: p.version ?? 1, completed: p.completed };
+      if (p && Array.isArray(p.completed)) return { version: p.version ?? 1, completed: p.completed, bonus: p.bonus ?? {} };
     }
   } catch { /* ignore malformed/unavailable storage */ }
   return { version: 1, completed: [] };
@@ -21,6 +21,43 @@ export function markCompleted(missionId: string): void {
   const p = loadProgress();
   if (!p.completed.includes(missionId)) p.completed.push(missionId);
   try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(p)); } catch { /* ignore */ }
+}
+
+/** Bank a secondary-objective reward for a FUTURE mission (FG-4). */
+export function addBonus(missionId: string, credits: number): void {
+  const p = loadProgress();
+  p.bonus = p.bonus ?? {};
+  p.bonus[missionId] = (p.bonus[missionId] ?? 0) + credits;
+  try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(p)); } catch { /* ignore */ }
+}
+/** Consume (read + clear) the banked bonus for a mission about to start. */
+export function takeBonus(missionId: string): number {
+  const p = loadProgress();
+  const b = p.bonus?.[missionId] ?? 0;
+  if (b && p.bonus) { delete p.bonus[missionId]; try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(p)); } catch { /* ignore */ } }
+  return b;
+}
+
+export interface MissionEntry { id: string; name: string; order: number; unlocked: boolean; completed: boolean }
+
+/** Campaign mission-select screen (FG-4): linear unlock, checkmarks, replayable. */
+export function showMissionSelect(missions: readonly MissionEntry[], onPick: (id: string) => void, onBack: () => void): void {
+  const el = overlay();
+  const panel = document.createElement('div');
+  panel.style.textAlign = 'center';
+  panel.innerHTML =
+    '<div style="font-size:34px;font-weight:bold;color:#ffd34d;letter-spacing:2px;">CAMPAIGN</div>' +
+    '<div style="color:#8fb7c9;margin:4px 0 20px;font-size:13px;">Operation: Aether Prime</div>';
+  for (const m of [...missions].sort((a, b) => a.order - b.order)) {
+    const b = button(`${m.completed ? '✔ ' : ''}Mission ${m.order}: ${m.name}${m.unlocked ? '' : '  🔒'}`, m.unlocked && !m.completed);
+    if (!m.unlocked) { b.disabled = true; b.style.opacity = '0.45'; b.style.cursor = 'default'; }
+    else b.onclick = () => onPick(m.id);
+    panel.appendChild(b);
+  }
+  const back = button('BACK');
+  back.onclick = () => { el.remove(); onBack(); };
+  panel.appendChild(back);
+  el.appendChild(panel);
 }
 
 function overlay(): HTMLDivElement {
@@ -52,8 +89,9 @@ export function showTitleMenu(onSelect: (missionId: string) => void, campaignMis
     '<div style="color:#8fb7c9;margin:6px 0 28px;">Aether Prime — the war for Shard</div>';
   const campaign = button('▶  CAMPAIGN', true);
   const skirmish = button('SKIRMISH');
-  campaign.onclick = () => onSelect(campaignMissionId);
-  skirmish.onclick = () => onSelect('skirmish');
+  // Remove THIS overlay before handing off (mission select stacks its own).
+  campaign.onclick = () => { el.remove(); onSelect(campaignMissionId); };
+  skirmish.onclick = () => { el.remove(); onSelect('skirmish'); };
   panel.appendChild(campaign);
   panel.appendChild(skirmish);
   el.appendChild(panel);

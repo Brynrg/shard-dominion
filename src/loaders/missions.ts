@@ -85,9 +85,26 @@ export const MissionSchema = z.object({
   objectives: z.array(ObjectiveSchema).min(1),
   failure: z.array(FailureSchema).default([]),
   next: z.string().nullable().default(null),
-  // RESERVED for CP-2+ (accepted but unused): mid-mission scripting + rewards.
-  triggers: z.array(z.unknown()).optional(),
-  rewards: z.array(z.unknown()).optional(),
+  // Mission triggers (FG-4): deterministic mid-mission events.
+  triggers: z.array(z.object({
+    id: z.string().min(1),
+    when: z.object({
+      timeSeconds: z.number().positive().optional(),
+      credits: z.object({ team: Team, gte: z.number() }).optional(),
+      objectiveComplete: z.string().optional(),
+    }),
+    actions: z.array(z.discriminatedUnion('type', [
+      z.object({ type: z.literal('message'), speaker: z.string().optional(), text: z.string() }),
+      z.object({ type: z.literal('spawn'), team: Team, units: z.array(z.object({ type: z.string(), tx: z.number().int(), ty: z.number().int() })), attackMoveTo: z.object({ tx: z.number().int(), ty: z.number().int() }).optional() }),
+      z.object({ type: z.literal('grantCredits'), team: Team, amount: z.number() }),
+      z.object({ type: z.literal('reveal'), region: Region.optional() }),
+    ])).min(1),
+  })).default([]),
+  // Secondary-objective rewards (FG-4): applied when starting the NEXT mission.
+  rewards: z.array(z.object({
+    ifObjectiveComplete: z.string(),
+    grant: z.object({ nextMissionCredits: z.number() }),
+  })).default([]),
 });
 
 export type Mission = z.infer<typeof MissionSchema>;

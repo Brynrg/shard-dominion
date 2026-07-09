@@ -1,0 +1,353 @@
+{
+  "id": "m3_hold_the_line",
+  "name": "Hold the Line",
+  "order": 3,
+  "map": {
+    "width": 32,
+    "height": 32,
+    "seed": 2024
+  },
+  "briefing": {
+    "title": "HOLD THE LINE",
+    "story": [
+      "Marshal Corr: \"Canyon Reach is a corridor the Emberhand needs and you",
+      "hold. Relief is four minutes out. Dig in \u2014 turrets (G), walls of rifles,",
+      "whatever the sand gives you. Nothing gets through. Nothing.\"",
+      "",
+      "Intercepted \u2014 Sera Vane: \"Four minutes is a long time to bleed, Warden.\""
+    ],
+    "objectives": [
+      "Survive until relief arrives (4:00)",
+      "The Construction Yard must stand"
+    ]
+  },
+  "debrief": {
+    "win": [
+      "The relief column crests the dunes to find the line \u2014 battered, burning, unbroken.",
+      "Corr: \"Canyon Reach holds. I'll pretend I never doubted it.\""
+    ],
+    "lose": [
+      "The line breaks. Canyon Reach belongs to the Emberhand \u2014 and the corridor to everything else."
+    ]
+  },
+  "naturalShardDensity": 250,
+  "fields": [
+    {
+      "tx": 10,
+      "ty": 22,
+      "w": 2,
+      "h": 2,
+      "density": 550
+    }
+  ],
+  "player": {
+    "credits": 900,
+    "buildings": [
+      {
+        "type": "construction_yard",
+        "tx": 8,
+        "ty": 24
+      },
+      {
+        "type": "refinery",
+        "tx": 10,
+        "ty": 24
+      },
+      {
+        "type": "barracks",
+        "tx": 8,
+        "ty": 26
+      }
+    ],
+    "units": [
+      {
+        "type": "harvester",
+        "tx": 11,
+        "ty": 24
+      },
+      {
+        "type": "infantry",
+        "tx": 10,
+        "ty": 26
+      },
+      {
+        "type": "infantry",
+        "tx": 11,
+        "ty": 26
+      },
+      {
+        "type": "rocket_trooper",
+        "tx": 12,
+        "ty": 26
+      },
+      {
+        "type": "rocket_trooper",
+        "tx": 9,
+        "ty": 27
+      }
+    ]
+  },
+  "enemies": [
+    {
+      "team": "enemy",
+      "credits": 400,
+      "buildings": [
+        {
+          "type": "refinery",
+          "tx": 26,
+          "ty": 4
+        },
+        {
+          "type": "barracks",
+          "tx": 27,
+          "ty": 5
+        }
+      ],
+      "units": [
+        {
+          "type": "harvester",
+          "tx": 27,
+          "ty": 4
+        }
+      ],
+      "fields": [
+        {
+          "tx": 28,
+          "ty": 3,
+          "w": 2,
+          "h": 2,
+          "density": 550
+        }
+      ],
+      "ai": {
+        "assaultValue": 9999,
+        "pressureValue": 9999,
+        "assaultEscalationPerMin": 0
+      }
+    }
+  ],
+  "objectives": [
+    {
+      "type": "survive",
+      "id": "hold_out",
+      "seconds": 240,
+      "primary": true,
+      "text": "Survive until relief arrives (4:00)"
+    },
+    {
+      "type": "build",
+      "id": "turret_up",
+      "team": "player",
+      "kind": "defense_turret",
+      "primary": false,
+      "text": "Secondary: raise a Defense Turret (G)"
+    }
+  ],
+  "failure": [
+    {
+      "type": "defend",
+      "team": "player",
+      "kind": "construction_yard"
+    },
+    {
+      "type": "defeated",
+      "team": "player"
+    }
+  ],
+  "triggers": [
+    {
+      "id": "t_brief",
+      "when": {
+        "timeSeconds": 8
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "CORR",
+          "text": "Dig in. First contact imminent \u2014 turrets pay for themselves (G)."
+        }
+      ]
+    },
+    {
+      "id": "t_wave1",
+      "when": {
+        "timeSeconds": 45
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SCOUTS",
+          "text": "Contact north \u2014 infantry probe."
+        },
+        {
+          "type": "spawn",
+          "team": "enemy",
+          "units": [
+            {
+              "type": "infantry",
+              "tx": 20,
+              "ty": 4
+            },
+            {
+              "type": "infantry",
+              "tx": 21,
+              "ty": 4
+            },
+            {
+              "type": "infantry",
+              "tx": 22,
+              "ty": 4
+            }
+          ],
+          "attackMoveTo": {
+            "tx": 8,
+            "ty": 24
+          }
+        }
+      ]
+    },
+    {
+      "id": "t_wave2",
+      "when": {
+        "timeSeconds": 105
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SCOUTS",
+          "text": "Second wave \u2014 mixed arms, coming harder."
+        },
+        {
+          "type": "spawn",
+          "team": "enemy",
+          "units": [
+            {
+              "type": "infantry",
+              "tx": 20,
+              "ty": 4
+            },
+            {
+              "type": "infantry",
+              "tx": 21,
+              "ty": 4
+            },
+            {
+              "type": "rocket_trooper",
+              "tx": 22,
+              "ty": 4
+            },
+            {
+              "type": "rocket_trooper",
+              "tx": 23,
+              "ty": 4
+            }
+          ],
+          "attackMoveTo": {
+            "tx": 8,
+            "ty": 24
+          }
+        }
+      ]
+    },
+    {
+      "id": "t_wave3",
+      "when": {
+        "timeSeconds": 165
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "Your relief is a rumour, Warden. The sand is patient."
+        },
+        {
+          "type": "spawn",
+          "team": "enemy",
+          "units": [
+            {
+              "type": "infantry",
+              "tx": 20,
+              "ty": 4
+            },
+            {
+              "type": "infantry",
+              "tx": 21,
+              "ty": 4
+            },
+            {
+              "type": "vehicle",
+              "tx": 22,
+              "ty": 4
+            },
+            {
+              "type": "vehicle",
+              "tx": 23,
+              "ty": 4
+            }
+          ],
+          "attackMoveTo": {
+            "tx": 8,
+            "ty": 24
+          }
+        }
+      ]
+    },
+    {
+      "id": "t_wave4",
+      "when": {
+        "timeSeconds": 210
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "CORR",
+          "text": "Final push \u2014 HOLD, Warden. Relief is on the horizon."
+        },
+        {
+          "type": "spawn",
+          "team": "enemy",
+          "units": [
+            {
+              "type": "rocket_trooper",
+              "tx": 20,
+              "ty": 4
+            },
+            {
+              "type": "rocket_trooper",
+              "tx": 21,
+              "ty": 4
+            },
+            {
+              "type": "vehicle",
+              "tx": 22,
+              "ty": 4
+            },
+            {
+              "type": "vehicle",
+              "tx": 23,
+              "ty": 4
+            },
+            {
+              "type": "infantry",
+              "tx": 24,
+              "ty": 4
+            }
+          ],
+          "attackMoveTo": {
+            "tx": 8,
+            "ty": 24
+          }
+        }
+      ]
+    }
+  ],
+  "rewards": [
+    {
+      "ifObjectiveComplete": "turret_up",
+      "grant": {
+        "nextMissionCredits": 150
+      }
+    }
+  ],
+  "next": "m4_the_vein"
+}

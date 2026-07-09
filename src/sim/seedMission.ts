@@ -45,8 +45,10 @@ function makeBuilding(kind: string, team: Team, deps: SeedDeps, sideCredits: num
     tookCredits = takeCredits;
     components.economy = { credits, refineryStorage: credits, maxStorage: deps.economy.refineryStorageCapacity };
     components.production = { queue: [], progress: 0, current: null };
-  } else if (kind === 'barracks') {
+  } else if (kind === 'barracks' || kind === 'war_factory') {
     components.production = { queue: [], progress: 0 };
+  } else if (kind === 'defense_turret') {
+    components.combat = { weaponId: 'raider_cannon', cooldownRemaining: 0, targetId: null };
   } else if (kind === 'construction_yard') {
     components.construction = { queue: [], progress: 0, currentStructureId: null };
     components.power = { powerSupply: 0, powerDemand: 0, powered: true };

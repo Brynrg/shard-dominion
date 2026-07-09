@@ -25,7 +25,7 @@ import { makeObjectivesSystem } from './sim/systems/objectives.js';
 import { makeProjectileSystem } from './sim/systems/projectile.js';
 import { seedFromMission } from './sim/seedMission.js';
 import { loadMission } from './loaders/missions.js';
-import { showTitleMenu, showEndScreen, showPauseMenu, markCompleted } from './view/menu.js';
+import { showTitleMenu, showEndScreen, showPauseMenu, showMissionSelect, markCompleted, addBonus, takeBonus, loadProgress } from './view/menu.js';
 import { makeAudioEngine } from './view/audio.js';
 import economyConstantsData from '../data/economyConstants.json' with { type: 'json' };
 import structuresData from '../data/structures.json' with { type: 'json' };
@@ -33,6 +33,11 @@ import weaponsData from '../data/weapons.json' with { type: 'json' };
 import unitsData from '../data/units.json' with { type: 'json' };
 import skirmishData from '../data/missions/skirmish.json' with { type: 'json' };
 import m1FirstLightData from '../data/missions/m1_first_light.json' with { type: 'json' };
+import m2Data from '../data/missions/m2_lifeblood.json' with { type: 'json' };
+import m3Data from '../data/missions/m3_hold_the_line.json' with { type: 'json' };
+import m4Data from '../data/missions/m4_the_vein.json' with { type: 'json' };
+import m5Data from '../data/missions/m5_iron_ash.json' with { type: 'json' };
+import m6Data from '../data/missions/m6_ashen_warlord.json' with { type: 'json' };
 
 // Map configuration
 const MAP_WIDTH = 32;
@@ -60,6 +65,7 @@ declare global {
     __debugTimeScale?: () => number;
     __debugTick?: () => number;
     __debugForceEnd?: (winner: 'player' | 'enemy') => void;
+    __debugMessages?: () => { speaker: string; text: string }[];
     __debugUnitScreenPos?: (kind: string) => { x: number; y: number } | null;
     __debugSprites?: unknown; // the sprite bank, for the real-asset loader smoke test
     __debugCamera?: () => { x: number; y: number; zoom: number };
@@ -91,6 +97,13 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // seeding; skirmish.json reproduces the original valley).
   const meta = seedFromMission(state, mission, { units, structures, economy });
 
+  // Secondary-objective reward (FG-4): apply any banked bonus credits for this mission.
+  const bonus = takeBonus(mission.id);
+  if (bonus > 0) {
+    const bank = state.store.all().find(e => e.components.faction?.team === 'player' && e.components.economy)?.components.economy;
+    if (bank) bank.credits += bonus;
+  }
+
   // ── Audio (FG-1): procedural WebAudio engine — resumed on the briefing click. ──
   const audio = makeAudioEngine();
 
@@ -113,7 +126,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // their reserved slot). One AI per enemy side; victory still owns culling.
   const fogSystem = makeFogSystem();
   const victorySystem = makeVictorySystem();
-  const objectivesSystem = makeObjectivesSystem(mission.objectives, mission.failure);
+  const objectivesSystem = makeObjectivesSystem(mission.objectives, mission.failure, mission.triggers, units);
   const aiSystems = mission.enemies.map(e => makeAiSystem(units, { team: 'enemy', attackTile: meta.playerStartTile, ...(e.ai ?? {}) }));
   const systems = orderSystems([
     commandSystem,
@@ -144,7 +157,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   canvas.height = 600;
 
   // Onboarding: per-mission briefing (sim paused until dismissed) + objective banner.
-  const onboarding = makeOnboarding(mission.briefing, () => objectivesSystem.result.objectives);
+  const onboarding = makeOnboarding(mission.briefing, () => objectivesSystem.result.objectives, () => objectivesSystem.messages);
 
   // Create the view — it reads the command system's confirmation markers and the
   // live selection box from input (both view-side; the sim stays screen-blind).
@@ -236,7 +249,16 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     closePauseMenu?.(); closePauseMenu = null; paused = false;
     const won = r.winner === 'player';
     audio.matchEnd(won);
-    if (won && mission.id !== 'skirmish') markCompleted(mission.id);
+    if (won && mission.id !== 'skirmish') {
+      markCompleted(mission.id);
+      // Bank secondary-objective rewards for the NEXT mission (FG-4).
+      if (mission.next) {
+        for (const rw of mission.rewards) {
+          const obj = objectivesSystem.result.objectives.find(o => o.id === rw.ifObjectiveComplete);
+          if (obj?.complete) addBonus(mission.next, rw.grant.nextMissionCredits);
+        }
+      }
+    }
     const nextId = mission.next && MISSIONS[mission.next] ? mission.next : null;
     showEndScreen({
       won,
@@ -389,6 +411,9 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     return { x: sx, y: sy };
   };
 
+  // Trigger comm messages (FG-4 gate).
+  window.__debugMessages = () => objectivesSystem.messages.map(m => ({ speaker: m.speaker, text: m.text }));
+
   // Audio + time-scale + tick hooks (FG-1 gates).
   window.__debugAudio = () => audio.debug();
   window.__debugTimeScale = () => (paused ? 0 : speed);
@@ -429,18 +454,43 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
 const MISSIONS: Record<string, unknown> = {
   skirmish: skirmishData,
   m1_first_light: m1FirstLightData,
+  m2_lifeblood: m2Data,
+  m3_hold_the_line: m3Data,
+  m4_the_vein: m4Data,
+  m5_iron_ash: m5Data,
+  m6_ashen_warlord: m6Data,
 };
+/** Campaign order (linear unlock: each mission unlocks the next). */
+const CAMPAIGN: { id: string; name: string; order: number }[] = [
+  { id: 'm1_first_light', name: 'First Light', order: 1 },
+  { id: 'm2_lifeblood', name: 'Lifeblood', order: 2 },
+  { id: 'm3_hold_the_line', name: 'Hold the Line', order: 3 },
+  { id: 'm4_the_vein', name: 'The Vein', order: 4 },
+  { id: 'm5_iron_ash', name: 'Iron & Ash', order: 5 },
+  { id: 'm6_ashen_warlord', name: 'The Ashen Warlord', order: 6 },
+];
 
-function startMatch(missionId: string): void {
-  const raw = MISSIONS[missionId];
-  if (!raw) { showTitleMenu(id => { location.search = `?mission=${id}`; }); return; }
-  bootstrap(raw);
+function openMissionSelect(): void {
+  const progress = loadProgress();
+  const entries = CAMPAIGN.map((m, i) => ({
+    ...m,
+    completed: progress.completed.includes(m.id),
+    unlocked: i === 0 || progress.completed.includes(CAMPAIGN[i - 1]!.id),
+  }));
+  showMissionSelect(entries, id => { location.search = `?mission=${id}`; }, () => {
+    showTitleMenu(id => (id === '__campaign__' ? openMissionSelect() : (location.search = `?mission=${id}`)), '__campaign__');
+  });
+}
+
+// Title menu: Campaign opens the mission-select screen; Skirmish boots directly.
+function openTitle(): void {
+  showTitleMenu(id => (id === '__campaign__' ? openMissionSelect() : (location.search = `?mission=${id}`)), '__campaign__');
 }
 
 if (typeof window !== 'undefined') {
   window.addEventListener('load', () => {
     const missionId = new URLSearchParams(location.search).get('mission');
-    if (missionId && MISSIONS[missionId]) startMatch(missionId);
-    else showTitleMenu(id => { location.search = `?mission=${id}`; });
+    if (missionId && MISSIONS[missionId]) bootstrap(MISSIONS[missionId]);
+    else openTitle();
   });
 }

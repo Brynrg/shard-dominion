@@ -1,0 +1,314 @@
+{
+  "id": "m6_ashen_warlord",
+  "name": "The Ashen Warlord",
+  "order": 6,
+  "map": {
+    "width": 32,
+    "height": 32,
+    "seed": 6666
+  },
+  "briefing": {
+    "title": "THE ASHEN WARLORD",
+    "story": [
+      "Marshal Corr: \"Sera Vane's stronghold. The last ember. Burn it out and",
+      "the Reach drinks for a generation. A storm front is building over the",
+      "deep sand \u2014 finish this before it breaks, Warden.\"",
+      "",
+      "Sera Vane, open channel: \"No interception this time. Hear me plainly:",
+      "the ground under your quota is not asleep. It is counting. Come, then.\""
+    ],
+    "objectives": [
+      "Destroy Sera Vane's stronghold \u2014 leave nothing standing"
+    ]
+  },
+  "debrief": {
+    "win": [
+      "The stronghold falls. And in the silence after the guns \u2014 the ground SHUDDERS.",
+      "Something old turns beneath the Shard. Vane's voice, faint on every channel: \"Now you'll see.\"",
+      "\u2014 TO BE CONTINUED \u2014"
+    ],
+    "lose": [
+      "The assault breaks on the stronghold walls. Vane holds \u2014 and the storm arrives anyway."
+    ]
+  },
+  "naturalShardDensity": 250,
+  "fields": [
+    {
+      "tx": 9,
+      "ty": 22,
+      "w": 3,
+      "h": 2,
+      "density": 650
+    },
+    {
+      "tx": 15,
+      "ty": 15,
+      "w": 2,
+      "h": 2,
+      "density": 800
+    }
+  ],
+  "player": {
+    "credits": 1500,
+    "buildings": [
+      {
+        "type": "construction_yard",
+        "tx": 7,
+        "ty": 23
+      },
+      {
+        "type": "refinery",
+        "tx": 9,
+        "ty": 24
+      },
+      {
+        "type": "barracks",
+        "tx": 5,
+        "ty": 24
+      }
+    ],
+    "units": [
+      {
+        "type": "harvester",
+        "tx": 10,
+        "ty": 24
+      },
+      {
+        "type": "infantry",
+        "tx": 6,
+        "ty": 26
+      },
+      {
+        "type": "infantry",
+        "tx": 7,
+        "ty": 26
+      },
+      {
+        "type": "rocket_trooper",
+        "tx": 8,
+        "ty": 26
+      },
+      {
+        "type": "rocket_trooper",
+        "tx": 9,
+        "ty": 26
+      }
+    ]
+  },
+  "enemies": [
+    {
+      "team": "enemy",
+      "credits": 2000,
+      "buildings": [
+        {
+          "type": "refinery",
+          "tx": 24,
+          "ty": 7
+        },
+        {
+          "type": "barracks",
+          "tx": 23,
+          "ty": 9
+        },
+        {
+          "type": "barracks",
+          "tx": 26,
+          "ty": 9
+        },
+        {
+          "type": "war_factory",
+          "tx": 25,
+          "ty": 5
+        },
+        {
+          "type": "defense_turret",
+          "tx": 22,
+          "ty": 8
+        },
+        {
+          "type": "defense_turret",
+          "tx": 22,
+          "ty": 11
+        }
+      ],
+      "units": [
+        {
+          "type": "harvester",
+          "tx": 25,
+          "ty": 7
+        },
+        {
+          "type": "infantry",
+          "tx": 23,
+          "ty": 11
+        },
+        {
+          "type": "infantry",
+          "tx": 24,
+          "ty": 11
+        },
+        {
+          "type": "rocket_trooper",
+          "tx": 25,
+          "ty": 11
+        },
+        {
+          "type": "vehicle",
+          "tx": 26,
+          "ty": 11
+        }
+      ],
+      "fields": [
+        {
+          "tx": 27,
+          "ty": 6,
+          "w": 3,
+          "h": 2,
+          "density": 700
+        }
+      ],
+      "ai": {
+        "assaultValue": 500,
+        "assaultEscalationPerMin": 80,
+        "pressureValue": 250,
+        "raidUnitCap": 3
+      }
+    }
+  ],
+  "objectives": [
+    {
+      "type": "eliminate",
+      "id": "break_vane",
+      "team": "enemy",
+      "primary": true,
+      "text": "Destroy Sera Vane's stronghold \u2014 leave nothing standing"
+    }
+  ],
+  "failure": [
+    {
+      "type": "defeated",
+      "team": "player"
+    }
+  ],
+  "triggers": [
+    {
+      "id": "t_open",
+      "when": {
+        "timeSeconds": 15
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "CORR",
+          "text": "This is the last ember, Warden. Stamp it out."
+        }
+      ]
+    },
+    {
+      "id": "t_counter1",
+      "when": {
+        "timeSeconds": 150
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "You were warned. The Emberhand does not kneel."
+        },
+        {
+          "type": "spawn",
+          "team": "enemy",
+          "units": [
+            {
+              "type": "infantry",
+              "tx": 20,
+              "ty": 12
+            },
+            {
+              "type": "infantry",
+              "tx": 21,
+              "ty": 12
+            },
+            {
+              "type": "vehicle",
+              "tx": 22,
+              "ty": 12
+            },
+            {
+              "type": "rocket_trooper",
+              "tx": 23,
+              "ty": 12
+            }
+          ],
+          "attackMoveTo": {
+            "tx": 7,
+            "ty": 23
+          }
+        }
+      ]
+    },
+    {
+      "id": "t_counter2",
+      "when": {
+        "timeSeconds": 280
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "Every wreck feeds the sand. Listen \u2014 it is counting."
+        },
+        {
+          "type": "spawn",
+          "team": "enemy",
+          "units": [
+            {
+              "type": "vehicle",
+              "tx": 20,
+              "ty": 12
+            },
+            {
+              "type": "vehicle",
+              "tx": 21,
+              "ty": 12
+            },
+            {
+              "type": "scout_vehicle",
+              "tx": 22,
+              "ty": 12
+            },
+            {
+              "type": "rocket_trooper",
+              "tx": 23,
+              "ty": 12
+            },
+            {
+              "type": "infantry",
+              "tx": 24,
+              "ty": 12
+            }
+          ],
+          "attackMoveTo": {
+            "tx": 7,
+            "ty": 23
+          }
+        }
+      ]
+    },
+    {
+      "id": "t_storm",
+      "when": {
+        "timeSeconds": 360
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "CORR",
+          "text": "Storm front closing. Finish it, Warden \u2014 NOW."
+        }
+      ]
+    }
+  ],
+  "rewards": [],
+  "next": null
+}

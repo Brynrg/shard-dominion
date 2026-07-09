@@ -16,8 +16,9 @@ test.describe('Campaign gate', () => {
     const campaign = page.getByRole('button', { name: /CAMPAIGN/ });
     await expect(campaign).toBeVisible();
 
-    // Launch the campaign → Mission 1 "First Light" boots.
+    // Launch the campaign → mission select (FG-4) → Mission 1 "First Light" boots.
     await campaign.click();
+    await page.getByRole('button', { name: /Mission 1: First Light/ }).click();
     await page.waitForURL(/mission=m1_first_light/);
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
     await page.waitForTimeout(300);

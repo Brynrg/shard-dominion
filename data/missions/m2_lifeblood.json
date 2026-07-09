@@ -1,0 +1,255 @@
+{
+  "id": "m2_lifeblood",
+  "name": "Lifeblood",
+  "order": 2,
+  "map": {
+    "width": 32,
+    "height": 32,
+    "seed": 777
+  },
+  "briefing": {
+    "title": "LIFEBLOOD",
+    "story": [
+      "Marshal Corr: \"The fleet in orbit burns fuel it does not have. Command's",
+      "quota is 1,500 credits of refined Shard \u2014 impossible numbers, Warden, so",
+      "make them possible. Emberhand raiders are moving in the northern flats;",
+      "they will come for your harvesters first. Assign escorts.\"",
+      "",
+      "Intercepted \u2014 Sera Vane: \"Squeeze the sand hard enough and it bites.\""
+    ],
+    "objectives": [
+      "Bank 1,500 credits",
+      "Keep the Refinery operational"
+    ]
+  },
+  "debrief": {
+    "win": [
+      "Quota met. The fleet lives another week \u2014 and the sand keeps bleeding.",
+      "Corr: \"Adequate. The Reach will not thank you, but I notice.\""
+    ],
+    "lose": [
+      "The refinery burns. The quota dies with it \u2014 and so does the fleet's patience."
+    ]
+  },
+  "naturalShardDensity": 250,
+  "fields": [
+    {
+      "tx": 13,
+      "ty": 19,
+      "w": 3,
+      "h": 3,
+      "density": 600
+    },
+    {
+      "tx": 6,
+      "ty": 13,
+      "w": 2,
+      "h": 2,
+      "density": 650
+    }
+  ],
+  "player": {
+    "credits": 600,
+    "buildings": [
+      {
+        "type": "construction_yard",
+        "tx": 9,
+        "ty": 20
+      },
+      {
+        "type": "refinery",
+        "tx": 11,
+        "ty": 20
+      }
+    ],
+    "units": [
+      {
+        "type": "harvester",
+        "tx": 12,
+        "ty": 20
+      },
+      {
+        "type": "infantry",
+        "tx": 8,
+        "ty": 22
+      },
+      {
+        "type": "infantry",
+        "tx": 9,
+        "ty": 22
+      }
+    ]
+  },
+  "enemies": [
+    {
+      "team": "enemy",
+      "credits": 500,
+      "buildings": [
+        {
+          "type": "refinery",
+          "tx": 24,
+          "ty": 6
+        },
+        {
+          "type": "barracks",
+          "tx": 25,
+          "ty": 7
+        }
+      ],
+      "units": [
+        {
+          "type": "harvester",
+          "tx": 25,
+          "ty": 6
+        }
+      ],
+      "fields": [
+        {
+          "tx": 26,
+          "ty": 5,
+          "w": 2,
+          "h": 2,
+          "density": 600
+        }
+      ],
+      "ai": {
+        "pressureValue": 200,
+        "raidUnitCap": 3
+      }
+    }
+  ],
+  "objectives": [
+    {
+      "type": "accumulate",
+      "id": "bank_quota",
+      "team": "player",
+      "credits": 1500,
+      "primary": true,
+      "text": "Bank 1,500 credits"
+    },
+    {
+      "type": "accumulate",
+      "id": "stretch_quota",
+      "team": "player",
+      "credits": 2500,
+      "primary": false,
+      "text": "Secondary: bank 2,500 (reward next mission)"
+    }
+  ],
+  "failure": [
+    {
+      "type": "defend",
+      "team": "player",
+      "kind": "refinery"
+    },
+    {
+      "type": "defeated",
+      "team": "player"
+    }
+  ],
+  "triggers": [
+    {
+      "id": "t_vane_open",
+      "when": {
+        "timeSeconds": 18
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "Your quota is our famine, Concord."
+        }
+      ]
+    },
+    {
+      "id": "t_raid_1",
+      "when": {
+        "timeSeconds": 75
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "CORR",
+          "text": "Raiders inbound from the north \u2014 protect the harvesters."
+        },
+        {
+          "type": "spawn",
+          "team": "enemy",
+          "units": [
+            {
+              "type": "infantry",
+              "tx": 18,
+              "ty": 4
+            },
+            {
+              "type": "infantry",
+              "tx": 19,
+              "ty": 4
+            },
+            {
+              "type": "vehicle",
+              "tx": 20,
+              "ty": 4
+            }
+          ],
+          "attackMoveTo": {
+            "tx": 11,
+            "ty": 20
+          }
+        }
+      ]
+    },
+    {
+      "id": "t_raid_2",
+      "when": {
+        "timeSeconds": 160
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "CORR",
+          "text": "Second wave \u2014 they mean to end the quota, Warden."
+        },
+        {
+          "type": "spawn",
+          "team": "enemy",
+          "units": [
+            {
+              "type": "infantry",
+              "tx": 18,
+              "ty": 4
+            },
+            {
+              "type": "vehicle",
+              "tx": 19,
+              "ty": 4
+            },
+            {
+              "type": "vehicle",
+              "tx": 20,
+              "ty": 4
+            },
+            {
+              "type": "rocket_trooper",
+              "tx": 21,
+              "ty": 4
+            }
+          ],
+          "attackMoveTo": {
+            "tx": 12,
+            "ty": 20
+          }
+        }
+      ]
+    }
+  ],
+  "rewards": [
+    {
+      "ifObjectiveComplete": "stretch_quota",
+      "grant": {
+        "nextMissionCredits": 250
+      }
+    }
+  ],
+  "next": "m3_hold_the_line"
+}
