@@ -20,6 +20,12 @@ export type CommandIntent =
   // Context-sensitive right-click: the command system resolves it to attack (enemy at
   // the point), harvest (Shard tile), or move (open ground) for the selected units.
   | { type: 'order'; target: WorldPos; tile: TilePos }
+  // Attack-move (FG-1): advance to target, HOLDING to fight anything acquired en route.
+  | { type: 'attack-move'; target: WorldPos; tile: TilePos }
+  // Stop (FG-1): halt selected units and drop their orders/targets.
+  | { type: 'stop' }
+  // Double-click (FG-1): select ALL player units of the kind at the point.
+  | { type: 'select-type'; target: WorldPos }
   | { type: 'deploy' }
   | { type: 'place-structure'; structureId: string; tile: TilePos }
   | { type: 'assign-group'; group: number }
@@ -61,6 +67,8 @@ export interface InputHandlers {
   setSimState(state: SimState): void;
   /** Last cursor position (canvas px) — for the HUD's hover highlight. */
   getCursor(): ScreenPos | null;
+  /** True while 'A' has armed attack-move (next click engages). */
+  getAttackMoveMode(): boolean;
 }
 
 export function makeInputHandlers(
@@ -88,6 +96,8 @@ export function makeInputHandlers(
   let simStateRef: SimState | null = null;
   let panLast: { x: number; y: number } | null = null; // middle-drag pan anchor
   let lastCursor: ScreenPos | null = null;             // for HUD hover + context cursor
+  let attackMoveMode = false;                          // 'A' pressed → next click = attack-move
+  let lastClick: { at: number; sx: number; sy: number } | null = null; // dblclick detect
 
   // C&C-style build-button click: queue a unit or enter structure placement.
   function doBuildAction(action: string): void {
@@ -100,7 +110,8 @@ export function makeInputHandlers(
   // buttons, cell in placement mode, grab while panning.
   function updateCursor(pos: ScreenPos): void {
     let c = 'default';
-    if (placementMode) c = 'cell';
+    if (attackMoveMode) c = 'crosshair';
+    else if (placementMode) c = 'cell';
     else if (hud?.buttonAt(pos.sx, pos.sy)) c = 'pointer';
     else if (simStateRef) {
       const w = screenToWorld(pos, camera);
@@ -239,9 +250,22 @@ export function makeInputHandlers(
         queue.push({ type: 'place-structure', structureId: placementMode.structureId, tile: placementMode.tile });
         sfx?.place();
         setPlacementMode(null); // Exit placement mode after placing
+      } else if (attackMoveMode) {
+        // Attack-move click: advance-and-engage toward the point.
+        queue.push({ type: 'attack-move', target: screenToWorld(start, camera), tile: screenToTile(start, camera) });
+        sfx?.ack();
+        attackMoveMode = false;
       } else {
-        // Single click → select at a world point.
-        queue.push({ type: 'select', target: screenToWorld(start, camera) });
+        // Single click → select; a fast second click nearby = select-all-of-type.
+        const now = performance.now();
+        if (lastClick && now - lastClick.at < 350 &&
+            Math.hypot(start.sx - lastClick.sx, start.sy - lastClick.sy) < 12) {
+          queue.push({ type: 'select-type', target: screenToWorld(start, camera) });
+          lastClick = null;
+        } else {
+          queue.push({ type: 'select', target: screenToWorld(start, camera) });
+          lastClick = { at: now, sx: start.sx, sy: start.sy };
+        }
         sfx?.select();
       }
     } else {
@@ -302,9 +326,21 @@ export function makeInputHandlers(
         e.preventDefault();
         if (hasConYard()) setPlacementMode('power_node');
         return;
-      case 'Escape': // Cancel placement mode
+      case 'Escape': // Cancel placement / attack-move mode
         e.preventDefault();
         setPlacementMode(null);
+        attackMoveMode = false;
+        return;
+      case 'a': // Attack-move: next left-click = advance-and-engage (C&C/WC3 'A')
+      case 'A':
+        e.preventDefault();
+        attackMoveMode = true;
+        return;
+      case 's': // Stop: halt selected units, drop orders + targets
+      case 'S':
+        e.preventDefault();
+        queue.push({ type: 'stop' });
+        sfx?.ack();
         return;
       case 't': // Train infantry
       case 'T': // Train infantry (case-insensitive)
@@ -398,5 +434,6 @@ export function makeInputHandlers(
     hasConYard,
     setSimState,
     getCursor: () => lastCursor,
+    getAttackMoveMode: () => attackMoveMode,
   };
 }

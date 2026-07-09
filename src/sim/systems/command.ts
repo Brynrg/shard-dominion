@@ -182,7 +182,14 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             for (const e of state.store.all()) {
               if (!e.components.selection?.selected) continue;
               if (e.components.faction?.team !== 'player') continue;
-              if (e.components.building) continue; // buildings don't move/attack — they stay put
+              if (e.components.building) {
+                // Rally point (FG-1): ground-order on a selected PRODUCER building sets
+                // where its freshly-built units gather. Buildings still never move.
+                if (e.components.production && !enemy && !isShard) {
+                  e.components.production = { ...e.components.production, rally: intent.target };
+                }
+                continue;
+              }
               if (enemy && e.components.combat) {
                 const epos = enemy.components.position!;
                 if (!e.components.movement) e.components.movement = { target: null, path: [], speed: 10 };
@@ -205,6 +212,62 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
               }
             }
             markers.push({ target: intent.target, remaining: MARKER_LIFETIME });
+            break;
+          }
+
+          case 'attack-move': {
+            // Advance to the point, HOLDING to fight anything combatTargeting acquires
+            // en route (movement skips stepping while attackMove && combat.targetId).
+            for (const e of state.store.all()) {
+              if (!e.components.selection?.selected) continue;
+              if (e.components.faction?.team !== 'player') continue;
+              if (e.components.building) continue;
+              if (!e.components.combat) continue; // only armed units attack-move
+              if (!e.components.movement) e.components.movement = { target: null, path: [], speed: 10 };
+              e.components.movement.target = intent.target;
+              e.components.movement.pathGoal = null; // force a fresh path
+              e.components.movement.attackMove = true;
+              e.components.combat.targetId = null;   // re-acquire nearest en route
+              if (e.components.harvest) e.components.harvest.state = 'IDLE';
+            }
+            markers.push({ target: intent.target, remaining: MARKER_LIFETIME });
+            break;
+          }
+
+          case 'stop': {
+            // Halt: drop movement orders, paths, attack-move and combat targets.
+            for (const e of state.store.all()) {
+              if (!e.components.selection?.selected) continue;
+              if (e.components.faction?.team !== 'player') continue;
+              if (e.components.building) continue;
+              if (e.components.movement) {
+                e.components.movement = { ...e.components.movement, target: null, path: [], pathGoal: null, attackMove: false };
+              }
+              if (e.components.combat) e.components.combat.targetId = null;
+              if (e.components.harvest) e.components.harvest.state = 'IDLE';
+            }
+            break;
+          }
+
+          case 'select-type': {
+            // Double-click: select every player unit of the kind under the cursor.
+            let kind: string | null = null;
+            let kd = TILE_SUBUNITS * 0.9;
+            for (const e of state.store.all()) {
+              if (e.components.faction?.team !== 'player' || e.components.building) continue;
+              const pos = e.components.position;
+              if (!pos) continue;
+              const d = Math.hypot(pos.wx - intent.target.wx, pos.wy - intent.target.wy);
+              if (d < kd) { kd = d; kind = e.components.faction.faction; }
+            }
+            for (const e of state.store.all()) {
+              const isMatch = kind !== null &&
+                e.components.faction?.team === 'player' &&
+                e.components.faction?.faction === kind &&
+                !e.components.building;
+              if (isMatch) e.components.selection = { selected: true };
+              else if (e.components.selection?.selected) e.components.selection = { selected: false };
+            }
             break;
           }
 

@@ -70,6 +70,9 @@ function scriptedIntents(tick: number, rig: Rig): void {
   if (tick === 60) q.push({ type: 'train', unitId: 'harvester' });
   if (tick === 120) q.push({ type: 'order', target: tileToWorldCenter({ tx: 6, ty: 6 }), tile: { tx: 6, ty: 6 } });
   if (tick === 200) q.push({ type: 'order', target: tileToWorldCenter({ tx: 26, ty: 8 }), tile: { tx: 26, ty: 8 } });
+  if (tick === 300) q.push({ type: 'attack-move', target: tileToWorldCenter({ tx: 26, ty: 8 }), tile: { tx: 26, ty: 8 } });
+  if (tick === 420) q.push({ type: 'stop' });
+  if (tick === 430) q.push({ type: 'select-type', target: tileToWorldCenter({ tx: 15, ty: 18 }) });
 }
 
 describe('determinism — same mission + same command log → identical hashes', () => {

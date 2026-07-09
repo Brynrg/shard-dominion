@@ -47,11 +47,14 @@ export function makeProductionSystem(units: readonly UnitDef[]): { name: 'produc
           // FSM (they auto-mine); everything else gets a combat component.
           const t = worldToTile(pos);
           const isHarvester = def.id === 'harvester';
+          // Rally point (FG-1): fresh combat units move to the producer's rally;
+          // harvesters ignore it and auto-mine (C&C behaviour).
+          const rally = !isHarvester ? (producer.components.production?.rally ?? null) : null;
           state.store.create({
             position: tileToWorldCenter({ tx: t.tx, ty: t.ty + 1 }),
             health: { hp: def.hp, maxHp: def.hp },
             armor: { armorClass: def.armorClass },
-            movement: { target: null, path: [], speed: def.speed },
+            movement: { target: rally ? { ...rally } : null, path: [], speed: def.speed },
             faction: { team, faction: def.id },
             ...(isHarvester
               ? { harvest: { state: 'SEEK' as const, targetTile: null, targetRefinery: null, cargo: 0 } }

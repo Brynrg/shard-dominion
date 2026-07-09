@@ -59,6 +59,7 @@ declare global {
     __debugTimeScale?: () => number;
     __debugTick?: () => number;
     __debugForceEnd?: (winner: 'player' | 'enemy') => void;
+    __debugUnitScreenPos?: (kind: string) => { x: number; y: number } | null;
     __debugSprites?: unknown; // the sprite bank, for the real-asset loader smoke test
     __debugCamera?: () => { x: number; y: number; zoom: number };
   }
@@ -210,8 +211,8 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     if (onboarding.briefingActive()) return;      // briefing owns the screen
     if (e.key === 'p' || e.key === 'P') { togglePause(); }
     else if (e.key === 'Escape') {
-      // Placement cancel wins (input handles it); otherwise toggle the pause menu.
-      if (!input.getPlacementMode()) togglePause();
+      // Placement/attack-move cancel wins (input handles it); else toggle pause.
+      if (!input.getPlacementMode() && !input.getAttackMoveMode()) togglePause();
     } else if (!paused && (e.key === '+' || e.key === '=')) {
       speed = SPEEDS[Math.min(SPEEDS.indexOf(speed) + 1, SPEEDS.length - 1)] ?? 1;
     } else if (!paused && e.key === '-') {
@@ -373,6 +374,16 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
 
   // Current mission objective texts + completion (for the campaign liveness gate).
   window.__debugObjectives = () => objectivesSystem.result.objectives.map(o => ({ text: o.text, primary: o.primary, complete: o.complete }));
+
+  // First living player unit of a kind → its screen position (FG-1 command gate).
+  window.__debugUnitScreenPos = (kind: string) => {
+    const u = state.store.all().find(e =>
+      e.components.faction?.team === 'player' && e.components.faction?.faction === kind &&
+      (e.components.health?.hp ?? 1) > 0 && e.components.position);
+    if (!u) return null;
+    const { sx, sy } = worldToScreen(u.components.position!, view.getCamera());
+    return { x: sx, y: sy };
+  };
 
   // Audio + time-scale + tick hooks (FG-1 gates).
   window.__debugAudio = () => audio.debug();

@@ -33,6 +33,10 @@ export function makeMovementSystem(): { name: 'movement'; run(state: SimState): 
         const movement = e.components.movement;
         if (!pos || !movement || !movement.target || movement.speed <= 0) continue;
 
+        // Attack-move: HOLD to fight while a target is acquired (combatTargeting
+        // clears targetId when it dies/leaves range → the advance resumes).
+        if (movement.attackMove && e.components.combat?.targetId != null) continue;
+
         // (Re)plan: no path for THIS target yet → run A* tile-to-tile. The final
         // waypoint is replaced with the exact world target so arrival is precise.
         if (!samePos(movement.pathGoal, movement.target)) {

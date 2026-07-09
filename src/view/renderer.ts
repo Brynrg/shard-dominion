@@ -463,6 +463,35 @@ export function makeView(cfg: ViewConfig): View {
       const screenPos = worldToScreen(pos, camera);
       const size = TILE_SIZE_PX * 0.8 * camera.zoom;
 
+      // Rally flag (FG-1): a selected producer shows where its units will gather —
+      // dashed line from the building to a small pennant at the rally point.
+      const rally = e.components.production?.rally;
+      if (rally) {
+        const r = worldToScreen(rally, camera);
+        context.save();
+        context.strokeStyle = 'rgba(120,255,160,0.75)';
+        context.lineWidth = 1.5;
+        context.setLineDash([4, 4]);
+        context.beginPath();
+        context.moveTo(screenPos.sx, screenPos.sy);
+        context.lineTo(r.sx, r.sy);
+        context.stroke();
+        context.setLineDash([]);
+        // Pennant: pole + triangular flag.
+        context.beginPath();
+        context.moveTo(r.sx, r.sy);
+        context.lineTo(r.sx, r.sy - 14 * camera.zoom);
+        context.stroke();
+        context.fillStyle = 'rgba(120,255,160,0.9)';
+        context.beginPath();
+        context.moveTo(r.sx, r.sy - 14 * camera.zoom);
+        context.lineTo(r.sx + 9 * camera.zoom, r.sy - 11 * camera.zoom);
+        context.lineTo(r.sx, r.sy - 8 * camera.zoom);
+        context.closePath();
+        context.fill();
+        context.restore();
+      }
+
       // Draw selection ring
       context.strokeStyle = SELECTION_COLOR;
       context.lineWidth = 3;

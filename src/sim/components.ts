@@ -22,13 +22,25 @@ export interface MovementComponent {
   /** The target the current `path` was computed for — movement recomputes the path
    *  when target no longer matches (orders can retarget at any time). Additive (FG-1). */
   pathGoal?: WorldPos | null;
+  /** Attack-move: while set, the unit HOLDS to fight whatever combatTargeting
+   *  acquires en route, resuming toward `target` when the target dies/leaves.
+   *  A plain move order clears it (forced move). Additive (FG-1). */
+  attackMove?: boolean;
 }
 export interface ResourceComponent { cargo: number; capacity: number } // harvester
 export interface CombatComponent { weaponId: string | null; cooldownRemaining: number; targetId: EntityId | null }
 export interface ExperienceComponent { kills: number; rank: number } // veterancy (dormant by default)
 export interface RenderableComponent { spriteId: string }
 export interface BuildingComponent { onSlab: boolean; buildProgress: number; powered: boolean }
-export interface ProductionComponent { queue: readonly string[]; progress: number; current?: string | null }
+export interface ProductionComponent {
+  queue: readonly string[];
+  progress: number;
+  current?: string | null;
+  /** Rally point: freshly-produced combat units move here (harvesters auto-mine
+   *  instead, C&C-style). Set by right-clicking ground with the producer selected.
+   *  Additive (FG-1). */
+  rally?: WorldPos | null;
+}
 
 /** Economy component for credits and storage. */
 export interface EconomyComponent {
