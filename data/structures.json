@@ -6,7 +6,10 @@
       "cost": 1000,
       "buildTimeSeconds": 60,
       "hp": 2000,
-      "footprint": { "w": 2, "h": 2 },
+      "footprint": {
+        "w": 2,
+        "h": 2
+      },
       "powerSupply": 0,
       "powerDemand": 0,
       "onSlabHpFraction": 1.0,
@@ -33,7 +36,10 @@
       "cost": 300,
       "buildTimeSeconds": 20,
       "hp": 800,
-      "footprint": { "w": 2, "h": 2 },
+      "footprint": {
+        "w": 2,
+        "h": 2
+      },
       "powerSupply": 0,
       "powerDemand": 0,
       "onSlabHpFraction": 1.0,
@@ -60,7 +66,10 @@
       "cost": 400,
       "buildTimeSeconds": 30,
       "hp": 500,
-      "footprint": { "w": 1, "h": 1 },
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
       "powerSupply": 100,
       "powerDemand": 0,
       "onSlabHpFraction": 1.0,
@@ -87,7 +96,10 @@
       "cost": 200,
       "buildTimeSeconds": 15,
       "hp": 200,
-      "footprint": { "w": 1, "h": 1 },
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
       "powerSupply": 0,
       "powerDemand": 10,
       "onSlabHpFraction": 1.0,
@@ -114,7 +126,10 @@
       "cost": 50,
       "buildTimeSeconds": 5,
       "hp": 100,
-      "footprint": { "w": 1, "h": 1 },
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
       "powerSupply": 0,
       "powerDemand": 0,
       "onSlabHpFraction": 1.0,
@@ -133,6 +148,66 @@
           "rangeMarks": 0,
           "hazard": "NONE",
           "factionStripe": "slab"
+        }
+      }
+    },
+    {
+      "id": "refinery",
+      "name": "Refinery",
+      "cost": 1200,
+      "buildTimeSeconds": 35,
+      "hp": 1500,
+      "footprint": {
+        "w": 2,
+        "h": 2
+      },
+      "powerSupply": 0,
+      "powerDemand": 20,
+      "onSlabHpFraction": 1.0,
+      "offSlabHpFraction": 0.7,
+      "providesBuildRadius": false,
+      "isDeployable": false,
+      "graphics": {
+        "sprite_id": "refinery",
+        "fallback_geometry": {
+          "chassis": "BUILDING",
+          "chassisMod": "NONE",
+          "weaponGlyph": "NONE",
+          "barrelClass": "NONE",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 0,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      }
+    },
+    {
+      "id": "defense_turret",
+      "name": "Turret",
+      "cost": 550,
+      "buildTimeSeconds": 18,
+      "hp": 500,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "powerSupply": 0,
+      "powerDemand": 15,
+      "onSlabHpFraction": 1.0,
+      "offSlabHpFraction": 0.7,
+      "providesBuildRadius": false,
+      "isDeployable": false,
+      "graphics": {
+        "sprite_id": "turret",
+        "fallback_geometry": {
+          "chassis": "BUILDING",
+          "chassisMod": "NONE",
+          "weaponGlyph": "ANTI_INFANTRY",
+          "barrelClass": "NONE",
+          "roleBadge": "ANTI_INFANTRY",
+          "rangeMarks": 2,
+          "hazard": "NONE",
+          "factionStripe": "player"
         }
       }
     }

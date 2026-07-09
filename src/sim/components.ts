@@ -31,7 +31,14 @@ export interface ResourceComponent { cargo: number; capacity: number } // harves
 export interface CombatComponent { weaponId: string | null; cooldownRemaining: number; targetId: EntityId | null }
 export interface ExperienceComponent { kills: number; rank: number } // veterancy (dormant by default)
 export interface RenderableComponent { spriteId: string }
-export interface BuildingComponent { onSlab: boolean; buildProgress: number; powered: boolean }
+export interface BuildingComponent {
+  onSlab: boolean;
+  buildProgress: number;
+  powered: boolean;
+  /** Repair toggle (FG-2): while set and damaged, hp regenerates and credits drain
+   *  (construction system). Cleared automatically at full hp / empty bank. Additive. */
+  repairing?: boolean;
+}
 export interface ProductionComponent {
   queue: readonly string[];
   progress: number;

@@ -26,6 +26,8 @@ export type CommandIntent =
   | { type: 'stop' }
   // Double-click (FG-1): select ALL player units of the kind at the point.
   | { type: 'select-type'; target: WorldPos }
+  // Repair toggle (FG-2): flips `repairing` on the selected damaged player buildings.
+  | { type: 'repair' }
   | { type: 'deploy' }
   | { type: 'place-structure'; structureId: string; tile: TilePos }
   | { type: 'assign-group'; group: number }
@@ -104,6 +106,7 @@ export function makeInputHandlers(
     const [kind, id] = action.split(':');
     if (kind === 'train' && id) queue.push({ type: 'train', unitId: id });
     else if (kind === 'build' && id) setPlacementMode(id);
+    else if (kind === 'repair') queue.push({ type: 'repair' });
   }
 
   // Context cursor (C&C feel): crosshair over enemies, pointer over own units /
@@ -325,6 +328,16 @@ export function makeInputHandlers(
       case 'N':
         e.preventDefault();
         if (hasConYard()) setPlacementMode('power_node');
+        return;
+      case 'f': // Build a Refinery (FG-2: expand the economy)
+      case 'F':
+        e.preventDefault();
+        if (hasConYard()) setPlacementMode('refinery');
+        return;
+      case 'g': // Build a Defense Turret (FG-2)
+      case 'G':
+        e.preventDefault();
+        if (hasConYard()) setPlacementMode('defense_turret');
         return;
       case 'Escape': // Cancel placement / attack-move mode
         e.preventDefault();

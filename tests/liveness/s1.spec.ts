@@ -110,10 +110,11 @@ test.describe('S1 liveness gate', () => {
       return Math.sqrt((p.x - pos1.x) ** 2 + (p.y - pos1.y) ** 2);
     }, { timeout: 14000, intervals: [400] }).toBeGreaterThan(5); // ≥5 px of movement within a cycle
 
-    // Economy is VISIBLE: give the harvester time to complete a harvest→return→deposit
-    // cycle, then assert the refinery's credits actually rose (a deposit landed on screen).
-    await page.waitForTimeout(4000);
-    const creditsEnd = await page.evaluate(() => (window as { __debugEconomy?: () => { credits: number } }).__debugEconomy?.().credits ?? 0);
-    expect(creditsEnd).toBeGreaterThan(creditsStart);
+    // Economy is VISIBLE: poll until the first harvest→return→deposit cycle lands
+    // (fill ~5s + travel + dock drip ⇒ the first credit arrives ~10-14s in).
+    await expect.poll(
+      () => page.evaluate(() => (window as { __debugEconomy?: () => { credits: number } }).__debugEconomy?.().credits ?? 0),
+      { timeout: 25000, intervals: [500] },
+    ).toBeGreaterThan(creditsStart);
   });
 });

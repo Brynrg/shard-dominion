@@ -24,6 +24,8 @@ const BUILD_MENU: readonly BuildItem[] = [
   { id: 'harvester', key: 'H', name: 'Harvester', cost: 400, kind: 'train' },
   { id: 'barracks', key: 'B', name: 'Barracks', cost: 300, kind: 'build' },
   { id: 'power_node', key: 'N', name: 'Power', cost: 400, kind: 'build' },
+  { id: 'refinery', key: 'F', name: 'Refinery', cost: 1200, kind: 'build' },
+  { id: 'defense_turret', key: 'G', name: 'Turret', cost: 550, kind: 'build' },
 ];
 
 /** A build-menu button hit-test result: `"train:infantry"`, `"build:barracks"`, … */
@@ -61,16 +63,17 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
 
   // The player's economy (never the enemy's — scope by team so affordability is correct).
   function getRefinery(): { credits: number; storage: number; maxStorage: number } | null {
+    // Sum across ALL player refineries (buildable refineries add banks + storage).
+    let found = false; let credits = 0, storage = 0, maxStorage = 0;
     for (const e of simState.store.all()) {
       if (e.components.faction?.team === 'player' && e.components.building && e.components.economy) {
-        return {
-          credits: e.components.economy.credits || 0,
-          storage: e.components.economy.refineryStorage || 0,
-          maxStorage: e.components.economy.maxStorage || 2000,
-        };
+        found = true;
+        credits += e.components.economy.credits || 0;
+        storage += e.components.economy.refineryStorage || 0;
+        maxStorage += e.components.economy.maxStorage || 0;
       }
     }
-    return null;
+    return found ? { credits, storage, maxStorage } : null;
   }
 
   function getPowerStatus(): { supply: number; demand: number; powered: boolean } {
@@ -208,7 +211,7 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
       const pw = 184;
       const px = canvas.width - pw - 8;
       const py = 8;
-      const ph = 372; // fits 5 build buttons + footer
+      const ph = 470; // fits 7 build buttons + repair row + footer
       drawPanel(px, py, pw, ph);
 
       // Title bar.
@@ -264,6 +267,26 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
         const queued = producer ? producer.queue.filter(q => q === item.id).length : 0;
         drawBuildButton(item, px + 8, by, bw, 30, enabled, hovered, progress, queued);
         by += 34;
+      }
+
+      // Repair button (FG-2): shown while a damaged player building is selected.
+      let repairTarget: { repairing: boolean } | null = null;
+      for (const e of simState.store.all()) {
+        if (!e.components.selection?.selected) continue;
+        if (e.components.faction?.team !== 'player') continue;
+        const b = e.components.building; const h = e.components.health;
+        if (b && h && h.hp < h.maxHp) { repairTarget = { repairing: !!b.repairing }; break; }
+      }
+      if (repairTarget) {
+        const active = repairTarget.repairing;
+        rects.push({ action: 'repair:toggle', x: px + 8, y: by, w: bw, h: 26, enabled: true });
+        context.fillStyle = active ? 'rgba(76,175,80,0.45)' : 'rgba(226,178,74,0.30)';
+        context.fillRect(px + 8, by, bw, 26);
+        context.strokeStyle = active ? COLORS.success : '#c9a24a';
+        context.strokeRect(px + 8.5, by + 0.5, bw - 1, 25);
+        context.fillStyle = '#ffe9b0';
+        context.font = 'bold 12px monospace'; context.textBaseline = 'top';
+        context.fillText(active ? '🔧 REPAIRING…  (click to stop)' : '🔧 REPAIR  (drains credits)', px + 16, by + 7);
       }
 
       // Legend (footer).

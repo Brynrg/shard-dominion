@@ -5,6 +5,7 @@ import type { SimState } from '../state.js';
 import type { WeaponsFile } from '../../loaders/schemas.js';
 import { SIM_TICK_RATE } from '../loop.js';
 import { TILE_SUBUNITS } from '../coords.js';
+import { teamPowerShortage } from './power.js';
 import type { WorldPos } from '../coords.js';
 
 /** Distance between two world positions. */
@@ -49,8 +50,11 @@ export function makeDamageSystem(weapons: WeaponsFile): { name: 'damage'; run(st
         const mult = weapons.matrix[weapon.type]?.[armor] ?? 0;
         th.hp -= weapon.damage * mult;
 
-        // 5) reset cooldown: weapon.cooldown seconds → ticks
-        combat.cooldownRemaining = Math.round(weapon.cooldown * SIM_TICK_RATE);
+        // 5) reset cooldown: weapon.cooldown seconds → ticks. Armed BUILDINGS
+        // (turrets) fire 50% slower while their team is power-starved (FG-2).
+        const lowPowerTurret = e.components.building &&
+          teamPowerShortage(state, e.components.faction?.team ?? '');
+        combat.cooldownRemaining = Math.round(weapon.cooldown * SIM_TICK_RATE * (lowPowerTurret ? 1.5 : 1));
       }
     },
   };

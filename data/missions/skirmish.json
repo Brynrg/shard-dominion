@@ -2,33 +2,83 @@
   "id": "skirmish",
   "name": "Skirmish",
   "order": 0,
-  "map": { "width": 32, "height": 32, "seed": 42 },
+  "map": {
+    "width": 32,
+    "height": 32,
+    "seed": 42
+  },
   "briefing": {
     "title": "SKIRMISH",
     "story": [
       "A single valley on Aether Prime. One rival warband holds the north-east.",
       "Harvest Shard, raise an army, and destroy their base to take the field."
     ],
-    "objectives": ["Destroy the enemy base"]
+    "objectives": [
+      "Destroy the enemy base"
+    ]
   },
   "debrief": {
-    "win": ["The enemy warband is broken. The valley is yours."],
-    "lose": ["Your base has fallen. The valley is lost."]
+    "win": [
+      "The enemy warband is broken. The valley is yours."
+    ],
+    "lose": [
+      "Your base has fallen. The valley is lost."
+    ]
   },
   "naturalShardDensity": 300,
   "fields": [
-    { "tx": 18, "ty": 15, "w": 3, "h": 3, "density": 800 }
+    {
+      "tx": 18,
+      "ty": 15,
+      "w": 3,
+      "h": 3,
+      "density": 600
+    },
+    {
+      "tx": 7,
+      "ty": 24,
+      "w": 3,
+      "h": 2,
+      "density": 650
+    },
+    {
+      "tx": 21,
+      "ty": 10,
+      "w": 3,
+      "h": 3,
+      "density": 800
+    }
   ],
   "player": {
     "credits": 600,
     "buildings": [
-      { "type": "construction_yard", "tx": 14, "ty": 16 },
-      { "type": "refinery", "tx": 16, "ty": 16 }
+      {
+        "type": "construction_yard",
+        "tx": 14,
+        "ty": 16
+      },
+      {
+        "type": "refinery",
+        "tx": 16,
+        "ty": 16
+      }
     ],
     "units": [
-      { "type": "harvester", "tx": 17, "ty": 16 },
-      { "type": "infantry", "tx": 13, "ty": 18 },
-      { "type": "infantry", "tx": 14, "ty": 18 }
+      {
+        "type": "harvester",
+        "tx": 17,
+        "ty": 16
+      },
+      {
+        "type": "infantry",
+        "tx": 13,
+        "ty": 18
+      },
+      {
+        "type": "infantry",
+        "tx": 14,
+        "ty": 18
+      }
     ]
   },
   "enemies": [
@@ -36,22 +86,55 @@
       "team": "enemy",
       "credits": 600,
       "buildings": [
-        { "type": "refinery", "tx": 26, "ty": 8 },
-        { "type": "barracks", "tx": 27, "ty": 9 }
+        {
+          "type": "refinery",
+          "tx": 26,
+          "ty": 8
+        },
+        {
+          "type": "barracks",
+          "tx": 27,
+          "ty": 9
+        }
       ],
       "units": [
-        { "type": "harvester", "tx": 27, "ty": 8 }
+        {
+          "type": "harvester",
+          "tx": 27,
+          "ty": 8
+        }
       ],
       "fields": [
-        { "tx": 28, "ty": 7, "w": 3, "h": 3, "density": 800 }
+        {
+          "tx": 28,
+          "ty": 7,
+          "w": 3,
+          "h": 3,
+          "density": 600
+        },
+        {
+          "tx": 24,
+          "ty": 2,
+          "w": 3,
+          "h": 2,
+          "density": 650
+        }
       ]
     }
   ],
   "objectives": [
-    { "type": "eliminate", "team": "enemy", "primary": true, "text": "Destroy the enemy forces" }
+    {
+      "type": "eliminate",
+      "team": "enemy",
+      "primary": true,
+      "text": "Destroy the enemy forces"
+    }
   ],
   "failure": [
-    { "type": "defeated", "team": "player" }
+    {
+      "type": "defeated",
+      "team": "player"
+    }
   ],
   "next": null
 }

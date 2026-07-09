@@ -5,6 +5,7 @@ import type { UnitDef } from '../../loaders/units.js';
 import { SIM_TICK_RATE } from '../loop.js';
 import { worldToTile, tileToWorldCenter } from '../coords.js';
 import type { EntityId } from '../ids.js';
+import { teamPowerShortage } from './power.js';
 
 export function makeProductionSystem(units: readonly UnitDef[]): { name: 'production'; run(state: SimState): void } {
   // Progress state per producer entity id — MUST live in the factory closure (one
@@ -35,6 +36,10 @@ export function makeProductionSystem(units: readonly UnitDef[]): { name: 'produc
           producer.components.production = { ...prod, queue: prod.queue.slice(1), progress: 0, current: unitId };
         }
         if (!job) continue;
+
+        // Low power (FG-2): production runs at 60% speed — the build tick is
+        // skipped on 2 of every 5 sim ticks. Deterministic (state.tick).
+        if (teamPowerShortage(state, team) && state.tick % 5 < 2) continue;
 
         job.ticksLeft -= 1;
         const def = units.find(u => u.id === job.unitId);

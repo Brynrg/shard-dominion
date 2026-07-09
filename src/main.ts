@@ -44,7 +44,7 @@ declare global {
     __debugEconomy?: () => { credits: number };
     __debugSelection?: () => number;
     __debugPower?: () => { supply: number; demand: number; powered: boolean };
-    __debugBuildingCount?: () => { mcv: number; conyard: number; power_node: number; barracks: number };
+    __debugBuildingCount?: () => { mcv: number; conyard: number; power_node: number; barracks: number; refinery: number; defense_turret: number };
     __debugConYardScreenPos?: () => { x: number; y: number } | null;
     __debugUnitCount?: () => { player: number; enemy: number };
     __debugVictory?: () => { over: boolean; winner: 'player' | 'enemy' | null };
@@ -289,7 +289,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
 
   // Building-count + ConYard locator hooks for the S3 liveness gate.
   window.__debugBuildingCount = () => {
-    const count = { mcv: 0, conyard: 0, power_node: 0, barracks: 0 };
+    const count = { mcv: 0, conyard: 0, power_node: 0, barracks: 0, refinery: 0, defense_turret: 0 };
     for (const e of state.store.all()) {
       const f = e.components.faction?.faction;
       if (e.components.faction?.team !== 'player') continue;
@@ -297,6 +297,8 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
       else if (f === 'construction_yard') count.conyard += 1;
       else if (f === 'power_node') count.power_node += 1;
       else if (f === 'barracks') count.barracks += 1;
+      else if (f === 'refinery') count.refinery += 1;
+      else if (f === 'defense_turret') count.defense_turret += 1;
     }
     return count;
   };

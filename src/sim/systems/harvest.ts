@@ -220,19 +220,26 @@ function runDock(
 function findDensestShardTile(state: SimState, pos: PositionComponent): { tx: number; ty: number } | null {
   const tilePos = worldToTile(pos);
   let bestTile: { tx: number; ty: number } | null = null;
-  let bestDensity = 0;
+  let bestScore = 0;
 
-  // Search a reasonable radius around the harvester
-  const searchRadius = 10;
+  // Distance-DISCOUNTED richness (FG-2): score = density − 60·distance. A nearby
+  // field wins over a slightly-richer distant one, so harvesters work the home
+  // field first and only trek to flank/centre fields as the near ones deplete —
+  // expansion becomes a real decision instead of automatic centre-rushing.
+  // Deterministic: fixed scan order, strict > keeps the first-best on ties.
+  const searchRadius = 14;
+  const DIST_PENALTY = 100; // density a farther tile must beat, per tile of distance
   for (let dy = -searchRadius; dy <= searchRadius; dy++) {
     for (let dx = -searchRadius; dx <= searchRadius; dx++) {
       const tx = tilePos.tx + dx;
       const ty = tilePos.ty + dy;
       const densityKey = `${tx},${ty}`;
       const density = state.shardDensity.get(densityKey) ?? 0;
-
-      if (density > bestDensity) {
-        bestDensity = density;
+      if (density <= 0) continue;
+      const chebyshev = Math.max(Math.abs(dx), Math.abs(dy));
+      const score = density - DIST_PENALTY * chebyshev;
+      if (score > bestScore) {
+        bestScore = score;
         bestTile = { tx, ty };
       }
     }

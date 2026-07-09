@@ -10,7 +10,7 @@
 //   Assault    — army value ≥ an escalating threshold → commit the whole force at the base.
 //   Pressure   — army value ≥ a smaller threshold → send a partial force, keep a reserve.
 //   Develop    — default → keep production busy with a composition that counters the player.
-//   (Expand    — defined for the roadmap; a no-op until v0.25 adds fields + AI construction.)
+//   Expand     — a fat bank + a rich unexploited field → found a new refinery beside it (FG-2).
 //
 // The AI's economy is REAL: production is paid from its harvested credits (the production
 // system charges the bank). The AI never receives hidden/recurring income here.
@@ -112,6 +112,7 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig): { name: 
       else if (armyValue >= assaultThreshold) plan = 'Assault';
       else if (harvesterExposed && army.length > 2) plan = 'Raid';
       else if (armyValue >= pressureValue) plan = 'Pressure';
+      else if (bank && bank.credits >= EXPAND_COST + EXPAND_RESERVE && findExpansionTile(state, team) !== null) plan = 'Expand';
       else plan = 'Develop';
 
       // ── Economy: keep the harvester alive, keep production busy ──────────────
@@ -168,12 +169,67 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig): { name: 
           }
           break;
         }
-        // Develop / Expand: accumulate; the production block above does the work.
+        case 'Expand': {
+          // Found a refinery beside the richest unexploited field. The AI pays the
+          // SAME price as the player (deducted from its harvested bank); creation is
+          // immediate on payment — the same rule as player placement.
+          const spot = findExpansionTile(state, team);
+          if (spot && bank && bank.credits >= EXPAND_COST) {
+            bank.credits -= EXPAND_COST;
+            state.store.create({
+              position: tileToWorldCenter(spot),
+              building: { onSlab: false, buildProgress: 100, powered: true },
+              faction: { team, faction: 'refinery' },
+              power: { powerSupply: 0, powerDemand: 20, powered: true },
+              economy: { credits: 0, refineryStorage: 0, maxStorage: 1500 },
+              production: { queue: [], progress: 0, current: null },
+              health: { hp: 1500, maxHp: 1500 },
+              armor: { armorClass: 'BUILDING' },
+            });
+          }
+          break;
+        }
+        // Develop: accumulate; the production block above does the work.
       }
 
       lastArmyCount = army.length;
     },
   };
+}
+
+const EXPAND_COST = 1200;     // same refinery price the player pays
+const EXPAND_RESERVE = 300;   // keep a production float after expanding
+
+/** The richest field tile ≥6 tiles from every refinery the team already owns, with a
+ *  walkable adjacent build spot. Deterministic: sorted key iteration, ties by key. */
+function findExpansionTile(state: SimState, team: string): TilePos | null {
+  const refineries: WorldPos[] = [];
+  for (const e of state.store.all()) {
+    if (e.components.faction?.team === team && e.components.faction?.faction === 'refinery' && e.components.position) {
+      refineries.push(e.components.position);
+    }
+  }
+  const keys = [...state.shardDensity.keys()].sort();
+  let best: { t: TilePos; density: number } | null = null;
+  for (const k of keys) {
+    const density = state.shardDensity.get(k) ?? 0;
+    if (density < 500) continue; // only rich fields justify a 1200cr outpost
+    const [txs, tys] = k.split(',');
+    const t = { tx: Number(txs), ty: Number(tys) };
+    const w = tileToWorldCenter(t);
+    if (refineries.some(r => Math.hypot(r.wx - w.wx, r.wy - w.wy) < 6 * TILE_SUBUNITS)) continue; // already exploited
+    if (best === null || density > best.density) {
+      // Build spot: the first walkable, unoccupied neighbour (fixed order → deterministic).
+      for (const [dx, dy] of [[2, 0], [-2, 0], [0, 2], [0, -2]] as const) {
+        const spot = { tx: t.tx + dx, ty: t.ty + dy };
+        if (!state.grid.isWalkable(spot)) continue;
+        if ((state.shardDensity.get(`${spot.tx},${spot.ty}`) ?? 0) > 0) continue; // don't build ON shard
+        best = { t: spot, density };
+        break;
+      }
+    }
+  }
+  return best?.t ?? null;
 }
 
 /** True if `p` is within `radius` (world units) of any point in `pts`. */

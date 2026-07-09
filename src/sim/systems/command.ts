@@ -308,9 +308,20 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             }
 
             // Spawn the structure at the tile centre (contract fn, no inline math).
-            // Producer structures (barracks) get a production component so T/R work.
+            // Per-kind components (FG-2): barracks trains combat units; a built
+            // Refinery is a dock + storage + harvester producer with NO free
+            // harvester and NO starting credits (the de-bundled RFC decision);
+            // a Defense Turret is a building that fights (combat, no movement).
             const tileCenter = tileToWorldCenter(intent.tile);
-            const isProducer = structure.id === 'barracks';
+            const extras: Record<string, unknown> = {};
+            if (structure.id === 'barracks') {
+              extras.production = { queue: [], progress: 0 };
+            } else if (structure.id === 'refinery') {
+              extras.production = { queue: [], progress: 0, current: null };
+              extras.economy = { credits: 0, refineryStorage: 0, maxStorage: 1500 };
+            } else if (structure.id === 'defense_turret') {
+              extras.combat = { weaponId: 'raider_cannon', cooldownRemaining: 0, targetId: null };
+            }
             state.store.create({
               position: tileCenter,
               building: { onSlab: false, buildProgress: 100, powered: true },
@@ -318,9 +329,22 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
               power: { powerSupply: structure.powerSupply, powerDemand: structure.powerDemand, powered: true },
               health: { hp: structure.hp, maxHp: structure.hp },
               armor: { armorClass: 'BUILDING' },
-              ...(isProducer ? { production: { queue: [], progress: 0 } } : {}),
+              ...extras,
             });
             markers.push({ target: tileCenter, remaining: MARKER_LIFETIME });
+            break;
+          }
+
+          case 'repair': {
+            // Toggle repair on the selected damaged player buildings (FG-2).
+            for (const e of state.store.all()) {
+              if (!e.components.selection?.selected) continue;
+              if (e.components.faction?.team !== 'player') continue;
+              const b = e.components.building; const h = e.components.health;
+              if (!b || !h) continue;
+              if (h.hp >= h.maxHp) { b.repairing = false; continue; }
+              b.repairing = !b.repairing;
+            }
             break;
           }
 

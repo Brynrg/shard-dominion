@@ -42,6 +42,25 @@ export function makeConstructionSystem(
     name: 'construction' as const,
     output: { buildQueue: [], readyStructures: [] },
     run(state: SimState): void {
+      // ── Repair pass (FG-2): toggled buildings heal over ~20s of full-hp time,
+      // draining ~30% of the structure's cost per full heal from the team bank.
+      // Auto-clears at full hp or an empty bank. Deterministic (no wall-clock).
+      for (const e of state.store.all()) {
+        const b = e.components.building; const h = e.components.health;
+        if (!b?.repairing || !h) continue;
+        if (h.hp >= h.maxHp) { b.repairing = false; continue; }
+        const team = e.components.faction?.team;
+        const bank = state.store.all().find(x => x.components.faction?.team === team && x.components.economy)?.components.economy;
+        const def = structures.find(st => st.id === e.components.faction?.faction);
+        const cost = def?.cost ?? 500;
+        const healPerTick = h.maxHp / 400;                       // full heal ≈ 20s
+        const creditPerTick = (cost * 0.3) / 400;                // ≈30% of cost per full heal
+        if (!bank || bank.credits < creditPerTick) { b.repairing = false; continue; }
+        bank.credits -= creditPerTick;
+        h.hp = Math.min(h.maxHp, h.hp + healPerTick);
+        if (h.hp >= h.maxHp) b.repairing = false;
+      }
+
       readyStructures.length = 0;
       const outputQueue: BuildEntry[] = [];
 

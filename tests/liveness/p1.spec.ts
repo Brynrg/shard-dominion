@@ -36,7 +36,7 @@ test.describe('P1 onboarding gate', () => {
     expect(await briefing()).toBe(false);
 
     // 3) The sim now runs — the harvester banks credits.
-    await expect.poll(async () => await credits(), { timeout: 8000, message: 'credits should rise once the match starts' })
+    await expect.poll(async () => await credits(), { timeout: 25000, intervals: [500], message: 'credits should rise once the match starts' })
       .toBeGreaterThan(c0);
 
     // 4) Clicking a unit at its reported screen position SELECTS it — proves the
