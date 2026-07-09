@@ -11,6 +11,24 @@
 
 ## Current state
 
+**⬡ XP-2 "ECONOMY 2.0" (2026-07-09, v0.36.0) — the unique loop lands.** Per the locked plan (§11):
+- **Refined Cells (charges, not money #2):** the T2 **Processing Plant** (K, 800/25s, 25 pwr) converts
+  100 credits → 1 Cell every 8s while powered, **cap 12**, never draining the bank below 200. Cells charge
+  ELITE systems only: **Warden 2⬡** (production waits without them), **HQ T3 3⬡**. HUD: ⬡ counter beside
+  credits + per-button cell chips.
+- **Salvage:** vehicles (scout/tank/vehicle/harvester/mcv) die into neutral **wrecks worth 30% of cost**
+  (victory system, `leavesWreck` in units.json); **touch a wreck with a harvester to reclaim it** — the
+  **Emberhand reclaims with ANY unit** (faction identity, `salvageAll`). Battles fertilize the economy.
+- **Resonance v1:** the dock drip writes each side's `minedTotal` (economy component, hashed); Riftmaw
+  awakenings now spawn at the bitten tile **nearest the HEAVIEST extractor's bank** — the planet hunts
+  whoever mines hardest. HUD: thin resonance bar under the power lamp (fills per 3000 mined).
+  `__debugResonance`/`__debugCells` hooks.
+- **Capturable Processing Relays:** neutral relays (skirmish maps at 20,13) capture like derricks (5s lone
+  presence) and pay **+1 Cell / 20s held** — map fights over Cell access (the panel's market replacement).
+- **AI:** founds a Processing Plant AFTER its War Factory (military first, 2000cr comfort threshold).
+5 unit tests + xp2_economy gate (plant converts live, resonance climbs, relay flow). **205 unit + 25
+liveness green.**
+
 **🏗️ XP-1 "FOUNDATIONS & FORGE-LITE" (2026-07-09) — the EXPANSION begins (v0.35.0).** First phase of the
 panel-locked EXPANSION_PLAN §11.6:
 - **HQ tech tiers T1→T3:** `TechComponent` on the ConYard; `upgrade-hq` intent (charged up-front, ticked by

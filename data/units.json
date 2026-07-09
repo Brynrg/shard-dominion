@@ -46,7 +46,8 @@
           "hazard": "NONE",
           "factionStripe": "enemy"
         }
-      }
+      },
+      "leavesWreck": true
     },
     {
       "id": "harvester",
@@ -70,7 +71,8 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "leavesWreck": true
     },
     {
       "id": "rocket_trooper",
@@ -119,7 +121,8 @@
           "factionStripe": "player"
         }
       },
-      "tier": 2
+      "tier": 2,
+      "leavesWreck": true
     },
     {
       "id": "assault_tank",
@@ -144,7 +147,8 @@
           "factionStripe": "player"
         }
       },
-      "tier": 2
+      "tier": 2,
+      "leavesWreck": true
     },
     {
       "id": "riftmaw",
@@ -192,7 +196,8 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "cellCost": 2
     }
   ]
 }

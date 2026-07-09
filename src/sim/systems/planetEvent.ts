@@ -26,6 +26,8 @@ const RIFTMAW_AGGRO_TILES = 6;
 const CAPTURE_RADIUS_TILES = 1.8;
 const CAPTURE_TICKS = 100;         // 5s alone beside the derrick
 const DERRICK_INCOME_PER_TICK = 5 / SIM_TICK_RATE; // 5 cr/s
+const RELAY_CELL_TICKS = 20 * SIM_TICK_RATE;        // XP-2: +1 Cell per 20s held
+const CELL_CAP = 12;
 
 export function makePlanetEventSystem(units: readonly UnitDef[]): { name: 'planetEvent'; run(state: SimState): void; debugRiftmaws: () => number } {
   const riftmawDef = units.find(u => u.id === 'riftmaw');
@@ -33,6 +35,7 @@ export function makePlanetEventSystem(units: readonly UnitDef[]): { name: 'plane
   let totalMined = 0;
   let awakenings = 0;
   const captureProgress = new Map<EntityId, { team: string; ticks: number }>();
+  const relayTicks = new Map<EntityId, number>(); // XP-2: per-relay cell clock
 
   function totalDensity(state: SimState): number {
     let t = 0;
@@ -53,13 +56,30 @@ export function makePlanetEventSystem(units: readonly UnitDef[]): { name: 'plane
         const alive = [...state.store.all()].filter(e =>
           e.components.faction?.faction === 'riftmaw' && (e.components.health?.hp ?? 0) > 0).length;
         if (alive < RIFTMAW_CAP) {
-          // The most-bitten rich tile: lowest remaining density among tiles that
-          // still have some (ties broken by sorted key — deterministic).
+          // RESONANCE (XP-2): the planet hunts the HEAVIEST extractor. Anchor on
+          // the top-mining side's bank; wake at the bitten tile NEAREST it (ties
+          // by sorted key — deterministic).
+          let anchor: { wx: number; wy: number } | null = null;
+          let heaviest = -1;
+          for (const team of ['player', 'enemy'] as const) {
+            let mined = 0; let bankPos: { wx: number; wy: number } | null = null;
+            for (const e of state.store.all()) {
+              if (e.components.faction?.team !== team || !e.components.economy) continue;
+              mined += e.components.economy.minedTotal ?? 0;
+              if (!bankPos && e.components.position) bankPos = e.components.position;
+            }
+            if (mined > heaviest && bankPos) { heaviest = mined; anchor = bankPos; }
+          }
           let best: { key: string; d: number } | null = null;
           for (const key of [...state.shardDensity.keys()].sort()) {
             const d = state.shardDensity.get(key)!;
             if (d <= 0 || d > 500) continue; // "bitten" = partially mined
-            if (best === null || d < best.d) best = { key, d };
+            if (anchor) {
+              const [txs, tys] = key.split(',');
+              const c = tileToWorldCenter({ tx: Number(txs), ty: Number(tys) });
+              const dist = Math.hypot(c.wx - anchor.wx, c.wy - anchor.wy);
+              if (best === null || dist < best.d) best = { key, d: dist };
+            } else if (best === null || d < best.d) best = { key, d };
           }
           if (best) {
             const [txs, tys] = best.key.split(',');
@@ -103,15 +123,28 @@ export function makePlanetEventSystem(units: readonly UnitDef[]): { name: 'plane
 
       // ── 3) Derricks: lone-team capture + owner income ────────────────────────
       for (const derrick of state.store.all()) {
-        if (derrick.components.faction?.faction !== 'derrick') continue;
+        const factionC = derrick.components.faction;
+        const kindHere = factionC?.faction;
+        if (!factionC || (kindHere !== 'derrick' && kindHere !== 'relay')) continue;
         const dp = derrick.components.position;
         if (!dp) continue;
-        const owner = derrick.components.faction.team;
+        const owner = factionC.team;
 
-        // Income drips to the owner's first bank.
+        // Income drips to the owner's first bank: derricks pay CREDITS,
+        // relays pay CELLS (XP-2: +1 per 20s held, capped).
         if (owner !== 'neutral') {
           const bank = state.store.all().find(e => e.components.faction?.team === owner && e.components.economy)?.components.economy;
-          if (bank) bank.credits = Math.min(bank.maxStorage, bank.credits + DERRICK_INCOME_PER_TICK);
+          if (bank) {
+            if (kindHere === 'derrick') {
+              bank.credits = Math.min(bank.maxStorage, bank.credits + DERRICK_INCOME_PER_TICK);
+            } else {
+              const t = (relayTicks.get(derrick.id) ?? 0) + 1;
+              if (t >= RELAY_CELL_TICKS && (bank.cells ?? 0) < CELL_CAP) {
+                bank.cells = (bank.cells ?? 0) + 1;
+                relayTicks.set(derrick.id, 0);
+              } else relayTicks.set(derrick.id, Math.min(t, RELAY_CELL_TICKS));
+            }
+          }
         }
 
         // Capture: exactly ONE team's combat units in radius, sustained.

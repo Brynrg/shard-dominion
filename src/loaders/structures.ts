@@ -11,7 +11,7 @@ export const StructureSchema = z.object({
   /** Walls (XP-1): this structure blocks unit pathing while alive. */
   blocksPath: z.boolean().optional(),
   /** ConYard only: the HQ upgrade ladder (XP-1). */
-  tierUpgrades: z.array(z.object({ toTier: z.number().int().min(2).max(3), cost: z.number().positive(), seconds: z.number().positive() })).optional(),
+  tierUpgrades: z.array(z.object({ toTier: z.number().int().min(2).max(3), cost: z.number().positive(), seconds: z.number().positive(), cells: z.number().int().nonnegative().optional() })).optional(),
   hp: z.number().positive(),
   footprint: z.object({ w: z.number().int().positive(), h: z.number().int().positive() }),
   powerSupply: z.number().nonnegative(),

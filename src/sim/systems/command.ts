@@ -399,8 +399,10 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             if (!step) break;
             const bank = state.store.all().find(e =>
               e.components.faction?.team === actor && e.components.economy)?.components.economy;
-            if (!bank || bank.credits < step.cost) break;
+            const cellPrice = step.cells ?? 0;          // XP-2: T3 charges Cells
+            if (!bank || bank.credits < step.cost || (bank.cells ?? 0) < cellPrice) break;
             bank.credits -= step.cost;
+            if (cellPrice > 0) bank.cells = (bank.cells ?? 0) - cellPrice;
             yard.components.tech = { tier: techC.tier, upgradingTo: step.toTier, ticksLeft: Math.max(1, Math.round(step.seconds * 20)) };
             break;
           }

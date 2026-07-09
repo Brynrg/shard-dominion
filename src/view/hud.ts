@@ -25,7 +25,7 @@ export interface HUDConfig {
 
 /** The C&C-style sidebar build menu. `kind` decides the click action:
  *  train → queue a unit at the barracks; build → enter placement mode. */
-interface BuildItem { id: string; key: string; name: string; cost: number; kind: 'train' | 'build'; tier?: number }
+interface BuildItem { id: string; key: string; name: string; cost: number; kind: 'train' | 'build'; tier?: number; cellCost?: number }
 // Split across two tabs (XP-1) — [S]TRUCTURES and [U]NITS — so the roster can grow.
 // `tier` mirrors data/{structures,units}.json (view-side copy, like cost).
 const STRUCT_MENU: readonly BuildItem[] = [
@@ -35,6 +35,7 @@ const STRUCT_MENU: readonly BuildItem[] = [
   { id: 'defense_turret', key: 'G', name: 'Turret', cost: 550, kind: 'build' },
   { id: 'wall', key: 'L', name: 'Wall', cost: 50, kind: 'build' },
   { id: 'radar', key: 'J', name: 'Radar', cost: 600, kind: 'build', tier: 2 },
+  { id: 'processing_plant', key: 'K', name: 'Proc Plant', cost: 800, kind: 'build', tier: 2 },
   { id: 'war_factory', key: 'W', name: 'War Fctry', cost: 1000, kind: 'build', tier: 2 },
 ];
 const UNIT_MENU: readonly BuildItem[] = [
@@ -43,7 +44,7 @@ const UNIT_MENU: readonly BuildItem[] = [
   { id: 'harvester', key: 'H', name: 'Harvester', cost: 400, kind: 'train' },
   { id: 'scout_vehicle', key: 'V', name: 'Scout', cost: 350, kind: 'train', tier: 2 },
   { id: 'assault_tank', key: 'C', name: 'Tank', cost: 700, kind: 'train', tier: 2 },
-  { id: 'warden', key: 'E', name: 'Warden ★', cost: 800, kind: 'train' },
+  { id: 'warden', key: 'E', name: 'Warden ★', cost: 800, kind: 'train', cellCost: 2 },
 ];
 // HQ upgrade ladder (view-side mirror of construction_yard.tierUpgrades).
 const HQ_UPGRADES = [{ toTier: 2, cost: 1000, seconds: 30 }, { toTier: 3, cost: 2000, seconds: 45 }];
@@ -90,18 +91,20 @@ export function makeHUD(cfg: HUDConfig): {
   }
 
   // The player's economy (never the enemy's — scope by team so affordability is correct).
-  function getRefinery(): { credits: number; storage: number; maxStorage: number } | null {
+  function getRefinery(): { credits: number; storage: number; maxStorage: number; cells: number; mined: number } | null {
     // Sum across ALL player refineries (buildable refineries add banks + storage).
-    let found = false; let credits = 0, storage = 0, maxStorage = 0;
+    let found = false; let credits = 0, storage = 0, maxStorage = 0, cells = 0, mined = 0;
     for (const e of simState.store.all()) {
       if (e.components.faction?.team === viewerTeam && e.components.building && e.components.economy) {
         found = true;
         credits += e.components.economy.credits || 0;
         storage += e.components.economy.refineryStorage || 0;
         maxStorage += e.components.economy.maxStorage || 0;
+        cells += e.components.economy.cells ?? 0;
+        mined += e.components.economy.minedTotal ?? 0;
       }
     }
-    return found ? { credits, storage, maxStorage } : null;
+    return found ? { credits, storage, maxStorage, cells, mined } : null;
   }
 
   function getPowerStatus(): { supply: number; demand: number; powered: boolean } {
@@ -284,6 +287,16 @@ export function makeHUD(cfg: HUDConfig): {
       context.fillStyle = '#ffd34a';
       context.font = 'bold 20px monospace';
       context.fillText(`◈ ${credits}`, px + 10, py + 28);
+      // Cells (XP-2): the elite-systems charges.
+      context.fillStyle = '#7dd3fc';
+      context.font = 'bold 13px monospace';
+      context.fillText(`⬡ ${refinery?.cells ?? 0}`, px + 128, py + 33);
+      // Resonance (XP-2): how hard the planet is watching YOU (fills per 3000 mined).
+      const resPct = Math.min(1, ((refinery?.mined ?? 0) % 3000) / 3000);
+      context.fillStyle = 'rgba(201,166,255,0.25)';
+      context.fillRect(px + 10, py + 50, 106, 3);
+      context.fillStyle = '#c9a6ff';
+      context.fillRect(px + 10, py + 50, Math.floor(106 * resPct), 3);
 
       // Power lamp.
       const powerColor = power.powered ? COLORS.powerOk : COLORS.powerLow;
@@ -369,7 +382,8 @@ export function makeHUD(cfg: HUDConfig): {
         const itemDemand = item.kind === 'build' ? (cfg.powerDemandOf?.(item.id) ?? 0) : 0;
         const powerWarn = itemDemand > 0 && power.supply < power.demand + itemDemand;
         const tierOk = (item.tier ?? 1) <= tech.tier;
-        const enabled = credits >= shownCost && prereqMet && tierOk;
+        const cellsOk = (item.cellCost ?? 0) <= (refinery?.cells ?? 0);
+        const enabled = credits >= shownCost && prereqMet && tierOk && cellsOk;
         const hovered = !!hover && hover.sx >= px + 8 && hover.sx <= px + 8 + bw && hover.sy >= by && hover.sy <= by + 30;
         const progress = producer?.current === item.id ? (producer?.progress ?? 0) : 0;
         const queued = producer ? producer.queue.filter(q => q === item.id).length : 0;
@@ -377,6 +391,10 @@ export function makeHUD(cfg: HUDConfig): {
         if (!tierOk) { // tier chip: teaches WHY it's grey (XP-1)
           context.fillStyle = '#c9a24a'; context.font = 'bold 10px monospace';
           context.fillText(`T${item.tier}`, px + 8 + bw - 70, by + 4);
+        }
+        if (item.cellCost) { // cell price chip (XP-2)
+          context.fillStyle = cellsOk ? '#7dd3fc' : '#e24a4a'; context.font = 'bold 10px monospace';
+          context.fillText(`⬡${item.cellCost}`, px + 8 + bw - 70, by + 16);
         }
         by += 34;
       }

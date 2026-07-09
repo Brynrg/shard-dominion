@@ -10,7 +10,14 @@ import type { HarvestComponent, EconomyComponent, PositionComponent, MovementCom
 // Dock slots per refinery (one per refinery for simplicity)
 const DOCK_SLOTS_PER_REFINERY = 1;
 
-export function makeHarvestSystem(economy: EconomyConstants): { name: 'harvest'; run(state: SimState): void } {
+export function makeHarvestSystem(economy: EconomyConstants, factions?: { player?: { salvageAll?: boolean }; enemy?: { salvageAll?: boolean } }): { name: 'harvest'; run(state: SimState): void } {
+  // Cells (XP-2): per-team conversion tick counters (deterministic closure state).
+  const cellTicks = new Map<string, number>();
+  const CELL_COST = 100;        // Shard credits per Cell
+  const CELL_SECONDS = 8;       // conversion time per Cell
+  const CELL_CAP = 12;          // low cap — charges, not a currency
+  const CREDIT_FLOOR = 200;     // never drain the bank below this
+  const SALVAGE_RADIUS_SQ = (0.8 * 256) * (0.8 * 256);
   // Derived constants from economy config
   const DOCK_RATE_PER_TICK = economy.dockRate / SIM_TICK_RATE; // 80/s ÷ 20Hz = 4 credits/tick
 
@@ -37,6 +44,52 @@ export function makeHarvestSystem(economy: EconomyConstants): { name: 'harvest';
         }
         if (!hasHarvester && bank && bank.credits < economy.salvageTrickleCap) {
           bank.credits = Math.min(economy.salvageTrickleCap, bank.credits + economy.salvageRatePerSec / SIM_TICK_RATE);
+        }
+      }
+
+      // ── Cells (XP-2): a living POWERED Processing Plant converts Shard→Cells on a
+      // visible deterministic clock: 100 credits → 1 Cell every 8s, cap 12. ──────
+      for (const team of ['player', 'enemy'] as const) {
+        let plant = false; let bank: EconomyComponent | null = null;
+        for (const e of state.store.all()) {
+          const f = e.components.faction;
+          if (!f || f.team !== team) continue;
+          if (f.faction === 'processing_plant' && (e.components.health?.hp ?? 0) > 0 &&
+              e.components.power?.powered !== false) plant = true;
+          if (!bank && e.components.building && e.components.economy) bank = e.components.economy;
+        }
+        if (!plant || !bank) { cellTicks.set(team, 0); continue; }
+        if ((bank.cells ?? 0) >= CELL_CAP || bank.credits < CELL_COST + CREDIT_FLOOR) continue;
+        const t = (cellTicks.get(team) ?? 0) + 1;
+        if (t >= CELL_SECONDS * SIM_TICK_RATE) {
+          bank.credits -= CELL_COST;
+          bank.cells = (bank.cells ?? 0) + 1;
+          cellTicks.set(team, 0);
+        } else cellTicks.set(team, t);
+      }
+
+      // ── Salvage (XP-2): touch a wreck to reclaim it. Harvesters for everyone;
+      // the Emberhand reclaims with ANY unit (faction identity). ────────────────
+      for (const wreck of state.store.all()) {
+        if (wreck.components.faction?.faction !== 'wreck') continue;
+        const wp = wreck.components.position; const value = wreck.components.resource?.cargo ?? 0;
+        if (!wp || value <= 0) continue;
+        let claimed: 'player' | 'enemy' | null = null;
+        for (const e of state.store.all()) {
+          const f = e.components.faction; const p = e.components.position;
+          if (!f || (f.team !== 'player' && f.team !== 'enemy') || !p) continue;
+          if ((e.components.health?.hp ?? 0) <= 0) continue;
+          const anyUnit = factions?.[f.team]?.salvageAll === true && !!e.components.movement;
+          if (!e.components.harvest && !anyUnit) continue;
+          const dx = p.wx - wp.wx, dy = p.wy - wp.wy;
+          if (dx * dx + dy * dy <= SALVAGE_RADIUS_SQ) { claimed = f.team; break; }
+        }
+        if (claimed) {
+          const bank = state.store.all().find(e => e.components.faction?.team === claimed && e.components.economy)?.components.economy;
+          if (bank) {
+            bank.credits = Math.min(bank.maxStorage || 99999, bank.credits + value);
+            state.store.remove(wreck.id);
+          }
         }
       }
 
@@ -219,6 +272,8 @@ function runDock(
     } else {
       const deposit = Math.min(dockRatePerTick, room, harvest.cargo);
       economyComp.credits += deposit;
+      // Resonance ledger (XP-2): the planet tallies what each side extracts.
+      economyComp.minedTotal = (economyComp.minedTotal ?? 0) + deposit;
       harvest.cargo -= deposit;
     }
 

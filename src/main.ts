@@ -74,6 +74,8 @@ declare global {
     __debugTier?: () => { player: number; enemy: number };
     __debugButtonRect?: (action: string) => { x: number; y: number; w: number; h: number } | null;
     __debugTriggersFired?: () => string[];
+    __debugCells?: () => { player: number; enemy: number };
+    __debugResonance?: () => { player: number; enemy: number };
     __debugForceEnd?: (winner: 'player' | 'enemy') => void;
     __debugMessages?: () => { speaker: string; text: string }[];
     __debugRiftmaws?: () => number;
@@ -164,7 +166,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // Register systems (command runs FIRST per SYSTEM_ORDER; 'mission' objectives run in
   // their reserved slot). One AI per enemy side; victory still owns culling.
   const fogSystem = makeFogSystem(viewerTeam);
-  const victorySystem = makeVictorySystem();
+  const victorySystem = makeVictorySystem(units);
   const objectivesSystem = makeObjectivesSystem(mission.objectives, mission.failure, mission.triggers, units, teamFactions);
   const aiSystems = mp ? [] : mission.enemies.map(e => {
     const base = { team: 'enemy' as const, attackTile: meta.playerStartTile, ...(e.ai ?? {}) };
@@ -181,7 +183,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   const systems = orderSystems([
     commandSystem,
     makeMovementSystem(),
-    makeHarvestSystem(economy),
+    makeHarvestSystem(economy, teamFactions),
     constructionSystem,
     powerSystem,
     makeCombatTargetingSystem(weapons),
@@ -527,6 +529,19 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   window.__debugTier = () => ({ player: teamTier(state, 'player'), enemy: teamTier(state, 'enemy') });
   window.__debugButtonRect = (action: string) => view.hudButtonRect(action);
   window.__debugTriggersFired = () => objectivesSystem.firedTriggerIds();
+  // XP-2: Cells + Resonance telemetry.
+  window.__debugCells = () => {
+    const sum = (team: 'player' | 'enemy') => state.store.all()
+      .filter(e => e.components.faction?.team === team && e.components.economy)
+      .reduce((n, e) => n + (e.components.economy!.cells ?? 0), 0);
+    return { player: sum('player'), enemy: sum('enemy') };
+  };
+  window.__debugResonance = () => {
+    const sum = (team: 'player' | 'enemy') => state.store.all()
+      .filter(e => e.components.faction?.team === team && e.components.economy)
+      .reduce((n, e) => n + (e.components.economy!.minedTotal ?? 0), 0);
+    return { player: sum('player'), enemy: sum('enemy') };
+  };
 
   // Audio + time-scale + tick hooks (FG-1 gates).
   window.__debugAudio = () => audio.debug();

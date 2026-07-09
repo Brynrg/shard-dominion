@@ -37,8 +37,10 @@ export function makeProductionSystem(units: readonly UnitDef[], factions?: TeamF
           // find the team's credits pool
           const bank = state.store.all().find(e => e.components.faction?.team === team && e.components.economy)?.components.economy;
           const price = modCost(def.cost, factionFor(team)); // faction pricing (FG-6)
-          if (!bank || bank.credits < price) continue; // PAUSED — insufficient credits
+          const cellPrice = def.cellCost ?? 0;          // XP-2: elite units charge Cells too
+          if (!bank || bank.credits < price || (bank.cells ?? 0) < cellPrice) continue; // PAUSED
           bank.credits -= price;                        // pay ONCE, in full
+          if (cellPrice > 0) bank.cells = (bank.cells ?? 0) - cellPrice;
           job = { unitId, ticksLeft: Math.max(1, Math.round(def.buildTimeSeconds * SIM_TICK_RATE)) };
           active.set(producer.id, job);
           producer.components.production = { ...prod, queue: prod.queue.slice(1), progress: 0, current: unitId };

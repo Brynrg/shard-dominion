@@ -157,6 +157,29 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig): { name: 
           yard.components.tech = { tier: yard.components.tech.tier, upgradingTo: 2, ticksLeft: 600 };
         }
       }
+      // XP-2: with the WAR FACTORY standing and a fat bank, found ONE Processing
+      // Plant (military first; Cells fund the
+      // elite systems arriving in later phases; same 800 the player pays).
+      const plant = state.store.all().find(e =>
+        e.components.faction?.team === team && e.components.faction?.faction === 'processing_plant');
+      if (!plant && factory && tier >= 2 && bank && bank.credits >= 2000 && refinery?.components.position) {
+        const rt = worldToTile(refinery.components.position);
+        for (const [dx, dy] of [[2, 0], [0, 2], [-2, 2], [2, -2]] as const) {
+          const spot = { tx: rt.tx + dx, ty: rt.ty + dy };
+          if (!state.grid.isWalkable(spot)) continue;
+          if ((state.shardDensity.get(`${spot.tx},${spot.ty}`) ?? 0) > 0) continue;
+          bank.credits -= 800;
+          state.store.create({
+            position: tileToWorldCenter(spot),
+            building: { onSlab: false, buildProgress: 100, powered: true },
+            faction: { team, faction: 'processing_plant' },
+            power: { powerSupply: 0, powerDemand: 25, powered: true },
+            health: { hp: 900, maxHp: 900 },
+            armor: { armorClass: 'BUILDING' },
+          });
+          break;
+        }
+      }
       if (!factory && tier >= 2 && bank && bank.credits >= factoryThreshold && refinery?.components.position) {
         const rt = worldToTile(refinery.components.position);
         for (const [dx, dy] of [[-2, 0], [0, -2], [2, 2], [-2, -2]] as const) {

@@ -148,6 +148,11 @@
       "type": "derrick",
       "tx": 13,
       "ty": 12
+    },
+    {
+      "type": "relay",
+      "tx": 20,
+      "ty": 13
     }
   ]
 }

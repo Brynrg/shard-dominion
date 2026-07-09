@@ -147,7 +147,7 @@ in later. AI: one strategy profile per faction (Concord sieges, Emberhand raids,
 | Phase | Ships | Anchor gates |
 |---|---|---|
 | **XP-1 "Tiers & Walls"** (v0.35) | HQ T1–T3, Radar(+minimap gate), walls/gates, addons | tier gating unit tests; wall blocks path; addon auras measurable |
-| **XP-2 "Economy 2.0"** (v0.36) | Processing Plant + Cells, Exchange, salvage wrecks, storm harvest | chain math unit-tested; prices deterministic; wreck reclaim gate |
+| **XP-2 "Economy 2.0"** ✅ SHIPPED v0.36.0 | Processing Plant + Cells, Exchange, salvage wrecks, storm harvest | chain math unit-tested; prices deterministic; wreck reclaim gate |
 | **XP-3 "Sky & Siege"** (v0.37) | Air layer + AA + Skypad, artillery + counter-battery, stances, garrisons, transports | air ignores walls gate; AA counters; stance behaviors unit-tested |
 | **XP-4 "Asymmetry"** (v0.38) | Faction rosters + mechanics + superweapons + hero kits, faction AI profiles | per-faction roster gates; superweapon timer/alert gate; determinism suite extended |
 | **XP-5 "Act II · Embers"** (v0.39) | M8–M10 + persistent hero/veterans + salvage/market/storm missions | mission chain validation; persistence round-trip test |
@@ -255,7 +255,7 @@ second game mode; they're the campaign ANTAGONIST first, playable later).
 | Phase | Ships | Notes |
 |---|---|---|
 | **XP-1 "Foundations & Forge-lite"** ✅ SHIPPED v0.35.0 (2026-07-09) | T1–T3 tiers, radar, walls/gates + **mission kit** (play-from-JSON dev menu, trigger preview, templates) | tooling multiplies everything after |
-| **XP-2 "Economy 2.0"** (v0.36) | Cells-as-charges + Processing Plant, salvage wrecks, **Resonance v1**, capturable Relays | the unique strategic loop, complete |
+| **XP-2 "Economy 2.0"** ✅ SHIPPED v0.36.0 | Cells-as-charges + Processing Plant, salvage wrecks, **Resonance v1**, capturable Relays | the unique strategic loop, complete |
 | **XP-3 "Emberhand + Act II·1"** (v0.37) | Emberhand true asymmetry (salvage identity, Ghostwalker stealth+detection) + **M8–M10** | build the playable side, then teach it |
 | **XP-4 "Ground Depth"** (v0.38) | Artillery+counter-battery, stances, garrisons, transports, addons + balance validation sprint | deepen ground before air |
 | **XP-5 "Sky-lite"** (v0.39) | Shared gunship + rearm pad + AA; storms ground air; Concord shield mechanic | air after ground is stable |

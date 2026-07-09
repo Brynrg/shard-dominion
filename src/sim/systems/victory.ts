@@ -1,6 +1,7 @@
 // ── Victory system: cull dead units + decide win/lose ──────────────────────────
 // Runs LAST in SYSTEM_ORDER (after audio). Pure sim: no DOM, no wall-clock.
 import type { SimState } from '../state.js';
+import type { UnitDef } from '../../loaders/units.js';
 
 export interface VictoryResult { over: boolean; winner: 'player' | 'enemy' | null }
 export interface VictorySystem { name: 'victory'; run(state: SimState): void; result: VictoryResult }
@@ -8,7 +9,10 @@ export interface VictorySystem { name: 'victory'; run(state: SimState): void; re
 // The 'victory' system: (1) remove any unit at 0 HP (death); (2) once combat has
 // begun, if one side has no living combat units AND no producers, record the winner.
 // Sim-pure.
-export function makeVictorySystem(): VictorySystem {
+export function makeVictorySystem(units: readonly UnitDef[] = []): VictorySystem {
+  // XP-2 salvage: kinds that die into wrecks, worth ~30% of cost.
+  const wreckValue = new Map<string, number>();
+  for (const u of units) if (u.leavesWreck) wreckValue.set(u.id, Math.round(u.cost * 0.3));
   const result: VictoryResult = { over: false, winner: null };
   let playerSeen = false;
   let enemySeen = false;
@@ -29,10 +33,23 @@ export function makeVictorySystem(): VictorySystem {
         else enemySeen = true;
       }
 
-      // 2) DEATH: cull entities whose health has hit 0.
+      // 2) DEATH: cull entities whose health has hit 0. Vehicles leave WRECKS
+      //    (XP-2): neutral salvage worth ~30% of cost, reclaimed by touch.
       for (const e of state.store.all()) {
         const h = e.components.health;
-        if (h && h.hp <= 0) state.store.remove(e.id);
+        if (h && h.hp <= 0) {
+          const kind = e.components.faction?.faction ?? '';
+          const value = wreckValue.get(kind);
+          const pos = e.components.position;
+          state.store.remove(e.id);
+          if (value && pos) {
+            state.store.create({
+              position: { wx: pos.wx, wy: pos.wy },
+              faction: { team: 'neutral', faction: 'wreck' },
+              resource: { cargo: value, capacity: value },
+            });
+          }
+        }
       }
       if (result.over) return; // decision is sticky
 

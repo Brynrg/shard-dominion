@@ -15,6 +15,8 @@ export interface FactionMods {
   speedMult: number;  // spawn speed
   /** View palette (renderer team style override). */
   palette: { hull: string; hullDark: string; accent: string; stripe: string };
+  /** XP-2 Emberhand identity: ANY unit reclaims wrecks by touch (others: harvesters only). */
+  salvageAll?: boolean;
 }
 
 export const FACTIONS: Record<FactionId, FactionMods> = {
@@ -27,7 +29,7 @@ export const FACTIONS: Record<FactionId, FactionMods> = {
   // The raider insurgency: cheap, fast, fragile — swarm and slash.
   emberhand: {
     name: 'The Emberhand',
-    costMult: 0.8, hpMult: 0.85, speedMult: 1.15,
+    costMult: 0.8, hpMult: 0.85, speedMult: 1.15, salvageAll: true,
     palette: { hull: '#d1503a', hullDark: '#8f3020', accent: '#ffb08f', stripe: '#ff4a3d' },
   },
   // The planet's chosen: tough, slow, expensive — living crystal (FG-6b preview).

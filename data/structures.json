@@ -38,7 +38,8 @@
         {
           "toTier": 3,
           "cost": 2000,
-          "seconds": 45
+          "seconds": 45,
+          "cells": 3
         }
       ]
     },
@@ -305,6 +306,37 @@
       "blocksPath": true,
       "graphics": {
         "sprite_id": "wall",
+        "fallback_geometry": {
+          "chassis": "BUILDING",
+          "chassisMod": "NONE",
+          "weaponGlyph": "NONE",
+          "barrelClass": "NONE",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 0,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      }
+    },
+    {
+      "id": "processing_plant",
+      "name": "Proc Plant",
+      "cost": 800,
+      "buildTimeSeconds": 25,
+      "hp": 900,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "powerSupply": 0,
+      "powerDemand": 25,
+      "onSlabHpFraction": 1.0,
+      "offSlabHpFraction": 0.7,
+      "providesBuildRadius": false,
+      "isDeployable": false,
+      "tier": 2,
+      "graphics": {
+        "sprite_id": "processing_plant",
         "fallback_geometry": {
           "chassis": "BUILDING",
           "chassisMod": "NONE",

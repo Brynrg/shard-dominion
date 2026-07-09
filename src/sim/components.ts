@@ -56,6 +56,12 @@ export interface EconomyComponent {
   credits: number;
   refineryStorage: number;
   maxStorage: number;
+  /** Refined Cells (XP-2): the elite-systems charge currency. Capped low; lives on
+   *  the side's bank alongside credits. Additive. */
+  cells?: number;
+  /** Resonance ledger (XP-2): cumulative Shard this side has mined — the planet
+   *  watches. Additive; deterministic; folded into the state hash via economy. */
+  minedTotal?: number;
 }
 
 /** Harvest component for FSM state. IDLE = FSM suspended (e.g. by a manual move order). */

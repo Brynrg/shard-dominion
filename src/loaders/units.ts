@@ -12,6 +12,10 @@ export const UnitSchema = z.object({
   speed: z.number().positive(),
   buildTimeSeconds: z.number().positive(),
   tier: z.number().int().min(1).max(3).default(1),
+  /** XP-2: dies into a salvageable wreck worth ~30% of cost. */
+  leavesWreck: z.boolean().optional(),
+  /** XP-2: Refined Cells charged at production start (elite systems only). */
+  cellCost: z.number().int().nonnegative().optional(),
   team: z.enum(['player', 'enemy', 'neutral']),
   graphics: z.object({
     sprite_id: z.string().min(1),
