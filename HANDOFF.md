@@ -67,49 +67,26 @@ determinism harness** (`tests/unit/determinism.test.ts` — the lockstep-MP subs
   sandbox shell** (EPERM/bun spam) — use `curl -w "%{http_code}"`, `python3`, `head` instead.
 
 ## Open threads (pick up here)
-0. **NEXT ERA — `docs/EXPANSION_PLAN.md`** (2026-07-09, awaiting panel §10 answers): Act II story ×2 +
-   Economy/Building/Combat 2.0 + faction asymmetry + editor/2v2, phased XP-1→XP-7.
-0b. **EXECUTED — `docs/FULL_GAME_PLAN.md` (2026-07-09, decisions LOCKED §6):** front-to-back review + the
-   phased roadmap to a "WC3-class in kind, indie in scale" full game (FG-1 game-feel → FG-2 map economy →
-   FG-3 combined arms → FG-4 campaign arc → FG-5 heroes/creeps → FG-6 faction program (3–4 factions,
-   placeholder-first) → FG-7 MP (COMMITTED) → FG-8 editor stretch). Operator locked: theme ratified, heroes
-   IN, MP promoted, 3–4 factions w/ placeholder art, animation frames sooner (§0.6 of ART_ASSETS_SPEC has the
-   strip prompts). Read it first when choosing what to build next.
-   **FG-1 ✅ COMPLETE (v0.26–v0.27 shipped): audio, pause/speed, A* pathfinding + separation, attack-move/
-   stop/rally/select-type, death decals, determinism harness.** **FG-2 ✅ (v0.28) · FG-3 ✅ (v0.29): War Factory (W) + Scout (V) + Tank (C), projectile shells + splash,
-   AI combined arms.** **FG-4 ✅ (v0.30): 6-mission campaign + triggers + mission select + rewards.**
-   **FG-5 ✅ (v0.31): Riftmaws + derricks + veterancy + Warden hero.**
-   **FG-6 ✅ (v0.32): factions/maps/difficulty/saves.**
-   **FG-7 ✅ (v0.33): 1v1 lockstep multiplayer. ALL COMMITTED PHASES OF FULL_GAME_PLAN.md ARE DONE.**
-   Remaining (stretch/operator-gated): FG-8 editor-lite; cloud relay deploy (fly launch server/relay.mjs);
-   painted art for new units/factions (ART_ASSETS_SPEC §0.5/§0.6 prompts ready); more asymmetric faction
-   mechanics (salvage/field-grown units per the plan's faction program).
-1. **Purple building base** — Grok's building sprites bake a purple base platform that reads oddly on tan sand.
-   Fix: re-gen the 6 buildings with Grok ("no coloured base — sits flat on the ground, transparent to its
-   footprint"), re-import. (Operator generating the re-gen art; drop into `~/Code/...`, then `import-art.mjs`.)
-2. **Harvester source — ✅ DONE (v0.23.0):** harvesters now build at the **Refinery** (available turn one,
-   C&C-accurate); combat units still come from the Barracks. Routing is by unit type in `command.ts`'s `train`
-   handler; the starting Refinery carries a `production` component (`main.ts`); HUD greys the Harvester button
-   against the Refinery, not the Barracks. Gate: `tests/liveness/harvester_refinery.spec.ts`.
-3. **Economy/pacing overhaul (phased; RFC = `docs/ECONOMY_DESIGN.md`, panel-reviewed + decisions locked).**
-   Root cause of "AI too weak / economy too fast / matches too short": the economy was a static allowance and
-   the AI had NO economy. Plan: v0.24 "The Opponent" ✅ → v0.25 "The Map" → v0.26 "Mid-Game" → v0.27 "Combined
-   Arms". **v0.24.0 SHIPPED:** real AI economy (enemy harvester+field+funded income) + goal-driven FSM
-   (Stabilize/Recover/Raid/Assault/Pressure/Develop + reactive composition; Expand latent until v0.25) +
-   economy tuning (start 600, dockRate 80, cargo 600, ~5s visible harvest, harvester 450/12s) + harvester
-   flee/health (E6) + per-team telemetry (E10) + shardDensity in stateHash. Gate: `ai_economy.spec.ts`.
-   **Next economy phase (now v0.26+, since v0.25 shipped Story Mode):** split fields (2 flank + centre) +
-   buildable de-bundled Refinery + dock saturation + AI Expand/map-control. Tune v0.24 via the telemetry
-   (`__debugEconomyTeams`/`__debugAiState`).
-4. **Story Mode / Campaign (RFC = `docs/CAMPAIGN_DESIGN.md`, panel-reviewed).** CP-1 SHIPPED (v0.25.0): mission
-   framework (`src/loaders/missions.ts` + `src/sim/seedMission.ts` + `src/sim/systems/objectives.ts` in the
-   reserved `'mission'` SYSTEM_ORDER slot) + title menu + Mission 1 "First Light" + briefing/debrief flow +
-   `localStorage` progress. Gate: `campaign.spec.ts`; `validate:missions` checks all mission JSON. **Next
-   (CP-2):** author `m2_lifeblood` (M1's `next` points at it) + a minimal deterministic **trigger system**
-   (message/spawn/reveal/grantCredits) + secondary objectives/rewards. Story bible + 6-mission arc + objective
-   taxonomy are in the RFC. Factions: Meridian Concord (you) vs the Emberhand (Sera Vane); Marshal Thane Corr briefs.
-5. **Optional depth:** construction_yard player/enemy team variants (currently neutral), unit animation frames,
-   more building types (war factory / defense turret).
+**BOTH MASTER PLANS ARE EXECUTED IN FULL (2026-07-09):** `docs/FULL_GAME_PLAN.md` FG-1→FG-7
+(v0.26→v0.33) and `docs/EXPANSION_PLAN.md` XP-1→XP-7 (v0.35→v0.41, panel-locked §11). Live = **v0.41.1**:
+13-mission two-act campaign with the SEAL/HARNESS choice + credits, 3 factions with mechanical identities
+(Concord shields / Emberhand salvage+stealth / Shardborn antagonist), tech tiers, Cells economy, Resonance,
+storms, air+AA, artillery, garrisons, stances, gates, superweapon strike, saves/replays, `?editor=1`,
+1v1+2v2 lockstep MP. **223 unit tests + 31 gates green**; AI-vs-AI balance harness at
+`BALANCE=1 npx vitest run tests/balance/sweep.test.ts`.
+
+What actually remains (all operator-gated or reactive):
+1. **Art drops** — every unit/building added since v0.22 runs on procedural placeholder chassis by design.
+   Operator generates via `docs/ART_ASSETS_SPEC.md` (§0.5 sprites, §0.6 4-frame animation strips), drops
+   into `~/Code/...`, then `node scripts/import-art.mjs` — no code changes needed. Purple-base re-gen of
+   the original 6 buildings also still pending.
+2. **Play-feedback tuning** — the operator plays v0.41.1; tune from `__debug*` telemetry + the balance
+   harness. QA round 2 via the Claude-in-Chrome charter prompt (ask Claude to regenerate it for v0.41
+   systems: Cells, stealth, air, storms, the Choice, strike, replays).
+3. **MP field test** — the relay (`node server/relay.mjs`, deploy to the Mini) has never carried a real
+   2-human match; `?mp=1&room=X&relay=ws://<host>:8787` (add `&mode=2v2` for four seats).
+4. **Sequel hooks (deliberate, not started):** Shardborn living-bases as a playable faction mechanic;
+   Act III (the Choice's fallout); Veteran Reserve UI polish; painted briefing portraits.
 
 ## Operator (Jonathan) working style
 Plays each build, gives concrete feedback, wants it to feel like C&C/Red Alert. Loop: ship a fix → deploy → tell
