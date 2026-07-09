@@ -1,0 +1,50 @@
+// ── FG-1 gate: audio engine runs + pause freezes the sim ────────────────────────
+// Audio is procedural WebAudio (view-only). The take-command click resumes the
+// context; a HUD click must register a played voice. P toggles pause: the sim tick
+// freezes (render continues) and the PAUSED overlay shows; P again resumes.
+import { test, expect } from '@playwright/test';
+
+test.describe('Audio + pause gate', () => {
+  test('audio context runs and plays a UI voice; P pauses and resumes the sim', async ({ page }) => {
+    await page.goto('/?mission=skirmish');
+    await page.waitForSelector('#game-canvas', { timeout: 10000 });
+    const box = (await page.locator('#game-canvas').boundingBox())!;
+
+    // Take command — this user gesture resumes the AudioContext + starts music.
+    await page.locator('#game-canvas').click({ position: { x: 400, y: 300 } });
+    await expect.poll(
+      () => page.evaluate(() => (window as { __debugAudio?: () => { state: string } }).__debugAudio?.().state ?? 'none'),
+      { timeout: 5000, intervals: [200] },
+    ).toBe('running');
+
+    // A HUD button click plays the UI voice → played count rises.
+    await page.mouse.click(box.x + 700, box.y + 263); // Barracks button
+    const audio = await page.evaluate(() => (window as { __debugAudio?: () => { state: string; played: number } }).__debugAudio?.());
+    expect(audio!.played).toBeGreaterThan(0);
+
+    // ── Pause: P freezes the tick and shows the overlay. ──
+    await page.keyboard.press('Escape'); // also cancels the placement mode we just entered
+    await page.keyboard.press('p');
+    // (Escape may have toggled pause if placement had already been cancelled — normalize:
+    // poll the timescale and press p until paused.)
+    await expect.poll(async () => {
+      const ts = await page.evaluate(() => (window as { __debugTimeScale?: () => number }).__debugTimeScale?.() ?? -1);
+      if (ts !== 0) await page.keyboard.press('p');
+      return page.evaluate(() => (window as { __debugTimeScale?: () => number }).__debugTimeScale?.() ?? -1);
+    }, { timeout: 4000, intervals: [250] }).toBe(0);
+    await expect(page.locator('.sd-pause')).toContainText('PAUSED');
+
+    const tick1 = await page.evaluate(() => (window as { __debugTick?: () => number }).__debugTick?.() ?? -1);
+    await page.waitForTimeout(900);
+    const tick2 = await page.evaluate(() => (window as { __debugTick?: () => number }).__debugTick?.() ?? -1);
+    expect(tick2).toBe(tick1); // sim frozen while paused
+
+    // Resume via P → overlay gone, tick advances.
+    await page.keyboard.press('p');
+    await expect(page.locator('.sd-pause')).toHaveCount(0);
+    await expect.poll(
+      () => page.evaluate(() => (window as { __debugTick?: () => number }).__debugTick?.() ?? -1),
+      { timeout: 4000, intervals: [200] },
+    ).toBeGreaterThan(tick2);
+  });
+});

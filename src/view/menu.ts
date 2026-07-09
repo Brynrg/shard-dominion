@@ -59,6 +59,72 @@ export function showTitleMenu(onSelect: (missionId: string) => void, campaignMis
   el.appendChild(panel);
 }
 
+export interface PauseOpts {
+  onResume: () => void;
+  onRestart: () => void;
+  onMenu: () => void;
+  audio: { getVolume(): number; setVolume(v: number): void; isMuted(): boolean; setMuted(m: boolean): void };
+  getSpeed: () => number;
+  setSpeed: (s: number) => void;
+}
+
+/** The in-match pause menu (FG-1). Returns a close function (also used by Resume). */
+export function showPauseMenu(o: PauseOpts): () => void {
+  const el = overlay();
+  el.classList.add('sd-pause');
+  const panel = document.createElement('div');
+  panel.style.cssText = 'text-align:center;max-width:420px;';
+  panel.innerHTML =
+    '<div style="font-size:38px;font-weight:bold;color:#ffd34d;letter-spacing:3px;">PAUSED</div>' +
+    '<div style="color:#8fb7c9;margin:4px 0 18px;font-size:13px;">the battlefield holds its breath</div>';
+
+  // Volume row.
+  const volRow = document.createElement('div');
+  volRow.style.cssText = 'display:flex;align-items:center;gap:10px;justify-content:center;margin:10px 0;color:#cfe0ee;font-size:13px;';
+  volRow.innerHTML = '<span>VOLUME</span>';
+  const vol = document.createElement('input');
+  vol.type = 'range'; vol.min = '0'; vol.max = '100'; vol.value = String(Math.round(o.audio.getVolume() * 100));
+  vol.style.width = '160px';
+  vol.oninput = () => o.audio.setVolume(Number(vol.value) / 100);
+  const mute = document.createElement('button');
+  const muteLabel = (): string => (o.audio.isMuted() ? 'UNMUTE' : 'MUTE');
+  mute.textContent = muteLabel();
+  mute.style.cssText = 'font-family:monospace;font-size:11px;padding:4px 10px;cursor:pointer;background:rgba(20,26,34,0.9);color:#cfe0ee;border:1px solid #3a4a5a;border-radius:4px;';
+  mute.onclick = () => { o.audio.setMuted(!o.audio.isMuted()); mute.textContent = muteLabel(); };
+  volRow.appendChild(vol); volRow.appendChild(mute);
+  panel.appendChild(volRow);
+
+  // Speed row.
+  const spdRow = document.createElement('div');
+  spdRow.style.cssText = 'display:flex;align-items:center;gap:6px;justify-content:center;margin:6px 0 14px;color:#cfe0ee;font-size:13px;';
+  spdRow.innerHTML = '<span>SPEED</span>';
+  for (const s of [0.5, 1, 1.5, 2]) {
+    const b = document.createElement('button');
+    const style = (active: boolean): string =>
+      `font-family:monospace;font-size:11px;padding:4px 10px;cursor:pointer;border-radius:4px;border:1px solid ${active ? '#00e5ff' : '#3a4a5a'};background:${active ? 'rgba(0,229,255,0.14)' : 'rgba(20,26,34,0.9)'};color:${active ? '#00e5ff' : '#cfe0ee'};`;
+    b.textContent = `${s}×`;
+    b.style.cssText = style(o.getSpeed() === s);
+    b.onclick = () => {
+      o.setSpeed(s);
+      for (const child of Array.from(spdRow.querySelectorAll('button'))) {
+        (child as HTMLButtonElement).style.cssText = style(child.textContent === `${s}×`);
+      }
+    };
+    spdRow.appendChild(b);
+  }
+  panel.appendChild(spdRow);
+
+  const resume = button('▶  RESUME', true);
+  resume.onclick = () => o.onResume();
+  const restart = button('RESTART MISSION');
+  restart.onclick = () => o.onRestart();
+  const menu = button('MAIN MENU');
+  menu.onclick = () => o.onMenu();
+  panel.appendChild(resume); panel.appendChild(restart); panel.appendChild(menu);
+  el.appendChild(panel);
+  return () => el.remove();
+}
+
 export interface EndOpts {
   won: boolean;
   missionName: string;

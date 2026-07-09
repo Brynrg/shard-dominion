@@ -79,6 +79,8 @@ export function makeInputHandlers(
   /** Optional sidebar build menu: a left-click on a build button queues a unit /
    *  enters structure placement (C&C-style), instead of selecting on the field. */
   hud?: { buttonAt(sx: number, sy: number): string | null },
+  /** Optional UI sounds: button click / selection blip / order acknowledgment. */
+  sfx?: { click(): void; select(): void; ack(): void; place(): void },
 ): InputHandlers {
   let selectStart: ScreenPos | null = null;
   let selectCurrent: ScreenPos | null = null;
@@ -186,6 +188,7 @@ export function makeInputHandlers(
     // Sidebar build button → queue/place; swallow (not a field select).
     const action = hud?.buttonAt(pos.sx, pos.sy);
     if (action) {
+      sfx?.click();
       doBuildAction(action);
       selectStart = null;
       selectCurrent = null;
@@ -234,10 +237,12 @@ export function makeInputHandlers(
       if (placementMode) {
         // Place structure intent (NOT select)
         queue.push({ type: 'place-structure', structureId: placementMode.structureId, tile: placementMode.tile });
+        sfx?.place();
         setPlacementMode(null); // Exit placement mode after placing
       } else {
         // Single click → select at a world point.
         queue.push({ type: 'select', target: screenToWorld(start, camera) });
+        sfx?.select();
       }
     } else {
       // Box drag → convert BOTH corners to world (the view owns the camera) and
@@ -253,6 +258,7 @@ export function makeInputHandlers(
           maxWy: Math.max(a.wy, b.wy),
         },
       });
+      sfx?.select();
     }
   }
 
@@ -265,6 +271,7 @@ export function makeInputHandlers(
     } else {
       const pos = getMousePos(e);
       queue.push({ type: 'order', target: screenToWorld(pos, camera), tile: screenToTile(pos, camera) });
+      sfx?.ack();
     }
   }
 

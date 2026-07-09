@@ -24,7 +24,8 @@ import { makeAiSystem } from './sim/systems/ai.js';
 import { makeObjectivesSystem } from './sim/systems/objectives.js';
 import { seedFromMission } from './sim/seedMission.js';
 import { loadMission } from './loaders/missions.js';
-import { showTitleMenu, showEndScreen, markCompleted } from './view/menu.js';
+import { showTitleMenu, showEndScreen, showPauseMenu, markCompleted } from './view/menu.js';
+import { makeAudioEngine } from './view/audio.js';
 import economyConstantsData from '../data/economyConstants.json' with { type: 'json' };
 import structuresData from '../data/structures.json' with { type: 'json' };
 import weaponsData from '../data/weapons.json' with { type: 'json' };
@@ -54,6 +55,9 @@ declare global {
     __debugEconomyTeams?: () => Record<'player' | 'enemy', { credits: number; harvesters: number; army: number; armyValue: number }>;
     __debugBriefing?: () => boolean;
     __debugObjectives?: () => { text: string; primary: boolean; complete: boolean }[];
+    __debugAudio?: () => { state: string; played: number };
+    __debugTimeScale?: () => number;
+    __debugTick?: () => number;
     __debugForceEnd?: (winner: 'player' | 'enemy') => void;
     __debugSprites?: unknown; // the sprite bank, for the real-asset loader smoke test
     __debugCamera?: () => { x: number; y: number; zoom: number };
@@ -84,6 +88,14 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // Seed fields + both sides from the mission definition (replaces the old hardcoded
   // seeding; skirmish.json reproduces the original valley).
   const meta = seedFromMission(state, mission, { units, structures, economy });
+
+  // ── Audio (FG-1): procedural WebAudio engine — resumed on the briefing click. ──
+  const audio = makeAudioEngine();
+
+  // ── Pause + game speed (FG-1): view-level; sim ticks stay a fixed 20 Hz. ──────
+  let paused = false;
+  let speed = 1;
+  let closePauseMenu: (() => void) | null = null;
 
   // Create command queue (view writes, command system reads) + the command system.
   const commandQueue = makeCommandQueue();
@@ -150,6 +162,8 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     objectiveWorld: tileToWorldCenter(meta.objectiveTile), // the mission objective = the goal marker
     getHover: () => input.getCursor(),                               // sidebar hover highlight
     cargoCapacity: economy.cargoCapacity,                            // HUD cargo-bar denominator
+    audio,                                                           // FX diff emits SFX
+    getTimeScale: () => (paused ? 0 : speed),                        // pause/speed (FG-1)
   });
 
   // Camera panning is a pure view action — never a sim command.
@@ -161,15 +175,52 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // Wire input, then start rendering (input must exist before the first render frame).
   const input = makeInputHandlers(canvas, view.getCamera(), commandQueue, panCamera, structures, {
     active: () => onboarding.briefingActive(),
-    dismiss: () => onboarding.dismissBriefing(),
+    dismiss: () => { audio.resume(); audio.startMusic(); onboarding.dismissBriefing(); },
   }, {
     jump: (sx, sy) => view.minimapJump(sx, sy),
   }, {
     buttonAt: (sx, sy) => view.hudButtonAt(sx, sy),
-  });
+  }, audio);
   input.setSimState(state); // wire the sim-state ref used by the ConYard check (for 'B' placement)
   input.start();
   view.start();
+
+  // ── Pause menu + hotkeys (FG-1): P/Esc pause, −/+ game speed. View-level only —
+  // the time scale gates tick accumulation; the sim itself never sees wall-clock.
+  const togglePause = (): void => {
+    if (missionResult().over) return;            // the debrief owns the end state
+    paused = !paused;
+    if (paused) {
+      audio.resume();                             // pause can be the first gesture
+      closePauseMenu = showPauseMenu({
+        onResume: () => togglePause(),
+        onRestart: () => location.reload(),
+        onMenu: () => { location.search = ''; },
+        audio,
+        getSpeed: () => speed,
+        setSpeed: (sp) => { speed = sp; },
+      });
+    } else {
+      closePauseMenu?.();
+      closePauseMenu = null;
+    }
+  };
+  const SPEEDS = [0.5, 1, 1.5, 2];
+  const onHotkey = (e: KeyboardEvent): void => {
+    if (onboarding.briefingActive()) return;      // briefing owns the screen
+    if (e.key === 'p' || e.key === 'P') { togglePause(); }
+    else if (e.key === 'Escape') {
+      // Placement cancel wins (input handles it); otherwise toggle the pause menu.
+      if (!input.getPlacementMode()) togglePause();
+    } else if (!paused && (e.key === '+' || e.key === '=')) {
+      speed = SPEEDS[Math.min(SPEEDS.indexOf(speed) + 1, SPEEDS.length - 1)] ?? 1;
+    } else if (!paused && e.key === '-') {
+      speed = SPEEDS[Math.max(SPEEDS.indexOf(speed) - 1, 0)] ?? 1;
+    }
+  };
+  // Capture phase: fires BEFORE input's bubble-phase keydown, so Escape-while-placing
+  // sees placement still active and yields to input's cancel instead of also pausing.
+  window.addEventListener('keydown', onHotkey, { capture: true });
 
   // ── Mission end → debrief screen + navigation ──────────────────────────────
   // Poll the mission result; when the match is decided, stop the sim, record campaign
@@ -179,7 +230,9 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     if (!r.over) return;
     window.clearInterval(endWatch);
     view.stop();
+    closePauseMenu?.(); closePauseMenu = null; paused = false;
     const won = r.winner === 'player';
+    audio.matchEnd(won);
     if (won && mission.id !== 'skirmish') markCompleted(mission.id);
     const nextId = mission.next && MISSIONS[mission.next] ? mission.next : null;
     showEndScreen({
@@ -320,6 +373,11 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
 
   // Current mission objective texts + completion (for the campaign liveness gate).
   window.__debugObjectives = () => objectivesSystem.result.objectives.map(o => ({ text: o.text, primary: o.primary, complete: o.complete }));
+
+  // Audio + time-scale + tick hooks (FG-1 gates).
+  window.__debugAudio = () => audio.debug();
+  window.__debugTimeScale = () => (paused ? 0 : speed);
+  window.__debugTick = () => state.tick;
 
   // Test-only: force the mission to end so the debrief/flow can be exercised in a gate.
   window.__debugForceEnd = (winner) => {

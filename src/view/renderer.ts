@@ -80,6 +80,13 @@ export interface ViewConfig {
   getHover?: () => { sx: number; sy: number } | null;
   /** Harvester cargo capacity (economyConstants) — passed to the HUD cargo bar. */
   cargoCapacity?: number;
+  /** Audio engine — the FX diff emits sound events alongside particles (view-only). */
+  audio?: {
+    shot(rocket: boolean): void; explosion(big: boolean): void; trainReady(): void;
+    dock(): void; baseUnderAttack(): void; harvesterUnderAttack(): void;
+  };
+  /** Sim time scale: 1 = normal, 0 = paused, 2 = double speed. Render continues. */
+  getTimeScale?: () => number;
 }
 
 export interface View {
@@ -98,7 +105,7 @@ export interface View {
 }
 
 export function makeView(cfg: ViewConfig): View {
-  const { canvas, simState, systems, mapWidth, mapHeight, confirmationMarkers, getSelectionBox, getPlacementMode, structures = [], getVictory, getFog, weapons = { matrix: {}, weapons: {} }, onboarding, objectiveWorld, getHover, cargoCapacity } = cfg;
+  const { canvas, simState, systems, mapWidth, mapHeight, confirmationMarkers, getSelectionBox, getPlacementMode, structures = [], getVictory, getFog, weapons = { matrix: {}, weapons: {} }, onboarding, objectiveWorld, getHover, cargoCapacity, audio, getTimeScale } = cfg;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D context not available');
 
@@ -291,6 +298,8 @@ export function makeView(cfg: ViewConfig): View {
   const particles: Particle[] = [];
   const prevAlive = new Map<EntityId, { wx: number; wy: number; team: string; big: boolean }>();
   const prevCooldown = new Map<EntityId, number>();
+  const prevHp = new Map<EntityId, number>();          // player damage → under-attack alerts
+  const prevHarvest = new Map<EntityId, string>();     // DOCK→SEEK transition → deposit chime
   let fxSeeded = false;
 
   function spawnExplosion(wx: number, wy: number, big: boolean): void {
@@ -357,10 +366,32 @@ export function makeView(cfg: ViewConfig): View {
         const muzWx = pos.wx + Math.cos(ang) * TILE_SUBUNITS * 0.35;
         const muzWy = pos.wy + Math.sin(ang) * TILE_SUBUNITS * 0.35;
         spawnMuzzle(muzWx, muzWy, ang, rocket);
+        audio?.shot(rocket);
         // Tracer to the target so a shot reads clearly.
         const tgtId = e.components.combat.targetId;
         const tp = tgtId != null ? simState.store.get(tgtId)?.components.position : null;
         if (tp) spawnTracer(muzWx, muzWy, tp.wx, tp.wy, rocket ? '#ffce54' : '#fff2b0');
+      }
+      // ── Audio-readability cues (schema's cue set, finally implemented) ──────
+      if (fxSeeded && team === 'player') {
+        // A brand-new player unit (not seeded at boot) ⇒ training complete.
+        if (!prevCooldown.has(e.id) && !big && (e.components.combat || e.components.harvest)) audio?.trainReady();
+        // Player entity LOST hp since last tick ⇒ under attack (engine self-throttles).
+        const hp = e.components.health?.hp;
+        if (hp != null) {
+          const ph = prevHp.get(e.id);
+          if (ph != null && hp < ph) {
+            if (e.components.faction?.faction === 'harvester') audio?.harvesterUnderAttack();
+            else if (big) audio?.baseUnderAttack();
+          }
+          prevHp.set(e.id, hp);
+        }
+        // Harvester finished depositing (DOCK → SEEK) ⇒ credits chime.
+        const hs = e.components.harvest?.state;
+        if (hs) {
+          if (prevHarvest.get(e.id) === 'DOCK' && hs === 'SEEK') audio?.dock();
+          prevHarvest.set(e.id, hs);
+        }
       }
       // Harvesting: kick up Shard flecks while a harvester is actively mining.
       if (fxSeeded && e.components.harvest?.state === 'HARVEST' && Math.random() < 0.4) {
@@ -371,10 +402,10 @@ export function makeView(cfg: ViewConfig): View {
     // Deaths: anything we saw last tick that's gone now.
     if (fxSeeded) {
       for (const [id, info] of prevAlive) {
-        if (!alive.has(id)) spawnExplosion(info.wx, info.wy, info.big);
+        if (!alive.has(id)) { spawnExplosion(info.wx, info.wy, info.big); audio?.explosion(info.big); }
       }
     }
-    for (const id of prevAlive.keys()) if (!alive.has(id)) { prevAlive.delete(id); prevCooldown.delete(id); }
+    for (const id of prevAlive.keys()) if (!alive.has(id)) { prevAlive.delete(id); prevCooldown.delete(id); prevHp.delete(id); prevHarvest.delete(id); }
     fxSeeded = true;
   }
 
@@ -903,7 +934,11 @@ export function makeView(cfg: ViewConfig): View {
       // Contract fixed-timestep: accumulate() decides how many whole ticks to run;
       // runTick() snapshots prev positions, runs systems in SYSTEM_ORDER, and bumps
       // the tick. The leftover remainder is the interpolation alpha for render().
-      const { steps, remainderMs } = accumulate(accMs, dt);
+      // Time scale (FG-1): 0 = paused (render continues, sim frozen), 2 = 2× speed.
+      // Scaling wall-time BEFORE accumulate keeps the sim's fixed 20 Hz ticks intact —
+      // determinism is untouched; only how many ticks elapse per wall-second changes.
+      const scale = getTimeScale?.() ?? 1;
+      const { steps, remainderMs } = accumulate(accMs, dt * scale);
       for (let i = 0; i < steps; i += 1) {
         runTick(simState, systems);
         detectCombatFx(); // read sim transitions (deaths, shots) → spawn view FX
