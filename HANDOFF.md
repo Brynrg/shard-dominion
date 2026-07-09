@@ -20,7 +20,10 @@ sidebar** with live progress fill + `×N` queue + context cursors; **edge-scroll
 camera (clamped to map); mission briefing (goal-first + how-to). **STORY MODE (v0.25.0):** a **title menu**
 (Campaign / Skirmish) → **Mission 1 "First Light"** (briefing → objective banner → destroy the watch-post →
 Victory/Defeat debrief → Next/Retry/Menu); the whole game is now **mission-driven** (`data/missions/*.json` +
-`seedFromMission`; skirmish = the default mission). **143 unit tests + 14 Playwright gates green.**
+`seedFromMission`; skirmish = the default mission). **NEW (v0.26.0 slice, built + verified, PENDING DEPLOY):**
+the game has **sound** — procedural WebAudio SFX (shots, explosions, UI, train-ready, dock chime, under-attack
+klaxons) + a generative music bed — and a **pause menu** (P/Esc: volume/mute, 0.5–2× game speed, Restart, Main
+Menu; +/− speed hotkeys). **143 unit tests + 15 Playwright gates green.**
 
 ## How to work
 - **Architecture:** `src/sim/**` is the PURE deterministic core (no DOM/Date/Math.random — ESLint red-builds it;
@@ -30,7 +33,7 @@ Victory/Defeat debrief → Next/Retry/Menu); the whole game is now **mission-dri
   (briefing + objectives). `src/sim/systems/**` = command, movement, harvest, production, construction, power,
   combatTargeting, damage, ai, victory, fog. `data/*.json` + `src/loaders/**` = tunables.
 - **Verify (non-negotiable):** `pnpm run verify` (typecheck + lint + 143 unit tests) AND `pnpm run test:live`
-  (14 Playwright gates — the real-browser proof of interaction; add a gate for any new mechanic).
+  (15 Playwright gates — the real-browser proof of interaction; add a gate for any new mechanic).
 - **Visual check:** claude-in-chrome on `localhost:5199` (preview_start "shard-dominion") or the preview MCP.
   **GOTCHA: a backgrounded Chrome tab throttles rAF → the sim FREEZES** (credits static, clicks don't process).
   Dismiss the briefing by dispatching a real `mousedown/up` on the canvas; rely on Playwright gates for interaction
@@ -62,10 +65,16 @@ Victory/Defeat debrief → Next/Retry/Menu); the whole game is now **mission-dri
   sandbox shell** (EPERM/bun spam) — use `curl -w "%{http_code}"`, `python3`, `head` instead.
 
 ## Open threads (pick up here)
-0. **MASTER PLAN — `docs/FULL_GAME_PLAN.md` (2026-07-09):** front-to-back review + the phased roadmap to a
-   "WC3-class in kind, indie in scale" full game (FG-1 game-feel → FG-2 map economy → FG-3 combined arms →
-   FG-4 campaign arc → FG-5 heroes/creeps → FG-6 faction/maps/saves → FG-7 MP stretch → FG-8 editor
-   stretch). It absorbs the economy + campaign RFC phases; read it first when choosing what to build next.
+0. **MASTER PLAN — `docs/FULL_GAME_PLAN.md` (2026-07-09, decisions LOCKED §6):** front-to-back review + the
+   phased roadmap to a "WC3-class in kind, indie in scale" full game (FG-1 game-feel → FG-2 map economy →
+   FG-3 combined arms → FG-4 campaign arc → FG-5 heroes/creeps → FG-6 faction program (3–4 factions,
+   placeholder-first) → FG-7 MP (COMMITTED) → FG-8 editor stretch). Operator locked: theme ratified, heroes
+   IN, MP promoted, 3–4 factions w/ placeholder art, animation frames sooner (§0.6 of ART_ASSETS_SPEC has the
+   strip prompts). Read it first when choosing what to build next.
+   **FG-1 slice 1 ✅ (v0.26.0, pending deploy): audio engine (`src/view/audio.ts`) + pause/game-speed.**
+   **FG-1 next slices:** (a) pathfinding (A* on the tile grid) + unit collision/separation — the movement
+   system is still 35-line straight-line; (b) attack-move + stop + rally points; (c) death feel (wrecks/
+   corpses). Gate each; pathfinding must add a determinism-hash gate (MP prep).
 1. **Purple building base** — Grok's building sprites bake a purple base platform that reads oddly on tan sand.
    Fix: re-gen the 6 buildings with Grok ("no coloured base — sits flat on the ground, transparent to its
    footprint"), re-import. (Operator generating the re-gen art; drop into `~/Code/...`, then `import-art.mjs`.)

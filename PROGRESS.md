@@ -11,8 +11,28 @@
 
 ## Current state
 
+**v0.26.0 SLICE BUILT + VERIFIED (2026-07-09, pending operator deploy OK) — FG-1 "game feel" begins:**
+- **🔊 AUDIO (grade was F → the game makes sound):** `src/view/audio.ts` — procedural WebAudio engine, zero
+  asset files (all synthesized; voices individually replaceable later). SFX: UI click / select / order-ack /
+  rifle + rocket shots / small + big explosions / structure-place thud / train-ready chime / dock deposit
+  ding / base + harvester under-attack klaxons (the schema's audio cue set, implemented at last) / win-lose
+  motifs; plus a generative dark-desert music bed (detuned saw pad + sparse D-minor plucks). Events emitted
+  from the renderer's existing sim-transition FX diff (shots=cooldown jump, deaths=id gone, train-ready=new
+  player id, under-attack=player hp drop, dock=DOCK→SEEK) + input hooks. Per-voice throttling; volume/mute
+  persist to localStorage; AudioContext resumes on the briefing dismiss click (autoplay policy).
+- **⏸️ PAUSE + GAME SPEED:** view-level time scale gates tick accumulation (`dt × scale` into `accumulate()`
+  — sim stays fixed 20 Hz, determinism untouched; 0 = paused, render continues). P/Esc opens a pause menu
+  (volume slider, mute, 0.5/1/1.5/2× speed, Restart Mission, Main Menu); +/− speed hotkeys. Esc yields to
+  placement-cancel via a capture-phase keydown (fires before input's bubble listener). Debug hooks:
+  `__debugAudio/__debugTimeScale/__debugTick`. New gate `audio_pause.spec.ts` (context running, voice played,
+  P freezes tick, resume advances). **143 unit + 15 liveness green.** Commit cef8f9b.
+- **📋 Master plan decisions locked (operator):** theme ratified · heroes IN · **multiplayer PROMOTED to
+  committed FG-7** · **3–4 factions** (Emberhand, Shardborn, opt. Reach Syndicate — placeholder-first via the
+  procedural fallback_geometry chassis) · **animation frames sooner** (ART_ASSETS_SPEC §0.6 = paste-ready
+  4-frame walk-strip Grok prompts; loader has supported frames+fps sidecars since v0.13).
+
 **SHIPPED PLAYABLE RTS — v0.25.0 live at speedrungames.net/games/shard-dominion/.** `pnpm run verify`:
-**143 unit tests** · `pnpm run test:live`: **14 Playwright gates** — all green.
+**143 unit tests** · `pnpm run test:live`: **15 Playwright gates** — all green.
 
 - **📖 v0.25.0 "STORY MODE" — CAMPAIGN CP-1 (2026-07-08):** the panel-reviewed campaign framework
   (`docs/CAMPAIGN_DESIGN.md`) — a **title menu** (Campaign / Skirmish) → **Mission 1 "First Light"**
