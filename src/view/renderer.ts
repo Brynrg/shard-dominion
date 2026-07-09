@@ -283,14 +283,28 @@ export function makeView(cfg: ViewConfig): View {
   // ── Camera navigation (C&C/RA): edge-scroll + clamp to the map ──────────────
   // Move the cursor to a screen edge → the view scrolls that way (works on any
   // device, unlike middle-drag). Runs each frame from the cursor position.
+  let edgeSince = 0; // wall-clock when the cursor entered the edge band (0 = not in it)
   function edgeScroll(): void {
     if (onboarding?.briefingActive()) return;
     const cur = getHover?.();
-    if (!cur) return;
+    if (!cur) { edgeSince = 0; return; }
+    // Dead zones (QA polish): hovering the COMMAND sidebar or the radar must not
+    // scroll — the old 28px band overlapped the build buttons.
+    const p = hud.panelRect();
+    if (cur.sx >= p.x && cur.sx <= p.x + p.w && cur.sy >= p.y && cur.sy <= p.y + p.h) { edgeSince = 0; return; }
+    const mm = minimapRect();
+    if (cur.sx >= mm.x && cur.sx <= mm.x + mm.w && cur.sy >= mm.y && cur.sy <= mm.y + mm.h) { edgeSince = 0; return; }
     const WPP = TILE_SUBUNITS / TILE_SIZE_PX;
-    const M = 28;                       // edge band (px)
-    const spd = (11 * WPP) / camera.zoom; // world units / frame
+    const M = 16;                       // edge band (px) — was 28; too grabby (QA)
     const W = canvas.width, H = canvas.height;
+    const inBand = cur.sx <= M || cur.sx >= W - M || cur.sy <= M || cur.sy >= H - M;
+    if (!inBand) { edgeSince = 0; return; }
+    // Dwell: scroll only after ~180ms in the band, so drifting across an edge on the
+    // way to a button doesn't yank the view.
+    const now = performance.now();
+    if (edgeSince === 0) { edgeSince = now; return; }
+    if (now - edgeSince < 180) return;
+    const spd = (11 * WPP) / camera.zoom; // world units / frame
     let dx = 0, dy = 0;
     if (cur.sx <= M) dx = -spd; else if (cur.sx >= W - M) dx = spd;
     if (cur.sy <= M) dy = -spd; else if (cur.sy >= H - M) dy = spd;

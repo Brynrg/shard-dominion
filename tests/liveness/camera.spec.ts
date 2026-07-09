@@ -15,10 +15,11 @@ test.describe('Camera navigation gate', () => {
 
     const cam = () => page.evaluate(() => (window as { __debugCamera?: () => Cam }).__debugCamera?.() ?? { x: 0, y: 0, zoom: 1 });
 
-    // Park the cursor on the RIGHT edge → the view should scroll right (camera.x rises).
+    // Park the cursor on the RIGHT edge BELOW the COMMAND panel (the panel is an
+    // edge-scroll dead zone since the QA polish) → the view should scroll right.
     const start = await cam();
-    await page.mouse.move(box.x + box.width - 6, box.y + box.height / 2);
-    await page.waitForTimeout(600); // let several frames of edge-scroll run
+    await page.mouse.move(box.x + box.width - 6, box.y + box.height * 0.78);
+    await page.waitForTimeout(800); // dwell (180ms) + several frames of edge-scroll
     const scrolled = await cam();
     expect(scrolled.x).toBeGreaterThan(start.x + 100);
 

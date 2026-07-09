@@ -6,7 +6,7 @@
 ## What this is
 **Shard Dominion** — an IP-clean, late-1990s Westwood-style (C&C / Red Alert / Dune 2000) web RTS.
 - **Repo:** `~/Code/games/shard-dominion` (TypeScript + Canvas2D + Vite + Vitest + zod + ESLint, single pnpm pkg).
-- **Live:** https://speedrungames.net/games/shard-dominion/ — currently **v0.34.0**.
+- **Live:** https://speedrungames.net/games/shard-dominion/ — currently **v0.34.1**.
 - **Your role now:** you (Claude) **build it directly** and verify. (Earlier plan was to delegate slices to a
   local Qwen builder; in practice Claude builds and only occasionally hands a tightly-scaffolded sub-task to
   `hermes-ask code` — e.g. the S6B AI waves. Default to building it yourself + verifying.)
@@ -67,7 +67,9 @@ determinism harness** (`tests/unit/determinism.test.ts` — the lockstep-MP subs
   sandbox shell** (EPERM/bun spam) — use `curl -w "%{http_code}"`, `python3`, `head` instead.
 
 ## Open threads (pick up here)
-0. **MASTER PLAN — `docs/FULL_GAME_PLAN.md` (2026-07-09, decisions LOCKED §6):** front-to-back review + the
+0. **NEXT ERA — `docs/EXPANSION_PLAN.md`** (2026-07-09, awaiting panel §10 answers): Act II story ×2 +
+   Economy/Building/Combat 2.0 + faction asymmetry + editor/2v2, phased XP-1→XP-7.
+0b. **EXECUTED — `docs/FULL_GAME_PLAN.md` (2026-07-09, decisions LOCKED §6):** front-to-back review + the
    phased roadmap to a "WC3-class in kind, indie in scale" full game (FG-1 game-feel → FG-2 map economy →
    FG-3 combined arms → FG-4 campaign arc → FG-5 heroes/creeps → FG-6 faction program (3–4 factions,
    placeholder-first) → FG-7 MP (COMMITTED) → FG-8 editor stretch). Operator locked: theme ratified, heroes

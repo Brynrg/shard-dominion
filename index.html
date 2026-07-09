@@ -27,8 +27,11 @@
         background: #000;
         display: block;
         margin: 0 auto;
+        /* Fill the viewport (QA: the game rendered at a small fixed 800px until the
+           window was resized). Input maps CSS→backing coords, so clicks stay exact. */
+        width: min(100vw, calc(100vh * 4 / 3 - 40px));
         max-width: 100vw;
-        max-height: 100vh;
+        max-height: calc(100vh - 30px);
         aspect-ratio: 4 / 3;
         outline: none;
         image-rendering: pixelated;

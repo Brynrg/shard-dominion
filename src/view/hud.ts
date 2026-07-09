@@ -42,7 +42,7 @@ const BUILD_MENU: readonly BuildItem[] = [
 /** A build-menu button hit-test result: `"train:infantry"`, `"build:barracks"`, … */
 export type BuildAction = string;
 
-export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy: number): BuildAction | null } {
+export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy: number): BuildAction | null; panelRect(): { x: number; y: number; w: number; h: number } } {
   const { canvas, simState } = cfg;
   const viewerTeam = cfg.viewerTeam ?? 'player';
   const cargoCapacity = cfg.cargoCapacity ?? 600;
@@ -218,6 +218,11 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
   return {
     // Hit-test the build buttons; returns e.g. "train:infantry" / "build:barracks",
     // or null if (sx,sy) isn't over an enabled button.
+    // The sidebar panel's bounds — the renderer treats it as an edge-scroll dead
+    // zone (QA: browsing build buttons dragged the camera right).
+    panelRect(): { x: number; y: number; w: number; h: number } {
+      return { x: canvas.width - 184 - 8, y: 8, w: 184 + 8, h: 380 };
+    },
     buttonAt(sx: number, sy: number): BuildAction | null {
       for (const r of rects) if (r.enabled && sx >= r.x && sx <= r.x + r.w && sy >= r.y && sy <= r.y + r.h) return r.action;
       return null;

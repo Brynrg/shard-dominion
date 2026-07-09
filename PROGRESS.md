@@ -11,6 +11,18 @@
 
 ## Current state
 
+**✨ v0.34.1 (2026-07-09): QA polish + THE EXPANSION PLAN.** (1) **Canvas fills the viewport** (CSS width
+min(100vw, 4:3-of-height); input already maps CSS→backing px; playwright viewport pinned 800×640 so
+coordinate gates keep CSS==backing). (2) **Edge-scroll tamed**: band 28→16px, 180ms dwell before scrolling,
+and the COMMAND panel + radar are dead zones (browsing build buttons no longer drags the camera — the camera
+gate re-parks below the panel and provides the regression). (3) **docs/EXPANSION_PLAN.md** — the "beyond the
+classics" master plan: Act II *The Waking Deep* (M8–M14, play as Vane/Emberhand, Shardborn antagonist,
+persistent hero+veterans, the Choice finale), Economy 2.0 (Refined Cells chain, Syndicate Exchange, salvage
+wrecks, storm harvesting), Building 2.0 (T1–T3 tiers, walls/gates, addons, radar, superweapons), Combat 2.0
+(air layer, artillery+counter-battery, stealth, stances, garrisons, hero ability kits), true faction
+asymmetry (signature rosters + mechanics), editor-lite/replays/2v2, XP-1→XP-7 phasing. §10 decisions open
+for the panel. 193 unit + 23 liveness green.
+
 **🧪 v0.34.0 (2026-07-09): QA round 1 — all 6 play-test findings fixed.** First external QA (Claude-in-Chrome
 drove the full charter on the live build; report in the session log). Dispositions:
 - **BUG-1 (setup screen bypassed):** root cause = mission-select's BACK rebuilt the title with a DIVERGENT
