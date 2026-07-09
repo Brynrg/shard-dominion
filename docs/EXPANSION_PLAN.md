@@ -55,16 +55,17 @@ and the Waking Deep itself.
 | # | Title | You | Teaches (new system) | Twist |
 |---|---|---|---|---|
 | 8 | **Ashfall** | Emberhand | Salvage economy (wreck reclaiming) | Your "base" is a moving convoy |
-| 9 | **The Exchange** | Emberhand | Market/Syndicate (buy/sell, prices drift) | Yssel sells your position to the Concord mid-mission |
+| 9 | **The Exchange** | Emberhand | Capturable Processing Relays (Cell conversion) | Yssel auctions relay access — then sells your position to the Concord mid-mission |
 | 10 | **Stormline** | Emberhand | Storm harvesting (2× yield inside Shardstorms) + stealth units | First Shardborn contact — they ignore you… at first |
 | 11 | **Cauterize** | Emberhand | Air layer (evade + build AA) | Directorate bombers scorch fields you were mining |
 | 12 | **The Renegade** | Emberhand + Concord gift units | Combined asymmetric armies | Corr defects to you with a broken battalion |
 | 13 | **Choir of Glass** | Emberhand | Anti-Shardborn warfare (creep lattice, spore towers) | The Chorus speaks through YOUR shard-touched troops |
 | 14 | **The First Vein** | Emberhand (+Corr AI ally) | Everything + superweapons | Three-way finale; the Choice |
 
-**Persistent campaign state (new, WC3-beyond):** the hero (Vane, and Warden in Act I replays) carries level +
-ability picks between missions; surviving veteran squads (≥1 chevron) carry into the next mission's starting
-force, capped. Stored in the existing versioned save (`campaignProgress`), applied at `seedFromMission`.
+**Persistent campaign state (as locked in §11.1.3):** hero level + ability picks persist; surviving veteran
+squads convert to capped **Veteran Reserve** points spent on a small pre-mission **Deployment panel** (+1 vet
+squad / +200 Shard / +1 ability point / intel). No raw squad carryover — missions stay tuned from a known
+baseline. Stored in the versioned `campaignProgress`, applied at `seedFromMission`.
 
 ---
 
@@ -73,9 +74,9 @@ force, capped. Stored in the existing versioned save (`campaignProgress`), appli
 1. **Two-tier refining chain:** raw **Shard** (as today) + **Refined Cells** — a **Processing Plant**
    converts Shard→Cells at a tunable rate; T2/T3 units and structures cost *both*. Adds a real
    production-chain decision (raw military now vs refined tech later) without WC3's chore-harvesting.
-2. **The Syndicate Exchange** (building): buy/sell Shard↔Cells↔credits at prices that drift deterministically
-   with global supply (state-hash-safe: prices derive from cumulative mined/sold totals). Broker Yssel's
-   mechanic. One per player; destroying it hurts.
+2. ~~The Syndicate Exchange (market building)~~ **CUT in review (§11.2)** → replaced by **capturable
+   Processing Relays**: neutral map structures that boost Cell conversion while held (derrick-capture
+   mechanic reused). Broker Yssel survives as the story voice of relay access.
 3. **Salvage (Emberhand identity, all factions lite):** destroyed vehicles leave **wrecks**; any harvester
    (Emberhand: any unit) can reclaim ~30% of cost. Battles literally fertilize the economy — fights over
    battlefield corpses, a C&C-never-had loop.
