@@ -347,6 +347,10 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
               extras.economy = { credits: 0, refineryStorage: 0, maxStorage: 1500 };
             } else if (structure.id === 'defense_turret') {
               extras.combat = { weaponId: 'raider_cannon', cooldownRemaining: 0, targetId: null };
+            } else if (structure.id === 'aa_turret') {
+              extras.combat = { weaponId: 'aa_missile', cooldownRemaining: 0, targetId: null }; // XP-5
+            } else if (structure.id === 'skypad') {
+              extras.production = { queue: [], progress: 0 }; // XP-5: builds + rearms gunships
             }
             if (structure.container) extras.container = { capacity: structure.container, stored: [] }; // XP-4
             state.store.create({
@@ -478,7 +482,8 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             // Factory, foot troops → Barracks. Find the matching player producer.
             const producerFaction =
               intent.unitId === 'harvester' ? 'refinery' :
-              (intent.unitId === 'scout_vehicle' || intent.unitId === 'assault_tank') ? 'war_factory' :
+              intent.unitId === 'gunship' ? 'skypad' :
+              (intent.unitId === 'scout_vehicle' || intent.unitId === 'assault_tank' || intent.unitId === 'longbow' || intent.unitId === 'skimmer_apc') ? 'war_factory' :
               'barracks';
             const producer = state.store.all().find(e =>
               e.components.faction?.team === actor &&

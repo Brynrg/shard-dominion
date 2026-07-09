@@ -67,7 +67,10 @@ export function makeMovementSystem(): { name: 'movement'; run(state: SimState): 
         // (Re)plan: no path for THIS target yet → run A* tile-to-tile. The final
         // waypoint is replaced with the exact world target so arrival is precise.
         if (!samePos(movement.pathGoal, movement.target)) {
-          const tilePath = findPath(state.grid, worldToTile(pos), worldToTile(movement.target), wallTiles(state, e.components.faction?.team ?? 'neutral'));
+          // Air (XP-5): flyers travel as the crow does — no A*, no walls.
+          const tilePath = movement.flying
+            ? [worldToTile(movement.target)]
+            : findPath(state.grid, worldToTile(pos), worldToTile(movement.target), wallTiles(state, e.components.faction?.team ?? 'neutral'));
           const waypoints = tilePath === null
             ? [] // unreachable → empty path = straight-line fallback below
             : tilePath.map(t => tileToWorldCenter(t));

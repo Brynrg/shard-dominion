@@ -7,7 +7,7 @@ export const UnitSchema = z.object({
   name: z.string().min(1),
   cost: z.number().nonnegative(),
   hp: z.number().positive(),
-  armorClass: z.enum(['NONE', 'LIGHT', 'MEDIUM', 'HEAVY', 'BUILDING']),
+  armorClass: z.enum(['NONE', 'LIGHT', 'MEDIUM', 'HEAVY', 'BUILDING', 'AIR']),
   weaponId: z.string().min(1),
   speed: z.number().positive(),
   buildTimeSeconds: z.number().positive(),
@@ -24,6 +24,10 @@ export const UnitSchema = z.object({
   stealth: z.boolean().optional(),
   /** XP-4 transports: passenger capacity. */
   container: z.number().int().positive().optional(),
+  /** XP-5 air: ignores ground pathing/walls; grounded by storms. */
+  flying: z.boolean().optional(),
+  /** XP-5 air: shots per sortie; rearm at a Skypad (1 Cell). */
+  ammo: z.number().int().positive().optional(),
   team: z.enum(['player', 'enemy', 'neutral']),
   graphics: z.object({
     sprite_id: z.string().min(1),

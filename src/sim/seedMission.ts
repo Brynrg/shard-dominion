@@ -72,12 +72,13 @@ function makeUnit(kind: string, team: Team, deps: SeedDeps, fm = FACTIONS.concor
     faction: { team, faction: kind },
     health: { hp: modHp(def.hp, fm), maxHp: modHp(def.hp, fm) },
     armor: { armorClass: def.armorClass },
-    movement: { target: null, path: [], speed: modSpeed(def.speed, fm) },
+    movement: { target: null, path: [], speed: modSpeed(def.speed, fm), ...(def.flying ? { flying: true } : {}) },
+    ...(fm.shieldHp && kind !== 'harvester' ? { shield: { hp: fm.shieldHp, max: fm.shieldHp, regenDelay: 0 } } : {}),
   };
   if (kind === 'harvester') {
     base.harvest = { state: 'SEEK', targetTile: null, targetRefinery: null, cargo: 0 };
   } else {
-    base.combat = { weaponId: def.weaponId, cooldownRemaining: 0, targetId: null };
+    base.combat = { weaponId: def.weaponId, cooldownRemaining: 0, targetId: null, ...(def.ammo ? { ammo: def.ammo, ammoMax: def.ammo } : {}) };
   }
   if (def.stealth) base.stealth = { cloaked: true, decloakTicks: 0 }; // XP-3
   return base;

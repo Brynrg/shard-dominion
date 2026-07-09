@@ -23,6 +23,7 @@ import { makeProductionSystem } from './sim/systems/production.js';
 import { makeAiSystem } from './sim/systems/ai.js';
 import { makeObjectivesSystem } from './sim/systems/objectives.js';
 import { makeStealthSystem } from './sim/systems/stealth.js';
+import { isStormActive } from './sim/systems/planetEvent.js';
 import { makeProjectileSystem } from './sim/systems/projectile.js';
 import { makePlanetEventSystem } from './sim/systems/planetEvent.js';
 import { seedFromMission } from './sim/seedMission.js';
@@ -78,6 +79,7 @@ declare global {
     __debugTier?: () => { player: number; enemy: number };
     __debugButtonRect?: (action: string) => { x: number; y: number; w: number; h: number } | null;
     __debugTriggersFired?: () => string[];
+    __debugStorm?: () => boolean;
     __debugCells?: () => { player: number; enemy: number };
     __debugResonance?: () => { player: number; enemy: number };
     __debugForceEnd?: (winner: 'player' | 'enemy') => void;
@@ -243,6 +245,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     enemyPalette: teamFactions.enemy.palette,
     viewerTeam,                                                      // MP seat (FG-7)
     isMuted: () => audio.isMuted(),                                  // HUD mute chip
+    isStorm: () => isStormActive(state.tick),                        // XP-5 weather
     unitCost: (base) => modCost(base, teamFactions.player),          // faction pricing on labels (QA BUG-2)
     powerDemandOf: (id) => structures.find(st => st.id === id)?.powerDemand ?? 0, // ⚡ warning (QA BUG-4)
     canRunTick: mp ? (t) => mp.lockstep.canRun(t) : undefined,
@@ -572,6 +575,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   window.__debugTier = () => ({ player: teamTier(state, 'player'), enemy: teamTier(state, 'enemy') });
   window.__debugButtonRect = (action: string) => view.hudButtonRect(action);
   window.__debugTriggersFired = () => objectivesSystem.firedTriggerIds();
+  window.__debugStorm = () => isStormActive(state.tick);
   // XP-2: Cells + Resonance telemetry.
   window.__debugCells = () => {
     const sum = (team: 'player' | 'enemy') => state.store.all()

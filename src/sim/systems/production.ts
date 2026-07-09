@@ -78,11 +78,12 @@ export function makeProductionSystem(units: readonly UnitDef[], factions?: TeamF
             faction: { team, faction: def.id },
             ...(def.stealth ? { stealth: { cloaked: true, decloakTicks: 0 } } : {}),
             ...(def.container ? { container: { capacity: def.container, stored: [] } } : {}),
+            ...(def.flying ? {} : {}),
             ...(def.hero && heroCarryKills > 0 && team === 'player'
               ? { experience: { kills: heroCarryKills, rank: heroCarryKills >= 8 ? 2 : heroCarryKills >= 3 ? 1 : 0 } } : {}),
             ...(isHarvester
               ? { harvest: { state: 'SEEK' as const, targetTile: null, targetRefinery: null, cargo: 0 } }
-              : { combat: { weaponId: def.weaponId, cooldownRemaining: 0, targetId: null } }),
+              : { combat: { weaponId: def.weaponId, cooldownRemaining: 0, targetId: null, ...(def.ammo ? { ammo: def.ammo, ammoMax: def.ammo } : {}) } }),
           });
           active.delete(producer.id);
           producer.components.production = { ...producer.components.production!, progress: 0, current: null };

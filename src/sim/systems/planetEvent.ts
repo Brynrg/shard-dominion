@@ -27,6 +27,15 @@ const CAPTURE_RADIUS_TILES = 1.8;
 const CAPTURE_TICKS = 100;         // 5s alone beside the derrick
 const DERRICK_INCOME_PER_TICK = 5 / SIM_TICK_RATE; // 5 cr/s
 const RELAY_CELL_TICKS = 20 * SIM_TICK_RATE;        // XP-2: +1 Cell per 20s held
+// XP-5 Shardstorms: a deterministic weather clock — pure function of the tick.
+// Every 4 minutes, a 30-second storm: flyers take damage, harvesters mine 2×,
+// Riftmaws grow bolder. One sentence: "when the storm rises, ground your air
+// and gorge your harvesters."
+const STORM_PERIOD = 4800;
+const STORM_LEN = 600;
+export function isStormActive(tick: number): boolean {
+  return tick % STORM_PERIOD >= STORM_PERIOD - STORM_LEN;
+}
 const CELL_CAP = 12;
 
 export function makePlanetEventSystem(units: readonly UnitDef[]): { name: 'planetEvent'; run(state: SimState): void; debugRiftmaws: () => number } {
@@ -101,9 +110,18 @@ export function makePlanetEventSystem(units: readonly UnitDef[]): { name: 'plane
         }
       }
 
+      // ── Shardstorm damage (XP-5): exposed flyers bleed 2 hp/s during storms.
+      if (isStormActive(state.tick)) {
+        for (const e of state.store.all()) {
+          if (!e.components.movement?.flying) continue;
+          const h = e.components.health;
+          if (h && h.hp > 0) h.hp -= 2 / SIM_TICK_RATE;
+        }
+      }
+
       // ── 2) Riftmaw aggro (every 10 ticks): chase the nearest intruder ────────
       if (state.tick % 10 === 0) {
-        const aggro = RIFTMAW_AGGRO_TILES * TILE_SUBUNITS;
+        const aggro = (RIFTMAW_AGGRO_TILES + (isStormActive(state.tick) ? 2 : 0)) * TILE_SUBUNITS;
         for (const maw of state.store.all()) {
           if (maw.components.faction?.faction !== 'riftmaw') continue;
           const mp = maw.components.position; const mm = maw.components.movement;

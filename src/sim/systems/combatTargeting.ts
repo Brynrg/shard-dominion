@@ -49,6 +49,9 @@ export function makeCombatTargetingSystem(weapons: WeaponsFile): { name: 'combat
           if (of.team === 'neutral' && !other.components.combat) continue; // passive neutrals (derricks) aren't targets
           if (oh.hp <= 0) continue;                  // skip dead
           if (other.components.stealth?.cloaked) continue; // XP-3: can't target the unseen
+          // Air (XP-5): a weapon whose matrix does nothing vs AIR never targets flyers.
+          const oc = other.components.armor?.armorClass;
+          if (oc === 'AIR' && (weapons.matrix[weapon.type]?.AIR ?? 0) <= 0) continue;
           const d = distance(pos, op);
           if (d < minRangeWorld) continue; // artillery ignores what's under its barrel
           if (d <= bestDist) { bestDist = d; bestId = other.id; }

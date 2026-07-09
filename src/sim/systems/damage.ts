@@ -62,6 +62,8 @@ export function makeDamageSystem(weapons: WeaponsFile): { name: 'damage'; run(st
         // instant-hit: damage = weapon.damage × matrix[weapon.type][armor].
         // Artillery (XP-4): can't fire inside its minimum range.
         if (weapon.minRange != null && dist < weapon.minRange * TILE_SUBUNITS) continue;
+        // Air ammo (XP-5): an empty sortie holds fire until it rearms.
+        if (combat.ammo != null && combat.ammo <= 0) continue;
         if (weapon.type === 'SHELL' || weapon.type === 'SIEGE') {
           const team = e.components.faction?.team ?? 'neutral';
           state.store.create({
@@ -82,7 +84,14 @@ export function makeDamageSystem(weapons: WeaponsFile): { name: 'damage'; run(st
           // Hero aura: +15% when a friendly Warden stands within 4 tiles.
           const team = e.components.faction?.team;
           const inAura = wardens.some(w => w.team === team && distance(pos, w.pos) <= AURA);
-          th.hp -= weapon.damage * mult * (1 + 0.15 * rank) * (inAura ? 1.15 : 1);
+          let dmg = weapon.damage * mult * (1 + 0.15 * rank) * (inAura ? 1.15 : 1);
+          // Concord shields (XP-5): the absorb pool eats damage first, then hp.
+          const sh = target.components.shield;
+          if (sh && sh.hp > 0) {
+            const absorbed = Math.min(sh.hp, dmg);
+            sh.hp -= absorbed; dmg -= absorbed; sh.regenDelay = 100; // 5s out-of-combat
+          }
+          th.hp -= dmg;
           // Kill attribution → the shooter's experience (projectile kills unattributed v1).
           if (th.hp <= 0) {
             const xp = e.components.experience ?? { kills: 0, rank: 0 };
@@ -101,6 +110,8 @@ export function makeDamageSystem(weapons: WeaponsFile): { name: 'damage'; run(st
         if (e.components.stealth) e.components.stealth = { cloaked: false, decloakTicks: 100 };
         // XP-4 counter-battery: siege fire pings the radar through fog for 3s.
         if (weapon.type === 'SIEGE') combat.revealedTicks = 60;
+        // XP-5: spend a round.
+        if (combat.ammo != null) combat.ammo -= 1;
       }
     },
   };

@@ -11,6 +11,21 @@
 
 ## Current state
 
+**🚁 XP-5 "SKY-LITE" (2026-07-09, v0.39.0) — the sky opens (shared-lite per the panel).**
+- **Gunship** (900, T2, AIR armor, quad_missile, **6-shot sorties**): built at the **Skypad** (600, T2);
+  flyers **ignore pathing and walls** (straight-line movement plane), draw lifted with a ground shadow.
+  **Empty flyers rearm beside an own Skypad for 1 Cell** (the locked Cells-charge-air-rearm rule).
+- **AA answers:** matrix gains the AIR column (bullets 0.6×, rockets 1.2×, shells/siege CANNOT target
+  air); **AA Turret** (500, aa_missile); targeting refuses AIR targets for air-blind weapons.
+- **Shardstorms** (deterministic weather clock — pure tick function, every 4min a 30s storm): exposed
+  flyers bleed 2hp/s; **harvesters mine 2×** (M10's deferred storm-harvest beat, landed); Riftmaw aggro
+  +2 tiles; violet vignette + HUD ⛈ chip + `__debugStorm`.
+- **Concord identity: shields** — combat units spawn with a 20hp absorb pool eaten before hp, regenerating
+  0.5/s after 5s out of combat.
+- **AI:** raises an AA turret the moment the foe fields air. Fixed in passing: Longbow/APC were routing to
+  the barracks (now war_factory); units loader's own armor enum gained AIR (boot crash caught by probe).
+4 unit tests + xp5_air gate (flight over walls, storm hook). **218 unit + 29 liveness green.**
+
 **⚔️ XP-4 "GROUND DEPTH" (2026-07-09, v0.38.0):**
 - **Longbow artillery** (900, T2, siege_cannon: 60dmg/r7/**minRange 2**/splash): damage + targeting honor
   minRange (no lock-and-sulk under the barrel); **counter-battery** — siege fire sets `revealedTicks` (3s

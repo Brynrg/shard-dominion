@@ -4,6 +4,7 @@ import type { SimState } from '../state.js';
 import type { EconomyConstants } from '../../loaders/economyConstants.js';
 import { worldToTile, tileToWorldCenter } from '../coords.js';
 import { SIM_TICK_RATE } from '../loop.js';
+import { isStormActive } from './planetEvent.js';
 import type { EntityId } from '../ids.js';
 import type { HarvestComponent, EconomyComponent, PositionComponent, MovementComponent, FactionComponent } from '../components.js';
 
@@ -184,7 +185,9 @@ function runHarvest(
 
       if (density > 0 && harvest.cargo < economy.cargoCapacity) {
         // Harvest from tile
-        const amount = Math.min(economy.harvestRate, density, economy.cargoCapacity - harvest.cargo);
+        // Storm harvesting (XP-5): 2× yield while the Shardstorm howls.
+        const rate = economy.harvestRate * (isStormActive(state.tick) ? 2 : 1);
+        const amount = Math.min(rate, density, economy.cargoCapacity - harvest.cargo);
         state.shardDensity.set(densityKey, density - amount);
         harvest.cargo += amount;
       } else {

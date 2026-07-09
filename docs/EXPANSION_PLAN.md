@@ -258,7 +258,7 @@ second game mode; they're the campaign ANTAGONIST first, playable later).
 | **XP-2 "Economy 2.0"** ✅ SHIPPED v0.36.0 | Cells-as-charges + Processing Plant, salvage wrecks, **Resonance v1**, capturable Relays | the unique strategic loop, complete |
 | **XP-3 "Emberhand + Act II·1"** ✅ SHIPPED v0.37.0 | Emberhand true asymmetry (salvage identity, Ghostwalker stealth+detection) + **M8–M10** | build the playable side, then teach it |
 | **XP-4 "Ground Depth"** ✅ SHIPPED v0.38.0 | Artillery+counter-battery, stances, garrisons, transports, addons + balance validation sprint | deepen ground before air |
-| **XP-5 "Sky-lite"** (v0.39) | Shared gunship + rearm pad + AA; storms ground air; Concord shield mechanic | air after ground is stable |
+| **XP-5 "Sky-lite"** ✅ SHIPPED v0.39.0 | Shared gunship + rearm pad + AA; storms ground air; Concord shield mechanic | air after ground is stable |
 | **XP-6 "Act II·2 + Finale"** (v0.40) | **M11–M14**, scripted superweapons, choice-gated finale, campaign-global Resonance, credits | the payoff |
 | **XP-7 "Forge & Arena"** (v0.41) | Public editor, replay browser polish, 2v2, skirmish superweapons, Shardborn-playable groundwork | scale + community |
 

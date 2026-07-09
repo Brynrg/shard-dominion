@@ -27,6 +27,8 @@ export interface MovementComponent {
    *  A plain move order clears it (forced move). Additive (FG-1). */
   attackMove?: boolean;
   boardTargetId?: import('./ids.js').EntityId | null;
+  /** XP-5: flyers skip pathfinding, walls, and ground collision. */
+  flying?: boolean;
 }
 export interface ResourceComponent { cargo: number; capacity: number } // harvester
 // XP-4 additive combat fields: stance (targeting posture) + revealedTicks
@@ -37,6 +39,9 @@ export interface CombatComponent {
   targetId: EntityId | null;
   stance?: 'aggressive' | 'defensive' | 'hold';
   revealedTicks?: number;
+  /** XP-5 air ammo: shots left this sortie; 0 = hold fire until rearmed. */
+  ammo?: number;
+  ammoMax?: number;
 }
 export interface ExperienceComponent { kills: number; rank: number } // veterancy (dormant by default)
 export interface RenderableComponent { spriteId: string }
@@ -130,6 +135,9 @@ export interface StealthComponent { cloaked: boolean; decloakTicks: number }
 /** Garrison/transport (XP-4): stored passengers as respawnable snapshots. */
 export interface ContainerComponent { capacity: number; stored: { kind: string; hp: number }[] }
 
+/** Concord shields (XP-5): an absorb pool hit before hp; regenerates out of combat. */
+export interface ShieldComponent { hp: number; max: number; regenDelay: number }
+
 export interface Components {
   position?: PositionComponent;
   velocity?: VelocityComponent;
@@ -152,6 +160,7 @@ export interface Components {
   tech?: TechComponent;
   stealth?: StealthComponent;
   container?: ContainerComponent;
+  shield?: ShieldComponent;
 }
 
 export type ComponentKey = keyof Components;

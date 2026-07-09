@@ -18,6 +18,8 @@ export interface FactionMods {
   palette: { hull: string; hullDark: string; accent: string; stripe: string };
   /** XP-2 Emberhand identity: ANY unit reclaims wrecks by touch (others: harvesters only). */
   salvageAll?: boolean;
+  /** XP-5 Concord identity: combat units spawn with an absorb shield. */
+  shieldHp?: number;
 }
 
 export const FACTIONS: Record<FactionId, FactionMods> = {
@@ -25,7 +27,7 @@ export const FACTIONS: Record<FactionId, FactionMods> = {
   concord: {
     id: 'concord',
     name: 'Meridian Concord',
-    costMult: 1, hpMult: 1, speedMult: 1,
+    costMult: 1, hpMult: 1, speedMult: 1, shieldHp: 20,
     palette: { hull: '#3d7fd6', hullDark: '#28568f', accent: '#a7d6ff', stripe: '#00e5ff' },
   },
   // The raider insurgency: cheap, fast, fragile — swarm and slash.

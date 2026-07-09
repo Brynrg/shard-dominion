@@ -23,6 +23,8 @@ export interface HUDConfig {
   powerDemandOf?: (structureId: string) => number;
   /** XP-3: the viewer's faction id — faction-locked buttons of OTHER factions hide. */
   playerFactionId?: string;
+  /** XP-5: live Shardstorm indicator. */
+  isStorm?: () => boolean;
 }
 
 /** The C&C-style sidebar build menu. `kind` decides the click action:
@@ -37,9 +39,11 @@ const BASE_MENU: readonly BuildItem[] = [
   { id: 'radar', key: 'J', name: 'Radar', cost: 600, kind: 'build', tier: 2 },
   { id: 'processing_plant', key: 'K', name: 'Proc Plant', cost: 800, kind: 'build', tier: 2 },
   { id: 'war_factory', key: 'W', name: 'War Fctry', cost: 1000, kind: 'build', tier: 2 },
+  { id: 'skypad', key: '', name: 'Skypad', cost: 600, kind: 'build', tier: 2 },
 ];
 const DEF_MENU: readonly BuildItem[] = [
   { id: 'defense_turret', key: 'G', name: 'Turret', cost: 550, kind: 'build' },
+  { id: 'aa_turret', key: '', name: 'AA Turret', cost: 500, kind: 'build' },
   { id: 'wall', key: 'L', name: 'Wall', cost: 50, kind: 'build' },
   { id: 'gate', key: '', name: 'Gate', cost: 100, kind: 'build' },
   { id: 'bunker', key: '', name: 'Bunker', cost: 450, kind: 'build' },
@@ -54,6 +58,7 @@ const UNIT_MENU: readonly BuildItem[] = [
   { id: 'assault_tank', key: 'C', name: 'Tank', cost: 700, kind: 'train', tier: 2 },
   { id: 'longbow', key: '', name: 'Longbow', cost: 900, kind: 'train', tier: 2 },
   { id: 'skimmer_apc', key: '', name: 'APC', cost: 500, kind: 'train', tier: 2 },
+  { id: 'gunship', key: '', name: 'Gunship', cost: 900, kind: 'train', tier: 2 },
   { id: 'warden', key: 'E', name: 'Warden ★', cost: 800, kind: 'train', cellCost: 2, factionLock: 'concord' },
   { id: 'ghostwalker', key: '', name: 'Ghostwalkr', cost: 350, kind: 'train', tier: 2, factionLock: 'emberhand' },
   { id: 'vane', key: 'E', name: 'Vane ★', cost: 800, kind: 'train', cellCost: 2, factionLock: 'emberhand' },
@@ -309,6 +314,11 @@ export function makeHUD(cfg: HUDConfig): {
       context.fillRect(px + 10, py + 50, 106, 3);
       context.fillStyle = '#c9a6ff';
       context.fillRect(px + 10, py + 50, Math.floor(106 * resPct), 3);
+      // Shardstorm chip (XP-5).
+      if (cfg.isStorm?.()) {
+        context.fillStyle = '#c9a6ff'; context.font = 'bold 11px monospace';
+        context.fillText('⛈ SHARDSTORM', px + 120, py + 46);
+      }
 
       // Power lamp.
       const powerColor = power.powered ? COLORS.powerOk : COLORS.powerLow;
@@ -335,7 +345,7 @@ export function makeHUD(cfg: HUDConfig): {
       const barracksUp = hasBarracks();
       const factoryUp = hasWarFactory();
       const warFactoryProd = getProducer('war_factory');
-      const isVehicle = (id: string): boolean => id === 'scout_vehicle' || id === 'assault_tank';
+      const isVehicle = (id: string): boolean => id === 'scout_vehicle' || id === 'assault_tank' || id === 'longbow' || id === 'skimmer_apc';
       const tech = getTech();
       const bw = pw - 16;
       // Tab row.
@@ -383,12 +393,13 @@ export function makeHUD(cfg: HUDConfig): {
       for (const item of menu) {
         // Which building makes this item? Harvester ← Refinery, vehicles ← War
         // Factory (FG-3), foot troops ← Barracks; structures are placed (no producer).
+        const skypadProd = getProducer('skypad');
         const producer = item.kind !== 'train' ? null
-          : (item.id === 'harvester' ? refineryProd : isVehicle(item.id) ? warFactoryProd : barracks);
+          : (item.id === 'harvester' ? refineryProd : item.id === 'gunship' ? skypadProd : isVehicle(item.id) ? warFactoryProd : barracks);
         // Prereq: harvester needs a Refinery (always present), vehicles a War
         // Factory, foot troops a Barracks; builds just need credits.
         const prereqMet = item.kind === 'build' ? true
-          : (item.id === 'harvester' ? !!refineryProd : isVehicle(item.id) ? factoryUp : barracksUp);
+          : (item.id === 'harvester' ? !!refineryProd : item.id === 'gunship' ? !!skypadProd : isVehicle(item.id) ? factoryUp : barracksUp);
         // Faction pricing (QA BUG-2): the label + affordability use the SAME adjusted
         // price the production system charges (Emberhand 0.8×, Shardborn 1.15×, …).
         const shownCost = item.kind === 'train' ? (cfg.unitCost?.(item.cost) ?? item.cost) : item.cost;

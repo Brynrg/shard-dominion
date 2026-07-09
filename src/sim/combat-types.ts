@@ -6,5 +6,5 @@
 export const WEAPON_TYPES = ['BULLET', 'ROCKET', 'SHELL', 'SIEGE', 'FLAME', 'SONIC', 'EXPLOSIVE'] as const;
 export type WeaponType = (typeof WEAPON_TYPES)[number];
 
-export const ARMOR_CLASSES = ['NONE', 'LIGHT', 'MEDIUM', 'HEAVY', 'BUILDING'] as const;
+export const ARMOR_CLASSES = ['NONE', 'LIGHT', 'MEDIUM', 'HEAVY', 'BUILDING', 'AIR'] as const; // AIR: XP-5
 export type ArmorClass = (typeof ARMOR_CLASSES)[number];

@@ -307,6 +307,33 @@
           "factionStripe": "player"
         }
       }
+    },
+    {
+      "id": "gunship",
+      "name": "Gunship",
+      "cost": 900,
+      "hp": 120,
+      "armorClass": "AIR",
+      "weaponId": "quad_missile",
+      "speed": 22,
+      "buildTimeSeconds": 18,
+      "team": "player",
+      "tier": 2,
+      "flying": true,
+      "ammo": 6,
+      "graphics": {
+        "sprite_id": "gunship",
+        "fallback_geometry": {
+          "chassis": "LIGHT_VEHICLE",
+          "chassisMod": "CHAMFER",
+          "weaponGlyph": "ANTI_INFANTRY",
+          "barrelClass": "NONE",
+          "roleBadge": "SCOUT",
+          "rangeMarks": 3,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      }
     }
   ]
 }

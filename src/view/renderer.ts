@@ -105,6 +105,8 @@ export interface ViewConfig {
   powerDemandOf?: (structureId: string) => number;
   /** XP-3: viewer's faction id (asymmetric build menu). */
   playerFactionId?: string;
+  /** XP-5: Shardstorm active (view tint + HUD chip). */
+  isStorm?: () => boolean;
   /** Faction palettes (FG-6): override the default team styles. */
   playerPalette?: { hull: string; hullDark: string; accent: string; stripe: string };
   enemyPalette?: { hull: string; hullDark: string; accent: string; stripe: string };
@@ -151,7 +153,7 @@ export function makeView(cfg: ViewConfig): View {
   const context = ctx as CanvasRenderingContext2D;
 
   // Create HUD (clickable C&C-style build sidebar; getHover drives button highlight)
-  const hud = makeHUD({ canvas, simState, camera, getHover, cargoCapacity, viewerTeam: cfg.viewerTeam, isMuted: cfg.isMuted, unitCost: cfg.unitCost, powerDemandOf: cfg.powerDemandOf, playerFactionId: cfg.playerFactionId });
+  const hud = makeHUD({ canvas, simState, camera, getHover, cargoCapacity, viewerTeam: cfg.viewerTeam, isMuted: cfg.isMuted, unitCost: cfg.unitCost, powerDemandOf: cfg.powerDemandOf, playerFactionId: cfg.playerFactionId, isStorm: cfg.isStorm });
 
   // Pre-bake the directional sprite bank once (S7-2). Units get DIRS fixed-lit
   // facings; buildings get a lit body. Animated accents are drawn live on top.
@@ -1038,8 +1040,18 @@ export function makeView(cfg: ViewConfig): View {
         drawBuildingAccents(kind, sx, sy, style, camera.zoom);
       } else {
         // Cargo glow (harvester) draws under the baked sprite, then the sprite.
-        drawUnitUnderlay(e, kind, sx, sy, camera.zoom);
-        sprites.drawUnit(context, kind, teamKey, undefined, facingAngle(e, interp), sx, sy, frame, camera.zoom);
+        if (e.components.movement?.flying) {
+          // Air (XP-5): lift the sprite + a soft ground shadow sells altitude.
+          context.fillStyle = 'rgba(0,0,0,0.30)';
+          context.beginPath();
+          context.ellipse(sx, sy + 6 * camera.zoom, 10 * camera.zoom, 4 * camera.zoom, 0, 0, Math.PI * 2);
+          context.fill();
+          drawUnitUnderlay(e, kind, sx, sy - 14 * camera.zoom, camera.zoom);
+          sprites.drawUnit(context, kind, teamKey, undefined, facingAngle(e, interp), sx, sy - 14 * camera.zoom, frame, camera.zoom);
+        } else {
+          drawUnitUnderlay(e, kind, sx, sy, camera.zoom);
+          sprites.drawUnit(context, kind, teamKey, undefined, facingAngle(e, interp), sx, sy, frame, camera.zoom);
+        }
       }
       context.globalAlpha = 1; // reset the stealth ghosting (XP-3)
     }
@@ -1111,6 +1123,11 @@ export function makeView(cfg: ViewConfig): View {
     drawHealthBars();
     drawVictoryBanner();
     drawPlacementGhost();
+    // Shardstorm tint (XP-5): the world turns violet while the storm howls.
+    if (cfg.isStorm?.()) {
+      context.fillStyle = 'rgba(140,100,220,0.10)';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+    }
 
     // The mission briefing owns the whole screen — hide the HUD behind it so the
     // COMMAND panel doesn't bleed past the briefing frame.

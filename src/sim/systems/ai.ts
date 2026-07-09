@@ -180,6 +180,29 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig): { name: 
           break;
         }
       }
+      // XP-5: reactive AA — the moment the player fields air, raise ONE AA turret.
+      const playerHasAir = state.store.all().some(e =>
+        e.components.faction?.team !== team && e.components.faction?.team !== 'neutral' && e.components.movement?.flying);
+      const hasAA = state.store.all().some(e =>
+        e.components.faction?.team === team && e.components.faction?.faction === 'aa_turret');
+      if (playerHasAir && !hasAA && bank && bank.credits >= 700 && refinery?.components.position) {
+        const rt = worldToTile(refinery.components.position);
+        for (const [dx, dy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]] as const) {
+          const spot = { tx: rt.tx + dx, ty: rt.ty + dy };
+          if (!state.grid.isWalkable(spot)) continue;
+          bank.credits -= 500;
+          state.store.create({
+            position: tileToWorldCenter(spot),
+            building: { onSlab: false, buildProgress: 100, powered: true },
+            faction: { team, faction: 'aa_turret' },
+            power: { powerSupply: 0, powerDemand: 10, powered: true },
+            combat: { weaponId: 'aa_missile', cooldownRemaining: 0, targetId: null },
+            health: { hp: 450, maxHp: 450 },
+            armor: { armorClass: 'BUILDING' },
+          });
+          break;
+        }
+      }
       if (!factory && tier >= 2 && bank && bank.credits >= factoryThreshold && refinery?.components.position) {
         const rt = worldToTile(refinery.components.position);
         for (const [dx, dy] of [[-2, 0], [0, -2], [2, 2], [-2, -2]] as const) {
