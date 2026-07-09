@@ -15,7 +15,7 @@ export interface FogSystem {
   readonly explored: Set<string>;
 }
 
-export function makeFogSystem(): FogSystem {
+export function makeFogSystem(viewerTeam: 'player' | 'enemy' = 'player'): FogSystem {
   const visible = new Set<string>();
   const explored = new Set<string>();
 
@@ -28,7 +28,7 @@ export function makeFogSystem(): FogSystem {
 
       for (const e of state.store.all()) {
         const faction = e.components.faction;
-        if (!faction || faction.team !== 'player') continue;
+        if (!faction || faction.team !== viewerTeam) continue;
 
         const pos = e.components.position;
         if (!pos) continue;

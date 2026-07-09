@@ -99,13 +99,18 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
       }
 
       for (const intent of queue.drain()) {
+        // FG-7: which side is issuing this intent (multiplayer seats tag theirs).
+        const actor: 'player' | 'enemy' = intent.team ?? 'player';
+        const foe: 'player' | 'enemy' = actor === 'player' ? 'enemy' : 'player';
         switch (intent.type) {
           case 'select': {
             if (intent.worldRect) {
+              // Selection is SEAT-SCOPED (FG-7): a side can only (de)select its own
+              // entities, so two players' selections never trample each other.
               const { minWx, minWy, maxWx, maxWy } = intent.worldRect;
               for (const e of state.store.all()) {
                 const pos = e.components.position;
-                if (!pos) continue;
+                if (!pos || e.components.faction?.team !== actor) continue;
                 const inside = pos.wx >= minWx && pos.wx <= maxWx && pos.wy >= minWy && pos.wy <= maxWy;
                 if (inside) {
                   e.components.selection = { selected: true };
@@ -119,7 +124,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
               let closestDist = TILE_SUBUNITS * 0.75; // hitbox radius
               for (const e of state.store.all()) {
                 const pos = e.components.position;
-                if (!pos) continue;
+                if (!pos || e.components.faction?.team !== actor) continue; // own side only (FG-7)
                 const d = Math.hypot(pos.wx - intent.target.wx, pos.wy - intent.target.wy);
                 if (d < closestDist) {
                   closestDist = d;
@@ -127,7 +132,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
                 }
               }
               for (const e of state.store.all()) {
-                if (e.components.selection) e.components.selection.selected = false;
+                if (e.components.selection && e.components.faction?.team === actor) e.components.selection.selected = false;
               }
               if (closest) closest.components.selection = { selected: true };
             }
@@ -136,7 +141,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
 
           case 'deselect': {
             for (const e of state.store.all()) {
-              if (e.components.selection) e.components.selection.selected = false;
+              if (e.components.selection && e.components.faction?.team === actor) e.components.selection.selected = false;
             }
             break;
           }
@@ -170,7 +175,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             let enemy: ReturnType<typeof state.store.all>[number] | null = null;
             let ed = TILE_SUBUNITS * 0.9;
             for (const e of state.store.all()) {
-              if (e.components.faction?.team !== 'enemy') continue;
+              if (e.components.faction?.team !== foe) continue;
               const pos = e.components.position;
               if (!pos || (e.components.health && e.components.health.hp <= 0)) continue;
               const d = Math.hypot(pos.wx - intent.target.wx, pos.wy - intent.target.wy);
@@ -181,7 +186,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
 
             for (const e of state.store.all()) {
               if (!e.components.selection?.selected) continue;
-              if (e.components.faction?.team !== 'player') continue;
+              if (e.components.faction?.team !== actor) continue;
               if (e.components.building) {
                 // Rally point (FG-1): ground-order on a selected PRODUCER building sets
                 // where its freshly-built units gather. Buildings still never move.
@@ -220,7 +225,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             // en route (movement skips stepping while attackMove && combat.targetId).
             for (const e of state.store.all()) {
               if (!e.components.selection?.selected) continue;
-              if (e.components.faction?.team !== 'player') continue;
+              if (e.components.faction?.team !== actor) continue;
               if (e.components.building) continue;
               if (!e.components.combat) continue; // only armed units attack-move
               if (!e.components.movement) e.components.movement = { target: null, path: [], speed: 10 };
@@ -238,7 +243,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             // Halt: drop movement orders, paths, attack-move and combat targets.
             for (const e of state.store.all()) {
               if (!e.components.selection?.selected) continue;
-              if (e.components.faction?.team !== 'player') continue;
+              if (e.components.faction?.team !== actor) continue;
               if (e.components.building) continue;
               if (e.components.movement) {
                 e.components.movement = { ...e.components.movement, target: null, path: [], pathGoal: null, attackMove: false };
@@ -254,7 +259,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             let kind: string | null = null;
             let kd = TILE_SUBUNITS * 0.9;
             for (const e of state.store.all()) {
-              if (e.components.faction?.team !== 'player' || e.components.building) continue;
+              if (e.components.faction?.team !== actor || e.components.building) continue;
               const pos = e.components.position;
               if (!pos) continue;
               const d = Math.hypot(pos.wx - intent.target.wx, pos.wy - intent.target.wy);
@@ -262,11 +267,11 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             }
             for (const e of state.store.all()) {
               const isMatch = kind !== null &&
-                e.components.faction?.team === 'player' &&
+                e.components.faction?.team === actor &&
                 e.components.faction?.faction === kind &&
                 !e.components.building;
               if (isMatch) e.components.selection = { selected: true };
-              else if (e.components.selection?.selected) e.components.selection = { selected: false };
+              else if (e.components.selection?.selected && e.components.faction?.team === actor) e.components.selection = { selected: false };
             }
             break;
           }
@@ -277,8 +282,8 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             const conYardHp = conYardDef?.hp ?? 2000;
             for (const e of state.store.all()) {
               const faction = e.components.faction;
-              if (faction?.faction === 'mcv') {
-                e.components.faction = { team: 'player', faction: 'construction_yard' };
+              if (faction?.faction === 'mcv' && faction.team === actor) {
+                e.components.faction = { team: actor, faction: 'construction_yard' };
                 e.components.building = { onSlab: true, buildProgress: 100, powered: true };
                 e.components.construction = { queue: [], progress: 0, currentStructureId: null };
                 e.components.power = { powerSupply: 0, powerDemand: 0, powered: true };
@@ -300,7 +305,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
 
             // Charge the player's bank; reject the build if it can't be afforded.
             const bank = state.store.all().find(e =>
-              e.components.faction?.team === 'player' && e.components.economy)?.components.economy;
+              e.components.faction?.team === actor && e.components.economy)?.components.economy;
             const cost = structure.cost ?? 0;
             if (cost > 0) {
               if (!bank || bank.credits < cost) break;
@@ -325,7 +330,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             state.store.create({
               position: tileCenter,
               building: { onSlab: false, buildProgress: 100, powered: true },
-              faction: { team: 'player', faction: intent.structureId },
+              faction: { team: actor, faction: intent.structureId },
               power: { powerSupply: structure.powerSupply, powerDemand: structure.powerDemand, powered: true },
               health: { hp: structure.hp, maxHp: structure.hp },
               armor: { armorClass: 'BUILDING' },
@@ -339,7 +344,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             // Toggle repair on the selected damaged player buildings (FG-2).
             for (const e of state.store.all()) {
               if (!e.components.selection?.selected) continue;
-              if (e.components.faction?.team !== 'player') continue;
+              if (e.components.faction?.team !== actor) continue;
               const b = e.components.building; const h = e.components.health;
               if (!b || !h) continue;
               if (h.hp >= h.maxHp) { b.repairing = false; continue; }
@@ -382,8 +387,8 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             // Hero cap (FG-5): ONE living Warden at a time (also not while queued).
             if (intent.unitId === 'warden') {
               const wardenExists = state.store.all().some(e =>
-                (e.components.faction?.team === 'player' && e.components.faction?.faction === 'warden' && (e.components.health?.hp ?? 0) > 0) ||
-                (e.components.faction?.team === 'player' && e.components.production &&
+                (e.components.faction?.team === actor && e.components.faction?.faction === 'warden' && (e.components.health?.hp ?? 0) > 0) ||
+                (e.components.faction?.team === actor && e.components.production &&
                   (e.components.production.queue.includes('warden') || e.components.production.current === 'warden')));
               if (wardenExists) break;
             }
@@ -394,7 +399,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
               (intent.unitId === 'scout_vehicle' || intent.unitId === 'assault_tank') ? 'war_factory' :
               'barracks';
             const producer = state.store.all().find(e =>
-              e.components.faction?.team === 'player' &&
+              e.components.faction?.team === actor &&
               e.components.faction?.faction === producerFaction &&
               e.components.production);
             if (producer && producer.components.production) {

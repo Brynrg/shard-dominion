@@ -26,6 +26,8 @@ import { makeProjectileSystem } from './sim/systems/projectile.js';
 import { makePlanetEventSystem } from './sim/systems/planetEvent.js';
 import { seedFromMission } from './sim/seedMission.js';
 import { makeTeamFactions, type FactionId } from './sim/factions.js';
+import { makeLockstep, type Lockstep } from './net/lockstep.js';
+import { stateHash } from './sim/state.js';
 import { runTick as simRunTick } from './sim/loop.js';
 import { loadMission } from './loaders/missions.js';
 import { showTitleMenu, showEndScreen, showPauseMenu, showMissionSelect, showSkirmishSetup, markCompleted, addBonus, takeBonus, loadProgress } from './view/menu.js';
@@ -71,6 +73,7 @@ declare global {
     __debugForceEnd?: (winner: 'player' | 'enemy') => void;
     __debugMessages?: () => { speaker: string; text: string }[];
     __debugRiftmaws?: () => number;
+    __debugMp?: () => { seat: number; desynced: boolean; peerLeft: boolean };
     __debugUnitScreenPos?: (kind: string) => { x: number; y: number } | null;
     __debugSprites?: unknown; // the sprite bank, for the real-asset loader smoke test
     __debugCamera?: () => { x: number; y: number; zoom: number };
@@ -88,9 +91,14 @@ const weapons = loadWeapons(weaponsData);
 // Load units
 const units = loadUnits(unitsData);
 
+/** Multiplayer session (FG-7), set by the pre-boot handshake before bootstrap runs. */
+let mpSession: { lockstep: Lockstep; seat: number } | null = null;
+
 export function bootstrap(missionRaw: unknown = skirmishData): void {
   const mission = loadMission(missionRaw);
   const params = new URLSearchParams(location.search);
+  const mp = mpSession;
+  const viewerTeam: 'player' | 'enemy' = mp?.seat === 1 ? 'enemy' : 'player';
 
   // ── Factions (FG-6): mission defaults, URL ?faction= overrides the player. ──
   const playerFaction = (params.get('faction') as FactionId | null) ?? mission.player.factionId ?? 'concord';
@@ -133,7 +141,11 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // save file (determinism: replaying the log reproduces the match exactly).
   const rawQueue = makeCommandQueue();
   const intentLog: { t: number; i: Parameters<typeof rawQueue.push>[0] }[] = [];
-  const commandQueue: typeof rawQueue = {
+  const commandQueue: typeof rawQueue = mp ? {
+    // Multiplayer: local intents are scheduled + broadcast, never applied directly.
+    push: (i) => mp.lockstep.submit(i, state.tick),
+    drain: () => rawQueue.drain(),
+  } : {
     push: (i) => { intentLog.push({ t: state.tick, i }); rawQueue.push(i); },
     drain: () => rawQueue.drain(),
   };
@@ -147,10 +159,10 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
 
   // Register systems (command runs FIRST per SYSTEM_ORDER; 'mission' objectives run in
   // their reserved slot). One AI per enemy side; victory still owns culling.
-  const fogSystem = makeFogSystem();
+  const fogSystem = makeFogSystem(viewerTeam);
   const victorySystem = makeVictorySystem();
   const objectivesSystem = makeObjectivesSystem(mission.objectives, mission.failure, mission.triggers, units, teamFactions);
-  const aiSystems = mission.enemies.map(e => {
+  const aiSystems = mp ? [] : mission.enemies.map(e => {
     const base = { team: 'enemy' as const, attackTile: meta.playerStartTile, ...(e.ai ?? {}) };
     return makeAiSystem(units, {
       ...base,
@@ -216,6 +228,10 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     getTimeScale: () => (paused ? 0 : speed),                        // pause/speed (FG-1)
     playerPalette: teamFactions.player.palette,                      // faction colours (FG-6)
     enemyPalette: teamFactions.enemy.palette,
+    viewerTeam,                                                      // MP seat (FG-7)
+    canRunTick: mp ? (t) => mp.lockstep.canRun(t) : undefined,
+    onBeforeTick: mp ? (t) => { for (const i of mp.lockstep.takeDue(t)) rawQueue.push(i); } : undefined,
+    onAfterTick: mp ? (t) => mp.lockstep.afterTick(t, stateHash(state)) : undefined,
   });
 
   // Camera panning is a pure view action — never a sim command.
@@ -474,6 +490,23 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     return { x: sx, y: sy };
   };
 
+  // Multiplayer status (FG-7): peer departure = victory; desync halts loudly.
+  if (mp) {
+    window.__debugMp = () => ({ seat: mp.seat, ...mp.lockstep.status() });
+    const mpWatch = window.setInterval(() => {
+      const st = mp.lockstep.status();
+      if (st.peerLeft) {
+        window.clearInterval(mpWatch);
+        view.stop();
+        showEndScreen({ won: true, missionName: 'Multiplayer', debrief: ['Your opponent has left the battlefield.'], onMenu: () => { location.search = ''; } });
+      } else if (st.desynced) {
+        window.clearInterval(mpWatch);
+        view.stop();
+        showEndScreen({ won: false, missionName: 'Multiplayer', debrief: ['DESYNC DETECTED — the simulations diverged.', 'This should be impossible; please report it.'], onMenu: () => { location.search = ''; } });
+      }
+    }, 500);
+  }
+
   // Riftmaw awakenings counter (FG-5 gate).
   window.__debugRiftmaws = () => planetSystem.debugRiftmaws();
 
@@ -565,10 +598,39 @@ function openTitle(): void {
   }, '__campaign__');
 }
 
+function startMultiplayer(params: URLSearchParams): void {
+  const relay = params.get('relay') ?? `ws://${location.hostname}:8787`;
+  const room = params.get('room') ?? 'duel';
+  const missionId = params.get('mission') ?? 'skirmish';
+  const ws = new WebSocket(relay);
+  let seat = -1;
+  const listeners: ((msg: string) => void)[] = [];
+  ws.onmessage = (ev) => {
+    const raw = String(ev.data);
+    let msg: { type?: string; slot?: number } = {};
+    try { msg = JSON.parse(raw); } catch { /* forwarded frame */ }
+    if (msg.type === 'joined') { seat = msg.slot ?? 0; return; }
+    if (msg.type === 'start') {
+      const lockstep = makeLockstep(seat, {
+        send: (m) => ws.send(m),
+        onMessage: (cb) => listeners.push(cb),
+      });
+      mpSession = { lockstep, seat };
+      bootstrap(MISSIONS[missionId] ?? MISSIONS.skirmish);
+      return;
+    }
+    for (const cb of listeners) cb(raw);
+  };
+  ws.onopen = () => ws.send(JSON.stringify({ type: 'join', room }));
+  ws.onclose = () => { if (seat === -1) alert('Relay unreachable / room full.'); };
+}
+
 if (typeof window !== 'undefined') {
   window.addEventListener('load', () => {
-    const missionId = new URLSearchParams(location.search).get('mission');
-    if (missionId && MISSIONS[missionId]) bootstrap(MISSIONS[missionId]);
+    const params = new URLSearchParams(location.search);
+    const missionId = params.get('mission');
+    if (params.get('mp') === '1') startMultiplayer(params);
+    else if (missionId && MISSIONS[missionId]) bootstrap(MISSIONS[missionId]);
     else openTitle();
   });
 }

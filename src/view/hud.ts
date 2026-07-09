@@ -7,6 +7,8 @@ import type { ConstructionOutput } from '../sim/systems/construction.js';
 export interface HUDConfig {
   canvas: HTMLCanvasElement;
   simState: SimState;
+  /** The side this screen belongs to (FG-7 multiplayer seats; default 'player'). */
+  viewerTeam?: 'player' | 'enemy';
   camera: Camera; // unused in current implementation
   constructionOutput?: ConstructionOutput;
   /** Cursor position (canvas px) for hover highlighting the build buttons. */
@@ -36,6 +38,7 @@ export type BuildAction = string;
 
 export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy: number): BuildAction | null } {
   const { canvas, simState } = cfg;
+  const viewerTeam = cfg.viewerTeam ?? 'player';
   const cargoCapacity = cfg.cargoCapacity ?? 600;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D context not available');
@@ -56,7 +59,7 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
 
   function getHarvester(): { cargo: number; capacity: number } | null {
     for (const e of simState.store.all()) {
-      if (e.components.faction?.team === 'player' &&
+      if (e.components.faction?.team === viewerTeam &&
           e.components.faction?.faction === 'harvester' && e.components.harvest) {
         return { cargo: e.components.harvest.cargo || 0, capacity: cargoCapacity };
       }
@@ -69,7 +72,7 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
     // Sum across ALL player refineries (buildable refineries add banks + storage).
     let found = false; let credits = 0, storage = 0, maxStorage = 0;
     for (const e of simState.store.all()) {
-      if (e.components.faction?.team === 'player' && e.components.building && e.components.economy) {
+      if (e.components.faction?.team === viewerTeam && e.components.building && e.components.economy) {
         found = true;
         credits += e.components.economy.credits || 0;
         storage += e.components.economy.refineryStorage || 0;
@@ -99,7 +102,7 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
   // progress fill + queue count for whichever unit that building makes.
   function getProducer(faction: string): { queue: readonly string[]; progress: number; current: string | null } | null {
     for (const e of simState.store.all()) {
-      if (e.components.faction?.team === 'player' &&
+      if (e.components.faction?.team === viewerTeam &&
           e.components.faction?.faction === faction && e.components.production) {
         return {
           queue: e.components.production.queue ?? [],
@@ -157,12 +160,12 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
 
   function hasBarracks(): boolean {
     for (const e of simState.store.all())
-      if (e.components.faction?.team === 'player' && e.components.faction?.faction === 'barracks') return true;
+      if (e.components.faction?.team === viewerTeam && e.components.faction?.faction === 'barracks') return true;
     return false;
   }
   function hasWarFactory(): boolean {
     for (const e of simState.store.all())
-      if (e.components.faction?.team === 'player' && e.components.faction?.faction === 'war_factory') return true;
+      if (e.components.faction?.team === viewerTeam && e.components.faction?.faction === 'war_factory') return true;
     return false;
   }
 

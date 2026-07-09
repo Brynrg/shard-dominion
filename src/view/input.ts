@@ -12,8 +12,11 @@ const MIN_ZOOM = 0.55, MAX_ZOOM = 2.6;
 import type { StructureDef } from '../loaders/structures.js';
 import type { SimState } from '../sim/state.js';
 
-/** Command intents queued from input. All coordinates are WORLD space. */
-export type CommandIntent =
+/** Command intents queued from input. All coordinates are WORLD space.
+ *  `team` (FG-7): the acting side — omitted = 'player' (single-player). In
+ *  multiplayer the lockstep layer tags every intent with its seat's team so ONE
+ *  command system serves both players deterministically. */
+export type CommandIntent = { team?: 'player' | 'enemy' } & (
   | { type: 'select'; worldRect?: { minWx: number; minWy: number; maxWx: number; maxWy: number }; target?: WorldPos }
   | { type: 'deselect' }
   | { type: 'move'; target: WorldPos }
@@ -32,7 +35,7 @@ export type CommandIntent =
   | { type: 'place-structure'; structureId: string; tile: TilePos }
   | { type: 'assign-group'; group: number }
   | { type: 'recall-group'; group: number }
-  | { type: 'train'; unitId: string };
+  | { type: 'train'; unitId: string });
 
 /** The command queue (view writes, command system reads). */
 export interface CommandQueue {

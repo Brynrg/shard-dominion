@@ -87,6 +87,16 @@ export interface ViewConfig {
   };
   /** Sim time scale: 1 = normal, 0 = paused, 2 = double speed. Render continues. */
   getTimeScale?: () => number;
+  /** Lockstep (FG-7): return false to HOLD the sim at this tick (waiting on the
+   *  remote bundle). Render continues; accumulated time is discarded. */
+  canRunTick?: (tick: number) => boolean;
+  /** Lockstep (FG-7): called immediately BEFORE each tick runs — the injection
+   *  point for scheduled local+remote command bundles. */
+  onBeforeTick?: (tick: number) => void;
+  /** Lockstep (FG-7): called immediately AFTER a tick ran (bundle flush + hash). */
+  onAfterTick?: (tick: number) => void;
+  /** The side this screen belongs to (FG-7 seats; default 'player'). */
+  viewerTeam?: 'player' | 'enemy';
   /** Faction palettes (FG-6): override the default team styles. */
   playerPalette?: { hull: string; hullDark: string; accent: string; stripe: string };
   enemyPalette?: { hull: string; hullDark: string; accent: string; stripe: string };
@@ -129,7 +139,7 @@ export function makeView(cfg: ViewConfig): View {
   const context = ctx as CanvasRenderingContext2D;
 
   // Create HUD (clickable C&C-style build sidebar; getHover drives button highlight)
-  const hud = makeHUD({ canvas, simState, camera, getHover, cargoCapacity });
+  const hud = makeHUD({ canvas, simState, camera, getHover, cargoCapacity, viewerTeam: cfg.viewerTeam });
 
   // Pre-bake the directional sprite bank once (S7-2). Units get DIRS fixed-lit
   // facings; buildings get a lit body. Animated accents are drawn live on top.
@@ -731,8 +741,9 @@ export function makeView(cfg: ViewConfig): View {
     const victory = getVictory?.();
     if (!victory || !victory.over) return;
 
-    const bannerText = victory.winner === 'player' ? 'VICTORY' : 'DEFEAT';
-    const bannerColor = victory.winner === 'player' ? '#00ff00' : '#ff0000';
+    const viewer = cfg.viewerTeam ?? 'player';
+    const bannerText = victory.winner === viewer ? 'VICTORY' : 'DEFEAT';
+    const bannerColor = victory.winner === viewer ? '#00ff00' : '#ff0000';
 
     context.fillStyle = 'rgba(0, 0, 0, 0.7)';
     context.fillRect(0, 0, canvas.width, canvas.height);
@@ -1075,11 +1086,19 @@ export function makeView(cfg: ViewConfig): View {
       // determinism is untouched; only how many ticks elapse per wall-second changes.
       const scale = getTimeScale?.() ?? 1;
       const { steps, remainderMs } = accumulate(accMs, dt * scale);
+      let ran = 0;
       for (let i = 0; i < steps; i += 1) {
+        // Lockstep hold (FG-7): don't run past the last confirmed tick; drop the
+        // leftover accumulation so the sim doesn't burst-catch-up on release.
+        if (cfg.canRunTick && !cfg.canRunTick(simState.tick)) break;
+        const tickNow = simState.tick;
+        cfg.onBeforeTick?.(tickNow);
         runTick(simState, systems);
         detectCombatFx(); // read sim transitions (deaths, shots) → spawn view FX
+        cfg.onAfterTick?.(tickNow);
+        ran += 1;
       }
-      accMs = remainderMs;
+      accMs = ran === steps ? remainderMs : 0;
     }
 
     stepParticles();

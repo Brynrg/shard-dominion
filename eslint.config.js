@@ -9,6 +9,11 @@ import tseslint from 'typescript-eslint';
  * `Math.random` — those reach the sim only through the seeded PRNG (`rng.ts`)
  * and the renderer/loop in `src/view`.
  */
+const serverNodeConfig = {
+  files: ['server/**/*.mjs'],
+  languageOptions: { globals: { process: 'readonly', console: 'readonly' } },
+};
+
 export default tseslint.config(
   { ignores: ['dist/**', 'node_modules/**', 'coverage/**', 'scripts/**'] },
 
@@ -72,4 +77,7 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'off',
     },
   },
+
+  // The multiplayer relay is a standalone Node script (FG-7).
+  serverNodeConfig,
 );
