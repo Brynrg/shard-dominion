@@ -95,6 +95,54 @@
           "factionStripe": "player"
         }
       }
+    },
+    {
+      "id": "scout_vehicle",
+      "name": "Scout",
+      "cost": 350,
+      "hp": 80,
+      "armorClass": "MEDIUM",
+      "weaponId": "scout_gun",
+      "speed": 16,
+      "buildTimeSeconds": 10,
+      "team": "player",
+      "graphics": {
+        "sprite_id": "scout_vehicle",
+        "fallback_geometry": {
+          "chassis": "LIGHT_VEHICLE",
+          "chassisMod": "NONE",
+          "weaponGlyph": "ANTI_INFANTRY",
+          "barrelClass": "NONE",
+          "roleBadge": "SCOUT",
+          "rangeMarks": 2,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      }
+    },
+    {
+      "id": "assault_tank",
+      "name": "Tank",
+      "cost": 700,
+      "hp": 220,
+      "armorClass": "HEAVY",
+      "weaponId": "tank_shell_v",
+      "speed": 9,
+      "buildTimeSeconds": 18,
+      "team": "player",
+      "graphics": {
+        "sprite_id": "assault_tank",
+        "fallback_geometry": {
+          "chassis": "TANK",
+          "chassisMod": "NONE",
+          "weaponGlyph": "ANTI_VEHICLE",
+          "barrelClass": "NONE",
+          "roleBadge": "ANTI_VEHICLE",
+          "rangeMarks": 2,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      }
     }
   ]
 }

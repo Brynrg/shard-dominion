@@ -21,6 +21,7 @@ import { makeConstructionSystem } from '../../src/sim/systems/construction.js';
 import { makePowerSystem } from '../../src/sim/systems/power.js';
 import { makeCombatTargetingSystem } from '../../src/sim/systems/combatTargeting.js';
 import { makeDamageSystem } from '../../src/sim/systems/damage.js';
+import { makeProjectileSystem } from '../../src/sim/systems/projectile.js';
 import { makeProductionSystem } from '../../src/sim/systems/production.js';
 import { makeAiSystem } from '../../src/sim/systems/ai.js';
 import { makeObjectivesSystem } from '../../src/sim/systems/objectives.js';
@@ -52,6 +53,7 @@ function makeRig(): Rig {
     makeConstructionSystem(structures, queue),
     makePowerSystem(),
     makeCombatTargetingSystem(weapons),
+    makeProjectileSystem(weapons),
     makeDamageSystem(weapons),
     makeProductionSystem(units),
     ...mission.enemies.map(e => makeAiSystem(units, { team: 'enemy' as const, attackTile: meta.playerStartTile, ...(e.ai ?? {}) })),

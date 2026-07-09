@@ -16,7 +16,7 @@
 // system charges the bank). The AI never receives hidden/recurring income here.
 import type { SimState } from '../state.js';
 import type { UnitDef } from '../../loaders/units.js';
-import { tileToWorldCenter, TILE_SUBUNITS, type TilePos } from '../coords.js';
+import { tileToWorldCenter, worldToTile, TILE_SUBUNITS, type TilePos } from '../coords.js';
 import { SIM_TICK_RATE } from '../loop.js';
 import type { EntityId } from '../ids.js';
 import type { WorldPos } from '../coords.js';
@@ -65,6 +65,7 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig): { name: 
       const all = state.store.all();
       const bank = all.find(e => e.components.faction?.team === team && e.components.economy)?.components.economy ?? null;
       const barracks = all.find(e => e.components.faction?.team === team && e.components.faction?.faction === 'barracks' && e.components.production) ?? null;
+      const factory = all.find(e => e.components.faction?.team === team && e.components.faction?.faction === 'war_factory' && e.components.production) ?? null;
       const refinery = all.find(e => e.components.faction?.team === team && e.components.faction?.faction === 'refinery' && e.components.production) ?? null;
 
       const ownHarvesters = all.filter(e => e.components.faction?.team === team && e.components.faction?.faction === 'harvester' && (e.components.health?.hp ?? 0) > 0);
@@ -127,6 +128,39 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig): { name: 
         // Queue only when the bank can start it soon; production pauses if momentarily short.
         if (bank.credits >= Math.min(costOf('infantry'), costOf(pick))) {
           barracks.components.production = { ...barracks.components.production, queue: [pick] };
+        }
+      }
+
+      // (3) Combined arms (FG-3): once rich, found ONE War Factory near the base,
+      // then keep it producing vehicles (tanks salted in; scouts vs massed rifles).
+      // ECONOMY FIRST: while an expansion field is still available, the factory
+      // waits for a much fatter bank so Expand keeps priority over military tech.
+      // The AI pays the same 1000 the player pays; siting is deterministic.
+      const factoryThreshold = findExpansionTile(state, team) !== null ? 2500 : 1300;
+      if (!factory && bank && bank.credits >= factoryThreshold && refinery?.components.position) {
+        const rt = worldToTile(refinery.components.position);
+        for (const [dx, dy] of [[-2, 0], [0, -2], [2, 2], [-2, -2]] as const) {
+          const spot = { tx: rt.tx + dx, ty: rt.ty + dy };
+          if (!state.grid.isWalkable(spot)) continue;
+          if ((state.shardDensity.get(`${spot.tx},${spot.ty}`) ?? 0) > 0) continue;
+          bank.credits -= 1000;
+          state.store.create({
+            position: tileToWorldCenter(spot),
+            building: { onSlab: false, buildProgress: 100, powered: true },
+            faction: { team, faction: 'war_factory' },
+            power: { powerSupply: 0, powerDemand: 30, powered: true },
+            production: { queue: [], progress: 0 },
+            health: { hp: 1300, maxHp: 1300 },
+            armor: { armorClass: 'BUILDING' },
+          });
+          break;
+        }
+      }
+      if (factory && bank && factory.components.production && factory.components.production.queue.length === 0) {
+        const evalIndex = Math.floor(state.tick / evalInterval);
+        const pick = evalIndex % 3 === 2 ? 'assault_tank' : 'scout_vehicle';
+        if (bank.credits >= costOf(pick) + 200) {
+          factory.components.production = { ...factory.components.production, queue: [pick] };
         }
       }
 

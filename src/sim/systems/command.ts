@@ -314,7 +314,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             // a Defense Turret is a building that fights (combat, no movement).
             const tileCenter = tileToWorldCenter(intent.tile);
             const extras: Record<string, unknown> = {};
-            if (structure.id === 'barracks') {
+            if (structure.id === 'barracks' || structure.id === 'war_factory') {
               extras.production = { queue: [], progress: 0 };
             } else if (structure.id === 'refinery') {
               extras.production = { queue: [], progress: 0, current: null };
@@ -379,10 +379,12 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             break;
           }
           case 'train': {
-            // Route by unit type: Harvesters build at the Refinery (available turn
-            // one — C&C-accurate), combat units at the Barracks. Find the matching
-            // player producer building and append to its queue.
-            const producerFaction = intent.unitId === 'harvester' ? 'refinery' : 'barracks';
+            // Route by unit type (FG-3): Harvesters → Refinery, vehicles → War
+            // Factory, foot troops → Barracks. Find the matching player producer.
+            const producerFaction =
+              intent.unitId === 'harvester' ? 'refinery' :
+              (intent.unitId === 'scout_vehicle' || intent.unitId === 'assault_tank') ? 'war_factory' :
+              'barracks';
             const producer = state.store.all().find(e =>
               e.components.faction?.team === 'player' &&
               e.components.faction?.faction === producerFaction &&

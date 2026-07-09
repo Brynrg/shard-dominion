@@ -45,10 +45,26 @@ export function makeDamageSystem(weapons: WeaponsFile): { name: 'damage'; run(st
         const rangeWorld = weapon.range * TILE_SUBUNITS;
         if (dist > rangeWorld) continue;
 
-        // 4) damage = weapon.damage * matrix[weapon.type][targetArmorClass]
-        const armor = target.components.armor?.armorClass ?? 'NONE';
-        const mult = weapons.matrix[weapon.type]?.[armor] ?? 0;
-        th.hp -= weapon.damage * mult;
+        // 4) resolve the hit. SHELL/SIEGE weapons launch a PROJECTILE (FG-3) at the
+        // target's CURRENT position — the projectile system flies it and splashes
+        // at impact (dodgeable, punishes clumps/buildings). Everything else stays
+        // instant-hit: damage = weapon.damage × matrix[weapon.type][armor].
+        if (weapon.type === 'SHELL' || weapon.type === 'SIEGE') {
+          const team = e.components.faction?.team ?? 'neutral';
+          state.store.create({
+            position: { wx: pos.wx, wy: pos.wy },
+            projectile: {
+              weaponId: combat.weaponId,
+              sourceTeam: team,
+              target: { wx: tpos.wx, wy: tpos.wy },
+              speed: TILE_SUBUNITS * 0.6, // ~12 tiles/s at 20 Hz
+            },
+          });
+        } else {
+          const armor = target.components.armor?.armorClass ?? 'NONE';
+          const mult = weapons.matrix[weapon.type]?.[armor] ?? 0;
+          th.hp -= weapon.damage * mult;
+        }
 
         // 5) reset cooldown: weapon.cooldown seconds → ticks. Armed BUILDINGS
         // (turrets) fire 50% slower while their team is power-starved (FG-2).

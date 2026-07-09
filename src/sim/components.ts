@@ -81,6 +81,17 @@ export interface ConstructionComponent {
   currentStructureId: string | null;
 }
 
+/** Projectile (FG-3): a shell in flight. Spawned by damage.ts for SHELL/SIEGE
+ *  weapons; moved + detonated by the projectile system (splash at impact). */
+export interface ProjectileComponent {
+  weaponId: string;
+  sourceTeam: Team;
+  /** Impact point captured at fire time (dumb ballistic — dodgeable by moving). */
+  target: WorldPos;
+  /** World units per tick. */
+  speed: number;
+}
+
 /** Power component for supply/demand tracking. */
 export interface PowerComponent {
   powerSupply: number;
@@ -107,6 +118,7 @@ export interface Components {
   armor?: ArmorComponent;
   construction?: ConstructionComponent;
   power?: PowerComponent;
+  projectile?: ProjectileComponent;
 }
 
 export type ComponentKey = keyof Components;

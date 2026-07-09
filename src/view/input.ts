@@ -339,6 +339,21 @@ export function makeInputHandlers(
         e.preventDefault();
         if (hasConYard()) setPlacementMode('defense_turret');
         return;
+      case 'w': // Build a War Factory (FG-3)
+      case 'W':
+        e.preventDefault();
+        if (hasConYard()) setPlacementMode('war_factory');
+        return;
+      case 'v': // Train a Scout Vehicle (FG-3)
+      case 'V':
+        e.preventDefault();
+        queue.push({ type: 'train', unitId: 'scout_vehicle' });
+        return;
+      case 'c': // Train an Assault Tank (FG-3)
+      case 'C':
+        e.preventDefault();
+        queue.push({ type: 'train', unitId: 'assault_tank' });
+        return;
       case 'Escape': // Cancel placement / attack-move mode
         e.preventDefault();
         setPlacementMode(null);

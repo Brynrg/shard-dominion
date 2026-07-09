@@ -877,6 +877,25 @@ export function makeView(cfg: ViewConfig): View {
     return -Math.PI / 2; // face up
   }
 
+  // Shells in flight (FG-3): a bright tracer dot + short motion trail.
+  function drawProjectiles() {
+    for (const e of simState.store.all()) {
+      const proj = e.components.projectile;
+      const pos = e.components.position;
+      if (!proj || !pos) continue;
+      const p = worldToScreen(pos, camera);
+      const dx = proj.target.wx - pos.wx, dy = proj.target.wy - pos.wy;
+      const len = Math.hypot(dx, dy) || 1;
+      const tx = p.sx - (dx / len) * 10 * camera.zoom;
+      const ty = p.sy - (dy / len) * 10 * camera.zoom;
+      context.strokeStyle = 'rgba(255,214,90,0.7)';
+      context.lineWidth = 2 * camera.zoom;
+      context.beginPath(); context.moveTo(tx, ty); context.lineTo(p.sx, p.sy); context.stroke();
+      context.fillStyle = '#ffe9a8';
+      context.beginPath(); context.arc(p.sx, p.sy, 2.4 * camera.zoom, 0, Math.PI * 2); context.fill();
+    }
+  }
+
   function drawEntities() {
     const fog = getFog?.();
     // Draw buildings first (units render on top of their footprints).
@@ -886,6 +905,8 @@ export function makeView(cfg: ViewConfig): View {
     for (const e of ordered) {
       const pos = e.components.position;
       if (!pos) continue;
+      // Shells in flight draw separately (drawProjectiles), not as units.
+      if (e.components.projectile) continue;
 
       // Hide entities in unseen fog (player units always sit in visible tiles).
       if (fog) {
@@ -974,6 +995,7 @@ export function makeView(cfg: ViewConfig): View {
     drawTerrain();
     drawSlabs();
     drawDecals();
+    drawProjectiles();
     drawEntities();
     drawParticles();
     drawSelectionRings();

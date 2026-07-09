@@ -210,6 +210,36 @@
           "factionStripe": "player"
         }
       }
+    },
+    {
+      "id": "war_factory",
+      "name": "War Factory",
+      "cost": 1000,
+      "buildTimeSeconds": 35,
+      "hp": 1300,
+      "footprint": {
+        "w": 2,
+        "h": 2
+      },
+      "powerSupply": 0,
+      "powerDemand": 30,
+      "onSlabHpFraction": 1.0,
+      "offSlabHpFraction": 0.7,
+      "providesBuildRadius": false,
+      "isDeployable": false,
+      "graphics": {
+        "sprite_id": "war_factory",
+        "fallback_geometry": {
+          "chassis": "BUILDING",
+          "chassisMod": "HEAVY_BLOCK",
+          "weaponGlyph": "NONE",
+          "barrelClass": "NONE",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 0,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      }
     }
   ]
 }

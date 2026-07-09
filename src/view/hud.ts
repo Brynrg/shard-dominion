@@ -26,6 +26,9 @@ const BUILD_MENU: readonly BuildItem[] = [
   { id: 'power_node', key: 'N', name: 'Power', cost: 400, kind: 'build' },
   { id: 'refinery', key: 'F', name: 'Refinery', cost: 1200, kind: 'build' },
   { id: 'defense_turret', key: 'G', name: 'Turret', cost: 550, kind: 'build' },
+  { id: 'war_factory', key: 'W', name: 'War Fctry', cost: 1000, kind: 'build' },
+  { id: 'scout_vehicle', key: 'V', name: 'Scout', cost: 350, kind: 'train' },
+  { id: 'assault_tank', key: 'C', name: 'Tank', cost: 700, kind: 'train' },
 ];
 
 /** A build-menu button hit-test result: `"train:infantry"`, `"build:barracks"`, … */
@@ -157,6 +160,11 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
       if (e.components.faction?.team === 'player' && e.components.faction?.faction === 'barracks') return true;
     return false;
   }
+  function hasWarFactory(): boolean {
+    for (const e of simState.store.all())
+      if (e.components.faction?.team === 'player' && e.components.faction?.faction === 'war_factory') return true;
+    return false;
+  }
 
   // Clickable C&C-style build button. Records its rect (+ enabled) for hit-testing.
   // `progress` 0-100 = the item currently building (draws a fill); `queued` = how many
@@ -211,7 +219,7 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
       const pw = 184;
       const px = canvas.width - pw - 8;
       const py = 8;
-      const ph = 470; // fits 7 build buttons + repair row + footer
+      const ph = 574; // fits 10 build rows + repair row + footer
       drawPanel(px, py, pw, ph);
 
       // Title bar.
@@ -250,17 +258,20 @@ export function makeHUD(cfg: HUDConfig): { draw(): void; buttonAt(sx: number, sy
       drawText('BUILD  (click or hotkey)', px + 10, py + 120, '#9fb4cc');
       const hover = cfg.getHover?.() ?? null;
       const barracksUp = hasBarracks();
+      const factoryUp = hasWarFactory();
+      const warFactoryProd = getProducer('war_factory');
+      const isVehicle = (id: string): boolean => id === 'scout_vehicle' || id === 'assault_tank';
       const bw = pw - 16;
       let by = py + 138;
       for (const item of BUILD_MENU) {
-        // Which building makes this item? Harvester ← Refinery (up from turn one),
-        // combat units ← Barracks, structures are placed (no producer).
+        // Which building makes this item? Harvester ← Refinery, vehicles ← War
+        // Factory (FG-3), foot troops ← Barracks; structures are placed (no producer).
         const producer = item.kind !== 'train' ? null
-          : (item.id === 'harvester' ? refineryProd : barracks);
-        // Prereq: harvester needs a Refinery (always present), combat units need a
-        // Barracks; builds just need the credits (placement charges).
+          : (item.id === 'harvester' ? refineryProd : isVehicle(item.id) ? warFactoryProd : barracks);
+        // Prereq: harvester needs a Refinery (always present), vehicles a War
+        // Factory, foot troops a Barracks; builds just need credits.
         const prereqMet = item.kind === 'build' ? true
-          : (item.id === 'harvester' ? !!refineryProd : barracksUp);
+          : (item.id === 'harvester' ? !!refineryProd : isVehicle(item.id) ? factoryUp : barracksUp);
         const enabled = credits >= item.cost && prereqMet;
         const hovered = !!hover && hover.sx >= px + 8 && hover.sx <= px + 8 + bw && hover.sy >= by && hover.sy <= by + 30;
         const progress = producer?.current === item.id ? (producer?.progress ?? 0) : 0;

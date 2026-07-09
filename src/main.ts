@@ -22,6 +22,7 @@ import { makeFogSystem } from './sim/systems/fog.js';
 import { makeProductionSystem } from './sim/systems/production.js';
 import { makeAiSystem } from './sim/systems/ai.js';
 import { makeObjectivesSystem } from './sim/systems/objectives.js';
+import { makeProjectileSystem } from './sim/systems/projectile.js';
 import { seedFromMission } from './sim/seedMission.js';
 import { loadMission } from './loaders/missions.js';
 import { showTitleMenu, showEndScreen, showPauseMenu, markCompleted } from './view/menu.js';
@@ -121,6 +122,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     constructionSystem,
     powerSystem,
     makeCombatTargetingSystem(weapons),
+    makeProjectileSystem(weapons),
     makeDamageSystem(weapons),
     makeProductionSystem(units),
     ...aiSystems,
