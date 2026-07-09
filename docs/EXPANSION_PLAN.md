@@ -254,7 +254,7 @@ second game mode; they're the campaign ANTAGONIST first, playable later).
 ### 11.6 REVISED PHASING (supersedes §8)
 | Phase | Ships | Notes |
 |---|---|---|
-| **XP-1 "Foundations & Forge-lite"** (v0.35) | T1–T3 tiers, radar, walls/gates + **mission kit** (play-from-JSON dev menu, trigger preview, templates) | tooling multiplies everything after |
+| **XP-1 "Foundations & Forge-lite"** ✅ SHIPPED v0.35.0 (2026-07-09) | T1–T3 tiers, radar, walls/gates + **mission kit** (play-from-JSON dev menu, trigger preview, templates) | tooling multiplies everything after |
 | **XP-2 "Economy 2.0"** (v0.36) | Cells-as-charges + Processing Plant, salvage wrecks, **Resonance v1**, capturable Relays | the unique strategic loop, complete |
 | **XP-3 "Emberhand + Act II·1"** (v0.37) | Emberhand true asymmetry (salvage identity, Ghostwalker stealth+detection) + **M8–M10** | build the playable side, then teach it |
 | **XP-4 "Ground Depth"** (v0.38) | Artillery+counter-battery, stances, garrisons, transports, addons + balance validation sprint | deepen ground before air |
