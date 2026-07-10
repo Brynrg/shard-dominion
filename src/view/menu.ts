@@ -52,7 +52,11 @@ export function showMissionSelect(missions: readonly MissionEntry[], onPick: (id
   panel.innerHTML =
     '<div style="font-size:34px;font-weight:bold;color:#ffd34d;letter-spacing:2px;">CAMPAIGN</div>' +
     '<div style="color:#8fb7c9;margin:4px 0 20px;font-size:13px;">Operation: Aether Prime</div>';
+  // Act cards (ART_HANDOFF §F): Act I atop, Act II before its first mission (m8+).
+  panel.appendChild(actCard('act1_card'));
+  let act2Shown = false;
   for (const m of [...missions].sort((a, b) => a.order - b.order)) {
+    if (!act2Shown && m.order > 6) { panel.appendChild(actCard('act2_card')); act2Shown = true; }
     const b = button(`${m.completed ? '✔ ' : ''}Mission ${m.order}: ${m.name}${m.unlocked ? '' : '  🔒'}`, m.unlocked && !m.completed);
     if (!m.unlocked) { b.disabled = true; b.style.opacity = '0.45'; b.style.cursor = 'default'; }
     else b.onclick = () => onPick(m.id);
@@ -73,6 +77,7 @@ export interface SkirmishSetup {
 /** Skirmish setup (FG-6): map pool + faction + difficulty, then launch. */
 export function showSkirmishSetup(o: SkirmishSetup): void {
   const el = overlay();
+  backdrop(el, 'title_backdrop');
   const panel = document.createElement('div');
   panel.style.textAlign = 'center';
   panel.innerHTML =
@@ -131,6 +136,22 @@ function overlay(): HTMLDivElement {
   return el;
 }
 
+// Painted backdrop behind an overlay (ART_HANDOFF §F). A missing file 404s into
+// the gradient alone — visually identical to today's flat dim, so no art = no change.
+function backdrop(el: HTMLDivElement, name: string): void {
+  el.style.background =
+    `linear-gradient(rgba(6,5,10,0.5), rgba(6,5,10,0.88)), url("art/presentation/${name}.png") center / cover no-repeat rgba(6,5,10,0.92)`;
+}
+
+// An act-card banner (mission select). Removes itself unless the art exists.
+function actCard(name: string): HTMLImageElement {
+  const img = document.createElement('img');
+  img.src = `art/presentation/${name}.png`;
+  img.style.cssText = 'display:block;width:340px;max-width:86vw;margin:10px auto 6px;border:1px solid rgba(0,229,255,0.4);border-radius:4px;';
+  img.onerror = (): void => img.remove();
+  return img;
+}
+
 function button(label: string, primary = false): HTMLButtonElement {
   const b = document.createElement('button');
   b.textContent = label;
@@ -145,6 +166,7 @@ function escapeHtml(s: string): string {
 /** The title screen: Campaign vs Skirmish. `onSelect(missionId)` starts that match. */
 export function showTitleMenu(onSelect: (missionId: string) => void, campaignMissionId = 'm1_first_light'): void {
   const el = overlay();
+  backdrop(el, 'title_backdrop');
   const panel = document.createElement('div');
   panel.style.textAlign = 'center';
   panel.innerHTML =
@@ -410,6 +432,7 @@ export function showChoice(prompt: string, options: readonly { id: string; label
 /** XP-6: the campaign credits roll. */
 export function showCredits(onDone: () => void): void {
   const el = overlay();
+  backdrop(el, 'credits_backdrop');
   const panel = document.createElement('div');
   panel.style.cssText = 'text-align:center;max-width:560px;';
   panel.innerHTML = [

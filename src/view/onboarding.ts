@@ -44,6 +44,35 @@ const BRIEF_HOWTO: readonly string[] = [
 const BRIEF_HINT = 'SCROLL: move mouse to a screen edge · wheel = zoom · click the radar to jump';
 
 export interface BriefingText { title: string; story: readonly string[]; objectives: readonly string[] }
+
+// ── Briefing portraits (ART_HANDOFF §F) — derived from the story's speaker tags ──
+// Story lines read `Speaker: "…"`; the first line whose speaker we know picks the
+// portrait. Best-effort: missing art (the normal state until the drop lands) simply
+// never draws. Pure name→file mapping is exported for tests.
+const PORTRAIT_CHARACTERS: readonly { match: RegExp; file: string }[] = [
+  { match: /corr/i, file: 'portrait_corr' },
+  { match: /vane/i, file: 'portrait_vane' },
+  { match: /halex/i, file: 'portrait_halex' },
+  { match: /yssel/i, file: 'portrait_yssel' },
+  { match: /chorus/i, file: 'portrait_chorus' },
+  { match: /warden/i, file: 'portrait_warden' },
+];
+export function portraitFor(story: readonly string[] | undefined): string | null {
+  for (const line of story ?? []) {
+    const m = /^([^:"]{2,40}):/.exec(line);
+    if (!m || !m[1]) continue;
+    const hit = PORTRAIT_CHARACTERS.find(c => c.match.test(m[1] as string));
+    if (hit) return hit.file;
+  }
+  return null;
+}
+function loadPortrait(story: readonly string[] | undefined): HTMLImageElement | null {
+  const name = portraitFor(story);
+  if (!name || typeof Image === 'undefined') return null;
+  const img = new Image();
+  img.src = `art/presentation/${name}.png`;
+  return img; // drawn only once complete + decoded; a 404 just never completes
+}
 export interface ObjStatus { text: string; primary: boolean; complete: boolean }
 
 export interface CommMessage { speaker: string; text: string }
@@ -55,6 +84,7 @@ export function makeOnboarding(
 ): Onboarding {
   let briefing = true;
   let step = 0;
+  const portrait = loadPortrait(brief?.story);
   // Latches: some conditions are momentary (a move marker lives ~0.5s), so once
   // seen they stay satisfied.
   let everSelected = false;
@@ -223,6 +253,18 @@ export function makeOnboarding(
     ctx.fillStyle = '#8894a4';
     ctx.font = '12px monospace';
     ctx.fillText(BRIEF_HINT, pad + 34, y);
+
+    // Painted speaker portrait (ART_HANDOFF §F) — bottom-right of the frame like a
+    // comm officer on the line; drawn LAST so it sits opaque over any long lines.
+    if (portrait && portrait.complete && portrait.naturalWidth > 0) {
+      const ps = Math.min(170, (W - pad * 2) * 0.22, (H - pad * 2) * 0.34);
+      const px = W - pad - ps - 26, py = H - pad - ps - 40;
+      ctx.fillStyle = 'rgba(6,5,10,0.9)';
+      ctx.fillRect(px - 4, py - 4, ps + 8, ps + 8);
+      ctx.drawImage(portrait, px, py, ps, ps);
+      ctx.strokeStyle = 'rgba(0,229,255,0.6)'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(px + 0.5, py + 0.5, ps - 1, ps - 1);
+    }
 
     // Pulsing call to action.
     const a = 0.55 + 0.45 * Math.sin(p * 0.08);

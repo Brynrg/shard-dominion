@@ -88,8 +88,20 @@ creep ground).
 
 ## After the operator generates
 Import order that proves the pipeline fastest: C (re-gens, replaces existing) → A
-core units → B buildings → D strips (needs sidecar wiring — the importing session
-splits strips + writes `frames`/`fps` sidecars) → E skins → F presentation (F needs
-NEW view wiring: title/briefing/mission-select image slots — small view-layer work,
-budget it). Verify per batch: `pnpm run verify` + `pnpm run test:live` + a screenshot
-probe; art must never touch the sim.
+core units → B buildings → D strips → E skins → F presentation. Verify per batch:
+`pnpm run verify` + `pnpm run test:live` + a screenshot probe; art must never touch
+the sim.
+
+**ALL ENGINE WIRING IS ALREADY DONE (2026-07-10)** — importing is now just
+`node scripts/import-art.mjs <folder>` per batch, no code changes:
+- D strips: the importer writes `frames`/`fps` sidecars for `walk`/`drive`/`fire`
+  (no splitting — the engine plays horizontal strips natively); the renderer picks
+  walk/drive while a unit moves and fire for ~0.4s after it shoots.
+- E skins: sheets named `…__emberhand__…`/`…__shardborn__…` auto-win over team
+  paint for whichever side plays that faction (spritebank `sheetCandidates`).
+- F presentation: view slots live — `title_backdrop` (title+skirmish menus),
+  `act1_card`/`act2_card` (mission select), `credits_backdrop` (credits), and
+  briefing portraits picked by the story's speaker tag (`portraitFor`). Missing
+  files fall back to today's look.
+- Numbered Grok drops: `python3 scripts/rename-art-drop.py <folder>` first
+  (maps `N.png` → pipeline names per docs/GROK_ART_PROMPTS.md, converts JPG).

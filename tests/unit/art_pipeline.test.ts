@@ -41,6 +41,29 @@ describe('sheetCandidates — delivered-sheet preference order', () => {
   });
 });
 
+describe('portraitFor — briefing speaker → portrait file', () => {
+  it('picks the first known speaker tag in the story', async () => {
+    const { portraitFor } = await import('../../src/view/onboarding.js');
+    expect(portraitFor([
+      'Marshal Corr: "Warden — your dropships are down."',
+      'Intercepted transmission — Sera Vane: "the first cut."',
+    ])).toBe('portrait_corr');
+    expect(portraitFor(['Sera Vane: "Ash remembers."'])).toBe('portrait_vane');
+    expect(portraitFor(['No speakers here, just prose.'])).toBeNull();
+    expect(portraitFor(undefined)).toBeNull();
+  });
+
+  it('every campaign mission briefing resolves to a portrait', async () => {
+    const { portraitFor } = await import('../../src/view/onboarding.js');
+    const { readdirSync, readFileSync } = await import('node:fs');
+    const dir = 'data/missions';
+    for (const f of readdirSync(dir).filter(f => f.startsWith('m') && f.endsWith('.json'))) {
+      const m = JSON.parse(readFileSync(`${dir}/${f}`, 'utf8')) as { briefing?: { story?: string[] } };
+      expect(portraitFor(m.briefing?.story), f).not.toBeNull();
+    }
+  });
+});
+
 describe('import-art classification', () => {
   it('knows every post-v0.22 unit (the stale-UNIT_IDS regression)', () => {
     for (const id of ['scout_vehicle', 'assault_tank', 'longbow', 'skimmer_apc', 'gunship',
