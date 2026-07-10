@@ -1014,6 +1014,9 @@ export function makeView(cfg: ViewConfig): View {
       const mine = e.components.faction?.team === (cfg.viewerTeam ?? 'player');
       if (cloaked && !mine) continue;
       if (cloaked && mine) { context.globalAlpha = 0.45; }
+      // TP-3: construction sites render as translucent scaffolding.
+      const siteProgress = e.components.building?.buildProgress ?? 100;
+      if (e.components.building && siteProgress < 100) context.globalAlpha = 0.55;
 
       // Hide entities in unseen fog (player units always sit in visible tiles).
       if (fog) {
@@ -1038,6 +1041,13 @@ export function makeView(cfg: ViewConfig): View {
         // Baked lit body (S7-2) + live animated accents on top.
         sprites.drawBuildingBody(context, kind, teamKey, sx, sy, frame, camera.zoom);
         drawBuildingAccents(kind, sx, sy, style, camera.zoom);
+        if (siteProgress < 100) { // TP-3: site progress bar
+          const bw2 = 30 * camera.zoom;
+          context.fillStyle = 'rgba(10,14,20,0.8)';
+          context.fillRect(sx - bw2 / 2, sy - 26 * camera.zoom, bw2, 4);
+          context.fillStyle = '#ffd34d';
+          context.fillRect(sx - bw2 / 2, sy - 26 * camera.zoom, bw2 * (siteProgress / 100), 4);
+        }
       } else {
         // Cargo glow (harvester) draws under the baked sprite, then the sprite.
         if (e.components.movement?.flying) {

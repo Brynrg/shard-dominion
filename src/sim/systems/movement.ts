@@ -18,10 +18,12 @@ import { world, worldToTile, tileToWorldCenter, TILE_SUBUNITS } from '../coords.
 import { findPath } from '../pathfind.js';
 
 // Walls (XP-1): tiles occupied by living path-blocking buildings. Computed at most
-// once per tick (cached on the tick number) — deterministic, cheap.
-let wallCacheTick = -1;
-const wallCacheByTeam = new Map<string, Set<string>>();
-function wallTiles(state: SimState, team: string): Set<string> {
+// once per tick. TP-4: cache lives INSIDE the factory closure — module-level state
+// leaked between simulations stepped at the same tick (audit finding).
+function makeWallCache() {
+  let wallCacheTick = -1;
+  const wallCacheByTeam = new Map<string, Set<string>>();
+  return function wallTiles(state: SimState, team: string): Set<string> {
   if (state.tick !== wallCacheTick) {
     wallCacheTick = state.tick;
     wallCacheByTeam.clear();
@@ -41,7 +43,8 @@ function wallTiles(state: SimState, team: string): Set<string> {
       }
     }
   }
-  return wallCacheByTeam.get(team) ?? wallCacheByTeam.get('neutral')!;
+    return wallCacheByTeam.get(team) ?? wallCacheByTeam.get('neutral')!;
+  };
 }
 
 const SEPARATION_DIST = Math.floor(TILE_SUBUNITS * 0.45); // min unit spacing (world units)
@@ -51,6 +54,7 @@ function samePos(a: { wx: number; wy: number } | null | undefined, b: { wx: numb
 }
 
 export function makeMovementSystem(): { name: 'movement'; run(state: SimState): void } {
+  const wallTiles = makeWallCache(); // TP-4: per-system, never shared across sims
   return {
     name: 'movement' as const,
     run(state: SimState): void {

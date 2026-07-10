@@ -60,6 +60,11 @@
         "type": "refinery",
         "tx": 11,
         "ty": 20
+      },
+      {
+        "type": "power_node",
+        "tx": 8,
+        "ty": 18
       }
     ],
     "units": [
@@ -94,6 +99,11 @@
           "type": "barracks",
           "tx": 25,
           "ty": 7
+        },
+        {
+          "type": "power_node",
+          "tx": 23,
+          "ty": 4
         }
       ],
       "units": [
@@ -115,7 +125,8 @@
       "ai": {
         "pressureValue": 200,
         "raidUnitCap": 3
-      }
+      },
+      "factionId": "emberhand"
     }
   ],
   "objectives": [

@@ -4,6 +4,7 @@
 // stands alone, and low power imposes soft penalties (production slowdown in
 // production.ts, turret fire-rate in damage.ts) — never a full shutdown.
 import type { SimState } from '../state.js';
+import { isOperational } from '../factory.js';
 
 /** Team power balance: supply − demand < 0 ⇒ shortage (soft penalties apply). */
 export function teamPowerShortage(state: SimState, team: string): boolean {
@@ -11,7 +12,7 @@ export function teamPowerShortage(state: SimState, team: string): boolean {
   for (const e of state.store.all()) {
     if (e.components.faction?.team !== team) continue;
     const p = e.components.power;
-    if (p) { supply += p.powerSupply; demand += p.powerDemand; }
+    if (p && isOperational(e)) { supply += p.powerSupply; demand += p.powerDemand; }
   }
   return supply < demand;
 }
@@ -27,6 +28,7 @@ export function makePowerSystem(): { name: 'power'; run(state: SimState): void }
         const p = e.components.power;
         const team = e.components.faction?.team;
         if (!p || !team) continue;
+        if (!isOperational(e)) continue; // TP-3: scaffolding neither supplies nor draws
         supply.set(team, (supply.get(team) ?? 0) + p.powerSupply);
         demand.set(team, (demand.get(team) ?? 0) + p.powerDemand);
       }

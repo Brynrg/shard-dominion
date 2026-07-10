@@ -11,7 +11,11 @@ export function loadProgress(): CampaignProgress {
     const raw = localStorage.getItem(PROGRESS_KEY);
     if (raw) {
       const p = JSON.parse(raw) as Partial<CampaignProgress>;
-      if (p && Array.isArray(p.completed)) return { version: p.version ?? 1, completed: p.completed, bonus: p.bonus ?? {} };
+      if (p && Array.isArray(p.completed)) {
+        // TP-4: return EVERY persisted field — the audit found heroKills/reserve
+        // silently dropped here, which killed the whole campaign-persistence layer.
+        return { version: p.version ?? 1, completed: p.completed, bonus: p.bonus ?? {}, heroKills: p.heroKills ?? 0, reserve: p.reserve ?? 0 };
+      }
     }
   } catch { /* ignore malformed/unavailable storage */ }
   return { version: 1, completed: [] };

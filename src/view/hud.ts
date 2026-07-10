@@ -29,7 +29,7 @@ export interface HUDConfig {
 
 /** The C&C-style sidebar build menu. `kind` decides the click action:
  *  train → queue a unit at the barracks; build → enter placement mode. */
-interface BuildItem { id: string; key: string; name: string; cost: number; kind: 'train' | 'build'; tier?: number; cellCost?: number; factionLock?: string }
+interface BuildItem { id: string; key: string; name: string; cost: number; kind: 'train' | 'build' | 'strike'; tier?: number; cellCost?: number; factionLock?: string }
 // Split across two tabs (XP-1) — [S]TRUCTURES and [U]NITS — so the roster can grow.
 // `tier` mirrors data/{structures,units}.json (view-side copy, like cost).
 const BASE_MENU: readonly BuildItem[] = [
@@ -49,7 +49,7 @@ const DEF_MENU: readonly BuildItem[] = [
   { id: 'bunker', key: '', name: 'Bunker', cost: 450, kind: 'build' },
   { id: 'infirmary', key: '', name: 'Infirmary', cost: 500, kind: 'build' },
   { id: 'machine_shop', key: '', name: 'Mach Shop', cost: 600, kind: 'build', tier: 2 },
-  { id: 'hq', key: '', name: '☄ STRIKE', cost: 0, kind: 'build', tier: 3, cellCost: 5 },
+  { id: 'arm', key: '', name: '☄ STRIKE', cost: 0, kind: 'strike', tier: 3, cellCost: 5 },
 ];
 const UNIT_MENU: readonly BuildItem[] = [
   { id: 'infantry', key: 'T', name: 'Infantry', cost: 100, kind: 'train' },
@@ -318,7 +318,7 @@ export function makeHUD(cfg: HUDConfig): {
       // Shardstorm chip (XP-5).
       if (cfg.isStorm?.()) {
         context.fillStyle = '#c9a6ff'; context.font = 'bold 11px monospace';
-        context.fillText('⛈ SHARDSTORM', px + 120, py + 46);
+        context.fillText('⛈ STORM', px + 122, py + 46);
       }
 
       // Power lamp.

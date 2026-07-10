@@ -47,13 +47,47 @@ export function makeSimState(cfg: SimConfig): SimState {
  * walked in ascending-id order, so any iteration-order nondeterminism changes it.
  */
 export function stateHash(state: SimState): number {
+  // TP-4 (v0.42): FULL authoritative coverage. The audit found economy, orders,
+  // combat state, tech, power, stealth, shields, containers, veterancy, and
+  // projectiles all missing — two clients could diverge strategically while
+  // reporting identical hashes. Every field folds in with fixed ordering; floats
+  // are scaled+rounded so fractional drips hash deterministically.
+  const q = (n: number | undefined | null): number => Math.round(((n ?? -1) as number) * 1000);
   const ints: number[] = [state.tick, state.rng.state(), state.store.count()];
   for (const e of state.store.all()) {
     ints.push(e.id);
     const p = e.components.position;
     if (p) ints.push(p.wx, p.wy);
     const h = e.components.health;
-    if (h) ints.push(h.hp, h.maxHp);
+    if (h) ints.push(q(h.hp), h.maxHp);
+    const eco = e.components.economy;
+    if (eco) ints.push(q(eco.credits), eco.cells ?? 0, q(eco.minedTotal), eco.maxStorage);
+    const m = e.components.movement;
+    if (m) ints.push(q(m.target?.wx), q(m.target?.wy), m.path.length, m.speed,
+      m.flying ? 1 : 0, m.attackMove ? 1 : 0, m.boardTargetId ?? -1);
+    const c = e.components.combat;
+    if (c) ints.push(c.targetId ?? -1, c.cooldownRemaining, c.ammo ?? -1,
+      c.stance === 'hold' ? 2 : c.stance === 'defensive' ? 1 : 0, c.revealedTicks ?? 0);
+    const b = e.components.building;
+    if (b) ints.push(q(b.buildProgress), b.powered ? 1 : 0, b.repairing ? 1 : 0);
+    const t = e.components.tech;
+    if (t) ints.push(t.tier, t.upgradingTo ?? -1, t.ticksLeft);
+    const st = e.components.stealth;
+    if (st) ints.push(st.cloaked ? 1 : 0, st.decloakTicks);
+    const sh = e.components.shield;
+    if (sh) ints.push(q(sh.hp), sh.regenDelay);
+    const box = e.components.container;
+    if (box) { ints.push(box.stored.length); for (const u of box.stored) ints.push(q(u.hp)); }
+    const xp = e.components.experience;
+    if (xp) ints.push(xp.kills);
+    const prod = e.components.production;
+    if (prod) { ints.push(prod.queue.length, q(prod.progress)); for (const k of prod.queue) ints.push(k.length); }
+    const hv = e.components.harvest;
+    if (hv) ints.push(q(hv.cargo), hv.state === 'SEEK' ? 0 : hv.state === 'HARVEST' ? 1 : hv.state === 'RETURN' ? 2 : hv.state === 'DOCK' ? 3 : 4, hv.targetRefinery ?? -1);
+    const pj = e.components.projectile;
+    if (pj) ints.push(pj.target.wx, pj.target.wy, pj.speed);
+    const pw = e.components.power;
+    if (pw) ints.push(pw.powerSupply, pw.powerDemand);
   }
   // Shard density is gameplay-critical state (harvesting depletes it; regrowth/blooms
   // will write it) → fold it in, walked in sorted-key order so Map iteration order can't

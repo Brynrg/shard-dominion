@@ -28,48 +28,42 @@ export function validatePlacement(
   state: SimState,
   structure: StructureDef,
   tile: { tx: number; ty: number },
+  team: 'player' | 'enemy' = 'player',
 ): PlacementResult {
-  // Check terrain is buildable (not impassable)
-  const terrain = state.grid.terrainAt(tile);
-  if (terrain === 'IMPASSABLE') {
-    return { valid: false, reason: 'INVALID TERRAIN' };
-  }
-
-  // Check if tile is blocked by another entity
-  for (const e of state.store.all()) {
-    const pos = e.components.position;
-    if (!pos) continue;
-    const entityTile = worldToTile(pos);
-    if (entityTile.tx === tile.tx && entityTile.ty === tile.ty) {
-      return { valid: false, reason: 'BLOCKED' };
-    }
-  }
-
-  // Check build radius from a ConYard (simplified: any ConYard within 10 tiles)
-  let hasConYardRadius = false;
-  for (const e of state.store.all()) {
-    const faction = e.components.faction;
-    if (faction?.faction === 'construction_yard') {
-      const pos = e.components.position;
-      if (pos) {
-        const conYardTile = worldToTile(pos);
-        const dist = Math.abs(conYardTile.tx - tile.tx) + Math.abs(conYardTile.ty - tile.ty);
-        if (dist <= 10) {
-          hasConYardRadius = true;
-          break;
-        }
+  // TP-3: validate the FULL footprint (the audit found anchor-only checks letting
+  // 2×2 buildings overlap terrain, entities, and the map edge).
+  const w = structure.footprint?.w ?? 1;
+  const h = structure.footprint?.h ?? 1;
+  for (let dy = 0; dy < h; dy++) {
+    for (let dx = 0; dx < w; dx++) {
+      const t = { tx: tile.tx + dx, ty: tile.ty + dy };
+      if (t.tx < 0 || t.ty < 0 || t.tx >= state.grid.width || t.ty >= state.grid.height) {
+        return { valid: false, reason: 'OFF THE MAP' };
+      }
+      if (state.grid.terrainAt(t) === 'IMPASSABLE') {
+        return { valid: false, reason: 'INVALID TERRAIN' };
+      }
+      for (const e of state.store.all()) {
+        const pos = e.components.position;
+        if (!pos) continue;
+        const et = worldToTile(pos);
+        if (et.tx === t.tx && et.ty === t.ty) return { valid: false, reason: 'BLOCKED' };
       }
     }
   }
 
-  if (!hasConYardRadius) {
-    return { valid: false, reason: 'OUTSIDE BUILD RADIUS' };
+  // Build radius comes from an OWN-team ConYard (TP-3: the audit found any team's
+  // yard granting radius).
+  for (const e of state.store.all()) {
+    const faction = e.components.faction;
+    if (faction?.faction !== 'construction_yard' || faction.team !== team) continue;
+    if ((e.components.health?.hp ?? 1) <= 0) continue; // absent health = alive
+    const pos = e.components.position;
+    if (!pos) continue;
+    const ct = worldToTile(pos);
+    if (Math.abs(ct.tx - tile.tx) + Math.abs(ct.ty - tile.ty) <= 10) return { valid: true };
   }
-
-  // Check credits (simplified: assume we have enough if we're placing)
-  // Full credit check happens in construction system
-
-  return { valid: true };
+  return { valid: false, reason: 'OUTSIDE BUILD RADIUS' };
 }
 
 export interface CommandSystem {
@@ -343,7 +337,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             // Tech gate (XP-1): T2/T3 structures need the HQ tier. Sim-authoritative.
             if ((structure.tier ?? 1) > teamTier(state, actor)) break;
 
-            const result = validatePlacement(state, structure, intent.tile);
+            const result = validatePlacement(state, structure, intent.tile, actor);
             if (!result.valid) break;
 
             // TP-2: charge the TEAM LEDGER (spend across all owned banks).
@@ -360,7 +354,9 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             // structure the missions seed and the AI founds.
             state.store.create({
               position: tileCenter,
-              ...structureComponents(intent.structureId, actor, structures),
+              // TP-3: player builds START as construction sites (progress 0) and
+              // become operational when the construction system finishes them.
+              ...structureComponents(intent.structureId, actor, structures, { buildProgress: 0 }),
             });
             markers.push({ target: tileCenter, remaining: MARKER_LIFETIME });
             break;

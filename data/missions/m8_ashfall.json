@@ -51,6 +51,11 @@
         "type": "refinery",
         "tx": 8,
         "ty": 24
+      },
+      {
+        "type": "power_node",
+        "tx": 5,
+        "ty": 22
       }
     ],
     "units": [
@@ -86,6 +91,11 @@
           "type": "barracks",
           "tx": 27,
           "ty": 7
+        },
+        {
+          "type": "power_node",
+          "tx": 25,
+          "ty": 4
         }
       ],
       "units": [

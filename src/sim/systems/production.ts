@@ -8,6 +8,7 @@ import { teamTier } from '../tech.js';
 import type { EntityId } from '../ids.js';
 import { unitComponents } from '../factory.js';
 import { teamCredits, teamCells, spendCredits, spendCells } from '../ledger.js';
+import { isOperational } from '../factory.js';
 import { teamPowerShortage } from './power.js';
 import { modCost, FACTIONS, type TeamFactions } from '../factions.js';
 
@@ -25,6 +26,7 @@ export function makeProductionSystem(units: readonly UnitDef[], factions?: TeamF
         const pos = producer.components.position;
         const team = producer.components.faction?.team;
         if (!prod || !pos || !team) continue;
+        if (!isOperational(producer)) continue; // TP-3: scaffolding doesn't produce
 
         let job = active.get(producer.id);
         // start the next queued item if idle

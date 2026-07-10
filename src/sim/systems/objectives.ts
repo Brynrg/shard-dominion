@@ -142,7 +142,14 @@ export function makeObjectivesSystem(
         return everReached.get(i) ?? false;
       }
       case 'hold': {
-        const t = teamUnitInRegion(state, o.team, o.region) ? (holdTicks.get(i) ?? 0) + 1 : 0;
+        // TP-5: CONTESTED holds pause (the audit: M4/M9 "control" only required
+        // standing nearby while the enemy did too). Own presence + no foe = timer
+        // runs; contested = frozen; abandoned = reset.
+        const foe = o.team === 'player' ? 'enemy' : 'player';
+        const ours = teamUnitInRegion(state, o.team, o.region);
+        const theirs = teamUnitInRegion(state, foe, o.region);
+        const prev = holdTicks.get(i) ?? 0;
+        const t = ours ? (theirs ? prev : prev + 1) : 0;
         holdTicks.set(i, t);
         return t >= Math.round(o.seconds * SIM_TICK_RATE);
       }

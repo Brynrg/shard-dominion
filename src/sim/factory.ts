@@ -79,8 +79,11 @@ export function structureComponents(
   opts: StructureOpts = {},
 ): Record<string, unknown> {
   const def = structures.find(s => s.id === kind);
-  const hp = def?.hp ?? FALLBACK_HP[kind] ?? 1000;
+  const maxHp = def?.hp ?? FALLBACK_HP[kind] ?? 1000;
   const progress = opts.buildProgress ?? 100;
+  // TP-3: a construction SITE stands at 20% hp and grows as it builds — attackable
+  // scaffolding, exactly the C&C rule the audit found missing.
+  const hp = progress >= 100 ? maxHp : Math.max(1, Math.ceil(maxHp * 0.2));
   const components: Record<string, unknown> = {
     building: {
       onSlab: opts.onSlab ?? false,
@@ -90,7 +93,7 @@ export function structureComponents(
       ...(def?.teamPass ? { teamPass: true } : {}),
     },
     faction: { team, faction: kind },
-    health: { hp, maxHp: hp },
+    health: { hp, maxHp },
     armor: { armorClass: 'BUILDING' },
   };
   // Power: attach whenever the def declares supply OR demand (the audit found
@@ -130,4 +133,11 @@ export function structureComponents(
       break;
   }
   return components;
+}
+
+/** TP-3: is this building finished? Systems gate function on it (turrets don't fire,
+ *  producers don't produce, power doesn't flow from scaffolding). Units are always
+ *  operational. */
+export function isOperational(e: { components: { building?: { buildProgress: number } } }): boolean {
+  return (e.components.building?.buildProgress ?? 100) >= 100;
 }

@@ -102,6 +102,11 @@
           "type": "construction_yard",
           "tx": 26,
           "ty": 7
+        },
+        {
+          "type": "power_node",
+          "tx": 26,
+          "ty": 3
         }
       ],
       "units": [

@@ -28,6 +28,7 @@ import { makeProjectileSystem } from './sim/systems/projectile.js';
 import { makePlanetEventSystem } from './sim/systems/planetEvent.js';
 import { seedFromMission } from './sim/seedMission.js';
 import { teamTier } from './sim/tech.js';
+import { teamCredits, grantCredits as grantCredits2 } from './sim/ledger.js';
 import { makeTeamFactions, modCost, type FactionId } from './sim/factions.js';
 import { makeLockstep, type Lockstep } from './net/lockstep.js';
 import { stateHash } from './sim/state.js';
@@ -114,7 +115,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   const mission = loadMission(missionRaw);
   const params = new URLSearchParams(location.search);
   const mp = mpSession;
-  const viewerTeam: 'player' | 'enemy' = mp?.seat === 1 ? 'enemy' : 'player';
+  const viewerTeam: 'player' | 'enemy' = (mp?.seat ?? 0) % 2 === 1 ? 'enemy' : 'player'; // TP-4: seats pair by parity (2v2)
 
   // ── Factions (FG-6): mission defaults, URL ?faction= overrides the player. ──
   const playerFaction = (params.get('faction') as FactionId | null) ?? mission.player.factionId ?? 'concord';
@@ -137,12 +138,17 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // seeding; skirmish.json reproduces the original valley).
   const meta = seedFromMission(state, mission, { units, structures, economy }, teamFactions);
 
-  // Secondary-objective reward (FG-4): apply any banked bonus credits for this mission.
-  const bonus = takeBonus(mission.id);
-  if (bonus > 0) {
-    const bank = state.store.all().find(e => e.components.faction?.team === 'player' && e.components.economy)?.components.economy;
-    if (bank) bank.credits += bonus;
+  // Secondary-objective reward (FG-4) + TP-4: on a CONTINUE boot, replay the saved
+  // boot-state (the bonus was consumed on the original run) so the command-log
+  // replays over identical starting conditions.
+  const isContinue = params.get('continue') === '1';
+  let savedBoot: { bonus?: number; deployment?: { squads: number; credits: number }; choice?: string | null } = {};
+  if (isContinue) {
+    try { savedBoot = (JSON.parse(localStorage.getItem('shardDominion.save') ?? '{}') as { boot?: typeof savedBoot }).boot ?? {}; } catch { /* ignore */ }
   }
+  const bonus = isContinue ? (savedBoot.bonus ?? 0) : takeBonus(mission.id);
+  if (bonus > 0) grantCredits2(state, 'player', bonus, true);
+  const bootState = { bonus, deployment: { squads: 0, credits: 0 }, choice: null as string | null };
 
   // ── Audio (FG-1): procedural WebAudio engine — resumed on the briefing click. ──
   const audio = makeAudioEngine();
@@ -178,6 +184,13 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   const fogSystem = makeFogSystem(viewerTeam);
   const victorySystem = makeVictorySystem(units);
   // XP-6: the finale CHOICE — read what the panel stored; filter branch objectives.
+  if (params.get('continue') === '1' && mission.choice) {
+    // TP-4: a continued finale restores its saved branch before objectives filter.
+    try {
+      const sc = (JSON.parse(localStorage.getItem('shardDominion.save') ?? '{}') as { boot?: { choice?: string | null } }).boot?.choice;
+      if (sc) localStorage.setItem(`shardDominion.choice.${mission.id}`, sc);
+    } catch { /* ignore */ }
+  }
   const bootChoice = mission.choice ? localStorage.getItem(`shardDominion.choice.${mission.id}`) : null;
   const liveObjectives = mission.objectives.filter(o => !o.onlyIfChoice || o.onlyIfChoice === bootChoice);
   const objectivesSystem = makeObjectivesSystem(liveObjectives, mission.failure, mission.triggers, units, teamFactions, bootChoice);
@@ -242,7 +255,19 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     weapons,
     getFog: () => ({ visible: fogSystem.visible, explored: fogSystem.explored }),
     onboarding,
-    objectiveWorld: tileToWorldCenter(meta.objectiveTile), // the mission objective = the goal marker
+    // TP-5: the goal marker derives from the FIRST PRIMARY OBJECTIVE (the audit:
+    // it always pointed at the first enemy base, misdirecting hold/reach/economy
+    // missions). Region objectives point at their region; destroy objectives at the
+    // first matching seeded target; anything else falls back to the enemy base.
+    objectiveWorld: (() => {
+      const prime = mission.objectives.find(o => (o.primary ?? true) && (!o.onlyIfChoice || o.onlyIfChoice === bootChoice));
+      if (prime && (prime.type === 'hold' || prime.type === 'reach')) return tileToWorldCenter({ tx: prime.region.tx, ty: prime.region.ty });
+      if (prime && prime.type === 'destroy' && prime.kind) {
+        const seeded = mission.enemies.flatMap(e => [...e.buildings, ...e.units]).find(p => p.type === prime.kind);
+        if (seeded) return tileToWorldCenter({ tx: seeded.tx, ty: seeded.ty });
+      }
+      return tileToWorldCenter(meta.objectiveTile);
+    })(),
     getHover: () => input.getCursor(),                               // sidebar hover highlight
     cargoCapacity: economy.cargoCapacity,                            // HUD cargo-bar denominator
     audio,                                                           // FX diff emits SFX
@@ -315,9 +340,11 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
         setSpeed: (sp) => { speed = sp; },
         onSave: () => {
           try {
+            bootState.choice = mission.choice ? localStorage.getItem(`shardDominion.choice.${mission.id}`) : null;
             const payload = {
-              version: 1, missionId: mission.id, faction: playerFaction, difficulty,
+              version: 2, missionId: mission.id, faction: playerFaction, difficulty,
               tick: state.tick, log: intentLog,
+              boot: bootState, // TP-4: bonus + deployment + choice reproduce on continue
             };
             localStorage.setItem('shardDominion.save', JSON.stringify(payload));
             // XP-7 replay history: last 5 saves, newest first.
@@ -362,26 +389,28 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
 
   // ── Deployment (XP-3): campaign missions offer the Veteran Reserve. The panel
   // overlays the (paused) briefing; spends apply live to the seeded match. ──────
-  if (mission.id.startsWith('m')) {
+  const applyVetSquad = (): void => {
+    for (const dx of [0, 1]) {
+      state.store.create({
+        position: tileToWorldCenter({ tx: meta.playerStartTile.tx + dx, ty: meta.playerStartTile.ty + 2 }),
+        health: { hp: 20, maxHp: 20 }, armor: { armorClass: 'LIGHT' },
+        movement: { target: null, path: [], speed: 12 },
+        combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
+        experience: { kills: 3, rank: 1 },
+        faction: { team: 'player', faction: 'infantry' },
+      });
+    }
+  };
+  if (isContinue) {
+    // TP-4: reproduce the ORIGINAL boot's deployment spends exactly — no panel.
+    for (let i = 0; i < (savedBoot.deployment?.squads ?? 0); i++) applyVetSquad();
+    if (savedBoot.deployment?.credits) grantCredits2(state, 'player', savedBoot.deployment.credits, true);
+  } else if (mission.id.startsWith('m')) {
     const reserve = loadProgress().reserve ?? 0;
     if (reserve > 0) {
       showDeployment(reserve, {
-        vetSquad: () => {
-          for (const dx of [0, 1]) {
-            state.store.create({
-              position: tileToWorldCenter({ tx: meta.playerStartTile.tx + dx, ty: meta.playerStartTile.ty + 2 }),
-              health: { hp: 20, maxHp: 20 }, armor: { armorClass: 'LIGHT' },
-              movement: { target: null, path: [], speed: 12 },
-              combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
-              experience: { kills: 3, rank: 1 },
-              faction: { team: 'player', faction: 'infantry' },
-            });
-          }
-        },
-        credits: () => {
-          const bank = state.store.all().find(e => e.components.faction?.team === 'player' && e.components.economy)?.components.economy;
-          if (bank) bank.credits += 200;
-        },
+        vetSquad: () => { applyVetSquad(); bootState.deployment.squads += 1; },
+        credits: () => { grantCredits2(state, 'player', 200, true); bootState.deployment.credits += 200; },
       });
     }
   }
@@ -447,9 +476,9 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
 
   // Expose economy debug hook for liveness test
   window.__debugEconomy = () => {
-    const refinery = state.store.all().find(e => e.components.building && e.components.economy);
-    if (!refinery || !refinery.components.economy) return { credits: 0 };
-    return { credits: refinery.components.economy.credits || 0 };
+    // TP-2/TP-5: the VIEWER team's whole ledger (QA: this used to return the first
+    // bank of ANY team — after your refinery died it reported the enemy's money).
+    return { credits: teamCredits(state, viewerTeam) };
   };
 
   // Expose selection debug hook for S2 liveness test

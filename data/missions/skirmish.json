@@ -61,6 +61,11 @@
         "type": "refinery",
         "tx": 16,
         "ty": 16
+      },
+      {
+        "type": "power_node",
+        "tx": 13,
+        "ty": 14
       }
     ],
     "units": [
@@ -100,6 +105,11 @@
           "type": "construction_yard",
           "tx": 25,
           "ty": 10
+        },
+        {
+          "type": "power_node",
+          "tx": 25,
+          "ty": 6
         }
       ],
       "units": [

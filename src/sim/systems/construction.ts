@@ -42,6 +42,26 @@ export function makeConstructionSystem(
     name: 'construction' as const,
     output: { buildQueue: [], readyStructures: [] },
     run(state: SimState): void {
+      // ── TP-3: construction SITES build up in real time. Placement spawns a
+      // building at buildProgress 0 / 20% hp; this pass advances progress per the
+      // def's buildTimeSeconds and grows hp toward max. At 100 it's operational
+      // (production/power/turret systems gate on isOperational).
+      for (const site of state.store.all()) {
+        const b = site.components.building;
+        const h = site.components.health;
+        if (!b || !h || b.buildProgress >= 100) continue;
+        if ((h.hp ?? 0) <= 0) continue;
+        const kind = site.components.faction?.faction ?? '';
+        const def = structureMap.get(kind);
+        const seconds = def?.buildTimeSeconds ?? 10;
+        const step = 100 / (seconds * 20);
+        b.buildProgress = Math.min(100, b.buildProgress + step);
+        // hp climbs from the 20% scaffold toward max alongside progress.
+        const targetHp = Math.max(h.hp, h.maxHp * (0.2 + 0.8 * (b.buildProgress / 100)));
+        h.hp = Math.min(h.maxHp, targetHp);
+        if (b.buildProgress >= 100) b.buildProgress = 100;
+      }
+
       // Aura addons (XP-4): infirmaries heal nearby own infantry, machine shops
       // heal own vehicles (1.5 hp/s within 3 tiles; needs power).
       for (const src of state.store.all()) {

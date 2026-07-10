@@ -8,6 +8,7 @@
 import type { SimState } from '../state.js';
 import { TILE_SUBUNITS } from '../coords.js';
 import { spendCells } from '../ledger.js';
+import { isOperational } from '../factory.js';
 
 const RADAR_DETECT = 8 * TILE_SUBUNITS;
 const SCOUT_DETECT = 5 * TILE_SUBUNITS;
@@ -22,7 +23,7 @@ export function makeStealthSystem(): { name: 'agitation'; run(state: SimState): 
       for (const e of state.store.all()) {
         const f = e.components.faction; const p = e.components.position;
         if (!f || !p || (e.components.health?.hp ?? 0) <= 0) continue;
-        if (f.faction === 'radar' && e.components.power?.powered !== false) detectors.push({ team: f.team, wx: p.wx, wy: p.wy, r: RADAR_DETECT });
+        if (f.faction === 'radar' && e.components.power?.powered !== false && isOperational(e)) detectors.push({ team: f.team, wx: p.wx, wy: p.wy, r: RADAR_DETECT });
         else if (f.faction === 'scout_vehicle') detectors.push({ team: f.team, wx: p.wx, wy: p.wy, r: SCOUT_DETECT });
         else detectors.push({ team: f.team, wx: p.wx, wy: p.wy, r: PROXIMITY_DETECT });
       }

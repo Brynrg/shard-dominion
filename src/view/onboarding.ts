@@ -143,10 +143,11 @@ export function makeOnboarding(
   }
 
   function drawMissionObjectives(ctx: CanvasRenderingContext2D, W: number, objs: readonly ObjStatus[], p: number): void {
-    const primaries = objs.filter(o => o.primary);
-    const list = primaries.length ? primaries : [...objs];
+    // TP-5: secondaries STAY visible (audit: they vanished after the briefing).
+    // Primaries first, then ☆-prefixed optionals.
+    const list = [...objs.filter(o => o.primary), ...objs.filter(o => !o.primary)];
     ctx.font = '13px monospace';
-    const rows = list.map(o => `${o.complete ? '✔' : '☐'} ${o.text}`);
+    const rows = list.map(o => `${o.complete ? '✔' : '☐'}${o.primary ? '' : ' ☆'} ${o.text}`);
     const boxW = Math.max(360, ...rows.map(r => ctx.measureText(r).width + 40));
     const h = 24 + list.length * 18;
     const x = (W - boxW) / 2, y = 8;
@@ -162,8 +163,8 @@ export function makeOnboarding(
     ctx.font = '13px monospace';
     let yy = y + 24;
     for (const o of list) {
-      ctx.fillStyle = o.complete ? '#4caf50' : '#e7e2d6';
-      ctx.fillText(`${o.complete ? '✔' : '☐'} ${o.text}`, x + 12, yy);
+      ctx.fillStyle = o.complete ? '#4caf50' : o.primary ? '#e7e2d6' : '#9fb4cc';
+      ctx.fillText(`${o.complete ? '✔' : '☐'}${o.primary ? '' : ' ☆'} ${o.text}`, x + 12, yy);
       yy += 18;
     }
     ctx.textBaseline = 'alphabetic';

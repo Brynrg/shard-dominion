@@ -57,6 +57,11 @@
         "type": "barracks",
         "tx": 8,
         "ty": 26
+      },
+      {
+        "type": "power_node",
+        "tx": 7,
+        "ty": 22
       }
     ],
     "units": [
@@ -101,6 +106,11 @@
           "type": "barracks",
           "tx": 27,
           "ty": 5
+        },
+        {
+          "type": "power_node",
+          "tx": 25,
+          "ty": 2
         }
       ],
       "units": [
@@ -123,7 +133,8 @@
         "assaultValue": 9999,
         "pressureValue": 9999,
         "assaultEscalationPerMin": 0
-      }
+      },
+      "factionId": "emberhand"
     }
   ],
   "objectives": [

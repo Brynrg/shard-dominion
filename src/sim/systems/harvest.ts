@@ -6,6 +6,7 @@ import { worldToTile, tileToWorldCenter } from '../coords.js';
 import { SIM_TICK_RATE } from '../loop.js';
 import { isStormActive } from './planetEvent.js';
 import { teamCells, grantCells, spendCredits, teamCredits } from '../ledger.js';
+import { isOperational } from '../factory.js';
 import type { EntityId } from '../ids.js';
 import type { HarvestComponent, EconomyComponent, PositionComponent, MovementComponent, FactionComponent } from '../components.js';
 
@@ -57,7 +58,7 @@ export function makeHarvestSystem(economy: EconomyConstants, factions?: { player
           const f = e.components.faction;
           if (!f || f.team !== team) continue;
           if (f.faction === 'processing_plant' && (e.components.health?.hp ?? 0) > 0 &&
-              e.components.power?.powered !== false) plant = true;
+              e.components.power?.powered !== false && isOperational(e)) plant = true; // TP-3
           if (!bank && e.components.building && e.components.economy) bank = e.components.economy;
         }
         if (!plant || !bank) { cellTicks.set(team, 0); continue; }
@@ -272,7 +273,9 @@ function runDock(
     const room = maxStorage - economyComp.credits;
 
     if (room <= 0) {
-      // Storage full: the remaining cargo is lost.
+      // Storage full: the remaining cargo is lost — but the PLANET still counts it
+      // (TP: resonance tracks extraction, not bookkeeping).
+      economyComp.minedTotal = (economyComp.minedTotal ?? 0) + harvest.cargo;
       harvest.cargo = 0;
     } else {
       const deposit = Math.min(dockRatePerTick, room, harvest.cargo);
@@ -342,6 +345,7 @@ function findNearestFreeRefinery(
 
     if (!faction || faction.faction !== 'refinery' || !building || !economy) continue;
     if (faction.team !== team) continue; // TP-2: never dock at the ENEMY'S refinery
+    if (!isOperational(e)) continue;     // TP-3: a refinery site has no dock yet
 
     const refineryPos = e.components.position;
     if (!refineryPos) continue;

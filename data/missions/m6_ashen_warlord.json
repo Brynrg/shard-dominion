@@ -65,6 +65,11 @@
         "type": "barracks",
         "tx": 5,
         "ty": 24
+      },
+      {
+        "type": "power_node",
+        "tx": 6,
+        "ty": 21
       }
     ],
     "units": [
@@ -130,6 +135,11 @@
           "type": "defense_turret",
           "tx": 22,
           "ty": 11
+        },
+        {
+          "type": "power_node",
+          "tx": 23,
+          "ty": 5
         }
       ],
       "units": [
@@ -174,7 +184,8 @@
         "pressureValue": 250,
         "raidUnitCap": 3
       },
-      "techTier": 2
+      "techTier": 2,
+      "factionId": "emberhand"
     }
   ],
   "objectives": [

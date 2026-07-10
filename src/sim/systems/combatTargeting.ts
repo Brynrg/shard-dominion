@@ -2,6 +2,7 @@
 // Runs in SYSTEM_ORDER before damage (so damage sees the target this sets).
 // Pure sim: no DOM, no wall-clock, no screen concepts.
 import type { SimState } from '../state.js';
+import { isOperational } from '../factory.js';
 import type { WeaponsFile } from '../../loaders/schemas.js';
 import { TILE_SUBUNITS } from '../coords.js';
 import type { WorldPos } from '../coords.js';
@@ -20,6 +21,7 @@ export function makeCombatTargetingSystem(weapons: WeaponsFile): { name: 'combat
         const pos = e.components.position;
         const faction = e.components.faction;
         if (!combat || !pos || !faction || combat.weaponId === null) continue;
+        if (e.components.building && !isOperational(e)) { combat.targetId = null; continue; } // TP-3
         // Stances (XP-4): hold-fire never acquires (and drops any current target).
         if (combat.stance === 'hold') { combat.targetId = null; continue; }
 

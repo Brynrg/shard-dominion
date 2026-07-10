@@ -2,38 +2,87 @@
   "id": "m1_first_light",
   "name": "First Light",
   "order": 1,
-  "map": { "width": 32, "height": 32, "seed": 1337 },
+  "map": {
+    "width": 32,
+    "height": 32,
+    "seed": 1337
+  },
   "briefing": {
     "title": "FIRST LIGHT",
     "story": [
-      "Marshal Corr: \"Warden — your dropships are down. The Reach is counting on the",
+      "Marshal Corr: \"Warden \u2014 your dropships are down. The Reach is counting on the",
       "Shard under this sand. An Emberhand watch-post overlooks our landing zone; take",
       "it before they call in the desert.\"",
       "",
-      "Intercepted transmission — Sera Vane: \"You call it a landing. We call it the first cut.\""
+      "Intercepted transmission \u2014 Sera Vane: \"You call it a landing. We call it the first cut.\""
     ],
-    "objectives": ["Destroy the Emberhand watch-post overlooking the landing zone"]
+    "objectives": [
+      "Destroy the Emberhand watch-post overlooking the landing zone"
+    ]
   },
   "debrief": {
-    "win": ["The watch-post is ash. The landing zone holds — but the sand is already whispering."],
-    "lose": ["The landing zone is overrun. The Reach will not forgive this."]
+    "win": [
+      "The watch-post is ash. The landing zone holds \u2014 but the sand is already whispering."
+    ],
+    "lose": [
+      "The landing zone is overrun. The Reach will not forgive this."
+    ]
   },
   "naturalShardDensity": 300,
   "fields": [
-    { "tx": 18, "ty": 15, "w": 3, "h": 3, "density": 800 }
+    {
+      "tx": 18,
+      "ty": 15,
+      "w": 3,
+      "h": 3,
+      "density": 800
+    }
   ],
   "player": {
     "credits": 600,
     "buildings": [
-      { "type": "construction_yard", "tx": 14, "ty": 16 },
-      { "type": "refinery", "tx": 16, "ty": 16 }
+      {
+        "type": "construction_yard",
+        "tx": 14,
+        "ty": 16
+      },
+      {
+        "type": "refinery",
+        "tx": 16,
+        "ty": 16
+      },
+      {
+        "type": "power_node",
+        "tx": 13,
+        "ty": 14
+      }
     ],
     "units": [
-      { "type": "harvester", "tx": 17, "ty": 16 },
-      { "type": "infantry", "tx": 13, "ty": 17 },
-      { "type": "infantry", "tx": 14, "ty": 17 },
-      { "type": "infantry", "tx": 13, "ty": 18 },
-      { "type": "infantry", "tx": 14, "ty": 18 }
+      {
+        "type": "harvester",
+        "tx": 17,
+        "ty": 16
+      },
+      {
+        "type": "infantry",
+        "tx": 13,
+        "ty": 17
+      },
+      {
+        "type": "infantry",
+        "tx": 14,
+        "ty": 17
+      },
+      {
+        "type": "infantry",
+        "tx": 13,
+        "ty": 18
+      },
+      {
+        "type": "infantry",
+        "tx": 14,
+        "ty": 18
+      }
     ]
   },
   "enemies": [
@@ -41,20 +90,50 @@
       "team": "enemy",
       "credits": 0,
       "buildings": [
-        { "type": "barracks", "tx": 24, "ty": 10, "tags": ["watchpost"] }
+        {
+          "type": "barracks",
+          "tx": 24,
+          "ty": 10,
+          "tags": [
+            "watchpost"
+          ]
+        }
       ],
       "units": [
-        { "type": "infantry", "tx": 23, "ty": 11 },
-        { "type": "infantry", "tx": 25, "ty": 11 },
-        { "type": "infantry", "tx": 24, "ty": 12 }
-      ]
+        {
+          "type": "infantry",
+          "tx": 23,
+          "ty": 11
+        },
+        {
+          "type": "infantry",
+          "tx": 25,
+          "ty": 11
+        },
+        {
+          "type": "infantry",
+          "tx": 24,
+          "ty": 12
+        }
+      ],
+      "factionId": "emberhand"
     }
   ],
   "objectives": [
-    { "type": "destroy", "id": "destroy_watchpost", "team": "enemy", "kind": "barracks", "primary": true, "text": "Destroy the Emberhand watch-post" }
+    {
+      "type": "destroy",
+      "id": "destroy_watchpost",
+      "team": "enemy",
+      "kind": "barracks",
+      "primary": true,
+      "text": "Destroy the Emberhand watch-post"
+    }
   ],
   "failure": [
-    { "type": "defeated", "team": "player" }
+    {
+      "type": "defeated",
+      "team": "player"
+    }
   ],
   "next": "m2_lifeblood"
 }

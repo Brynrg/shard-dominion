@@ -90,7 +90,9 @@ describe('FG-2 — buildable refinery + turret', () => {
       health: { hp: 60, maxHp: 60 }, armor: { armorClass: 'LIGHT' },
       faction: { team: 'enemy', faction: 'infantry' },
     });
-    for (let t = 0; t < 60; t++) runTick(state, systems);
+    // TP-3: the turret is a construction SITE first — build it out, then it fires.
+    const buildTicks = structures.find(st => st.id === 'defense_turret')!.buildTimeSeconds * 20 + 40;
+    for (let t = 0; t < buildTicks + 60; t++) runTick(state, systems);
     expect(state.store.get(foe)!.components.health!.hp).toBeLessThan(60);
     expect(turret.components.movement).toBeUndefined();
   });

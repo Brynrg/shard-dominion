@@ -34,7 +34,9 @@ function makeBuilding(kind: string, team: Team, deps: SeedDeps, sideCredits: num
     techTier,
     ...(isRefinery ? {
       credits: takeCredits ? sideCredits : 0,
-      refineryMaxStorage: deps.economy.refineryStorageCapacity,
+      // TP: a bank never BOOTS over its own cap (QA: 3000 seeded into a 2000-cap
+      // bank silently discarded every dock deposit → dead economy + "STORE 3000/2000").
+      refineryMaxStorage: Math.max(deps.economy.refineryStorageCapacity, takeCredits ? sideCredits : 0),
     } : {}),
   });
   return { components, tookCredits: isRefinery && takeCredits };
