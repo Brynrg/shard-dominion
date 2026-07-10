@@ -14,5 +14,6 @@
     "units/rocket_trooper__player__move",
     "units/vehicle__enemy__move",
     "units/vehicle__player__move"
-  ]
+  ],
+  "presentation": []
 }
