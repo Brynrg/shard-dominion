@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Emit docs/GEMINI_ZIP_PROMPTS.md — ONE pasteable master prompt per batch.
+"""Emit docs/GEMINI_ZIP_PROMPTS.md — ONE pasteable master prompt per batch, using
+the REAL pipeline filenames as the label for each image.
 
-Same 81 assets and same GLOBAL numbering as docs/GROK_ART_PROMPTS.md, but
-consolidated so the operator pastes a whole batch at once into the Gemini app.
-Gemini generates the images in order; the operator saves each by its number;
-scripts/rename-art-drop.py maps numbers -> pipeline filenames.
+The operator pastes a batch block into the Gemini app; Gemini generates each image
+and names the file exactly as given (e.g. construction_yard__neutral__idle.png);
+the operator downloads the set as a zip and hands it to Claude, who unzips it and
+runs scripts/import-art.mjs directly — no renaming, because the names are already
+the pipeline names.
 """
 import json, os, re
 
@@ -22,86 +24,75 @@ BATCH_TITLES = {
     7: 'New terrain tiles (OPTIONAL)',
 }
 
-# Assign the global number (1..81) in the same order the Grok doc uses.
-num_by_file = {}
-for i, e in enumerate(entries, 1):
-    num_by_file[e['file']] = i
+def label(e):
+    """The download filename Gemini should use — the pipeline basename."""
+    return os.path.basename(e['file'])
 
-def line_for(e):
-    n = num_by_file[e['file']]
+def block_for(e, by_file):
     p = e['prompt']
     if 'basedOn' in e:
-        base_n = num_by_file[e['basedOn']]
-        # Rewrite the "attached image" phrasing for a same-paste batch.
+        base = label(by_file[e['basedOn']])
         p = re.sub(r'(?:as in |as )?the attached image',
-                   f'as IMAGE {base_n} directly above', p)
-        head = f'=== IMAGE {n} — save as {n}.png (this is a recolor of IMAGE {base_n}) ==='
+                   f'as {base} directly above', p)
+        head = f'FILE: {label(e)}   (a recolor of {base})'
     else:
-        head = f'=== IMAGE {n} — save as {n}.png ==='
+        head = f'FILE: {label(e)}'
     return f'{head}\n{p}'
 
-# Per-batch wrapper instructions (the homogeneous rule for that batch type).
-def wrapper(batch, count, first_n, last_n):
-    common = (
-        f'Generate the following {count} game-art images (numbers {first_n} through {last_n}). '
-        'Produce EACH numbered item as its OWN separate image — do NOT combine them into a '
-        'grid, sheet, or collage, and do not caption them. Keep every technical rule written '
-        'in each description. Work through them in order; after you show each image I download '
-        'it and save it as its number.'
+def wrapper(count, kind):
+    return (
+        f'Generate the following {count} game-art images. Produce EACH as its OWN '
+        'separate image — do NOT combine them into a grid, sheet, or collage, and do '
+        'not add captions. For each one, NAME THE IMAGE FILE EXACTLY as the "FILE:" '
+        'name given (keep the .png). Keep every technical rule written in each '
+        'description. When all are done, package them so I can download the whole set '
+        'as a single zip.'
     )
-    return common
 
-out = []
-out.append('# Gemini Master-Prompt Package — Shard Dominion (paste-per-batch, 2026-07-10)\n')
-out.append("""> Built for the **Gemini app** (gemini.google.com) — no API, no cost beyond your
-> Gemini plan. Same 81 assets as the Grok/Gemini API paths, but consolidated so you
-> paste **one block per batch** instead of one prompt per image.
-
-## Reality check (so you don't hunt for a button that isn't there)
-The Gemini chat does **not** export a zip. It shows generated images inline and you
-download them individually. That's fine — the numbering below removes all the pain:
-
-## Workflow
-1. Make one folder under `~/Code/`, e.g. `~/Code/art-drop-gemini/`. (Under `~/Code/` —
-   **never** Downloads/Desktop; macOS TCC blocks the terminal from reading those.)
-2. Copy **one batch block** below (everything inside the ``` fence) and paste it into a
-   fresh Gemini chat. Gemini generates the images **in order**.
-   - If it stops after a few, type **“continue”** — it does the next ones.
-   - If it makes a grid instead of separate images, say **“generate each as a separate
-     image, one at a time.”**
-3. Download each image **in the order shown** and save it as just its number: `1.png`,
-   `2.png`, … They can land in Downloads — you'll move the folder after. Re-rolling a
-   bad one? Overwrite that number.
-4. When a batch is done, move/copy the numbered files into your `~/Code/art-drop-gemini/`
-   folder and tell Claude the path. Claude runs `rename-art-drop.py` (numbers → real
-   filenames, JPG→PNG) then imports + verifies.
-
-**Re-roll, don't settle** if you see: a shadow on the ground, a coloured base platform
-under a building, a non-magenta background on a sprite, more than one object in a frame,
-grids, or text.
-
-**Note on enemy/recolor variants:** in this paste-a-batch mode each image is generated
-independently, so a "recolor of IMAGE N" is approximate, not pixel-identical. That's fine
-for buildings/terrain. If you want a truly identical chassis recolor, generate the base
-image first, then in the SAME chat say "now recolor that exact image to …".
-""")
-
-# Group entries by batch, preserving global numbering.
+by_file = {e['file']: e for e in entries}
 by_batch = {}
 for e in entries:
     by_batch.setdefault(e['batch'], []).append(e)
 
+out = []
+out.append('# Gemini Master-Prompt Package — Shard Dominion (filename-labelled, zip-ready)\n')
+out.append("""> For the **Gemini app** (gemini.google.com) — no API. Each batch is ONE pasteable
+> block. Gemini generates every image, names each file exactly as its `FILE:` line,
+> and you download the set as a zip. Because the names are already the real pipeline
+> names, Claude imports the zip directly — no renaming step.
+
+## Workflow
+1. Copy **one batch block** below (everything inside the ``` fence) into a fresh
+   Gemini chat.
+2. Let Gemini generate them all (if it stops early, say **“continue”**; if it makes a
+   grid, say **“generate each as its own separate image”**).
+3. Download the set as a **zip**. Move the zip into `~/Code/` (e.g.
+   `~/Code/gemini-art.zip`) — **not** Downloads/Desktop, macOS TCC blocks the terminal
+   from reading those. Tell Claude the path; Claude unzips + runs `import-art.mjs` and
+   verifies in-engine.
+4. **Re-roll, don't settle** on any image with: a shadow on the ground, a coloured base
+   platform under a building, a non-magenta background on a sprite, more than one object,
+   a grid, or text.
+
+**If Gemini ignores the filenames** (some versions name downloads generically): just
+keep the images **in the order shown**, save them `1.png, 2.png, …`, and Claude's
+`rename-art-drop.py` maps order→names instead. Either way works.
+
+**Recolor/enemy variants:** each image is generated independently here, so "a recolor
+of X.png" is approximate, not pixel-identical — fine for buildings/terrain. For a truly
+identical chassis, generate the base first, then in the SAME chat say "recolor that exact
+image to …".
+""")
+
 for batch in sorted(by_batch):
     es = by_batch[batch]
-    nums = [num_by_file[e['file']] for e in es]
-    first_n, last_n = min(nums), max(nums)
-    out.append(f'\n---\n\n## BATCH {batch} — {BATCH_TITLES[batch]}  (images {first_n}–{last_n})\n')
+    out.append(f'\n---\n\n## BATCH {batch} — {BATCH_TITLES[batch]}  ({len(es)} images)\n')
     out.append('Paste everything inside this block into one Gemini chat:\n')
-    block = [wrapper(batch, len(es), first_n, last_n), '']
+    body = [wrapper(len(es), batch), '']
     for e in es:
-        block.append(line_for(e))
-        block.append('')
-    out.append('```\n' + '\n'.join(block).rstrip() + '\n```\n')
+        body.append(block_for(e, by_file))
+        body.append('')
+    out.append('```\n' + '\n'.join(body).rstrip() + '\n```\n')
 
 dest = os.path.join(ROOT, 'docs', 'GEMINI_ZIP_PROMPTS.md')
 open(dest, 'w', encoding='utf-8').write('\n'.join(out))

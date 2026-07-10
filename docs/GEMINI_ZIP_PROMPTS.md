@@ -1,353 +1,348 @@
-# Gemini Master-Prompt Package — Shard Dominion (paste-per-batch, 2026-07-10)
+# Gemini Master-Prompt Package — Shard Dominion (filename-labelled, zip-ready)
 
-> Built for the **Gemini app** (gemini.google.com) — no API, no cost beyond your
-> Gemini plan. Same 81 assets as the Grok/Gemini API paths, but consolidated so you
-> paste **one block per batch** instead of one prompt per image.
-
-## Reality check (so you don't hunt for a button that isn't there)
-The Gemini chat does **not** export a zip. It shows generated images inline and you
-download them individually. That's fine — the numbering below removes all the pain:
+> For the **Gemini app** (gemini.google.com) — no API. Each batch is ONE pasteable
+> block. Gemini generates every image, names each file exactly as its `FILE:` line,
+> and you download the set as a zip. Because the names are already the real pipeline
+> names, Claude imports the zip directly — no renaming step.
 
 ## Workflow
-1. Make one folder under `~/Code/`, e.g. `~/Code/art-drop-gemini/`. (Under `~/Code/` —
-   **never** Downloads/Desktop; macOS TCC blocks the terminal from reading those.)
-2. Copy **one batch block** below (everything inside the ``` fence) and paste it into a
-   fresh Gemini chat. Gemini generates the images **in order**.
-   - If it stops after a few, type **“continue”** — it does the next ones.
-   - If it makes a grid instead of separate images, say **“generate each as a separate
-     image, one at a time.”**
-3. Download each image **in the order shown** and save it as just its number: `1.png`,
-   `2.png`, … They can land in Downloads — you'll move the folder after. Re-rolling a
-   bad one? Overwrite that number.
-4. When a batch is done, move/copy the numbered files into your `~/Code/art-drop-gemini/`
-   folder and tell Claude the path. Claude runs `rename-art-drop.py` (numbers → real
-   filenames, JPG→PNG) then imports + verifies.
+1. Copy **one batch block** below (everything inside the ``` fence) into a fresh
+   Gemini chat.
+2. Let Gemini generate them all (if it stops early, say **“continue”**; if it makes a
+   grid, say **“generate each as its own separate image”**).
+3. Download the set as a **zip**. Move the zip into `~/Code/` (e.g.
+   `~/Code/gemini-art.zip`) — **not** Downloads/Desktop, macOS TCC blocks the terminal
+   from reading those. Tell Claude the path; Claude unzips + runs `import-art.mjs` and
+   verifies in-engine.
+4. **Re-roll, don't settle** on any image with: a shadow on the ground, a coloured base
+   platform under a building, a non-magenta background on a sprite, more than one object,
+   a grid, or text.
 
-**Re-roll, don't settle** if you see: a shadow on the ground, a coloured base platform
-under a building, a non-magenta background on a sprite, more than one object in a frame,
-grids, or text.
+**If Gemini ignores the filenames** (some versions name downloads generically): just
+keep the images **in the order shown**, save them `1.png, 2.png, …`, and Claude's
+`rename-art-drop.py` maps order→names instead. Either way works.
 
-**Note on enemy/recolor variants:** in this paste-a-batch mode each image is generated
-independently, so a "recolor of IMAGE N" is approximate, not pixel-identical. That's fine
-for buildings/terrain. If you want a truly identical chassis recolor, generate the base
-image first, then in the SAME chat say "now recolor that exact image to …".
+**Recolor/enemy variants:** each image is generated independently here, so "a recolor
+of X.png" is approximate, not pixel-identical — fine for buildings/terrain. For a truly
+identical chassis, generate the base first, then in the SAME chat say "recolor that exact
+image to …".
 
 
 ---
 
-## BATCH 1 — Purple-base re-gens (the 6 originals)  (images 1–6)
+## BATCH 1 — Purple-base re-gens (the 6 originals)  (6 images)
 
 Paste everything inside this block into one Gemini chat:
 
 ```
-Generate the following 6 game-art images (numbers 1 through 6). Produce EACH numbered item as its OWN separate image — do NOT combine them into a grid, sheet, or collage, and do not caption them. Keep every technical rule written in each description. Work through them in order; after you show each image I download it and save it as its number.
+Generate the following 6 game-art images. Produce EACH as its OWN separate image — do NOT combine them into a grid, sheet, or collage, and do not add captions. For each one, NAME THE IMAGE FILE EXACTLY as the "FILE:" name given (keep the .png). Keep every technical rule written in each description. When all are done, package them so I can download the whole set as a single zip.
 
-=== IMAGE 1 — save as 1.png ===
+FILE: construction_yard__neutral__idle.png
 A single video-game building sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a heavy construction yard — the biggest, heaviest structure on a desert base: a broad industrial platform building with a large roof-mounted crane arm with a hook, fold-out panel seams, a small blinking red hazard beacon, vents and machinery details. Viewed from almost directly above with a slight three-quarter depth: the roof brightly lit, the front (lower) face a little darker so it reads as having height. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Paint it in neutral sand-bleached grey metal (main #9a9a9a, shadow #6a6a6a, highlight #d8d8d8), dusty and sand-worn, with a thin dark outline rim. The structure sits FLAT with absolutely NO base platform, NO concrete pad, NO ground tile beneath it — solid flat pure magenta #FF00FF fills every pixel outside the structure, right up to its footprint. No gradient, no vignette, no grid, no text. One building only, centred, generous margin. Square PNG.
 
-=== IMAGE 2 — save as 2.png ===
+FILE: barracks__player__idle.png
 A single video-game building sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a military infantry barracks — a blocky low bunker building with a lit doorway that troops march out of, a ridged roof with vents, sandbag details at the walls. Viewed from almost directly above with a slight three-quarter depth: the roof brightly lit, the front (lower) face a little darker so it reads as having height. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Faction paint: dusty steel blue-grey armour plating (main #3d7fd6, shadow #28568f, highlight #a7d6ff) with glowing cyan accent lights (#00e5ff), sand-worn finish, thin dark outline rim. The structure sits FLAT with absolutely NO base platform, NO concrete pad, NO ground tile beneath it — solid flat pure magenta #FF00FF fills every pixel outside the structure, right up to its footprint. No gradient, no vignette, no grid, no text. One building only, centred, generous margin. Square PNG.
 
-=== IMAGE 3 — save as 3.png (this is a recolor of IMAGE 2) ===
-Keep exactly the same vehicle/structure/figure as IMAGE 2 directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
+FILE: barracks__enemy__idle.png   (a recolor of barracks__player__idle.png)
+Keep exactly the same vehicle/structure/figure as barracks__player__idle.png directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
 
-=== IMAGE 4 — save as 4.png ===
+FILE: refinery__player__idle.png
 A single video-game building sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: an ore refinery — a wide industrial structure with two vertical silo tanks, a low open docking bay where a hauler truck unloads, pipework connecting silos to the bay, a small exhaust stack, and a faint purple crystal glow inside the intake hopper. Viewed from almost directly above with a slight three-quarter depth: the roof brightly lit, the front (lower) face a little darker so it reads as having height. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Faction paint: dusty steel blue-grey plating (main #3d7fd6, shadow #28568f, highlight #a7d6ff) with glowing cyan accent lights (#00e5ff), sand-worn finish, thin dark outline rim. The structure sits FLAT with absolutely NO base platform, NO concrete pad, NO ground tile beneath it — solid flat pure magenta #FF00FF fills every pixel outside the structure, right up to its footprint. No gradient, no vignette, no grid, no text. One building only, centred, generous margin. Wide-ish square PNG.
 
-=== IMAGE 5 — save as 5.png (this is a recolor of IMAGE 4) ===
-Keep exactly the same vehicle/structure/figure as IMAGE 4 directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
+FILE: refinery__enemy__idle.png   (a recolor of refinery__player__idle.png)
+Keep exactly the same vehicle/structure/figure as refinery__player__idle.png directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
 
-=== IMAGE 6 — save as 6.png ===
+FILE: power_node__player__idle.png
 A single video-game building sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a compact power pylon node — a small squat generator housing with cooling fins and a tall thin antenna mast whose tip light glows. Viewed from almost directly above with a slight three-quarter depth: the top brightly lit, the front (lower) face a little darker so it reads as having height. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Faction paint: dusty steel blue-grey plating (main #3d7fd6, shadow #28568f, highlight #a7d6ff) with a glowing cyan tip light and accents (#00e5ff), sand-worn finish, thin dark outline rim. The structure sits FLAT with absolutely NO base platform, NO concrete pad, NO ground tile beneath it — solid flat pure magenta #FF00FF fills every pixel outside the structure, right up to its footprint. No gradient, no vignette, no grid, no text. One building only, centred, generous margin. Square PNG.
 ```
 
 
 ---
 
-## BATCH 2 — Missing units  (images 7–21)
+## BATCH 2 — Missing units  (15 images)
 
 Paste everything inside this block into one Gemini chat:
 
 ```
-Generate the following 15 game-art images (numbers 7 through 21). Produce EACH numbered item as its OWN separate image — do NOT combine them into a grid, sheet, or collage, and do not caption them. Keep every technical rule written in each description. Work through them in order; after you show each image I download it and save it as its number.
+Generate the following 15 game-art images. Produce EACH as its OWN separate image — do NOT combine them into a grid, sheet, or collage, and do not add captions. For each one, NAME THE IMAGE FILE EXACTLY as the "FILE:" name given (keep the .png). Keep every technical rule written in each description. When all are done, package them so I can download the whole set as a single zip.
 
-=== IMAGE 7 — save as 7.png ===
+FILE: scout_vehicle__player__move.png
 A single video-game unit sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a fast four-wheel military recon buggy — open lightweight frame, chunky off-road tyres, a roll cage, and a small pintle-mounted machine gun behind the driver. Viewed from DIRECTLY ABOVE (pure top-down), the buggy facing straight up, exactly one vehicle, centred with a generous empty margin on all sides. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Faction paint: dusty steel blue-grey bodywork (main #3d7fd6, shadow #28568f, highlight #a7d6ff) with small glowing cyan accent lights (#00e5ff), sand-worn battle finish, thin dark outline rim. Background: every pixel outside the vehicle is solid flat pure magenta #FF00FF — no gradient, no vignette, no ground, no base plate, no grid, no text. Square PNG.
 
-=== IMAGE 8 — save as 8.png (this is a recolor of IMAGE 7) ===
-Keep exactly the same vehicle/structure/figure as IMAGE 7 directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
+FILE: scout_vehicle__enemy__move.png   (a recolor of scout_vehicle__player__move.png)
+Keep exactly the same vehicle/structure/figure as scout_vehicle__player__move.png directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
 
-=== IMAGE 9 — save as 9.png ===
+FILE: assault_tank__player__move.png
 A single video-game unit sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a mid-size tracked main battle tank — wedge-shaped glacis hull, wide treads with side skirts, a circular turret with a hatch and a single long forward cannon barrel with a bright muzzle band, rear engine deck with louvres. Clearly bigger and heavier than a light scout tank. Viewed from DIRECTLY ABOVE (pure top-down), the tank facing straight up with the barrel pointing up, exactly one vehicle, centred with a generous empty margin. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Faction paint: dusty steel blue-grey armour (main #3d7fd6, shadow #28568f, highlight #a7d6ff) with a glowing cyan muzzle band and accents (#00e5ff), sand-worn battle finish, thin dark outline rim. Background: every pixel outside the vehicle is solid flat pure magenta #FF00FF — no gradient, no vignette, no ground, no base plate, no grid, no text. Square PNG.
 
-=== IMAGE 10 — save as 10.png (this is a recolor of IMAGE 9) ===
-Keep exactly the same vehicle/structure/figure as IMAGE 9 directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
+FILE: assault_tank__enemy__move.png   (a recolor of assault_tank__player__move.png)
+Keep exactly the same vehicle/structure/figure as assault_tank__player__move.png directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
 
-=== IMAGE 11 — save as 11.png ===
+FILE: longbow__player__move.png
 A single video-game unit sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a tracked long-range artillery vehicle — a low tracked chassis carrying one very long single artillery barrel pointing forward, with four splayed hydraulic recoil stabilizer feet folded at its corners and an ammunition rack behind the gun mount. The extremely long barrel is its signature. Viewed from DIRECTLY ABOVE (pure top-down), facing straight up with the barrel pointing up, exactly one vehicle, centred with a generous empty margin. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Faction paint: dusty steel blue-grey armour (main #3d7fd6, shadow #28568f, highlight #a7d6ff) with glowing cyan accents (#00e5ff), sand-worn battle finish, thin dark outline rim. Background: every pixel outside the vehicle is solid flat pure magenta #FF00FF — no gradient, no vignette, no ground, no base plate, no grid, no text. Square PNG.
 
-=== IMAGE 12 — save as 12.png (this is a recolor of IMAGE 11) ===
-Keep exactly the same vehicle/structure/figure as IMAGE 11 directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
+FILE: longbow__enemy__move.png   (a recolor of longbow__player__move.png)
+Keep exactly the same vehicle/structure/figure as longbow__player__move.png directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
 
-=== IMAGE 13 — save as 13.png ===
+FILE: skimmer_apc__player__move.png
 A single video-game unit sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a boxy hover armoured personnel carrier for eight passengers — a slab-sided rectangular hull riding on glowing hover skirts instead of wheels, a rear loading ramp, small viewports along the sides, a low profile sensor mast. Utilitarian troop bus, not a gun platform. Viewed from DIRECTLY ABOVE (pure top-down), facing straight up, exactly one vehicle, centred with a generous empty margin. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Faction paint: dusty steel blue-grey armour (main #3d7fd6, shadow #28568f, highlight #a7d6ff) with the hover skirts glowing cyan (#00e5ff), sand-worn finish, thin dark outline rim. Background: every pixel outside the vehicle is solid flat pure magenta #FF00FF — no gradient, no vignette, no ground, no base plate, no grid, no text. Square PNG.
 
-=== IMAGE 14 — save as 14.png (this is a recolor of IMAGE 13) ===
-Keep exactly the same vehicle/structure/figure as IMAGE 13 directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
+FILE: skimmer_apc__enemy__move.png   (a recolor of skimmer_apc__player__move.png)
+Keep exactly the same vehicle/structure/figure as skimmer_apc__player__move.png directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
 
-=== IMAGE 15 — save as 15.png ===
+FILE: gunship__player__move.png
 A single video-game unit sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a small twin-rotor VTOL attack gunship seen from above — two side-mounted rotor pods (rotor discs drawn as translucent blur circles), a narrow armed fuselage with a cockpit canopy at the front, and four missile pods slung under stub wings. Viewed from DIRECTLY ABOVE (pure top-down), facing straight up, exactly one aircraft, centred with a generous empty margin. Muted desert sunlight from the upper left, soft shading painted into the sprite, and ABSOLUTELY NO shadow on the ground — the game engine draws the flying-height shadow itself. Faction paint: dusty steel blue-grey fuselage (main #3d7fd6, shadow #28568f, highlight #a7d6ff) with glowing cyan canopy and accents (#00e5ff), sand-worn finish, thin dark outline rim. Background: every pixel outside the aircraft is solid flat pure magenta #FF00FF — no gradient, no vignette, no ground, no grid, no text. Square PNG.
 
-=== IMAGE 16 — save as 16.png (this is a recolor of IMAGE 15) ===
-Keep exactly the same vehicle/structure/figure as IMAGE 15 directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
+FILE: gunship__enemy__move.png   (a recolor of gunship__player__move.png)
+Keep exactly the same vehicle/structure/figure as gunship__player__move.png directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
 
-=== IMAGE 17 — save as 17.png ===
+FILE: riftmaw__neutral__move.png
 A single video-game monster sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a crystalline burrower creature — a segmented obsidian-black worm bursting upward out of the ground, jaws open, its back armoured with rows of jagged translucent violet crystal spines that glow from within (crystal tones from #b49bd8 to #e6d4ff over near-black obsidian #3c3630 plating). A small spray of erupted sand debris may be part of the creature's silhouette, but nothing else touches the background. Viewed from DIRECTLY ABOVE (pure top-down), the creature oriented straight up, exactly one creature, centred with a generous empty margin. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Thin dark outline rim. Background: every pixel outside the creature is solid flat pure magenta #FF00FF — no gradient, no vignette, no ground plane, no grid, no text. Square PNG.
 
-=== IMAGE 18 — save as 18.png ===
+FILE: warden__player__move.png
 A single video-game hero-unit sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a heavy exo-armoured commander on foot — bulky powered armour with oversized shoulder plates, a helmet with a glowing cyan visor slit, and an oversized two-handed cannon held forward. Visibly bigger and bulkier than a normal infantry soldier. Viewed from DIRECTLY ABOVE (pure top-down), facing straight up with the cannon pointing up, exactly one figure, centred with a generous empty margin. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Faction paint: steel blue-grey powered armour (main #3d7fd6, shadow #28568f, highlight #a7d6ff) with the visor and armour seams glowing cyan (#00e5ff), sand-worn finish, thin dark outline rim. Background: every pixel outside the figure is solid flat pure magenta #FF00FF — no gradient, no vignette, no ground, no grid, no text. Square PNG.
 
-=== IMAGE 19 — save as 19.png ===
+FILE: ghostwalker__emberhand__move.png
 A single video-game unit sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a cloaked scout-assassin on foot — a lean figure wrapped in a ragged, tattered shroud-cloak, a long curved blade held low in one hand, ash-stained wrappings, a half-mask. Viewed from DIRECTLY ABOVE (pure top-down), facing straight up, exactly one figure, centred with a generous empty margin. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Faction paint: scorched dark iron and ash-black cloth (main #d1503a on the armour pieces, shadow #8f3020, highlight #ffb08f) with faint ember-crimson glowing embers along the cloak edge (#ff4a3d), thin dark outline rim. Background: every pixel outside the figure is solid flat pure magenta #FF00FF — no gradient, no vignette, no ground, no grid, no text. Square PNG.
 
-=== IMAGE 20 — save as 20.png ===
+FILE: vane__emberhand__move.png
 A single video-game hero-unit sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: an ash-cloaked desert warlord on foot — a commanding figure in a long ash-grey cloak with a bright crimson sash across the chest, dual pistols held forward one in each hand, light scorched armour plates at the shoulders. Viewed from DIRECTLY ABOVE (pure top-down), facing straight up with both pistols pointing up, exactly one figure, centred with a generous empty margin. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Faction paint: scorched red-iron armour (main #d1503a, shadow #8f3020, highlight #ffb08f) with the sash and small accents in glowing ember crimson (#ff4a3d), ash-dusted finish, thin dark outline rim. Background: every pixel outside the figure is solid flat pure magenta #FF00FF — no gradient, no vignette, no ground, no grid, no text. Square PNG.
 
-=== IMAGE 21 — save as 21.png ===
+FILE: harvester__enemy__move.png
 A single video-game unit sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a chunky tracked ore-hauler harvester — the biggest ground vehicle: very wide treads, a large ribbed cargo hopper on the back with a yellow-and-black hazard stripe along its lip, a front intake scoop blade, an exhaust stack, and a faint purple crystal glow inside the hopper. Dusty industrial economy vehicle, not a war machine. Viewed from DIRECTLY ABOVE (pure top-down), facing straight up with the scoop at the top, exactly one vehicle, centred with a generous empty margin. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Faction paint: scorched red-iron bodywork (main #d1503a, shadow #8f3020, highlight #ffb08f) with small ember-crimson accent lights (#ff4a3d), sand-worn finish, thin dark outline rim. Background: every pixel outside the vehicle is solid flat pure magenta #FF00FF — no gradient, no vignette, no ground, no base plate, no grid, no text. Square PNG.
 ```
 
 
 ---
 
-## BATCH 3 — Missing buildings  (images 22–46)
+## BATCH 3 — Missing buildings  (25 images)
 
 Paste everything inside this block into one Gemini chat:
 
 ```
-Generate the following 25 game-art images (numbers 22 through 46). Produce EACH numbered item as its OWN separate image — do NOT combine them into a grid, sheet, or collage, and do not caption them. Keep every technical rule written in each description. Work through them in order; after you show each image I download it and save it as its number.
+Generate the following 25 game-art images. Produce EACH as its OWN separate image — do NOT combine them into a grid, sheet, or collage, and do not add captions. For each one, NAME THE IMAGE FILE EXACTLY as the "FILE:" name given (keep the .png). Keep every technical rule written in each description. When all are done, package them so I can download the whole set as a single zip.
 
-=== IMAGE 22 — save as 22.png ===
+FILE: war_factory__player__idle.png
 A single video-game building sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a vehicle war factory — a big industrial garage building with one large open assembly bay door at the front, an overhead gantry crane visible inside the bay, corrugated roof panels, tall vents, and hazard striping around the bay opening. Viewed from almost directly above with a slight three-quarter depth: the roof brightly lit, the front (lower) face and open bay a little darker so it reads as having height. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Faction paint: dusty steel blue-grey plating (main #3d7fd6, shadow #28568f, highlight #a7d6ff) with glowing cyan accent lights (#00e5ff), sand-worn finish, thin dark outline rim. The structure sits FLAT with absolutely NO base platform, NO concrete pad, NO ground tile beneath it — solid flat pure magenta #FF00FF fills every pixel outside the structure, right up to its footprint. No gradient, no vignette, no grid, no text. One building only, centred, generous margin. Square PNG.
 
-=== IMAGE 23 — save as 23.png (this is a recolor of IMAGE 22) ===
-Keep exactly the same vehicle/structure/figure as IMAGE 22 directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
+FILE: war_factory__enemy__idle.png   (a recolor of war_factory__player__idle.png)
+Keep exactly the same vehicle/structure/figure as war_factory__player__idle.png directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
 
-=== IMAGE 24 — save as 24.png ===
+FILE: defense_turret__player__idle.png
 A single video-game building sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a squat anti-ground defense turret — a short armoured drum pedestal topped by a rotary multi- barrel cannon in a compact armoured housing, ammo feed chutes, small armour skirts around the pedestal base. The cannon points straight up (north). Viewed from almost directly above with a slight three-quarter depth: the top brightly lit, the front (lower) face a little darker. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Faction paint: dusty steel blue-grey armour (main #3d7fd6, shadow #28568f, highlight #a7d6ff) with glowing cyan accents (#00e5ff), sand-worn finish, thin dark outline rim. The structure sits FLAT with absolutely NO base platform, NO concrete pad, NO ground tile beneath it — solid flat pure magenta #FF00FF fills every pixel outside the structure, right up to its footprint. No gradient, no vignette, no grid, no text. One turret only, centred, generous margin. Square PNG.
 
-=== IMAGE 25 — save as 25.png (this is a recolor of IMAGE 24) ===
-Keep exactly the same vehicle/structure/figure as IMAGE 24 directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
+FILE: defense_turret__enemy__idle.png   (a recolor of defense_turret__player__idle.png)
+Keep exactly the same vehicle/structure/figure as defense_turret__player__idle.png directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
 
-=== IMAGE 26 — save as 26.png ===
+FILE: aa_turret__player__idle.png
 A single video-game building sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: an anti-air missile turret — a short armoured pedestal carrying a quad missile rack (four boxy missile tubes in a 2×2 cluster) angled slightly skyward, with a small radar dish on a side arm. The rack points straight up (north). Viewed from almost directly above with a slight three-quarter depth: the top brightly lit, the front (lower) face a little darker. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Faction paint: dusty steel blue-grey armour (main #3d7fd6, shadow #28568f, highlight #a7d6ff) with glowing cyan accents (#00e5ff) and yellow warhead tips, sand-worn finish, thin dark outline rim. The structure sits FLAT with absolutely NO base platform, NO concrete pad, NO ground tile beneath it — solid flat pure magenta #FF00FF fills every pixel outside the structure, right up to its footprint. No gradient, no vignette, no grid, no text. One turret only, centred, generous margin. Square PNG.
 
-=== IMAGE 27 — save as 27.png (this is a recolor of IMAGE 26) ===
-Keep exactly the same vehicle/structure/figure as IMAGE 26 directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
+FILE: aa_turret__enemy__idle.png   (a recolor of aa_turret__player__idle.png)
+Keep exactly the same vehicle/structure/figure as aa_turret__player__idle.png directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
 
-=== IMAGE 28 — save as 28.png ===
+FILE: radar__player__idle.png
 A single video-game building sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a radar station — a reinforced dome building with a large rotating radar dish mounted on top on a pivot arm, plus a small antenna cluster and cable conduits running down the dome. Viewed from almost directly above with a slight three-quarter depth: the dome brightly lit, the front (lower) face a little darker. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Faction paint: dusty steel blue-grey plating (main #3d7fd6, shadow #28568f, highlight #a7d6ff) with glowing cyan accents (#00e5ff), sand-worn finish, thin dark outline rim. The structure sits FLAT with absolutely NO base platform, NO concrete pad, NO ground tile beneath it — solid flat pure magenta #FF00FF fills every pixel outside the structure, right up to its footprint. No gradient, no vignette, no grid, no text. One building only, centred, generous margin. Square PNG.
 
-=== IMAGE 29 — save as 29.png (this is a recolor of IMAGE 28) ===
-Keep exactly the same vehicle/structure/figure as IMAGE 28 directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
+FILE: radar__enemy__idle.png   (a recolor of radar__player__idle.png)
+Keep exactly the same vehicle/structure/figure as radar__player__idle.png directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
 
-=== IMAGE 30 — save as 30.png ===
+FILE: processing_plant__player__idle.png
 A single video-game building sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a crystal processing plant — an industrial refinery structure built around a central open crucible vat glowing bright violet (molten crystal, tones #b49bd8 to #e6d4ff), with two smoke stacks, pipework feeding the crucible, and a small control cabin. The violet glow is its signature. Viewed from almost directly above with a slight three-quarter depth: the roof brightly lit, the front (lower) face a little darker. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Faction paint: dusty steel blue-grey plating (main #3d7fd6, shadow #28568f, highlight #a7d6ff) with cyan accent lights (#00e5ff), sand-worn finish, thin dark outline rim. The structure sits FLAT with absolutely NO base platform, NO concrete pad, NO ground tile beneath it — solid flat pure magenta #FF00FF fills every pixel outside the structure, right up to its footprint. No gradient, no vignette, no grid, no text. One building only, centred, generous margin. Square PNG.
 
-=== IMAGE 31 — save as 31.png (this is a recolor of IMAGE 30) ===
-Keep exactly the same vehicle/structure/figure as IMAGE 30 directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
+FILE: processing_plant__enemy__idle.png   (a recolor of processing_plant__player__idle.png)
+Keep exactly the same vehicle/structure/figure as processing_plant__player__idle.png directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
 
-=== IMAGE 32 — save as 32.png ===
+FILE: skypad__player__idle.png
 A single video-game building sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a VTOL landing pad — a low octagonal landing platform with a painted landing circle and edge lights, flanked on one side by a small fuel rig: pump housing, hoses, and two small fuel tanks. The platform is a built structure raised only slightly, NOT a patch of ground. Viewed from almost directly above with a slight three-quarter depth: the pad surface brightly lit, its front (lower) edge a little darker. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Faction paint: dusty steel blue-grey deck plating (main #3d7fd6, shadow #28568f, highlight #a7d6ff) with the landing circle and edge lights glowing cyan (#00e5ff), sand-worn finish, thin dark outline rim. The structure sits FLAT with absolutely NO extra base platform, NO concrete apron, NO ground tile beneath it — solid flat pure magenta #FF00FF fills every pixel outside the structure, right up to its footprint. No gradient, no vignette, no grid, no text. One structure only, centred, generous margin. Square PNG.
 
-=== IMAGE 33 — save as 33.png (this is a recolor of IMAGE 32) ===
-Keep exactly the same vehicle/structure/figure as IMAGE 32 directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
+FILE: skypad__enemy__idle.png   (a recolor of skypad__player__idle.png)
+Keep exactly the same vehicle/structure/figure as skypad__player__idle.png directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
 
-=== IMAGE 34 — save as 34.png ===
+FILE: wall__player__idle.png
 A single video-game building sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: ONE straight modular defensive wall segment — a thick armoured concrete-and-steel barrier wall, seen from almost directly above, running perfectly horizontally ALL THE WAY from the left edge of the image to the right edge (so identical segments butt together seamlessly side by side), with panel seams, rivet lines, and a slightly lit top face with a darker front (lower) face. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Faction paint: dusty steel-grey armour with a blue-grey trim stripe (#3d7fd6, shadow #28568f) and tiny cyan marker lights (#00e5ff), sand-worn finish, thin dark outline rim. NO base platform and NO ground beneath it — solid flat pure magenta #FF00FF fills all pixels above and below the wall segment. The wall itself must touch the left and right image edges. No gradient, no grid, no text. Wide rectangular PNG, roughly 1:1 to 2:1.
 
-=== IMAGE 35 — save as 35.png (this is a recolor of IMAGE 34) ===
-Keep exactly the same vehicle/structure/figure as IMAGE 34 directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
+FILE: wall__enemy__idle.png   (a recolor of wall__player__idle.png)
+Keep exactly the same vehicle/structure/figure as wall__player__idle.png directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
 
-=== IMAGE 36 — save as 36.png ===
+FILE: gate__player__idle.png
 A single video-game building sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: ONE armoured gate segment matching a modular defensive wall — the same thick armoured barrier wall running perfectly horizontally from the left edge of the image to the right edge, but its central section is a pair of heavy sliding blast doors that meet in the middle (closed), with hazard striping on the door edges and a small gatehouse light. Seen from almost directly above, top face lit, front (lower) face darker. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Faction paint: dusty steel-grey armour with blue-grey trim (#3d7fd6, shadow #28568f) and cyan marker lights (#00e5ff), sand-worn finish, thin dark outline rim. NO base platform and NO ground — solid flat pure magenta #FF00FF fills all pixels above and below the segment, which must touch the left and right image edges. No gradient, no grid, no text. Wide rectangular PNG, roughly 1:1 to 2:1.
 
-=== IMAGE 37 — save as 37.png (this is a recolor of IMAGE 36) ===
-Keep exactly the same vehicle/structure/figure as IMAGE 36 directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
+FILE: gate__enemy__idle.png   (a recolor of gate__player__idle.png)
+Keep exactly the same vehicle/structure/figure as gate__player__idle.png directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
 
-=== IMAGE 38 — save as 38.png ===
+FILE: bunker__player__idle.png
 A single video-game building sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: an infantry pillbox bunker — a low round concrete pillbox ringed with sandbags, with narrow dark horizontal firing slits on all sides and a reinforced hatch on the roof. Viewed from almost directly above with a slight three-quarter depth: the roof brightly lit, the front (lower) face a little darker. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Mostly bare weathered concrete and sandbags, with a dusty steel blue-grey hatch and trim (#3d7fd6, shadow #28568f) and one small cyan lamp (#00e5ff), thin dark outline rim. The structure sits FLAT with absolutely NO base platform, NO concrete pad extending beyond the sandbag ring, NO ground tile — solid flat pure magenta #FF00FF fills every pixel outside the structure, right up to its footprint. No gradient, no vignette, no grid, no text. One bunker only, centred, generous margin. Square PNG.
 
-=== IMAGE 39 — save as 39.png (this is a recolor of IMAGE 38) ===
-Keep exactly the same vehicle/structure/figure as IMAGE 38 directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
+FILE: bunker__enemy__idle.png   (a recolor of bunker__player__idle.png)
+Keep exactly the same vehicle/structure/figure as bunker__player__idle.png directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
 
-=== IMAGE 40 — save as 40.png ===
+FILE: infirmary__player__idle.png
 A single video-game building sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a field hospital infirmary — a low medical building: half rigid prefab module, half canvas field-tent extension, with a large red cross painted on the flat roof, a stretcher rack by the door, and a small air-filtration unit. Viewed from almost directly above with a slight three-quarter depth: the roof brightly lit, the front (lower) face a little darker. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Faction paint: sand-toned canvas plus dusty steel blue-grey prefab plating (main #3d7fd6, shadow #28568f, highlight #a7d6ff) with a small cyan lamp (#00e5ff) and the red cross in warning red, thin dark outline rim. The structure sits FLAT with absolutely NO base platform, NO concrete pad, NO ground tile beneath it — solid flat pure magenta #FF00FF fills every pixel outside the structure, right up to its footprint. No gradient, no vignette, no grid, no text. One building only, centred, generous margin. Square PNG.
 
-=== IMAGE 41 — save as 41.png (this is a recolor of IMAGE 40) ===
-Keep exactly the same vehicle/structure/figure as IMAGE 40 directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
+FILE: infirmary__enemy__idle.png   (a recolor of infirmary__player__idle.png)
+Keep exactly the same vehicle/structure/figure as infirmary__player__idle.png directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
 
-=== IMAGE 42 — save as 42.png ===
+FILE: machine_shop__player__idle.png
 A single video-game building sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a vehicle repair machine shop — an open-sided workshop structure with a small overhead crane arm on a gantry, a parts yard beside it (stacked crates, spare tank treads, barrels, a spare turret), a workbench, and an arc-welding glow inside. Viewed from almost directly above with a slight three-quarter depth: the roof brightly lit, the front (lower) face a little darker. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Faction paint: dusty steel blue-grey structure (main #3d7fd6, shadow #28568f, highlight #a7d6ff) with cyan accent lights (#00e5ff), hazard- yellow crane arm, sand-worn finish, thin dark outline rim. The structure and its parts yard sit FLAT with absolutely NO base platform, NO concrete pad, NO ground tile beneath them — solid flat pure magenta #FF00FF fills every pixel outside the structure, right up to its footprint. No gradient, no vignette, no grid, no text. One building only, centred, generous margin. Square PNG.
 
-=== IMAGE 43 — save as 43.png (this is a recolor of IMAGE 42) ===
-Keep exactly the same vehicle/structure/figure as IMAGE 42 directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
+FILE: machine_shop__enemy__idle.png   (a recolor of machine_shop__player__idle.png)
+Keep exactly the same vehicle/structure/figure as machine_shop__player__idle.png directly above — same pose, same top-down camera, same painted late-90s RTS style, and the same solid pure magenta #FF00FF background — but repaint the faction colours only: the dusty steel blue-grey armour becomes scorched red-iron (main #d1503a, shadow tone #8f3020, pale highlight #ffb08f), and every glowing cyan accent light becomes ember crimson (#ff4a3d). Change nothing else about the design.
 
-=== IMAGE 44 — save as 44.png ===
+FILE: derrick__neutral__idle.png
 A single video-game building sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a neutral capturable pumpjack derrick — a classic oil-well pumpjack with a nodding beam head, a small lattice frame, a drive motor housing, one storage tank, and connecting pipes. Abandoned, rusty, weather-beaten. Viewed from almost directly above with a slight three-quarter depth: the top brightly lit, the front (lower) face a little darker. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Paint: neutral sand-bleached grey metal (main #9a9a9a, shadow #6a6a6a, highlight #d8d8d8) with rust streaks and faded hazard yellow, thin dark outline rim. The structure sits FLAT with absolutely NO base platform, NO concrete pad, NO ground tile beneath it — solid flat pure magenta #FF00FF fills every pixel outside the structure, right up to its footprint. No gradient, no vignette, no grid, no text. One structure only, centred, generous margin. Square PNG.
 
-=== IMAGE 45 — save as 45.png ===
+FILE: relay__neutral__idle.png
 A single video-game building sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a mysterious neutral crystal relay — an antenna array of three tall translucent violet crystal spires (glowing from within, tones #b49bd8 to #e6d4ff) growing out of a cracked obsidian-black mound base (#3c3630), ringed by a few smaller crystal shards, with faint arcs of violet energy between the spire tips. Grown, not built — no straight machined edges on the crystals. Viewed from almost directly above with a slight three-quarter depth: tops lit, lower faces darker. Muted desert sunlight from the upper left plus the violet inner glow, soft shading painted into the sprite, NO shadow cast on the ground. Thin dark outline rim. The formation sits FLAT with absolutely NO base platform and NO ground tile beneath it — solid flat pure magenta #FF00FF fills every pixel outside the formation, right up to its footprint. No gradient, no vignette, no grid, no text. One formation only, centred, generous margin. Square PNG.
 
-=== IMAGE 46 — save as 46.png ===
+FILE: wreck__neutral__idle.png
 A single video-game sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: the burnt-out wreck of a destroyed military vehicle — a blackened, gutted tank hull husk: scorched charcoal metal, torn plating peeled open, a collapsed turret askew, ash and char tones with a few faint dying orange embers deep in the hull. Flat and dead — this is battlefield debris. Viewed from DIRECTLY ABOVE (pure top-down), exactly one wreck, centred with a generous empty margin. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground. Charcoal and gunmetal tones (#3c3630, #33363b, #6a6a6a), thin dark outline rim. Background: every pixel outside the wreck is solid flat pure magenta #FF00FF — no gradient, no vignette, no scorched ground ring, no grid, no text. Square PNG.
 ```
 
 
 ---
 
-## BATCH 4 — Animation strips  (images 47–55)
+## BATCH 4 — Animation strips  (9 images)
 
 Paste everything inside this block into one Gemini chat:
 
 ```
-Generate the following 9 game-art images (numbers 47 through 55). Produce EACH numbered item as its OWN separate image — do NOT combine them into a grid, sheet, or collage, and do not caption them. Keep every technical rule written in each description. Work through them in order; after you show each image I download it and save it as its number.
+Generate the following 9 game-art images. Produce EACH as its OWN separate image — do NOT combine them into a grid, sheet, or collage, and do not add captions. For each one, NAME THE IMAGE FILE EXACTLY as the "FILE:" name given (keep the .png). Keep every technical rule written in each description. When all are done, package them so I can download the whole set as a single zip.
 
-=== IMAGE 47 — save as 47.png ===
+FILE: infantry__player__walk.png
 A 4-frame walk-cycle sprite strip of the SAME character for a late-1990s Westwood-style desert RTS (Command & Conquer / Dune 2000 era), painted chunky retro style — NOT modern 3D, NOT cartoon. The character: a small sci-fi desert infantry soldier — helmet, backpack, shoulder pads, rifle held forward — in dusty steel blue-grey armour (#3d7fd6, shadow #28568f) with cyan accents (#00e5ff), viewed from DIRECTLY ABOVE, facing straight up. FOUR frames side by side in one horizontal row, identical character, size, and position in each frame — only the legs and arms change mid-stride between frames to make a walking loop. Character centred in each quarter of the image, legs clearly visible. Solid flat pure magenta #FF00FF background filling every non-character pixel. No shadows outside the character, no grid lines, no frame borders, no labels. Wide image, 4:1 aspect ratio. PNG.
 
-=== IMAGE 48 — save as 48.png ===
+FILE: rocket_trooper__player__walk.png
 A 4-frame walk-cycle sprite strip of the SAME character for a late-1990s Westwood-style desert RTS (Command & Conquer / Dune 2000 era), painted chunky retro style — NOT modern 3D, NOT cartoon. The character: a small sci-fi desert soldier carrying a fat twin-tube rocket launcher over one shoulder with yellow warhead tips — helmet, backpack — in dusty steel blue-grey armour (#3d7fd6, shadow #28568f) with cyan accents (#00e5ff), viewed from DIRECTLY ABOVE, facing straight up. FOUR frames side by side in one horizontal row, identical character, size, and position in each frame — only the legs and free arm change mid-stride between frames to make a walking loop; the launcher stays steady on the shoulder. Character centred in each quarter of the image, legs clearly visible. Solid flat pure magenta #FF00FF background filling every non-character pixel. No shadows outside the character, no grid lines, no frame borders, no labels. Wide image, 4:1 aspect ratio. PNG.
 
-=== IMAGE 49 — save as 49.png ===
+FILE: ghostwalker__emberhand__walk.png
 A 4-frame walk-cycle sprite strip of the SAME character for a late-1990s Westwood-style desert RTS (Command & Conquer / Dune 2000 era), painted chunky retro style — NOT modern 3D, NOT cartoon. The character: a cloaked scout-assassin — lean figure in a ragged tattered shroud-cloak, long curved blade held low, ash-stained wrappings, scorched red-iron armour pieces (#d1503a, shadow #8f3020) with faint ember-crimson glows (#ff4a3d) — viewed from DIRECTLY ABOVE, facing straight up. FOUR frames side by side in one horizontal row, identical character, size, and position in each frame — only the legs and the cloak's trailing edge change mid-stride between frames to make a stalking walk loop. Character centred in each quarter of the image. Solid flat pure magenta #FF00FF background filling every non-character pixel. No shadows outside the character, no grid lines, no frame borders, no labels. Wide image, 4:1 aspect ratio. PNG.
 
-=== IMAGE 50 — save as 50.png ===
+FILE: harvester__player__drive.png
 A 4-frame drive-animation sprite strip of the SAME vehicle for a late-1990s Westwood-style desert RTS (Command & Conquer / Dune 2000 era), painted chunky retro style — NOT modern 3D, NOT cartoon. The vehicle: a chunky tracked ore-hauler harvester — very wide treads, a big ribbed rear hopper with a yellow-and-black hazard stripe, front intake scoop, exhaust stack, faint purple glow in the hopper — in dusty steel blue-grey paint (#3d7fd6, shadow #28568f) with cyan accents (#00e5ff), viewed from DIRECTLY ABOVE, facing straight up. FOUR frames side by side in one horizontal row, identical vehicle, size, and position in each frame — the ONLY change between frames is the tread-link pattern shifting forward slightly each frame (rolling tracks) and a subtle exhaust puff. Vehicle centred in each quarter of the image. Solid flat pure magenta #FF00FF background filling every non-vehicle pixel. No shadows outside the vehicle, no grid lines, no frame borders, no labels. Wide image, 4:1 aspect ratio. PNG.
 
-=== IMAGE 51 — save as 51.png ===
+FILE: scout_vehicle__player__drive.png
 A 4-frame drive-animation sprite strip of the SAME vehicle for a late-1990s Westwood-style desert RTS (Command & Conquer / Dune 2000 era), painted chunky retro style — NOT modern 3D, NOT cartoon. The vehicle: a fast four-wheel military recon buggy — open lightweight frame, chunky off-road tyres, roll cage, small pintle machine gun — in dusty steel blue-grey paint (#3d7fd6, shadow #28568f) with cyan accents (#00e5ff), viewed from DIRECTLY ABOVE, facing straight up. FOUR frames side by side in one horizontal row, identical vehicle, size, and position in each frame — the ONLY change between frames is the wheel-tread pattern rotating slightly each frame and a faint dust flick at the rear wheels (kept inside the sprite silhouette). Vehicle centred in each quarter of the image. Solid flat pure magenta #FF00FF background filling every non-vehicle pixel. No shadows outside the vehicle, no grid lines, no frame borders, no labels. Wide image, 4:1 aspect ratio. PNG.
 
-=== IMAGE 52 — save as 52.png ===
+FILE: assault_tank__player__drive.png
 A 4-frame drive-animation sprite strip of the SAME vehicle for a late-1990s Westwood-style desert RTS (Command & Conquer / Dune 2000 era), painted chunky retro style — NOT modern 3D, NOT cartoon. The vehicle: a mid-size tracked battle tank — wedge glacis hull, wide treads with side skirts, circular turret with a single long forward cannon — in dusty steel blue-grey armour (#3d7fd6, shadow #28568f) with cyan accents (#00e5ff), viewed from DIRECTLY ABOVE, facing straight up with the barrel pointing up. FOUR frames side by side in one horizontal row, identical tank, size, and position in each frame — the ONLY change between frames is the tread-link pattern shifting forward slightly each frame (rolling tracks). Tank centred in each quarter of the image. Solid flat pure magenta #FF00FF background filling every non-tank pixel. No shadows outside the tank, no grid lines, no frame borders, no labels. Wide image, 4:1 aspect ratio. PNG.
 
-=== IMAGE 53 — save as 53.png ===
+FILE: infantry__player__fire.png
 A 2-frame firing-animation sprite strip of the SAME character for a late-1990s Westwood-style desert RTS (Command & Conquer / Dune 2000 era), painted chunky retro style — NOT modern 3D, NOT cartoon. The character: a small sci-fi desert infantry soldier — helmet, backpack, rifle held forward — in dusty steel blue-grey armour (#3d7fd6, shadow #28568f) with cyan accents (#00e5ff), viewed from DIRECTLY ABOVE, facing straight up, standing still in a firing stance. TWO frames side by side in one horizontal row, identical character, size, and position in each frame: FRAME 1 = aiming, ready; FRAME 2 = the shot — a small bright muzzle flash at the rifle tip and the shoulders rocked back slightly in recoil. Character centred in each half of the image. Solid flat pure magenta #FF00FF background filling every non-character pixel. No shadows outside the character, no grid lines, no frame borders, no labels. Wide image, 2:1 aspect ratio. PNG.
 
-=== IMAGE 54 — save as 54.png ===
+FILE: assault_tank__player__fire.png
 A 2-frame firing-animation sprite strip of the SAME vehicle for a late-1990s Westwood-style desert RTS (Command & Conquer / Dune 2000 era), painted chunky retro style — NOT modern 3D, NOT cartoon. The vehicle: a mid-size tracked battle tank — wedge hull, wide treads, circular turret with a single long forward cannon — in dusty steel blue-grey armour (#3d7fd6, shadow #28568f) with cyan accents (#00e5ff), viewed from DIRECTLY ABOVE, facing straight up with the barrel pointing up. TWO frames side by side in one horizontal row, identical tank, size, and position in each frame: FRAME 1 = ready; FRAME 2 = the shot — a bright muzzle flash at the barrel tip and the barrel recoiled back a few pixels into the turret. Tank centred in each half of the image. Solid flat pure magenta #FF00FF background filling every non-tank pixel. No shadows outside the tank, no grid lines, no frame borders, no labels. Wide image, 2:1 aspect ratio. PNG.
 
-=== IMAGE 55 — save as 55.png ===
+FILE: longbow__player__fire.png
 A 2-frame firing-animation sprite strip of the SAME vehicle for a late-1990s Westwood-style desert RTS (Command & Conquer / Dune 2000 era), painted chunky retro style — NOT modern 3D, NOT cartoon. The vehicle: a tracked long-range artillery vehicle — a low tracked chassis with one very long single artillery barrel pointing forward and four splayed hydraulic stabilizer feet — in dusty steel blue-grey armour (#3d7fd6, shadow #28568f) with cyan accents (#00e5ff), viewed from DIRECTLY ABOVE, facing straight up with the barrel pointing up. TWO frames side by side in one horizontal row, identical vehicle, size, and position in each frame: FRAME 1 = ready, feet planted; FRAME 2 = the shot — a large bright muzzle blast at the barrel tip, the barrel recoiled back along its cradle, and a small smoke puff (kept inside the sprite silhouette). Vehicle centred in each half of the image. Solid flat pure magenta #FF00FF background filling every non-vehicle pixel. No shadows outside the vehicle, no grid lines, no frame borders, no labels. Wide image, 2:1 aspect ratio. PNG.
 ```
 
 
 ---
 
-## BATCH 5 — Faction skins (Emberhand + Shardborn)  (images 56–67)
+## BATCH 5 — Faction skins (Emberhand + Shardborn)  (12 images)
 
 Paste everything inside this block into one Gemini chat:
 
 ```
-Generate the following 12 game-art images (numbers 56 through 67). Produce EACH numbered item as its OWN separate image — do NOT combine them into a grid, sheet, or collage, and do not caption them. Keep every technical rule written in each description. Work through them in order; after you show each image I download it and save it as its number.
+Generate the following 12 game-art images. Produce EACH as its OWN separate image — do NOT combine them into a grid, sheet, or collage, and do not add captions. For each one, NAME THE IMAGE FILE EXACTLY as the "FILE:" name given (keep the .png). Keep every technical rule written in each description. When all are done, package them so I can download the whole set as a single zip.
 
-=== IMAGE 56 — save as 56.png ===
+FILE: infantry__emberhand__move.png
 A single video-game unit sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a desert raider infantry soldier of a scavenger warband — rifle held forward, ash-black cloth wraps under mismatched welded salvage armour plates in scorched red-iron (#d1503a, shadow #8f3020, highlight #ffb08f) with visible weld seams, soot streaks, and a small ember-crimson glow (#ff4a3d) at the goggles; a ragged half-cape. Viewed from DIRECTLY ABOVE (pure top-down), facing straight up, exactly one figure, centred with a generous empty margin. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground, thin dark outline rim. Background: every pixel outside the figure is solid flat pure magenta #FF00FF — no gradient, no vignette, no ground, no grid, no text. Square PNG.
 
-=== IMAGE 57 — save as 57.png ===
+FILE: rocket_trooper__emberhand__move.png
 A single video-game unit sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a desert raider rocket trooper of a scavenger warband — a fat twin-tube rocket launcher over one shoulder, its tubes clearly salvaged and mismatched with welded patch plates and yellow warhead tips; ash-black cloth wraps under scorched red-iron armour (#d1503a, shadow #8f3020, highlight #ffb08f) with soot streaks and a small ember-crimson glow (#ff4a3d). Viewed from DIRECTLY ABOVE (pure top-down), facing straight up, exactly one figure, centred with a generous empty margin. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground, thin dark outline rim. Background: every pixel outside the figure is solid flat pure magenta #FF00FF — no gradient, no vignette, no ground, no grid, no text. Square PNG.
 
-=== IMAGE 58 — save as 58.png ===
+FILE: harvester__emberhand__move.png
 A single video-game unit sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a scavenger warband's tracked ore-hauler harvester — the biggest ground vehicle: very wide treads, a big ribbed rear hopper, a front intake scoop, an exhaust stack — but built from salvage: mismatched welded plates in scorched red-iron (#d1503a, shadow #8f3020, highlight #ffb08f), soot-blackened exhaust, chained-on spare parts, a faded hazard stripe on the hopper lip, faint purple crystal glow inside the hopper, small ember-crimson lights (#ff4a3d). Viewed from DIRECTLY ABOVE (pure top-down), facing straight up with the scoop at the top, exactly one vehicle, centred with a generous empty margin. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground, thin dark outline rim. Background: every pixel outside the vehicle is solid flat pure magenta #FF00FF — no gradient, no vignette, no ground, no grid, no text. Square PNG.
 
-=== IMAGE 59 — save as 59.png ===
+FILE: barracks__emberhand__idle.png
 A single video-game building sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a scavenger warband barracks — a low bunker assembled from salvaged shipping containers and welded scrap plates in scorched red-iron (#d1503a, shadow #8f3020, highlight #ffb08f), a lit doorway glowing ember-crimson (#ff4a3d), a ragged canvas awning, soot-streaked vents, a warband banner pole. Viewed from almost directly above with a slight three-quarter depth: roof lit, front (lower) face darker. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground, thin dark outline rim. The structure sits FLAT with absolutely NO base platform, NO concrete pad, NO ground tile — solid flat pure magenta #FF00FF fills every pixel outside the structure, right up to its footprint. No gradient, no vignette, no grid, no text. One building only, centred, generous margin. Square PNG.
 
-=== IMAGE 60 — save as 60.png ===
+FILE: refinery__emberhand__idle.png
 A single video-game building sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a scavenger warband ore refinery — two vertical silo tanks patched with mismatched welded plates, a low open docking bay, exposed jury-rigged pipework, a soot-blackened exhaust stack, all in scorched red-iron (#d1503a, shadow #8f3020, highlight #ffb08f) with ember-crimson lights (#ff4a3d) and a faint purple crystal glow at the intake. Viewed from almost directly above with a slight three-quarter depth: roof lit, front (lower) face darker. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground, thin dark outline rim. The structure sits FLAT with absolutely NO base platform, NO concrete pad, NO ground tile — solid flat pure magenta #FF00FF fills every pixel outside the structure, right up to its footprint. No gradient, no vignette, no grid, no text. One building only, centred, generous margin. Square PNG.
 
-=== IMAGE 61 — save as 61.png ===
+FILE: defense_turret__emberhand__idle.png
 A single video-game building sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a scavenger warband defense turret — a squat pedestal of welded scrap plates topped by a salvaged rotary cannon with mismatched barrels, ammo belts draped over the side, in scorched red-iron (#d1503a, shadow #8f3020, highlight #ffb08f) with an ember-crimson sight glow (#ff4a3d). The cannon points straight up. Viewed from almost directly above with a slight three-quarter depth: top lit, front (lower) face darker. Muted desert sunlight from the upper left, soft shading painted into the sprite, NO shadow cast on the ground, thin dark outline rim. The structure sits FLAT with absolutely NO base platform, NO concrete pad, NO ground tile — solid flat pure magenta #FF00FF fills every pixel outside the structure, right up to its footprint. No gradient, no vignette, no grid, no text. One turret only, centred, generous margin. Square PNG.
 
-=== IMAGE 62 — save as 62.png ===
+FILE: infantry__shardborn__move.png
 A single video-game unit sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a crystalline warrior — a humanoid figure whose armour is GROWN, not built: translucent violet crystal plates (#b49bd8 to #e6d4ff) with a soft violet inner glow, fused over obsidian-black organic under-plating (#3c3630), crystal spurs at the shoulders, its forearm extruded into a faceted crystal blade-rifle. Flowing faceted forms, NO straight machined edges, no bolts, no fabric. Viewed from DIRECTLY ABOVE (pure top-down), facing straight up, exactly one figure, centred with a generous empty margin. Muted desert sunlight from the upper left plus the violet inner glow, soft shading painted into the sprite, NO shadow cast on the ground, thin dark outline rim. Background: every pixel outside the figure is solid flat pure magenta #FF00FF — no gradient, no vignette, no ground, no grid, no text. Square PNG.
 
-=== IMAGE 63 — save as 63.png ===
+FILE: rocket_trooper__shardborn__move.png
 A single video-game unit sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a crystalline artillery warrior — a humanoid figure of grown translucent violet crystal (#b49bd8 to #e6d4ff, soft inner glow) over obsidian-black organic plating (#3c3630), with a large hollow crystal launcher-horn grown over one shoulder, glowing shard projectiles visible inside it. Flowing faceted forms, NO straight machined edges, no bolts, no fabric. Viewed from DIRECTLY ABOVE (pure top-down), facing straight up, exactly one figure, centred with a generous empty margin. Muted desert sunlight from the upper left plus the violet inner glow, soft shading painted into the sprite, NO shadow cast on the ground, thin dark outline rim. Background: every pixel outside the figure is solid flat pure magenta #FF00FF — no gradient, no vignette, no ground, no grid, no text. Square PNG.
 
-=== IMAGE 64 — save as 64.png ===
+FILE: harvester__shardborn__move.png
 A single video-game unit sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a crystalline harvester creature-machine — a large low burrowing collector GROWN from obsidian-black organic plating (#3c3630) and translucent violet crystal (#b49bd8 to #e6d4ff, soft inner glow): a segmented beetle-like body instead of treads, a fanged crystal intake maw at the front, and a swollen glowing crystal storage bulb on its back instead of a hopper. Flowing faceted forms, NO straight machined edges, no bolts. Viewed from DIRECTLY ABOVE (pure top-down), facing straight up with the maw at the top, exactly one creature- machine, centred with a generous empty margin. Muted desert sunlight from the upper left plus the violet inner glow, soft shading painted into the sprite, NO shadow cast on the ground, thin dark outline rim. Background: every pixel outside it is solid flat pure magenta #FF00FF — no gradient, no vignette, no ground, no grid, no text. Square PNG.
 
-=== IMAGE 65 — save as 65.png ===
+FILE: barracks__shardborn__idle.png
 A single video-game building sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a crystalline spawning structure — a low hive-like mound GROWN from obsidian-black organic plating (#3c3630) and clusters of translucent violet crystal (#b49bd8 to #e6d4ff, soft inner glow), with one glowing fissure-opening where warriors emerge and small crystal spires around it. Flowing organic-faceted forms, NO straight machined edges, no doors, no panels. Viewed from almost directly above with a slight three-quarter depth: top lit, front (lower) face darker. Muted desert sunlight from the upper left plus the violet inner glow, soft shading painted into the sprite, NO shadow cast on the ground, thin dark outline rim. The formation sits FLAT with absolutely NO base platform and NO ground tile — solid flat pure magenta #FF00FF fills every pixel outside the formation, right up to its footprint. No gradient, no vignette, no grid, no text. One formation only, centred, generous margin. Square PNG.
 
-=== IMAGE 66 — save as 66.png ===
+FILE: refinery__shardborn__idle.png
 A single video-game building sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a crystalline digestion structure — a resource processor GROWN from obsidian-black organic plating (#3c3630) with two tall swollen translucent violet crystal sacs (#b49bd8 to #e6d4ff) glowing brightly with absorbed energy, connected by rope-like crystal veins to a low intake maw where a harvester docks. Flowing organic-faceted forms, NO straight machined edges, no pipes, no panels. Viewed from almost directly above with a slight three-quarter depth: top lit, front (lower) face darker. Muted desert sunlight from the upper left plus the violet inner glow, soft shading painted into the sprite, NO shadow cast on the ground, thin dark outline rim. The formation sits FLAT with absolutely NO base platform and NO ground tile — solid flat pure magenta #FF00FF fills every pixel outside the formation, right up to its footprint. No gradient, no vignette, no grid, no text. One formation only, centred, generous margin. Square PNG.
 
-=== IMAGE 67 — save as 67.png ===
+FILE: defense_turret__shardborn__idle.png
 A single video-game building sprite for a late-1990s Westwood-style desert RTS (Command & Conquer, Red Alert, Dune 2000 era), painted and chunky with a hard readable silhouette — NOT a modern 3D render, NOT cartoon, NOT pixel-art dithering. Subject: a crystalline defense spire — a defensive growth: a twisted obsidian-black stalk (#3c3630) crowned by a large sharp translucent violet crystal lance-shard (#b49bd8 to #e6d4ff) glowing at its core and aimed straight up, ringed by smaller crystal spurs at the base. Grown, not built: flowing faceted forms, NO straight machined edges, no barrels, no panels. Viewed from almost directly above with a slight three-quarter depth: top lit, front (lower) face darker. Muted desert sunlight from the upper left plus the violet inner glow, soft shading painted into the sprite, NO shadow cast on the ground, thin dark outline rim. The formation sits FLAT with absolutely NO base platform and NO ground tile — solid flat pure magenta #FF00FF fills every pixel outside the formation, right up to its footprint. No gradient, no vignette, no grid, no text. One formation only, centred, generous margin. Square PNG.
 ```
 
 
 ---
 
-## BATCH 6 — Presentation art (plain illustrations — NO magenta)  (images 68–77)
+## BATCH 6 — Presentation art (plain illustrations — NO magenta)  (10 images)
 
 Paste everything inside this block into one Gemini chat:
 
 ```
-Generate the following 10 game-art images (numbers 68 through 77). Produce EACH numbered item as its OWN separate image — do NOT combine them into a grid, sheet, or collage, and do not caption them. Keep every technical rule written in each description. Work through them in order; after you show each image I download it and save it as its number.
+Generate the following 10 game-art images. Produce EACH as its OWN separate image — do NOT combine them into a grid, sheet, or collage, and do not add captions. For each one, NAME THE IMAGE FILE EXACTLY as the "FILE:" name given (keep the .png). Keep every technical rule written in each description. When all are done, package them so I can download the whole set as a single zip.
 
-=== IMAGE 68 — save as 68.png ===
+FILE: title_backdrop.png
 A wide painted title-screen backdrop for a late-1990s Westwood-style desert RTS (Command & Conquer / Dune 2000 era) — a hand-painted, slightly gritty concept-art style, NOT modern photoreal 3D, NOT cartoon. Scene: a vast desert at dusk on an alien world, the sand veined with glowing purple crystal seams running toward the horizon; distant industrial refinery silhouettes with tiny lights on the skyline; a towering violet lightning storm building on the horizon; warm dusk light from the low sun against the cold violet glow. Epic, quiet, ominous. Leave the upper-middle area relatively calm so a game logo can sit over it. Wide 16:9 image, no text, no logo, no characters.
 
-=== IMAGE 69 — save as 69.png ===
+FILE: portrait_warden.png
 A painted military briefing portrait for a late-1990s Westwood-style RTS (Command & Conquer era) — head-and-shoulders bust, three-quarter view, dramatic single key light, plain dark neutral backdrop, gritty painted style, NOT photoreal, NOT anime, roughly square, no text. Subject: THE WARDEN — an armoured hero commander whose face is fully enclosed in a sleek steel-grey combat helmet with a single glowing cyan visor slit, heavy powered-armour shoulder plates with cyan seam lights, battle-worn steel blue-grey finish. Imposing, anonymous, loyal.
 
-=== IMAGE 70 — save as 70.png ===
+FILE: portrait_corr.png
 A painted military briefing portrait for a late-1990s Westwood-style RTS (Command & Conquer era) — head-and-shoulders bust, three-quarter view, dramatic single key light, plain dark neutral backdrop, gritty painted style, NOT photoreal, NOT anime, roughly square, no text. Subject: MARSHAL CORR — a weathered senior military commander in his 60s, grey-templed close-cropped hair, deep lines, a small scar over one brow, a stiff steel-grey uniform collar with subtle cyan rank bars. Stern, tired, principled — a man carrying a war.
 
-=== IMAGE 71 — save as 71.png ===
+FILE: portrait_vane.png
 A painted military briefing portrait for a late-1990s Westwood-style RTS (Command & Conquer era) — head-and-shoulders bust, three-quarter view, dramatic single key light, plain dark neutral backdrop, gritty painted style, NOT photoreal, NOT anime, roughly square, no text. Subject: SERA VANE — a desert warlord woman in her 40s, sun-hardened face with pale ash-mark ritual streaks across one cheek, dark hair pulled back, an ash-grey cloak clasped with scorched iron, a crimson sash across her chest, faint ember- orange reflected light on one side of her face. Fierce, charismatic, dangerous.
 
-=== IMAGE 72 — save as 72.png ===
+FILE: portrait_halex.png
 A painted military briefing portrait for a late-1990s Westwood-style RTS (Command & Conquer era) — head-and-shoulders bust, three-quarter view, dramatic single key light, plain dark neutral backdrop, gritty painted style, NOT photoreal, NOT anime, roughly square, no text. Subject: DIRECTOR HALEX — a cold corporate executive in his 50s, immaculate: slicked steel-grey hair, rimless glasses catching the light, a severe high-collared charcoal corporate suit with a thin cyan pin, the faintest contemptuous smile. Bloodless, calculating.
 
-=== IMAGE 73 — save as 73.png ===
+FILE: portrait_yssel.png
 A painted military briefing portrait for a late-1990s Westwood-style RTS (Command & Conquer era) — head-and-shoulders bust, three-quarter view, dramatic single key light, plain dark neutral backdrop, gritty painted style, NOT photoreal, NOT anime, roughly square, no text. Subject: BROKER YSSEL — an ornately dressed information broker of indeterminate age, layered rich fabrics in desert tones with gold thread, many small rings and a jewelled ear cuff, kohl-lined knowing eyes, a warm practiced smile that does not reach them. Opulent, friendly, untrustworthy.
 
-=== IMAGE 74 — save as 74.png ===
+FILE: portrait_chorus.png
 A painted military briefing portrait for a late-1990s Westwood-style RTS (Command & Conquer era) — head-and-shoulders bust, three-quarter view, dramatic single key light, plain dark neutral backdrop, gritty painted style, NOT photoreal, NOT anime, roughly square, no text. Subject: THE CHORUS — a shard-touched human face, serene and WRONG: translucent violet crystal growths fusing through one temple and cheek, faint violet light glowing beneath the skin along the veins, and eyes that are uniformly wrong — no pupils, softly luminous violet. Calm, alien, quietly terrifying — many speaking as one.
 
-=== IMAGE 75 — save as 75.png ===
+FILE: act1_card.png
 A wide painted campaign act-card illustration for a late-1990s Westwood-style desert RTS (Command & Conquer era) — hand-painted gritty concept-art style, NOT photoreal, NOT cartoon, no text. Scene for "Operation Aether Prime": a formation of steel-grey military dropships with cyan running lights descending through dusty morning air over a vast desert, landing struts deploying, sand billowing beneath them; below, tiny vehicles and troops fan out from a beachhead; purple crystal seams glint in the dunes. Confident, martial, dawn-of-the-campaign mood. Wide 16:9, leave lower third calmer for a title overlay.
 
-=== IMAGE 76 — save as 76.png ===
+FILE: act2_card.png
 A wide painted campaign act-card illustration for a late-1990s Westwood-style desert RTS (Command & Conquer era) — hand-painted gritty concept-art style, NOT photoreal, NOT cartoon, no text. Scene for "The Waking Deep": a night scene at the mouth of a vast glowing crystal vein — a canyon floor split by pulsing violet light from below; a line of ragged silhouetted desert raiders with scavenged armour and weapons stand at its rim, lit only by the violet glow, ash and embers drifting; something enormous coils beneath the light. Ominous, awed, before-the-plunge mood. Wide 16:9, leave lower third calmer for a title overlay.
 
-=== IMAGE 77 — save as 77.png ===
+FILE: credits_backdrop.png
 A wide painted illustration for the end credits of a late-1990s Westwood-style desert RTS (Command & Conquer era) — hand-painted gritty concept-art style, NOT photoreal, NOT cartoon, no text. Scene: "the First Vein" — a vast glowing fissure splitting a desert plain, radiant violet light pouring up out of it into the night sky like an aurora; at its rim, a handful of tiny human figures and one small vehicle stand silhouetted, dwarfed by the scale; drifting motes of light rise from the depths. Vast, elegiac, final. Wide 16:9, dark enough overall for light credit text to scroll over.
 ```
 
 
 ---
 
-## BATCH 7 — New terrain tiles (OPTIONAL)  (images 78–81)
+## BATCH 7 — New terrain tiles (OPTIONAL)  (4 images)
 
 Paste everything inside this block into one Gemini chat:
 
 ```
-Generate the following 4 game-art images (numbers 78 through 81). Produce EACH numbered item as its OWN separate image — do NOT combine them into a grid, sheet, or collage, and do not caption them. Keep every technical rule written in each description. Work through them in order; after you show each image I download it and save it as its number.
+Generate the following 4 game-art images. Produce EACH as its OWN separate image — do NOT combine them into a grid, sheet, or collage, and do not add captions. For each one, NAME THE IMAGE FILE EXACTLY as the "FILE:" name given (keep the .png). Keep every technical rule written in each description. When all are done, package them so I can download the whole set as a single zip.
 
-=== IMAGE 78 — save as 78.png ===
+FILE: terrain__scorched.png
 A single seamless square ground-texture tile for a late-1990s Westwood-style desert RTS (Command & Conquer / Dune 2000 era), painted gritty style, viewed from directly above. Subject: scorched battlefield sand — desert ground charred black and ash-grey by a massive burn (base near #3c3630 fading into charred sand #7a6650), with fine ash drifts, hairline cracked glassy patches, and a few faint dying embers. Muted, dark, matte. CRITICAL: the texture must be perfectly SEAMLESS and tileable — the left edge must continue the right edge exactly and the top edge must continue the bottom edge exactly, with no vignette, no lighting gradient, no centred feature, no border. Even, flat overhead lighting. Square image, texture fills the entire frame edge to edge. PNG.
 
-=== IMAGE 79 — save as 79.png (this is a recolor of IMAGE 78) ===
-Another tile of the exact same scorched-ground texture as IMAGE 78 directly above — same palette, same scale, same flat even lighting, perfectly seamless and tileable (left edge continues the right edge, top continues the bottom) — but a different random arrangement of cracks, ash drifts, and embers. Square PNG, texture fills the frame edge to edge.
+FILE: terrain__scorched_2.png   (a recolor of terrain__scorched.png)
+Another tile of the exact same scorched-ground texture as terrain__scorched.png directly above — same palette, same scale, same flat even lighting, perfectly seamless and tileable (left edge continues the right edge, top continues the bottom) — but a different random arrangement of cracks, ash drifts, and embers. Square PNG, texture fills the frame edge to edge.
 
-=== IMAGE 80 — save as 80.png ===
+FILE: terrain__crystal_lattice.png
 A single seamless square ground-texture tile for a late-1990s Westwood-style desert RTS (Command & Conquer / Dune 2000 era), painted gritty style, viewed from directly above. Subject: alien crystal-creep ground — desert sand being overgrown by a web-like lattice of translucent violet crystal veins (tones #7d6a9a base with brighter veins #b49bd8 to #e6d4ff) spreading across darker corrupted ground (#3c3630), with tiny crystal nubs budding at vein junctions and a faint soft violet glow along the veins. CRITICAL: the texture must be perfectly SEAMLESS and tileable — the left edge must continue the right edge exactly and the top edge must continue the bottom edge exactly, with no vignette, no lighting gradient, no centred feature, no border. Even, flat overhead lighting. Square image, texture fills the entire frame edge to edge. PNG.
 
-=== IMAGE 81 — save as 81.png (this is a recolor of IMAGE 80) ===
-Another tile of the exact same crystal-creep texture as IMAGE 80 directly above — same palette, same scale, same flat even lighting, perfectly seamless and tileable (left edge continues the right edge, top continues the bottom) — but a different random arrangement of violet veins and crystal nubs. Square PNG, texture fills the frame edge to edge.
+FILE: terrain__crystal_lattice_2.png   (a recolor of terrain__crystal_lattice.png)
+Another tile of the exact same crystal-creep texture as terrain__crystal_lattice.png directly above — same palette, same scale, same flat even lighting, perfectly seamless and tileable (left edge continues the right edge, top continues the bottom) — but a different random arrangement of violet veins and crystal nubs. Square PNG, texture fills the frame edge to edge.
 ```
