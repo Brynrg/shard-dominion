@@ -11,6 +11,30 @@
 
 ## Current state
 
+**🧭 v0.42.0 "TRUTH PASS" (2026-07-09) — the consolidation release. Both QA-round-2 reports (static code
+audit + autonomous play-test) converged on one root cause: five entity-creation paths had drifted apart and
+per-path tests stayed green while the COMPOSED game diverged. Every finding verified, then fixed:**
+- **TP-1 Canonical factory** (`src/sim/factory.ts`): seed/production/trigger/AI/placement all build
+  identical entities. Produced+triggered gunships FLY with ammo; trigger waves carry stealth/shields/
+  containers; seeded AA fires; skypads produce; power demand attaches everywhere. Cross-path parity tests.
+- **TP-2 One team economy** (`src/sim/ledger.ts`): spends drain across ALL banks; harvesters dock only at
+  OWN operational refineries; relays KEEP their identity on capture and pay cells; scripted grants bypass
+  the cap (M14 fix); ConYards carry a 1500 command-reserve (rebuild path after refinery loss).
+- **TP-3 Real construction**: placement spawns 20%-hp SITES that build up over buildTimeSeconds; turrets/
+  producers/power/docks/radar gate on operational; full-footprint + own-team placement; scaffold rendering.
+  All 15 missions power-balanced (honest demand browned out every seeded base — bases got power plants).
+- **TP-4**: persistence loader returns heroKills/reserve (was dropping both — the layer was dead);
+  stateHash covers ALL authoritative state (11 sensitivity tests); wall cache into the system closure;
+  seat-parity views; save payloads carry bonus/deployment/choice and continue reproduces them.
+- **TP-5**: contested holds pause; secondaries visible (☆); objective pointer targets the ACTUAL objective;
+  ☄ STRIKE UI wired (was dead build:hq); T3 button checks cells; Act I enemies mechanically Emberhand;
+  resonance counts extraction even at full storage.
+- **TP-6**: AI FINISHER (dead-economy foes get killed, not besieged) + 15-min sudden death; harvesters
+  flee from any state; threat-priority targeting (waves fight armies before workers); the balance harness
+  is a REAL gate — 6/6 matchups resolve decisively (force or points), timeouts fail.
+- **TP-7**: `STATUS.md` = the promised/implemented/verified truth table (M7 gap, Shardborn honesty,
+  MP-experimental, 'Mission Kit' naming); RFCs marked historical; package.json 0.42.0.
+
 **🔎 CONSOLIDATION PASS (2026-07-09, v0.41.1) — post-completion sweeps:**
 - **Boot smoke:** all 19 routes (title, editor, 4 skirmish configs, all 13 campaign missions) boot with
   zero page errors and a ticking sim.

@@ -42,7 +42,7 @@ export function makeCombatTargetingSystem(weapons: WeaponsFile): { name: 'combat
 
         // 2) Otherwise scan for the nearest LIVING ENEMY (different team) in range.
         let bestId: EntityId | null = null;
-        let bestDist = rangeWorld;
+        let bestScore = Infinity;
         for (const other of state.store.all()) {
           if (other.id === e.id) continue;
           const of = other.components.faction; const oh = other.components.health; const op = other.components.position;
@@ -56,12 +56,13 @@ export function makeCombatTargetingSystem(weapons: WeaponsFile): { name: 'combat
           if (oc === 'AIR' && (weapons.matrix[weapon.type]?.AIR ?? 0) <= 0) continue;
           const d = distance(pos, op);
           if (d < minRangeWorld) continue; // artillery ignores what's under its barrel
-          // TP-6 threat priority: harvesters and unarmed passives score 1.5× farther,
-          // so a passing wave fights the ARMY first instead of deleting the economy
-          // en route (QA: the first assault killed the harvester in every run).
+          if (d > rangeWorld) continue;    // range is a hard bound (true distance)
+          // TP-6 threat priority: among IN-RANGE options, harvesters and unarmed
+          // passives rank 1.5× farther, so a passing wave fights the ARMY first
+          // instead of deleting the economy en route. Range itself is unaffected.
           const passive = !other.components.combat || other.components.harvest;
           const score = d * (passive ? 1.5 : 1);
-          if (score <= bestDist) { bestDist = score; bestId = other.id; }
+          if (score < bestScore) { bestScore = score; bestId = other.id; }
         }
         combat.targetId = bestId; // null clears the target when nothing is in range
       }
