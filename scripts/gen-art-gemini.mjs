@@ -22,7 +22,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const MODEL = process.env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image';
+// gemini-2.5-flash-image is retired for new API users (403); 3.1-flash-image is current.
+const MODEL = process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image';
 
 const args = process.argv.slice(2);
 const opt = (name, def) => {
