@@ -125,7 +125,9 @@ export function makeHarvestSystem(economy: EconomyConstants, factions?: { player
         const hp = e.components.health?.hp ?? Infinity;
         const prevHp = lastHp.get(e.id) ?? hp;
         lastHp.set(e.id, hp);
-        if (hp < prevHp && (harvest.state === 'SEEK' || harvest.state === 'HARVEST')) {
+        // TP-6: harvesters flee toward home the moment they take fire, from ANY
+        // working state (QA: "no flee behavior" — it only covered SEEK/HARVEST).
+        if (hp < prevHp && harvest.state !== 'DOCK' && harvest.state !== 'RETURN') {
           harvest.state = 'RETURN';
           movement.target = null;
         }

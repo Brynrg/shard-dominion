@@ -1,6 +1,6 @@
 # Shard Dominion — Story Mode (Campaign) Design Brief
 
-> **Status:** DRAFT FOR REVIEW (story bible + engine architecture) · **Target:** v0.30.0-series
+> **Status: HISTORICAL design document — see /STATUS.md for current product truth.** Originally:** DRAFT FOR REVIEW (story bible + engine architecture) · **Target:** v0.30.0-series
 > **Date:** 2026-07-07 · **Author:** Claude (Opus 4.8), with operator direction
 > **Scope:** a single-player **campaign** (à la C&C / Dune 2000 / Warcraft) — story, factions, a 5–7
 > mission arc, the mission-data format, and the engine changes to run it. Skirmish (the current game) is

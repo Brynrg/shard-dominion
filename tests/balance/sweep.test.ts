@@ -63,7 +63,26 @@ function playMatch(pf: FactionId, ef: FactionId, maxTicks = 24000): { winner: st
     if (!p) return { winner: `${ef}(E)`, ticks: t };
     if (!e) return { winner: `${pf}(P)`, ticks: t };
   }
-  return { winner: 'timeout', ticks: maxTicks };
+  // TP-6 adjudication: a match that reaches the cap with BOTH economies exhausted
+  // is decided on points (remaining structures + army + bank). Sieges can no longer
+  // stall (the finisher commits the stronger side); only mutual exhaustion lands here.
+  const points = (team: 'player' | 'enemy'): number => {
+    let p = 0;
+    for (const e of state.store.all()) {
+      if (e.components.faction?.team !== team) continue;
+      if ((e.components.health?.hp ?? 0) <= 0) continue;
+      if (e.components.building) p += 2;
+      else if (e.components.combat) p += 1;
+    }
+    for (const e of state.store.all()) {
+      if (e.components.faction?.team === team && e.components.economy) p += (e.components.economy.credits ?? 0) / 500;
+    }
+    return p;
+  };
+  const pp = points('player'), ep = points('enemy');
+  const margin = Math.abs(pp - ep) / Math.max(pp, ep, 1);
+  if (margin < 0.1) return { winner: 'deadlock', ticks: maxTicks };
+  return { winner: pp > ep ? `${pf}(P·pts)` : `${ef}(E·pts)`, ticks: maxTicks };
 }
 
 describe.skipIf(!process.env.BALANCE)('balance sweep — AI vs AI', () => {
@@ -77,6 +96,8 @@ describe.skipIf(!process.env.BALANCE)('balance sweep — AI vs AI', () => {
       const mins = (r.ticks / 20 / 60).toFixed(1);
       console.log(`RESULT ${pf} vs ${ef}: winner=${r.winner} at ${mins}min`);
       expect(r.winner).not.toBe('draw');
+      expect(r.winner, 'matches must CONCLUDE or adjudicate decisively (TP-6)').not.toBe('timeout');
+      expect(r.winner, 'no dead-even deadlocks').not.toBe('deadlock');
     });
   }
 });

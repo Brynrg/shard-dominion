@@ -56,7 +56,12 @@ export function makeCombatTargetingSystem(weapons: WeaponsFile): { name: 'combat
           if (oc === 'AIR' && (weapons.matrix[weapon.type]?.AIR ?? 0) <= 0) continue;
           const d = distance(pos, op);
           if (d < minRangeWorld) continue; // artillery ignores what's under its barrel
-          if (d <= bestDist) { bestDist = d; bestId = other.id; }
+          // TP-6 threat priority: harvesters and unarmed passives score 1.5× farther,
+          // so a passing wave fights the ARMY first instead of deleting the economy
+          // en route (QA: the first assault killed the harvester in every run).
+          const passive = !other.components.combat || other.components.harvest;
+          const score = d * (passive ? 1.5 : 1);
+          if (score <= bestDist) { bestDist = score; bestId = other.id; }
         }
         combat.targetId = bestId; // null clears the target when nothing is in range
       }

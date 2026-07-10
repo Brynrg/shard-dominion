@@ -57,6 +57,9 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig, structure
   const committed = new Set<EntityId>(); // units already holding a standing order (assault/raid)
   let lastArmyCount = 0;                  // for Recover detection (sharp army drop)
   let plan: AiState = 'Develop';
+  // TP-6 FINISHER flag: set during evaluation, read by the Assault action.
+  let finisher = false;
+  const foeTeam: 'player' | 'enemy' = cfg.team === 'player' ? 'enemy' : 'player';
 
   return {
     name: 'ai' as const,
@@ -125,6 +128,23 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig, structure
       else if (armyValue >= pressureValue) plan = 'Pressure';
       else if (bank && bank.credits >= EXPAND_COST + EXPAND_RESERVE && findExpansionTile(state, team) !== null) plan = 'Expand';
       else plan = 'Develop';
+      // TP-6 FINISHER: a broke, harvester-less foe gets FINISHED, not besieged —
+      // and past 15 minutes the STRONGER army must commit (sudden death: two
+      // exhausted turtles otherwise sit behind turrets forever; the balance
+      // harness proved it).
+      finisher = false;
+      {
+        const foeHarv = all.some(e => e.components.faction?.team === foeTeam && e.components.harvest && (e.components.health?.hp ?? 0) > 0);
+        const foeBroke = !foeHarv && teamCredits(state, foeTeam) < 150;
+        let foeArmyValue = 0;
+        for (const e of all) {
+          if (e.components.faction?.team !== foeTeam || !e.components.combat || e.components.building) continue;
+          if ((e.components.health?.hp ?? 0) <= 0) continue;
+          foeArmyValue += costOf(e.components.faction.faction);
+        }
+        const suddenDeath = state.tick >= 18000 && armyValue >= foeArmyValue && armyValue > 0;
+        if ((foeBroke && armyValue >= 500) || suddenDeath) { plan = 'Assault'; finisher = true; }
+      }
 
       // Difficulty grace (QA BUG-5): before graceTicks the AI builds but does not
       // attack — aggressive plans downgrade to economy. Defence (Stabilize/Recover)
@@ -260,9 +280,25 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig, structure
           break;
         }
         case 'Assault': {
-          const target = tileToWorldCenter(cfg.attackTile);
+          // Finisher aims at the foe's LAST producers (the siege-breaker); a normal
+          // assault uses the configured base tile.
+          let target = tileToWorldCenter(cfg.attackTile);
+          if (finisher) {
+            const producer = all.find(e => e.components.faction?.team === foeTeam &&
+              (e.components.production || e.components.construction) && (e.components.health?.hp ?? 0) > 0);
+            const pp = producer?.components.position;
+            if (pp) target = { wx: pp.wx, wy: pp.wy };
+          }
           for (const u of idleFresh) {
-            if (u.components.movement) { u.components.movement.target = target; committed.add(u.id); }
+            if (u.components.movement) { u.components.movement.target = target; u.components.movement.attackMove = true; committed.add(u.id); }
+          }
+          // The finisher recommits EVERY combat unit (no reserve, no oscillation).
+          if (finisher) {
+            for (const u of all) {
+              if (u.components.faction?.team !== team || !u.components.combat || u.components.building) continue;
+              const mv = u.components.movement;
+              if (mv && !mv.target) { mv.target = { ...target }; mv.attackMove = true; committed.add(u.id); }
+            }
           }
           break;
         }

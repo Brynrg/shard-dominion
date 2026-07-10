@@ -6,12 +6,12 @@
 ## What this is
 **Shard Dominion** — an IP-clean, late-1990s Westwood-style (C&C / Red Alert / Dune 2000) web RTS.
 - **Repo:** `~/Code/games/shard-dominion` (TypeScript + Canvas2D + Vite + Vitest + zod + ESLint, single pnpm pkg).
-- **Live:** https://speedrungames.net/games/shard-dominion/ — currently **v0.41.1**.
+- **Live:** https://speedrungames.net/games/shard-dominion/ — currently **v0.42.0**.
 - **Your role now:** you (Claude) **build it directly** and verify. (Earlier plan was to delegate slices to a
   local Qwen builder; in practice Claude builds and only occasionally hands a tightly-scaffolded sub-task to
   `hermes-ask code` — e.g. the S6B AI waves. Default to building it yourself + verifying.)
 
-## Current state (v0.25.0) — a genuinely playable RTS
+## Current state — see STATUS.md (the product truth table)
 Start with a Construction Yard + Refinery + 1 Harvester + 2 troops + 700cr → harvester auto-mines Shard →
 **build a Barracks (B)** → **train Infantry/Rocket/Harvester (T/R/H)** → **right-click** to move/attack/mine →
 destroy the enemy base (marked on radar + off-screen arrow) to win. The AI reinforces + attacks in waves.

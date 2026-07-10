@@ -1,6 +1,6 @@
 # Shard Dominion — Front-to-Back Review & Full-Game Master Plan
 
-> **Status:** DRAFT FOR REVIEW · **Date:** 2026-07-09 · **Baseline:** v0.25.0 (commit `1c6a3a6`)
+> **Status: HISTORICAL design document — see /STATUS.md for current product truth.** Originally:** DRAFT FOR REVIEW · **Date:** 2026-07-09 · **Baseline:** v0.25.0 (commit `1c6a3a6`)
 > **Author:** Claude, from a full-codebase audit (all sim systems, view, loaders, data, tests read)
 > **North star (operator):** *"a full game that is front-to-back playable and as full-featured as Warcraft 3."*
 > **This doc:** (1) honest calibration of that goal, (2) a front-to-back review with grades,
