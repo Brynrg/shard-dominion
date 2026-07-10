@@ -11,7 +11,7 @@ import type { StructureDef } from '../loaders/structures.js';
 import type { WeaponsFile } from '../loaders/schemas.js';
 import type { Onboarding } from './onboarding.js';
 import type { EntityId } from '../sim/ids.js';
-import { makeSpriteBank, type SpriteBank } from './spritebank.js';
+import { makeSpriteBank, type SpriteBank, type UnitAnim } from './spritebank.js';
 
 // ── Terrain palette (base + a darker/lighter pair for per-tile texturing) ──────
 // Each tile gets base fill + deterministic grain/detail so the desert reads as a
@@ -110,6 +110,8 @@ export interface ViewConfig {
   /** Faction palettes (FG-6): override the default team styles. */
   playerPalette?: { hull: string; hullDark: string; accent: string; stripe: string };
   enemyPalette?: { hull: string; hullDark: string; accent: string; stripe: string };
+  /** Enemy faction id (XP-3 skins: delivered faction re-renders beat team paint). */
+  enemyFactionId?: string;
 }
 
 export interface View {
@@ -162,6 +164,11 @@ export function makeView(cfg: ViewConfig): View {
     enemy: cfg.enemyPalette ?? TEAM.enemy!,
   };
   const sprites = makeSpriteBank(teamStyles, NEUTRAL_TEAM, weapons);
+  // XP-3 faction skins: delivered faction re-renders beat plain team paint.
+  sprites.setFactionIds({
+    player: cfg.playerFactionId ?? 'concord',
+    enemy: cfg.enemyFactionId ?? 'concord',
+  });
   // Best-effort: swap in any delivered real sprite sheets (docs/ART_ASSETS_SPEC.md).
   // No manifest / missing sheets → silently stays procedural. Exposed for testing.
   void sprites.loadManifest('art');
@@ -369,6 +376,7 @@ export function makeView(cfg: ViewConfig): View {
   const particles: Particle[] = [];
   const prevAlive = new Map<EntityId, { wx: number; wy: number; team: string; big: boolean }>();
   const prevCooldown = new Map<EntityId, number>();
+  const firingUntil = new Map<EntityId, number>();     // render-frame deadline for the §0.6 fire strip
   const prevHp = new Map<EntityId, number>();          // player damage → under-attack alerts
   const prevHarvest = new Map<EntityId, string>();     // DOCK→SEEK transition → deposit chime
   let fxSeeded = false;
@@ -437,6 +445,7 @@ export function makeView(cfg: ViewConfig): View {
         const muzWx = pos.wx + Math.cos(ang) * TILE_SUBUNITS * 0.35;
         const muzWy = pos.wy + Math.sin(ang) * TILE_SUBUNITS * 0.35;
         spawnMuzzle(muzWx, muzWy, ang, rocket);
+        firingUntil.set(e.id, frame + 24); // ~0.4s window for the fire-strip pose
         audio?.shot(rocket);
         // Tracer to the target so a shot reads clearly.
         const tgtId = e.components.combat.targetId;
@@ -476,7 +485,7 @@ export function makeView(cfg: ViewConfig): View {
         if (!alive.has(id)) { spawnExplosion(info.wx, info.wy, info.big); spawnDecal(info.wx, info.wy, info.big); audio?.explosion(info.big); }
       }
     }
-    for (const id of prevAlive.keys()) if (!alive.has(id)) { prevAlive.delete(id); prevCooldown.delete(id); prevHp.delete(id); prevHarvest.delete(id); }
+    for (const id of prevAlive.keys()) if (!alive.has(id)) { prevAlive.delete(id); prevCooldown.delete(id); prevHp.delete(id); prevHarvest.delete(id); firingUntil.delete(id); }
     fxSeeded = true;
   }
 
@@ -1057,14 +1066,22 @@ export function makeView(cfg: ViewConfig): View {
           context.ellipse(sx, sy + 6 * camera.zoom, 10 * camera.zoom, 4 * camera.zoom, 0, 0, Math.PI * 2);
           context.fill();
           drawUnitUnderlay(e, kind, sx, sy - 14 * camera.zoom, camera.zoom);
-          sprites.drawUnit(context, kind, teamKey, undefined, facingAngle(e, interp), sx, sy - 14 * camera.zoom, frame, camera.zoom);
+          sprites.drawUnit(context, kind, teamKey, undefined, facingAngle(e, interp), sx, sy - 14 * camera.zoom, frame, camera.zoom, unitAnim(e, pos, prevPos));
         } else {
           drawUnitUnderlay(e, kind, sx, sy, camera.zoom);
-          sprites.drawUnit(context, kind, teamKey, undefined, facingAngle(e, interp), sx, sy, frame, camera.zoom);
+          sprites.drawUnit(context, kind, teamKey, undefined, facingAngle(e, interp), sx, sy, frame, camera.zoom, unitAnim(e, pos, prevPos));
         }
       }
       context.globalAlpha = 1; // reset the stealth ghosting (XP-3)
     }
+  }
+
+  // What a unit is doing right now, for §0.6 animation-strip selection: firing
+  // (window set by the muzzle detector) beats moving (interpolation delta) beats idle.
+  function unitAnim(e: ReturnType<typeof simState.store.all>[number], pos: WorldPos, prevPos: WorldPos | undefined): UnitAnim {
+    if ((firingUntil.get(e.id) ?? 0) > frame) return 'firing';
+    const moving = !!prevPos && Math.abs(pos.wx - prevPos.wx) + Math.abs(pos.wy - prevPos.wy) > 0.01;
+    return moving ? 'moving' : 'idle';
   }
 
   // Harvester ore-load glow, drawn UNDER the baked sprite so the crystal cargo

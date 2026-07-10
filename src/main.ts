@@ -275,6 +275,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     playerFactionId: teamFactions.player.id,
     playerPalette: teamFactions.player.palette,                      // faction colours (FG-6)
     enemyPalette: teamFactions.enemy.palette,
+    enemyFactionId: teamFactions.enemy.id,                           // XP-3 faction skins
     viewerTeam,                                                      // MP seat (FG-7)
     isMuted: () => audio.isMuted(),                                  // HUD mute chip
     isStorm: () => isStormActive(state.tick),                        // XP-5 weather

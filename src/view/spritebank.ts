@@ -229,7 +229,27 @@ interface ResolvedMeta {
 }
 interface RealSprite { img: CanvasImageSource; meta: ResolvedMeta }
 
-const UNIT_IDS = new Set(['infantry', 'rocket_trooper', 'vehicle', 'harvester', 'mcv', 'generic']);
+// Fallback classification for sheets installed without a `units/`|`buildings/` path
+// prefix (tests, direct installs). Kept in sync with data/units.json ids.
+const UNIT_IDS = new Set([
+  'infantry', 'rocket_trooper', 'vehicle', 'harvester', 'mcv', 'generic',
+  'scout_vehicle', 'assault_tank', 'longbow', 'skimmer_apc', 'gunship',
+  'riftmaw', 'warden', 'ghostwalker', 'vane',
+]);
+
+/** What a unit is doing, for animation-strip selection (§0.6). */
+export type UnitAnim = 'idle' | 'moving' | 'firing';
+
+/** Preference order for a delivered sheet: faction skin beats team paint beats
+ *  neutral; within each, the anim-specific strip beats the base sprite. Pure —
+ *  unit-tested. `state` here is the sheet-key state ('base' = move/idle art). */
+export function sheetCandidates(team: string, anim: UnitAnim, factionId?: string): { team: string; state: string }[] {
+  const teams = factionId && factionId !== team ? [factionId, team, 'neutral'] : [team, 'neutral'];
+  const states = anim === 'firing' ? ['fire', 'base'] : anim === 'moving' ? ['walk', 'drive', 'base'] : ['base'];
+  const out: { team: string; state: string }[] = [];
+  for (const t of teams) for (const s of states) out.push({ team: t, state: s });
+  return out;
+}
 
 function srcSize(s: CanvasImageSource): { w: number; h: number } {
   if (typeof HTMLCanvasElement !== 'undefined' && s instanceof HTMLCanvasElement) return { w: s.width, h: s.height };
@@ -306,8 +326,11 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 }
 
 export interface SpriteBank {
-  drawUnit(ctx: CanvasRenderingContext2D, kind: string, team: string, weaponType: string | undefined, angle: number, sx: number, sy: number, frame: number, scale: number): void;
+  drawUnit(ctx: CanvasRenderingContext2D, kind: string, team: string, weaponType: string | undefined, angle: number, sx: number, sy: number, frame: number, scale: number, anim?: UnitAnim): void;
   drawBuildingBody(ctx: CanvasRenderingContext2D, kind: string, team: string, sx: number, sy: number, frame: number, scale: number): void;
+  /** XP-3 faction skins: map team key → faction id so delivered faction re-renders
+   *  (e.g. `infantry__emberhand__move`) are preferred over the team paint. */
+  setFactionIds(map: Record<string, string>): void;
   /** Fetch a manifest of delivered sheets and install them (async, best-effort). */
   loadManifest(baseUrl?: string): Promise<void>;
   /** Install a decoded sheet directly (used by loadManifest + tests). */
@@ -333,8 +356,9 @@ export function makeSpriteBank(teams: Record<string, TeamStyle>, neutral: TeamSt
 
   const unitFrames = new Map<string, HTMLCanvasElement[]>();   // key `${kind}|${team}`
   const bldgFrame = new Map<string, HTMLCanvasElement>();      // key `${kind}|${team}`
-  const realUnit = new Map<string, RealSprite>();             // delivered unit sheets, key `${assetId}|${team}`
-  const realBldg = new Map<string, RealSprite>();             // delivered building sheets
+  const realUnit = new Map<string, RealSprite>();             // delivered unit sheets, key `${assetId}|${team}|${state}`
+  const realBldg = new Map<string, RealSprite>();             // delivered building sheets, same key shape
+  let factionIds: Record<string, string> = {};                // team key → faction id (XP-3 skins)
   const terrainTiles = new Map<string, CanvasImageSource>(); // delivered seamless ground tiles, key = tile name
 
   // Draw one frame of a delivered sheet centred on its pivot at (sx,sy).
@@ -394,23 +418,39 @@ export function makeSpriteBank(teams: Record<string, TeamStyle>, neutral: TeamSt
 
   function installSheet(basename: string, img: CanvasImageSource, meta: SpriteMeta): void {
     const leaf = basename.split('/').pop() ?? basename;
-    const [assetId, team, state] = leaf.split('__');
+    const [assetId, team, stateRaw] = leaf.split('__');
     if (!assetId || !team) return;
-    // v1 renders a single primary state per asset; ignore fire/deploy/etc for now.
-    if (state && state !== 'move' && state !== 'idle') return;
+    // move/idle art is the base state; walk/drive/fire are §0.6 animation strips.
+    const state = !stateRaw || stateRaw === 'move' || stateRaw === 'idle' ? 'base' : stateRaw;
+    if (state !== 'base' && state !== 'walk' && state !== 'drive' && state !== 'fire') return;
     // Knock out the chroma-key background (image-gen output has no real alpha), then
     // resolve layout defaults against the actual image size.
     const src = meta.chromaKey ? chromaKeyOut(img, meta.chromaKey) : img;
     const { w, h } = srcSize(src);
     const rs: RealSprite = { img: src, meta: withDefaults(meta, w, h) };
-    (UNIT_IDS.has(assetId) ? realUnit : realBldg).set(`${assetId}|${team}`, rs);
+    // The manifest path (`units/…`|`buildings/…`) is authoritative; bare basenames
+    // (tests, direct installs) fall back to the known unit-id list.
+    const dir = basename.includes('/') ? basename.split('/')[0] : null;
+    const isUnit = dir ? dir === 'units' : UNIT_IDS.has(assetId);
+    (isUnit ? realUnit : realBldg).set(`${assetId}|${team}|${state}`, rs);
+  }
+
+  // The delivered sheet for (kind, team) honouring faction skins + anim strips.
+  function findReal(map: Map<string, RealSprite>, kind: string, team: string, anim: UnitAnim): { rs: RealSprite; state: string } | null {
+    for (const c of sheetCandidates(team, anim, factionIds[team])) {
+      const rs = map.get(`${kind}|${c.team}|${c.state}`);
+      if (rs) return { rs, state: c.state };
+    }
+    return null;
   }
 
   return {
     U, BLDG,
     installSheet,
+    setFactionIds(map) { factionIds = map; },
     async loadTerrain(baseUrl = 'art') {
-      const names = ['sand', 'sand_2', 'deep_sand', 'dune', 'rock', 'impassable', 'shard_full', 'shard_mid', 'shard_low'];
+      const names = ['sand', 'sand_2', 'deep_sand', 'dune', 'rock', 'impassable', 'shard_full', 'shard_mid', 'shard_low',
+        'scorched', 'scorched_2', 'crystal_lattice', 'crystal_lattice_2'];
       await Promise.all(names.map(async (n) => {
         try { terrainTiles.set(n, await loadImage(`${baseUrl}/terrain/terrain__${n}.png`)); } catch { /* stays procedural */ }
       }));
@@ -445,14 +485,18 @@ export function makeSpriteBank(teams: Record<string, TeamStyle>, neutral: TeamSt
         } catch { /* skip a bad/missing sheet, keep procedural for it */ }
       }));
     },
-    drawUnit(ctx, kind, team, _weaponType, angle, sx, sy, frame, scale) {
+    drawUnit(ctx, kind, team, _weaponType, angle, sx, sy, frame, scale, anim = 'idle') {
       const u = U * scale;
       // contact shadow (world-down; shared by real + procedural so units feel grounded)
       ctx.fillStyle = 'rgba(0,0,0,0.32)';
       ctx.beginPath(); ctx.ellipse(sx + 2, sy + u * 0.22, u * 0.28, u * 0.13, 0, 0, Math.PI * 2); ctx.fill();
 
-      const real = realUnit.get(`${kind}|${team}`) ?? realUnit.get(`${kind}|neutral`);
-      if (real) { drawReal(ctx, real, angle, sx, sy, frame, scale); return; }
+      const real = findReal(realUnit, kind, team, anim);
+      if (real) {
+        // An idle unit on a strip sheet (no base art delivered) freezes on frame 0.
+        drawReal(ctx, real.rs, angle, sx, sy, anim === 'idle' && real.state !== 'base' ? 0 : frame, scale);
+        return;
+      }
 
       const k = unitFrames.has(`${kind}|${team}`) ? kind : 'generic';
       const t = unitFrames.has(`${k}|${team}`) ? team : 'neutral';
@@ -469,8 +513,8 @@ export function makeSpriteBank(teams: Record<string, TeamStyle>, neutral: TeamSt
       ctx.fillStyle = 'rgba(0,0,0,0.35)';
       ctx.fillRect(sx - b * 0.3, sy + b * 0.18, b * 0.6, 6 * scale);
 
-      const real = realBldg.get(`${kind}|${team}`) ?? realBldg.get(`${kind}|neutral`);
-      if (real) { drawReal(ctx, real, 0, sx, sy, frame, scale); return; }
+      const real = findReal(realBldg, kind, team, 'idle');
+      if (real) { drawReal(ctx, real.rs, 0, sx, sy, frame, scale); return; }
 
       const k = bldgFrame.has(`${kind}|${team}`) ? kind : 'generic';
       const t = bldgFrame.has(`${k}|${team}`) ? team : 'neutral';
