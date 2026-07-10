@@ -67,6 +67,11 @@ determinism harness** (`tests/unit/determinism.test.ts` — the lockstep-MP subs
   sandbox shell** (EPERM/bun spam) — use `curl -w "%{http_code}"`, `python3`, `head` instead.
 
 ## Open threads (pick up here)
+**⭐ NEXT SESSION'S FIRST TASK (operator directive, 2026-07-09): open docs/ART_HANDOFF.md and produce the
+detailed Gemini art-prompt package it specifies — every missing asset, one paste-ready prompt each, honoring
+the §0.5/§0.6 pipeline constraints. Deliver the package to the operator, then wait for their generated art
+drop before importing.**
+
 **BOTH MASTER PLANS ARE EXECUTED IN FULL (2026-07-09):** `docs/FULL_GAME_PLAN.md` FG-1→FG-7
 (v0.26→v0.33) and `docs/EXPANSION_PLAN.md` XP-1→XP-7 (v0.35→v0.41, panel-locked §11). Live = **v0.41.1**:
 13-mission two-act campaign with the SEAL/HARNESS choice + credits, 3 factions with mechanical identities
