@@ -6,10 +6,13 @@ import { makeProductionSystem } from '../../src/sim/systems/production.js';
 import { orderSystems, runTick, type SimSystem } from '../../src/sim/loop.js';
 import { tileToWorldCenter } from '../../src/sim/coords.js';
 import { loadUnits } from '../../src/loaders/units.js';
+import { loadStructures } from '../../src/loaders/structures.js';
 import unitsData from '../../data/units.json' with { type: 'json' };
+import structuresData from '../../data/structures.json' with { type: 'json' };
 import { asEntityId } from '../../src/sim/ids.js';
 
 const units = loadUnits(unitsData);
+const structures = loadStructures(structuresData);
 
 function addRefinery(state: SimState, tx: number, ty: number, credits: number, team = 'enemy' as const) {
   return state.store.create({
@@ -56,7 +59,7 @@ describe('ai FSM — economy', () => {
 
   beforeEach(() => {
     state = makeSimState({ seed: 42, mapWidth: 32, mapHeight: 32 });
-    systems = orderSystems([makeAiSystem(units, cfg)]);
+    systems = orderSystems([makeAiSystem(units, cfg, structures)]);
   });
 
   it('rebuilds a lost harvester at the refinery (no harvester alive)', () => {
@@ -80,7 +83,7 @@ describe('ai FSM — reactive composition', () => {
 
   beforeEach(() => {
     state = makeSimState({ seed: 42, mapWidth: 32, mapHeight: 32 });
-    systems = orderSystems([makeAiSystem(units, cfg)]);
+    systems = orderSystems([makeAiSystem(units, cfg, structures)]);
   });
 
   it('queues infantry by default (no player army observed)', () => {
@@ -119,7 +122,7 @@ describe('ai FSM — plans', () => {
 
   it('Assault: a strong army marches on the attack tile', () => {
     const cfg = { team: 'enemy' as const, attackTile: { tx: 2, ty: 2 }, evalInterval: 1, assaultValue: 200 };
-    const systems = orderSystems([makeAiSystem(units, cfg)]);
+    const systems = orderSystems([makeAiSystem(units, cfg, structures)]);
     addRefinery(state, 10, 10, 600); addHarvester(state, 11, 10);
     const a = addSoldier(state, 10, 12); const b = addSoldier(state, 11, 12); // value 200 ≥ 200
     runTick(state, systems);
@@ -130,7 +133,7 @@ describe('ai FSM — plans', () => {
 
   it('Assault does not retarget an already-fighting unit', () => {
     const cfg = { team: 'enemy' as const, attackTile: { tx: 2, ty: 2 }, evalInterval: 1, assaultValue: 200 };
-    const systems = orderSystems([makeAiSystem(units, cfg)]);
+    const systems = orderSystems([makeAiSystem(units, cfg, structures)]);
     addRefinery(state, 10, 10, 600); addHarvester(state, 11, 10);
     const fighting = addSoldier(state, 10, 12);
     state.store.get(fighting)!.components.combat!.targetId = asEntityId(999);
@@ -142,7 +145,7 @@ describe('ai FSM — plans', () => {
 
   it('Raid: peels units to an exposed player harvester (not the base)', () => {
     const cfg = { team: 'enemy' as const, attackTile: { tx: 2, ty: 2 }, evalInterval: 1, raidUnitCap: 2 };
-    const systems = orderSystems([makeAiSystem(units, cfg)]);
+    const systems = orderSystems([makeAiSystem(units, cfg, structures)]);
     addRefinery(state, 10, 10, 600); addHarvester(state, 11, 10);
     // Medium army (300 < 500 assault threshold) → not an assault.
     const s1 = addSoldier(state, 10, 12); const s2 = addSoldier(state, 11, 12); const s3 = addSoldier(state, 12, 12);
@@ -157,7 +160,7 @@ describe('ai FSM — plans', () => {
 
   it('Stabilize: no harvester → recalls the army home AND rebuilds a harvester', () => {
     const cfg = { team: 'enemy' as const, attackTile: { tx: 2, ty: 2 }, evalInterval: 1, assaultValue: 100 };
-    const systems = orderSystems([makeAiSystem(units, cfg)]);
+    const systems = orderSystems([makeAiSystem(units, cfg, structures)]);
     const ref = addRefinery(state, 10, 10, 600); // no harvester
     const a = addSoldier(state, 20, 20); addSoldier(state, 21, 20);
     runTick(state, systems);
@@ -172,7 +175,7 @@ describe('ai FSM — end to end', () => {
     const state = makeSimState({ seed: 42, mapWidth: 32, mapHeight: 32 });
     const cfg = { team: 'enemy' as const, attackTile: { tx: 5, ty: 5 }, evalInterval: 1 };
     addRefinery(state, 10, 10, 600); addHarvester(state, 11, 10); addBarracks(state, 12, 10);
-    const systems = orderSystems([makeAiSystem(units, cfg), makeProductionSystem(units)]);
+    const systems = orderSystems([makeAiSystem(units, cfg, structures), makeProductionSystem(units)]);
     for (let i = 0; i < 80; i++) runTick(state, systems);
     const combat = state.store.all().find(e =>
       e.components.faction?.team === 'enemy' && e.components.combat && e.components.health && e.components.movement);

@@ -18,6 +18,7 @@ import type { UnitDef } from '../../loaders/units.js';
 import { tileToWorldCenter, TILE_SUBUNITS } from '../coords.js';
 import { nearestWalkable } from '../pathfind.js';
 import { SIM_TICK_RATE } from '../loop.js';
+import { grantCells } from '../ledger.js';
 import type { EntityId } from '../ids.js';
 
 const RIFTMAW_MINING_STEP = 3000;  // credits mined per awakening
@@ -157,10 +158,10 @@ export function makePlanetEventSystem(units: readonly UnitDef[]): { name: 'plane
               bank.credits = Math.min(bank.maxStorage, bank.credits + DERRICK_INCOME_PER_TICK);
             } else {
               const t = (relayTicks.get(derrick.id) ?? 0) + 1;
-              if (t >= RELAY_CELL_TICKS && (bank.cells ?? 0) < CELL_CAP) {
-                bank.cells = (bank.cells ?? 0) + 1;
+              if (t >= RELAY_CELL_TICKS) {
+                grantCells(state, owner as 'player' | 'enemy', 1, CELL_CAP); // TP-2 ledger
                 relayTicks.set(derrick.id, 0);
-              } else relayTicks.set(derrick.id, Math.min(t, RELAY_CELL_TICKS));
+              } else relayTicks.set(derrick.id, t);
             }
           }
         }
@@ -181,7 +182,7 @@ export function makePlanetEventSystem(units: readonly UnitDef[]): { name: 'plane
           const cur = captureProgress.get(derrick.id);
           const ticks = cur && cur.team === claimant ? cur.ticks + 1 : 1;
           if (ticks >= CAPTURE_TICKS) {
-            derrick.components.faction = { team: claimant, faction: 'derrick' };
+            derrick.components.faction = { team: claimant, faction: kindHere }; // TP-2: a relay STAYS a relay
             captureProgress.delete(derrick.id);
           } else {
             captureProgress.set(derrick.id, { team: claimant, ticks });

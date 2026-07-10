@@ -5,6 +5,7 @@ import type { EconomyConstants } from '../../loaders/economyConstants.js';
 import { worldToTile, tileToWorldCenter } from '../coords.js';
 import { SIM_TICK_RATE } from '../loop.js';
 import { isStormActive } from './planetEvent.js';
+import { teamCells, grantCells, spendCredits, teamCredits } from '../ledger.js';
 import type { EntityId } from '../ids.js';
 import type { HarvestComponent, EconomyComponent, PositionComponent, MovementComponent, FactionComponent } from '../components.js';
 
@@ -60,11 +61,12 @@ export function makeHarvestSystem(economy: EconomyConstants, factions?: { player
           if (!bank && e.components.building && e.components.economy) bank = e.components.economy;
         }
         if (!plant || !bank) { cellTicks.set(team, 0); continue; }
-        if ((bank.cells ?? 0) >= CELL_CAP || bank.credits < CELL_COST + CREDIT_FLOOR) continue;
+        // TP-2: convert via the TEAM ledger (cap + floor read across all banks).
+        if (teamCells(state, team) >= CELL_CAP || teamCredits(state, team) < CELL_COST + CREDIT_FLOOR) continue;
         const t = (cellTicks.get(team) ?? 0) + 1;
         if (t >= CELL_SECONDS * SIM_TICK_RATE) {
-          bank.credits -= CELL_COST;
-          bank.cells = (bank.cells ?? 0) + 1;
+          spendCredits(state, team, CELL_COST);
+          grantCells(state, team, 1, CELL_CAP);
           cellTicks.set(team, 0);
         } else cellTicks.set(team, t);
       }
@@ -213,7 +215,7 @@ function runReturn(
   dockUsage: Map<EntityId, number>,
 ): void {
   // Find nearest refinery with free dock
-  const refinery = findNearestFreeRefinery(state, pos, dockUsage);
+  const refinery = findNearestFreeRefinery(state, pos, dockUsage, entity.components.faction?.team ?? 'player');
   if (refinery) {
     const refineryPos = refinery.components.position;
     if (refineryPos) {
@@ -328,6 +330,7 @@ function findNearestFreeRefinery(
   state: SimState,
   pos: PositionComponent,
   dockUsage: Map<EntityId, number>,
+  team: string,
 ): { id: EntityId; components: { position?: PositionComponent; economy?: EconomyComponent } } | null {
   let nearest: { id: EntityId; components: { position?: PositionComponent; economy?: EconomyComponent } } | null = null;
   let nearestDistSq = Infinity;
@@ -338,6 +341,7 @@ function findNearestFreeRefinery(
     const economy = e.components.economy;
 
     if (!faction || faction.faction !== 'refinery' || !building || !economy) continue;
+    if (faction.team !== team) continue; // TP-2: never dock at the ENEMY'S refinery
 
     const refineryPos = e.components.position;
     if (!refineryPos) continue;

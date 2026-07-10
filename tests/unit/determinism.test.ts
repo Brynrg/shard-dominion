@@ -57,7 +57,7 @@ function makeRig(): Rig {
     makeProjectileSystem(weapons),
     makeDamageSystem(weapons),
     makeProductionSystem(units),
-    ...mission.enemies.map(e => makeAiSystem(units, { team: 'enemy' as const, attackTile: meta.playerStartTile, ...(e.ai ?? {}) })),
+    ...mission.enemies.map(e => makeAiSystem(units, { team: 'enemy' as const, attackTile: meta.playerStartTile, ...(e.ai ?? {}, structures) })),
     makePlanetEventSystem(units),
     makeObjectivesSystem(mission.objectives, mission.failure, mission.triggers, units),
     makeVictorySystem(),

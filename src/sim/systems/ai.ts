@@ -15,6 +15,9 @@
 // The AI's economy is REAL: production is paid from its harvested credits (the production
 // system charges the bank). The AI never receives hidden/recurring income here.
 import type { SimState } from '../state.js';
+import { structureComponents } from '../factory.js';
+import { teamCredits, spendCredits } from '../ledger.js';
+import type { StructureDef } from '../../loaders/structures.js';
 import { teamTier } from '../tech.js';
 import type { UnitDef } from '../../loaders/units.js';
 import { tileToWorldCenter, worldToTile, TILE_SUBUNITS, type TilePos } from '../coords.js';
@@ -38,7 +41,7 @@ export interface AiConfig {
 
 const dist = (a: WorldPos, b: WorldPos): number => Math.hypot(a.wx - b.wx, a.wy - b.wy);
 
-export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig): { name: 'ai'; run(state: SimState): void; debugState: () => AiState } {
+export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig, structures: readonly StructureDef[] = []): { name: 'ai'; run(state: SimState): void; debugState: () => AiState } {
   const team = cfg.team;
   const evalInterval = cfg.evalInterval ?? 10;
   const assaultValue = cfg.assaultValue ?? 500;
@@ -66,7 +69,11 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig): { name: 
 
       // ── Read the board ──────────────────────────────────────────────────────
       const all = state.store.all();
-      const bank = all.find(e => e.components.faction?.team === team && e.components.economy)?.components.economy ?? null;
+      // TP-2: the AI reads/spends the TEAM LEDGER (any bank; the conyard's
+      // command-reserve counts) — never just the first economy component.
+      const credits = teamCredits(state, team);
+      const bank = credits > 0 || all.some(e => e.components.faction?.team === team && e.components.economy)
+        ? { credits } : null;
       const barracks = all.find(e => e.components.faction?.team === team && e.components.faction?.faction === 'barracks' && e.components.production) ?? null;
       const factory = all.find(e => e.components.faction?.team === team && e.components.faction?.faction === 'war_factory' && e.components.production) ?? null;
       const refinery = all.find(e => e.components.faction?.team === team && e.components.faction?.faction === 'refinery' && e.components.production) ?? null;
@@ -153,7 +160,7 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig): { name: 
         const yard = state.store.all().find(e =>
           e.components.faction?.team === team && e.components.tech && e.components.tech.upgradingTo == null);
         if (yard?.components.tech && yard.components.tech.tier < 2) {
-          bank.credits -= 1000;
+          spendCredits(state, team, 1000);
           yard.components.tech = { tier: yard.components.tech.tier, upgradingTo: 2, ticksLeft: 600 };
         }
       }
@@ -169,15 +176,8 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig): { name: 
           const spot = { tx: rt.tx + dx, ty: rt.ty + dy };
           if (!state.grid.isWalkable(spot)) continue;
           if ((state.shardDensity.get(`${spot.tx},${spot.ty}`) ?? 0) > 0) continue;
-          bank.credits -= 300;
-          state.store.create({
-            position: tileToWorldCenter(spot),
-            building: { onSlab: false, buildProgress: 100, powered: true },
-            faction: { team, faction: 'barracks' },
-            production: { queue: [], progress: 0 },
-            health: { hp: 800, maxHp: 800 },
-            armor: { armorClass: 'BUILDING' },
-          });
+          spendCredits(state, team, 300);
+          state.store.create({ position: tileToWorldCenter(spot), ...structureComponents('barracks', team, structures) });
           break;
         }
       }
@@ -193,15 +193,8 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig): { name: 
           const spot = { tx: rt.tx + dx, ty: rt.ty + dy };
           if (!state.grid.isWalkable(spot)) continue;
           if ((state.shardDensity.get(`${spot.tx},${spot.ty}`) ?? 0) > 0) continue;
-          bank.credits -= 800;
-          state.store.create({
-            position: tileToWorldCenter(spot),
-            building: { onSlab: false, buildProgress: 100, powered: true },
-            faction: { team, faction: 'processing_plant' },
-            power: { powerSupply: 0, powerDemand: 25, powered: true },
-            health: { hp: 900, maxHp: 900 },
-            armor: { armorClass: 'BUILDING' },
-          });
+          spendCredits(state, team, 800);
+          state.store.create({ position: tileToWorldCenter(spot), ...structureComponents('processing_plant', team, structures) });
           break;
         }
       }
@@ -215,16 +208,8 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig): { name: 
         for (const [dx, dy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]] as const) {
           const spot = { tx: rt.tx + dx, ty: rt.ty + dy };
           if (!state.grid.isWalkable(spot)) continue;
-          bank.credits -= 500;
-          state.store.create({
-            position: tileToWorldCenter(spot),
-            building: { onSlab: false, buildProgress: 100, powered: true },
-            faction: { team, faction: 'aa_turret' },
-            power: { powerSupply: 0, powerDemand: 10, powered: true },
-            combat: { weaponId: 'aa_missile', cooldownRemaining: 0, targetId: null },
-            health: { hp: 450, maxHp: 450 },
-            armor: { armorClass: 'BUILDING' },
-          });
+          spendCredits(state, team, 500);
+          state.store.create({ position: tileToWorldCenter(spot), ...structureComponents('aa_turret', team, structures) });
           break;
         }
       }
@@ -234,16 +219,8 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig): { name: 
           const spot = { tx: rt.tx + dx, ty: rt.ty + dy };
           if (!state.grid.isWalkable(spot)) continue;
           if ((state.shardDensity.get(`${spot.tx},${spot.ty}`) ?? 0) > 0) continue;
-          bank.credits -= 1000;
-          state.store.create({
-            position: tileToWorldCenter(spot),
-            building: { onSlab: false, buildProgress: 100, powered: true },
-            faction: { team, faction: 'war_factory' },
-            power: { powerSupply: 0, powerDemand: 30, powered: true },
-            production: { queue: [], progress: 0 },
-            health: { hp: 1300, maxHp: 1300 },
-            armor: { armorClass: 'BUILDING' },
-          });
+          spendCredits(state, team, 1000);
+          state.store.create({ position: tileToWorldCenter(spot), ...structureComponents('war_factory', team, structures) });
           break;
         }
       }
@@ -304,17 +281,8 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig): { name: 
           // immediate on payment — the same rule as player placement.
           const spot = findExpansionTile(state, team);
           if (spot && bank && bank.credits >= EXPAND_COST) {
-            bank.credits -= EXPAND_COST;
-            state.store.create({
-              position: tileToWorldCenter(spot),
-              building: { onSlab: false, buildProgress: 100, powered: true },
-              faction: { team, faction: 'refinery' },
-              power: { powerSupply: 0, powerDemand: 20, powered: true },
-              economy: { credits: 0, refineryStorage: 0, maxStorage: 1500 },
-              production: { queue: [], progress: 0, current: null },
-              health: { hp: 1500, maxHp: 1500 },
-              armor: { armorClass: 'BUILDING' },
-            });
+            spendCredits(state, team, EXPAND_COST);
+            state.store.create({ position: tileToWorldCenter(spot), ...structureComponents('refinery', team, structures) });
           }
           break;
         }

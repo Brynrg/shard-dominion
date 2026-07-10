@@ -10,8 +10,10 @@
 import type { SimState } from '../state.js';
 import type { UnitDef } from '../../loaders/units.js';
 import { tileToWorldCenter } from '../coords.js';
+import { grantCredits } from '../ledger.js';
+import { unitComponents } from '../factory.js';
 import { SIM_TICK_RATE } from '../loop.js';
-import { modHp, modSpeed, FACTIONS, type TeamFactions } from '../factions.js';
+import { FACTIONS, type TeamFactions } from '../factions.js';
 
 export interface TriggerWhen {
   /** Fire at N seconds of match time. */
@@ -66,25 +68,21 @@ export function makeTriggerRunner(triggers: readonly MissionTrigger[], units: re
         for (const su of a.units) {
           const def = units.find(u => u.id === su.type);
           if (!def) continue;
-          const isHarvester = def.id === 'harvester';
           const target = a.attackMoveTo ? tileToWorldCenter(a.attackMoveTo) : null;
           const fm = factionFor(a.team);
+          // CANONICAL factory (v0.42): trigger waves get flight, ammo, stealth,
+          // shields — no more ground-pathing "bombers" with infinite rockets.
           state.store.create({
             position: tileToWorldCenter({ tx: su.tx, ty: su.ty }),
-            health: { hp: modHp(def.hp, fm), maxHp: modHp(def.hp, fm) },
-            armor: { armorClass: def.armorClass },
-            movement: { target, path: [], speed: modSpeed(def.speed, fm), attackMove: target != null },
-            faction: { team: a.team, faction: def.id },
-            ...(isHarvester
-              ? { harvest: { state: 'SEEK' as const, targetTile: null, targetRefinery: null, cargo: 0 } }
-              : { combat: { weaponId: def.weaponId, cooldownRemaining: 0, targetId: null } }),
+            ...unitComponents(def, a.team, fm, { target, attackMove: target != null }),
           });
         }
         break;
       }
       case 'grantCredits': {
-        const bank = state.store.all().find(e => e.components.faction?.team === a.team && e.components.economy)?.components.economy;
-        if (bank) bank.credits = Math.min(bank.maxStorage, bank.credits + a.amount);
+        // TP-2: scripted rewards BYPASS the storage cap (QA: M14's +800 was
+        // silently eaten because the mission started exactly at cap).
+        grantCredits(state, a.team as 'player' | 'enemy', a.amount, true);
         break;
       }
       case 'reveal':

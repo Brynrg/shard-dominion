@@ -8,19 +8,14 @@ import type { UnitDef } from '../loaders/units.js';
 import type { StructureDef } from '../loaders/structures.js';
 import type { EconomyConstants } from '../loaders/economyConstants.js';
 import { tileToWorldCenter } from './coords.js';
-import { modHp, modSpeed, FACTIONS, type TeamFactions } from './factions.js';
+import { unitComponents, structureComponents } from './factory.js';
+import { FACTIONS, type TeamFactions } from './factions.js';
 
 type Team = 'player' | 'enemy';
 interface Placed { type: string; tx: number; ty: number }
 interface FieldSpec { tx: number; ty: number; w: number; h: number; density: number }
 export interface SeedDeps { units: readonly UnitDef[]; structures: readonly StructureDef[]; economy: EconomyConstants }
 export interface SeededMeta { playerStartTile: { tx: number; ty: number }; objectiveTile: { tx: number; ty: number } }
-
-// Building HP: from structures.json where defined, else 1500 (the seed-only Refinery,
-// which is not yet a buildable structure def).
-function structureHp(kind: string, structures: readonly StructureDef[]): number {
-  return structures.find(s => s.id === kind)?.hp ?? 1500;
-}
 
 function applyField(state: SimState, f: FieldSpec): void {
   for (let dy = 0; dy < f.h; dy++) {
@@ -30,58 +25,26 @@ function applyField(state: SimState, f: FieldSpec): void {
   }
 }
 
-// Kind → building components (mirrors the original hardcoded seeding). `takeCredits`
-// puts the side's bank on its FIRST refinery; later refineries start at 0.
+// Buildings come from the CANONICAL factory (v0.42 Truth Pass) — the side's bank
+// still lands on its FIRST refinery, and tier anchoring stays here (seed concerns).
 function makeBuilding(kind: string, team: Team, deps: SeedDeps, sideCredits: number, takeCredits: boolean, techTier = 1): { components: Record<string, unknown>; tookCredits: boolean } {
-  const hp = structureHp(kind, deps.structures);
-  const sdef = deps.structures.find(s => s.id === kind);
-  const blocks = sdef?.blocksPath;
-  const components: Record<string, unknown> = {
-    building: { onSlab: true, buildProgress: 100, powered: true, ...(blocks ? { blocksPath: true } : {}), ...(sdef?.teamPass ? { teamPass: true } : {}) },
-    ...(sdef?.container ? { container: { capacity: sdef.container, stored: [] } } : {}),
-    faction: { team, faction: kind },
-    health: { hp, maxHp: hp },
-    armor: { armorClass: 'BUILDING' },
-  };
-  let tookCredits = false;
-  if (kind === 'refinery') {
-    const credits = takeCredits ? sideCredits : 0;
-    tookCredits = takeCredits;
-    components.economy = { credits, refineryStorage: credits, maxStorage: deps.economy.refineryStorageCapacity };
-    components.production = { queue: [], progress: 0, current: null };
-  } else if (kind === 'barracks' || kind === 'war_factory') {
-    components.production = { queue: [], progress: 0 };
-  } else if (kind === 'defense_turret') {
-    components.combat = { weaponId: 'raider_cannon', cooldownRemaining: 0, targetId: null };
-  } else if (kind === 'construction_yard') {
-    components.construction = { queue: [], progress: 0, currentStructureId: null };
-    components.power = { powerSupply: 0, powerDemand: 0, powered: true };
-    components.tech = { tier: techTier, upgradingTo: null, ticksLeft: 0 };
-  } else if (kind === 'power_node') {
-    const def = deps.structures.find(s => s.id === kind);
-    components.power = { powerSupply: def?.powerSupply ?? 100, powerDemand: def?.powerDemand ?? 0, powered: true };
-  }
-  return { components, tookCredits };
+  const isRefinery = kind === 'refinery';
+  const components = structureComponents(kind, team, deps.structures, {
+    onSlab: true,
+    techTier,
+    ...(isRefinery ? {
+      credits: takeCredits ? sideCredits : 0,
+      refineryMaxStorage: deps.economy.refineryStorageCapacity,
+    } : {}),
+  });
+  return { components, tookCredits: isRefinery && takeCredits };
 }
 
-// Kind → unit components. Harvesters get a harvest FSM; everything else a combat weapon.
+// Units come from the CANONICAL factory (v0.42 Truth Pass).
 function makeUnit(kind: string, team: Team, deps: SeedDeps, fm = FACTIONS.concord): Record<string, unknown> {
   const def = deps.units.find(u => u.id === kind);
   if (!def) throw new Error(`[seedMission] unknown unit kind "${kind}"`);
-  const base: Record<string, unknown> = {
-    faction: { team, faction: kind },
-    health: { hp: modHp(def.hp, fm), maxHp: modHp(def.hp, fm) },
-    armor: { armorClass: def.armorClass },
-    movement: { target: null, path: [], speed: modSpeed(def.speed, fm), ...(def.flying ? { flying: true } : {}) },
-    ...(fm.shieldHp && kind !== 'harvester' ? { shield: { hp: fm.shieldHp, max: fm.shieldHp, regenDelay: 0 } } : {}),
-  };
-  if (kind === 'harvester') {
-    base.harvest = { state: 'SEEK', targetTile: null, targetRefinery: null, cargo: 0 };
-  } else {
-    base.combat = { weaponId: def.weaponId, cooldownRemaining: 0, targetId: null, ...(def.ammo ? { ammo: def.ammo, ammoMax: def.ammo } : {}) };
-  }
-  if (def.stealth) base.stealth = { cloaked: true, decloakTicks: 0 }; // XP-3
-  return base;
+  return unitComponents(def, team, fm);
 }
 
 function seedSide(state: SimState, team: Team, credits: number, buildings: readonly Placed[], units: readonly Placed[], deps: SeedDeps, fm = FACTIONS.concord, techTier = 1): void {

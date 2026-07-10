@@ -5,6 +5,8 @@
 // renderer to draw — they are NOT stashed on SimState.
 import type { SimState } from '../state.js';
 import { teamTier } from '../tech.js';
+import { structureComponents } from '../factory.js';
+import { teamCredits, teamCells, spendCredits, spendCells } from '../ledger.js';
 import type { CommandIntent } from '../../view/input.js';
 import { TILE_SUBUNITS, tileToWorldCenter, worldToTile } from '../coords.js';
 import type { StructureDef } from '../../loaders/structures.js';
@@ -344,14 +346,9 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             const result = validatePlacement(state, structure, intent.tile);
             if (!result.valid) break;
 
-            // Charge the player's bank; reject the build if it can't be afforded.
-            const bank = state.store.all().find(e =>
-              e.components.faction?.team === actor && e.components.economy)?.components.economy;
+            // TP-2: charge the TEAM LEDGER (spend across all owned banks).
             const cost = structure.cost ?? 0;
-            if (cost > 0) {
-              if (!bank || bank.credits < cost) break;
-              bank.credits -= cost;
-            }
+            if (cost > 0 && !spendCredits(state, actor, cost)) break;
 
             // Spawn the structure at the tile centre (contract fn, no inline math).
             // Per-kind components (FG-2): barracks trains combat units; a built
@@ -359,28 +356,11 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             // harvester and NO starting credits (the de-bundled RFC decision);
             // a Defense Turret is a building that fights (combat, no movement).
             const tileCenter = tileToWorldCenter(intent.tile);
-            const extras: Record<string, unknown> = {};
-            if (structure.id === 'barracks' || structure.id === 'war_factory') {
-              extras.production = { queue: [], progress: 0 };
-            } else if (structure.id === 'refinery') {
-              extras.production = { queue: [], progress: 0, current: null };
-              extras.economy = { credits: 0, refineryStorage: 0, maxStorage: 1500 };
-            } else if (structure.id === 'defense_turret') {
-              extras.combat = { weaponId: 'raider_cannon', cooldownRemaining: 0, targetId: null };
-            } else if (structure.id === 'aa_turret') {
-              extras.combat = { weaponId: 'aa_missile', cooldownRemaining: 0, targetId: null }; // XP-5
-            } else if (structure.id === 'skypad') {
-              extras.production = { queue: [], progress: 0 }; // XP-5: builds + rearms gunships
-            }
-            if (structure.container) extras.container = { capacity: structure.container, stored: [] }; // XP-4
+            // CANONICAL factory (v0.42): player placement builds the exact same
+            // structure the missions seed and the AI founds.
             state.store.create({
               position: tileCenter,
-              building: { onSlab: false, buildProgress: 100, powered: true, ...(structure.blocksPath ? { blocksPath: true } : {}), ...(structure.teamPass ? { teamPass: true } : {}) },
-              faction: { team: actor, faction: intent.structureId },
-              power: { powerSupply: structure.powerSupply, powerDemand: structure.powerDemand, powered: true },
-              health: { hp: structure.hp, maxHp: structure.hp },
-              armor: { armorClass: 'BUILDING' },
-              ...extras,
+              ...structureComponents(intent.structureId, actor, structures),
             });
             markers.push({ target: tileCenter, remaining: MARKER_LIFETIME });
             break;
@@ -433,10 +413,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             // XP-7: T3 + 5 Cells → a 3s-telegraphed orbital splash. The long-lived
             // marker doubles as the warning reticle for BOTH players.
             if (teamTier(state, actor) < 3) break;
-            const bank = state.store.all().find(e =>
-              e.components.faction?.team === actor && e.components.economy)?.components.economy;
-            if (!bank || (bank.cells ?? 0) < STRIKE_COST_CELLS) break;
-            bank.cells = (bank.cells ?? 0) - STRIKE_COST_CELLS;
+            if (!spendCells(state, actor, STRIKE_COST_CELLS)) break; // TP-2 ledger
             strikes.push({ wx: intent.target.wx, wy: intent.target.wy, ticksLeft: STRIKE_DELAY });
             markers.push({ target: intent.target, remaining: STRIKE_DELAY });
             break;
@@ -491,12 +468,10 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             const yardDef = structures.find(st => st.id === 'construction_yard');
             const step = yardDef?.tierUpgrades?.find(u => u.toTier === techC.tier + 1);
             if (!step) break;
-            const bank = state.store.all().find(e =>
-              e.components.faction?.team === actor && e.components.economy)?.components.economy;
             const cellPrice = step.cells ?? 0;          // XP-2: T3 charges Cells
-            if (!bank || bank.credits < step.cost || (bank.cells ?? 0) < cellPrice) break;
-            bank.credits -= step.cost;
-            if (cellPrice > 0) bank.cells = (bank.cells ?? 0) - cellPrice;
+            if (teamCredits(state, actor) < step.cost || teamCells(state, actor) < cellPrice) break;
+            spendCredits(state, actor, step.cost);      // TP-2 ledger
+            if (cellPrice > 0) spendCells(state, actor, cellPrice);
             yard.components.tech = { tier: techC.tier, upgradingTo: step.toTier, ticksLeft: Math.max(1, Math.round(step.seconds * 20)) };
             break;
           }

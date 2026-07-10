@@ -88,11 +88,11 @@ describe('production system', () => {
   });
 
   it('insufficient credits pauses production (no deduction, no spawn)', () => {
-    const producerId = addProducer(5, 5, 50); // Only 50 credits, infantry costs 100
+    const producerId = addProducer(5, 5, 20); // 20 + 50 = 70 TOTAL, infantry costs 100 (TP-2: one wallet)
     addBank(producerId, 50);
 
     const initialCredits = state.store.get(producerId)?.components.economy?.credits || 0;
-    expect(initialCredits).toBe(50);
+    expect(initialCredits).toBe(20);
 
     // Run many ticks
     for (let i = 0; i < 100; i++) {
@@ -101,7 +101,7 @@ describe('production system', () => {
 
     // Credits should remain unchanged (no deduction)
     const afterCredits = state.store.get(producerId)?.components.economy?.credits || 0;
-    expect(afterCredits).toBe(50);
+    expect(afterCredits).toBe(20);
 
     // No unit should spawn
     const allEntities = state.store.all();
@@ -109,7 +109,7 @@ describe('production system', () => {
   });
 
   it('resume after topping up credits', () => {
-    const producerId = addProducer(5, 5, 50); // Only 50 credits initially
+    const producerId = addProducer(5, 5, 20); // 20 + 50 = 70 total: insufficient (TP-2 wallet)
     addBank(producerId, 50);
 
     // Run ticks with insufficient credits
@@ -118,7 +118,7 @@ describe('production system', () => {
     }
 
     // Credits unchanged, no spawn
-    expect(state.store.get(producerId)?.components.economy?.credits).toBe(50);
+    expect(state.store.get(producerId)?.components.economy?.credits).toBe(20);
     expect(state.store.all().length).toBe(2);
 
     // Top up credits to 500

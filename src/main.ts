@@ -190,7 +190,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
       assaultEscalationPerMin: Math.round((base.assaultEscalationPerMin ?? 60) * D.esc),
       raidUnitCap: Math.max(1, (base.raidUnitCap ?? 2) + D.raid),
       graceTicks: base.graceTicks ?? D.grace,
-    });
+    }, structures);
   });
   const planetSystem = makePlanetEventSystem(units);
   const systems = orderSystems([

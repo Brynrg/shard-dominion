@@ -7,6 +7,7 @@
 // from the opposing viewer.
 import type { SimState } from '../state.js';
 import { TILE_SUBUNITS } from '../coords.js';
+import { spendCells } from '../ledger.js';
 
 const RADAR_DETECT = 8 * TILE_SUBUNITS;
 const SCOUT_DETECT = 5 * TILE_SUBUNITS;
@@ -50,9 +51,7 @@ export function makeStealthSystem(): { name: 'agitation'; run(state: SimState): 
           if (f && p) {
             const near = pads.some(pad => pad.team === f.team && Math.hypot(pad.wx - p.wx, pad.wy - p.wy) <= 2 * TILE_SUBUNITS);
             if (near) {
-              const bank = state.store.all().find(b => b.components.faction?.team === f.team && b.components.economy)?.components.economy;
-              if (bank && (bank.cells ?? 0) >= 1) {
-                bank.cells = (bank.cells ?? 0) - 1;
+              if (f.team !== 'neutral' && spendCells(state, f.team, 1)) { // TP-2 ledger
                 cb.ammo = cb.ammoMax;
               }
             }

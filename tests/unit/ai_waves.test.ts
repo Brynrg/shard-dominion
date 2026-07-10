@@ -7,9 +7,12 @@ import { makeAiSystem } from '../../src/sim/systems/ai.js';
 import { orderSystems, runTick, type SimSystem } from '../../src/sim/loop.js';
 import { tileToWorldCenter } from '../../src/sim/coords.js';
 import { loadUnits } from '../../src/loaders/units.js';
+import { loadStructures } from '../../src/loaders/structures.js';
 import unitsData from '../../data/units.json' with { type: 'json' };
+import structuresData from '../../data/structures.json' with { type: 'json' };
 
 const units = loadUnits(unitsData);
+const structures = loadStructures(structuresData);
 // Low assault threshold so 2 infantry (value 200) trigger a commit; disable Pressure.
 const cfg = { team: 'enemy' as const, attackTile: { tx: 5, ty: 5 }, evalInterval: 1, assaultValue: 200, pressureValue: 100000 };
 const TARGET = tileToWorldCenter(cfg.attackTile);
@@ -38,7 +41,7 @@ describe('ai FSM — assault dispatch', () => {
       health: { hp: 200, maxHp: 200 },
       harvest: { state: 'SEEK', targetTile: null, targetRefinery: null, cargo: 0 },
     });
-    systems = orderSystems([makeAiSystem(units, cfg)]);
+    systems = orderSystems([makeAiSystem(units, cfg, structures)]);
   });
 
   it('commits idle-fresh units; reinforcements dispatch next eval; prior orders kept', () => {

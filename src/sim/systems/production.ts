@@ -6,8 +6,10 @@ import { SIM_TICK_RATE } from '../loop.js';
 import { worldToTile, tileToWorldCenter } from '../coords.js';
 import { teamTier } from '../tech.js';
 import type { EntityId } from '../ids.js';
+import { unitComponents } from '../factory.js';
+import { teamCredits, teamCells, spendCredits, spendCells } from '../ledger.js';
 import { teamPowerShortage } from './power.js';
-import { modCost, modHp, modSpeed, FACTIONS, type TeamFactions } from '../factions.js';
+import { modCost, FACTIONS, type TeamFactions } from '../factions.js';
 
 export function makeProductionSystem(units: readonly UnitDef[], factions?: TeamFactions, heroCarryKills = 0): { name: 'production'; run(state: SimState): void } {
   const factionFor = (team: string) => (team === 'player' ? (factions?.player ?? FACTIONS.concord) : (factions?.enemy ?? FACTIONS.concord));
@@ -38,13 +40,13 @@ export function makeProductionSystem(units: readonly UnitDef[], factions?: TeamF
           if (def.factionLock && factionFor(team).id !== def.factionLock) {
             producer.components.production = { ...prod, queue: prod.queue.slice(1) }; continue;
           }
-          // find the team's credits pool
-          const bank = state.store.all().find(e => e.components.faction?.team === team && e.components.economy)?.components.economy;
+          // TP-2: pay from the TEAM LEDGER (all banks), not the first bank.
+          const t2 = team as 'player' | 'enemy';
           const price = modCost(def.cost, factionFor(team)); // faction pricing (FG-6)
           const cellPrice = def.cellCost ?? 0;          // XP-2: elite units charge Cells too
-          if (!bank || bank.credits < price || (bank.cells ?? 0) < cellPrice) continue; // PAUSED
-          bank.credits -= price;                        // pay ONCE, in full
-          if (cellPrice > 0) bank.cells = (bank.cells ?? 0) - cellPrice;
+          if (teamCredits(state, t2) < price || teamCells(state, t2) < cellPrice) continue; // PAUSED
+          spendCredits(state, t2, price);               // pay ONCE, in full
+          if (cellPrice > 0) spendCells(state, t2, cellPrice);
           job = { unitId, ticksLeft: Math.max(1, Math.round(def.buildTimeSeconds * SIM_TICK_RATE)) };
           active.set(producer.id, job);
           producer.components.production = { ...prod, queue: prod.queue.slice(1), progress: 0, current: unitId };
@@ -70,20 +72,14 @@ export function makeProductionSystem(units: readonly UnitDef[], factions?: TeamF
           // harvesters ignore it and auto-mine (C&C behaviour).
           const rally = !isHarvester ? (producer.components.production?.rally ?? null) : null;
           const fm = factionFor(team);
+          // CANONICAL factory (v0.42): produced units carry the exact same
+          // components as seeded/triggered ones (flying, ammo, stealth, shields…).
           state.store.create({
             position: tileToWorldCenter({ tx: t.tx, ty: t.ty + 1 }),
-            health: { hp: modHp(def.hp, fm), maxHp: modHp(def.hp, fm) },
-            armor: { armorClass: def.armorClass },
-            movement: { target: rally ? { ...rally } : null, path: [], speed: modSpeed(def.speed, fm) },
-            faction: { team, faction: def.id },
-            ...(def.stealth ? { stealth: { cloaked: true, decloakTicks: 0 } } : {}),
-            ...(def.container ? { container: { capacity: def.container, stored: [] } } : {}),
-            ...(def.flying ? {} : {}),
-            ...(def.hero && heroCarryKills > 0 && team === 'player'
-              ? { experience: { kills: heroCarryKills, rank: heroCarryKills >= 8 ? 2 : heroCarryKills >= 3 ? 1 : 0 } } : {}),
-            ...(isHarvester
-              ? { harvest: { state: 'SEEK' as const, targetTile: null, targetRefinery: null, cargo: 0 } }
-              : { combat: { weaponId: def.weaponId, cooldownRemaining: 0, targetId: null, ...(def.ammo ? { ammo: def.ammo, ammoMax: def.ammo } : {}) } }),
+            ...unitComponents(def, team as 'player' | 'enemy', fm, {
+              target: rally,
+              experienceKills: def.hero && team === 'player' ? heroCarryKills : 0,
+            }),
           });
           active.delete(producer.id);
           producer.components.production = { ...producer.components.production!, progress: 0, current: null };

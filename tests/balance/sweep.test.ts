@@ -52,8 +52,8 @@ function playMatch(pf: FactionId, ef: FactionId, maxTicks = 24000): { winner: st
     makeMovementSystem(), makeHarvestSystem(economy, tf), makeCombatTargetingSystem(weapons),
     makeDamageSystem(weapons), makeProjectileSystem(weapons), makeProductionSystem(units, tf),
     makePowerSystem(), makeVictorySystem(units), makeStealthSystem(), makePlanetEventSystem(units),
-    makeAiSystem(units, { team: 'enemy', attackTile: meta.playerStartTile }),
-    makeAiSystem(units, { team: 'player', attackTile: meta.objectiveTile }),
+    makeAiSystem(units, { team: 'enemy', attackTile: meta.playerStartTile }, structures),
+    makeAiSystem(units, { team: 'player', attackTile: meta.objectiveTile }, structures),
   ]);
   for (let t = 0; t < maxTicks; t++) {
     runTick(state, systems);
