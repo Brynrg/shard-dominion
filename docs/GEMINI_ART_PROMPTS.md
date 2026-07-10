@@ -5,7 +5,28 @@
 > in `docs/ART_ASSETS_SPEC.md`. Work through the batches **in order** (Batch 1 proves the
 > pipeline fastest). Every prompt is fully self-contained — paste it into Gemini as-is.
 
-## How to use (operator workflow)
+## ⚡ Automated path (RECOMMENDED — added 2026-07-10)
+
+Manual paste-and-rename proved unworkable (Gemini's app names files itself). Instead, a
+script drives the Gemini image API and saves every image under the exact required name:
+
+1. Get a free API key: https://aistudio.google.com/apikey
+2. ```sh
+   export GEMINI_API_KEY=...            # paste your key
+   node scripts/gen-art-gemini.mjs --batch 1   # prove the pipeline on the 6 re-gens
+   node scripts/gen-art-gemini.mjs             # then everything else
+   ```
+3. Output lands in `art-drop/` (gitignored), correctly named and foldered. The run is
+   **resumable** — rerun the same command and it skips finished files. Re-roll a bad one
+   with `--only <filename> --force`. On free-tier 429s, raise `--delay 10000`.
+   Paid tier cost for the full set is ≈ $3 (~$0.04/image).
+
+Repaint/variant entries automatically attach the generated base sprite as image input, so
+enemy variants keep the identical chassis. The prompts live in `scripts/art-prompts.json`
+(regenerate from this doc with `python3 scripts/extract-art-prompts.py` after edits).
+The manual per-prompt workflow below still works as a fallback / for hand re-rolls.
+
+## How to use (manual fallback workflow)
 
 1. Paste **one prompt per Gemini turn**. Download the result as **PNG** and save it under
    the exact **Save as:** filename given with each prompt.
