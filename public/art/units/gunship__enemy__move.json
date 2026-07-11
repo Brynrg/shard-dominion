@@ -1,0 +1,9 @@
+{
+  "facings": 1,
+  "frames": 1,
+  "fps": 0,
+  "chromaKey": "#ff00ff",
+  "rotateFrom": "north",
+  "inGameWidthPx": 50,
+  "image": "gunship__enemy__move.png"
+}

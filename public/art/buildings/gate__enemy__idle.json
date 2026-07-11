@@ -1,0 +1,8 @@
+{
+  "facings": 1,
+  "frames": 1,
+  "fps": 0,
+  "chromaKey": "#ff00ff",
+  "inGameWidthPx": 40,
+  "image": "gate__enemy__idle.png"
+}

@@ -55,7 +55,19 @@ determinism harness** (`tests/unit/determinism.test.ts` — the lockstep-MP subs
    `state: ready` on your `commit_ref` (parse with `json.loads(...,strict=False)`), then curl the bundle for 200.
    See memory [[project_speedrungames_deploy]].
 
-## Art pipeline (Grok → engine)
+## Art pipeline — NOW CODE-DRAWN (2026-07-11)
+**All game art is generated as SVG/canvas → transparent-PNG by `scripts/art-gen/`
+(`kit.mjs` helpers · `shapes.mjs` every unit/building shape · `render.mjs` sprites ·
+`terrain.mjs` seamless tiles · `strips.mjs` walk/drive/fire anim · `presentation.mjs`
+backdrops+portraits · `contact.mjs` review sheets), NOT by Gemini/Grok — both failed the
+style (baked shadows, base pads, refused recolors).** Transparent alpha means NO magenta
+bg, NO chroma-key halo, exact palette, and enemy/faction recolors are a one-token palette
+swap. To change a sprite: edit `shapes.mjs` → `node scripts/art-gen/render.mjs <out>` (or
+`terrain`/`strips`/`presentation`) → `node scripts/import-art.mjs <out>` → `pnpm run verify`
++ `pnpm run test:live`. The 89-asset set (all units/buildings/factions + terrain + anim
+strips + title/act/credits backdrops + 6 stylized portraits) shipped at v0.43.0.
+
+### Legacy diffusion path (retired — reference only)
 - Spec + paste-ready Grok prompts: `docs/ART_ASSETS_SPEC.md` (§0.5 = image-gen path: ONE top-down sprite per unit
   on a **pure #FF00FF magenta** bg, PNG, facing up; terrain = seamless opaque tiles, no magenta).
 - Assets: `public/art/{units,buildings,terrain}/` + `public/art/manifest.json`.
@@ -67,7 +79,13 @@ determinism harness** (`tests/unit/determinism.test.ts` — the lockstep-MP subs
   sandbox shell** (EPERM/bun spam) — use `curl -w "%{http_code}"`, `python3`, `head` instead.
 
 ## Open threads (pick up here)
-**⭐ NEXT SESSION'S FIRST TASK (art, 2026-07-10): the operator is generating art in the GEMINI APP (NOT API —
+**✅ ART COMPLETE (2026-07-11): the entire art set is now CODE-DRAWN via `scripts/art-gen/`
+and shipped at v0.43.0 — all units/buildings/faction recolors, terrain, walk/drive/fire
+strips, and presentation backdrops/portraits. Gemini AND Grok were both abandoned (both
+failed the style). See "Art pipeline — NOW CODE-DRAWN" above. Everything below in this
+block is OBSOLETE history:**
+
+~~⭐ NEXT SESSION'S FIRST TASK (art, 2026-07-10): the operator is generating art in the GEMINI APP (NOT API —
 the only Gemini key on the machine has zero image quota / no billing; do not retry it). The paste-ready package
 is `docs/GEMINI_ZIP_PROMPTS.md` — one block PER BATCH, each image labelled with its real pipeline filename
 (e.g. `barracks__player__idle.png`); Gemini names + zips them and the operator drops the zip under `~/Code/`.

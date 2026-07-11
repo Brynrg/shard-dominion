@@ -1,0 +1,9 @@
+{
+  "facings": 1,
+  "frames": 4,
+  "fps": 8,
+  "chromaKey": "#ff00ff",
+  "rotateFrom": "north",
+  "inGameWidthPx": 30,
+  "image": "ghostwalker__emberhand__walk.png"
+}
