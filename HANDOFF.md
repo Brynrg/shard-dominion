@@ -104,7 +104,7 @@ Presentation view slots live (title/skirmish backdrop, act cards, credits, brief
 tag). Numbered fallbacks: `docs/GROK_ART_PROMPTS.md` + `scripts/rename-art-drop.py` (save-by-order → names)
 if Gemini ever ignores the filename labels. **First real drop already in-engine** (commit 73ba73e): conyard,
 both barracks, refinery — imported + verified. Builders for the prompt docs: `scripts/build-{gemini,grok}-doc.py`
-(regenerate from `scripts/art-prompts.json`, the single source of truth). 269 unit tests + 31 gates green.
+(regenerate from `scripts/art-prompts.json`, the single source of truth). 261 unit tests + 31 gates green.
 
 **BOTH MASTER PLANS ARE EXECUTED IN FULL (2026-07-09):** `docs/FULL_GAME_PLAN.md` FG-1→FG-7
 (v0.26→v0.33) and `docs/EXPANSION_PLAN.md` XP-1→XP-7 (v0.35→v0.41, panel-locked §11). Live = **v0.41.1**:
