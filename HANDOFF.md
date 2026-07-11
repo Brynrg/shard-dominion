@@ -67,10 +67,44 @@ determinism harness** (`tests/unit/determinism.test.ts` — the lockstep-MP subs
   sandbox shell** (EPERM/bun spam) — use `curl -w "%{http_code}"`, `python3`, `head` instead.
 
 ## Open threads (pick up here)
-**⭐ NEXT SESSION'S FIRST TASK (operator directive, 2026-07-09): open docs/ART_HANDOFF.md and produce the
-detailed Gemini art-prompt package it specifies — every missing asset, one paste-ready prompt each, honoring
-the §0.5/§0.6 pipeline constraints. Deliver the package to the operator, then wait for their generated art
-drop before importing.**
+**⭐ NEXT SESSION'S FIRST TASK (art, 2026-07-10): the operator is generating art in the GEMINI APP (NOT API —
+the only Gemini key on the machine has zero image quota / no billing; do not retry it). The paste-ready package
+is `docs/GEMINI_ZIP_PROMPTS.md` — one block PER BATCH, each image labelled with its real pipeline filename
+(e.g. `barracks__player__idle.png`); Gemini names + zips them and the operator drops the zip under `~/Code/`.
+Your job when the zip lands: `node scripts/import-art.mjs <unzipped-dir>` → `pnpm run verify` + `pnpm run
+test:live` + an in-engine screenshot. Then keep going through batches 2–7.**
+
+**Two engine tasks the art surfaces (do the FIRST one before/at the next import):**
+1. **Hue-aware chroma key (promised to operator).** Gemini keeps baking a faint GROUND SHADOW behind sprites;
+   the current per-channel key in `src/view/spritebank.ts` `chromaKeyOut()` (R+B high, G low) leaves a ragged
+   purple halo right at shadow brightness. Rewrite it hue-based: key out magenta-family hue (~280–330°) at
+   decent saturation regardless of brightness, so it strips BOTH the bright bg and the dark shadow. **Verify
+   against the already-shipped sprites** (the original Grok art + batch-1 buildings) so it doesn't eat the
+   blue-grey/cyan building colours or the violet Shard crystal. Test-cover it (pure fn, node env).
+2. Consider auto-despeckle on import (Gemini stamps a tiny white ✦ flourish in a corner on some images — it's
+   white so the magenta key won't remove it; keep only the largest sprite blob, drop stray corner specks).
+
+**Art gen — hard-won this session (bake into any re-roll):** batch mode makes Gemini DRIFT on the hard rules
+— it reintroduces base pads / ground tiles / cast shadows, occasionally goes pixel-art or glossy-mobile-3D,
+drifts off the blue-grey/cyan palette, and IGNORES the "recolor of X" enemy variants (returns a different
+building, not a red repaint). The fix that works: prepend a forceful **STYLE LOCK** (painted-Westwood-NOT-
+pixel-NOT-3D · nothing beneath the building, no base pad/floor tile · ZERO ground shadow · one flat magenta
+touching the walls · exact faction palette player=#3d7fd6+#00e5ff / enemy=#d1503a+ember) and do enemy
+variants as SAME-CHAT edits ("recolor THAT exact image"), not batch items. Backgrounds needn't be exactly
+#FF00FF — any magenta-purple keys out fine; the real enemy is the shadow (→ task 1). The operator's front-on
+construction yard + the power_node (blue-grey, cyan mast, splayed feet, no pad) prove Gemini nails it when
+the lock bites; the first barracks/refinery batch mostly missed and is being re-rolled.
+
+**Art pipeline is fully wired (this session, commits 9d8092c → a915870):** `scripts/import-art.mjs` routes
+units (ids from data/units.json — no more misclassifying the 9 new units as buildings), buildings, terrain,
+presentation art, and §0.6 walk/drive/fire strips (writes frames/fps sidecars). `spritebank.ts` keys sheets
+by (assetId, team, state) with a pure `sheetCandidates()` order (faction skin > team paint > neutral, anim
+strip > base) + `setFactionIds()`; renderer drives the anim off the muzzle detector + interp delta.
+Presentation view slots live (title/skirmish backdrop, act cards, credits, briefing portraits by speaker
+tag). Numbered fallbacks: `docs/GROK_ART_PROMPTS.md` + `scripts/rename-art-drop.py` (save-by-order → names)
+if Gemini ever ignores the filename labels. **First real drop already in-engine** (commit 73ba73e): conyard,
+both barracks, refinery — imported + verified. Builders for the prompt docs: `scripts/build-{gemini,grok}-doc.py`
+(regenerate from `scripts/art-prompts.json`, the single source of truth). 269 unit tests + 31 gates green.
 
 **BOTH MASTER PLANS ARE EXECUTED IN FULL (2026-07-09):** `docs/FULL_GAME_PLAN.md` FG-1→FG-7
 (v0.26→v0.33) and `docs/EXPANSION_PLAN.md` XP-1→XP-7 (v0.35→v0.41, panel-locked §11). Live = **v0.41.1**:
