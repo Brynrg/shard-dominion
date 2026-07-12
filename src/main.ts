@@ -56,6 +56,7 @@ import m11Data from '../data/missions/m11_cauterize.json' with { type: 'json' };
 import m12Data from '../data/missions/m12_renegade.json' with { type: 'json' };
 import m13Data from '../data/missions/m13_choir_of_glass.json' with { type: 'json' };
 import m14Data from '../data/missions/m14_first_vein.json' with { type: 'json' };
+import m15Data from '../data/missions/m15_aftershock.json' with { type: 'json' };
 
 // Map configuration
 const MAP_WIDTH = 32;
@@ -192,7 +193,11 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
       if (sc) localStorage.setItem(`shardDominion.choice.${mission.id}`, sc);
     } catch { /* ignore */ }
   }
-  const bootChoice = mission.choice ? localStorage.getItem(`shardDominion.choice.${mission.id}`) : null;
+  // The active branch: a mission with its own `choice` reads its per-mission key;
+  // an Act III `inheritsChoice` mission reads the stable campaign key (set at M14).
+  const bootChoice = mission.choice
+    ? localStorage.getItem(`shardDominion.choice.${mission.id}`)
+    : (mission.inheritsChoice ? localStorage.getItem('shardDominion.choice.campaign') : null);
   const liveObjectives = mission.objectives.filter(o => !o.onlyIfChoice || o.onlyIfChoice === bootChoice);
   const objectivesSystem = makeObjectivesSystem(liveObjectives, mission.failure, mission.triggers, units, teamFactions, bootChoice);
   const aiSystems = mp ? [] : mission.enemies.map(e => {
@@ -385,6 +390,8 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   if (mission.choice && !bootChoice) {
     showChoice(mission.choice.prompt, mission.choice.options, (id) => {
       localStorage.setItem(`shardDominion.choice.${mission.id}`, id);
+      // Persist under a stable key too, so Act III (inheritsChoice) branches on it.
+      localStorage.setItem('shardDominion.choice.campaign', id);
       location.reload();
     });
   }
@@ -451,7 +458,9 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     }
     // The finale rolls credits on a win; retry/menu clears the stored choice.
     if (mission.choice) localStorage.removeItem(`shardDominion.choice.${mission.id}`);
-    const isFinale = mission.id === 'm14_first_vein';
+    // The campaign FINALE is data-driven: the campaign mission with no `next`.
+    // (Was hardcoded to M14; Act III now chains past it to the true ending.)
+    const isFinale = mission.next === null && CAMPAIGN.some(m => m.id === mission.id);
     if (won && isFinale) {
       showCredits(() => { location.search = ''; });
       return;
@@ -704,6 +713,7 @@ const MISSIONS: Record<string, unknown> = {
   m12_renegade: m12Data,
   m13_choir_of_glass: m13Data,
   m14_first_vein: m14Data,
+  m15_aftershock: m15Data,
 };
 /** Campaign order (linear unlock: each mission unlocks the next). */
 const CAMPAIGN: { id: string; name: string; order: number }[] = [
@@ -720,7 +730,8 @@ const CAMPAIGN: { id: string; name: string; order: number }[] = [
   { id: 'm11_cauterize', name: 'Act II · Cauterize', order: 11 },
   { id: 'm12_renegade', name: 'Act II · The Renegade', order: 12 },
   { id: 'm13_choir_of_glass', name: 'Act II · Choir of Glass', order: 13 },
-  { id: 'm14_first_vein', name: 'FINALE · The First Vein', order: 14 },
+  { id: 'm14_first_vein', name: 'Act II · The First Vein', order: 14 },
+  { id: 'm15_aftershock', name: 'Act III · Aftershock', order: 15 },
 ];
 
 function openMissionSelect(): void {

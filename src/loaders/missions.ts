@@ -99,6 +99,10 @@ export const MissionSchema = z.object({
     prompt: z.string(),
     options: z.array(z.object({ id: z.string(), label: z.string(), blurb: z.string() })).min(2),
   }).optional(),
+  // Act III: a mission with no `choice` of its own can INHERIT the campaign choice
+  // (the last `choice` resolved, stored under a stable key) so its `onlyIfChoice`
+  // objectives and `when.choice` triggers branch on the M14 Seal/Harness decision.
+  inheritsChoice: z.boolean().optional(),
   // Mission triggers (FG-4): deterministic mid-mission events.
   triggers: z.array(z.object({
     id: z.string().min(1),
