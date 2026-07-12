@@ -1,0 +1,211 @@
+{
+  "id": "m17_aethers_verdict",
+  "name": "Act III · Aether's Verdict",
+  "order": 17,
+  "inheritsChoice": true,
+  "map": { "width": 40, "height": 40, "seed": 17017 },
+  "briefing": {
+    "title": "AETHER'S VERDICT",
+    "story": [
+      "One stronghold. One man. Director Halex has pulled everything that still",
+      "answers to him into the command bunker at the heart of the glass-flats — and",
+      "he is still, even now, requesting orbital sterilisation of the whole continent.",
+      "",
+      "SERA VANE: \"This is the last door, Warden. Break it, and Aether Prime is",
+      "whatever you made it back at the Vein. Corr and I hold the field. You end Halex.\"",
+      "",
+      "MARSHAL CORR: \"Whatever comes up out of the sand today — and something will —",
+      "we finish the man first. Go.\""
+    ],
+    "objectives": [
+      "End Director Halex — destroy the Directorate command bunker",
+      "HARNESS: keep the Chorus leashed — hold the binding site as it wakes (75s)"
+    ]
+  },
+  "debrief": {
+    "win": [
+      "Halex's command bunker folds, and the last order he ever gives goes unanswered.",
+      "The war for Aether Prime is over. What the planet becomes now — a sealed grave",
+      "kept sleeping, or a bound god held on human terms — is the verdict the Warden",
+      "already handed down at the First Vein. Aether Prime will remember what you chose.",
+      "VANE: \"It's done. Gods help us all — it's actually done.\""
+    ],
+    "lose": [
+      "The last door holds. Halex finishes his transmission, and the sky above Aether",
+      "Prime begins, very quietly, to burn."
+    ]
+  },
+  "naturalShardDensity": 200,
+  "fields": [
+    { "tx": 7, "ty": 32, "w": 3, "h": 2, "density": 700 },
+    { "tx": 19, "ty": 20, "w": 3, "h": 3, "density": 820 }
+  ],
+  "player": {
+    "credits": 4000,
+    "factionId": "emberhand",
+    "techTier": 3,
+    "buildings": [
+      { "type": "construction_yard", "tx": 5, "ty": 34 },
+      { "type": "refinery", "tx": 7, "ty": 35 },
+      { "type": "refinery", "tx": 3, "ty": 35 },
+      { "type": "barracks", "tx": 8, "ty": 33 },
+      { "type": "war_factory", "tx": 5, "ty": 31 },
+      { "type": "radar", "tx": 3, "ty": 32 },
+      { "type": "power_node", "tx": 2, "ty": 33 },
+      { "type": "power_node", "tx": 9, "ty": 35 },
+      { "type": "defense_turret", "tx": 10, "ty": 32 },
+      { "type": "aa_turret", "tx": 4, "ty": 30 }
+    ],
+    "units": [
+      { "type": "harvester", "tx": 8, "ty": 36 },
+      { "type": "harvester", "tx": 4, "ty": 37 },
+      { "type": "infantry", "tx": 6, "ty": 37 },
+      { "type": "infantry", "tx": 7, "ty": 37 },
+      { "type": "rocket_trooper", "tx": 8, "ty": 37 },
+      { "type": "rocket_trooper", "tx": 9, "ty": 37 },
+      { "type": "assault_tank", "tx": 5, "ty": 38 },
+      { "type": "assault_tank", "tx": 7, "ty": 38 },
+      { "type": "longbow", "tx": 3, "ty": 38 }
+    ]
+  },
+  "enemies": [
+    {
+      "team": "enemy",
+      "credits": 7000,
+      "factionId": "concord",
+      "techTier": 3,
+      "buildings": [
+        { "type": "construction_yard", "tx": 34, "ty": 5 },
+        { "type": "refinery", "tx": 32, "ty": 6 },
+        { "type": "barracks", "tx": 31, "ty": 8 },
+        { "type": "barracks", "tx": 36, "ty": 7 },
+        { "type": "war_factory", "tx": 35, "ty": 4 },
+        { "type": "radar", "tx": 33, "ty": 3 },
+        { "type": "defense_turret", "tx": 30, "ty": 9 },
+        { "type": "defense_turret", "tx": 33, "ty": 10 },
+        { "type": "defense_turret", "tx": 36, "ty": 10 },
+        { "type": "aa_turret", "tx": 31, "ty": 11 },
+        { "type": "aa_turret", "tx": 35, "ty": 11 },
+        { "type": "power_node", "tx": 37, "ty": 5 },
+        { "type": "power_node", "tx": 32, "ty": 2 }
+      ],
+      "units": [
+        { "type": "harvester", "tx": 34, "ty": 8 },
+        { "type": "infantry", "tx": 31, "ty": 13 },
+        { "type": "infantry", "tx": 32, "ty": 13 },
+        { "type": "rocket_trooper", "tx": 33, "ty": 13 },
+        { "type": "assault_tank", "tx": 34, "ty": 13 },
+        { "type": "assault_tank", "tx": 35, "ty": 13 },
+        { "type": "assault_tank", "tx": 36, "ty": 13 },
+        { "type": "gunship", "tx": 37, "ty": 12 }
+      ],
+      "fields": [
+        { "tx": 36, "ty": 9, "w": 3, "h": 2, "density": 780 }
+      ],
+      "ai": {
+        "attackTile": { "tx": 6, "ty": 34 },
+        "assaultValue": 850,
+        "assaultEscalationPerMin": 150,
+        "pressureValue": 500,
+        "raidUnitCap": 5,
+        "defendRadiusTiles": 10
+      }
+    }
+  ],
+  "objectives": [
+    {
+      "type": "destroy",
+      "id": "end_halex",
+      "team": "enemy",
+      "kind": "construction_yard",
+      "primary": true,
+      "text": "End Director Halex — destroy the Directorate command bunker"
+    },
+    {
+      "type": "hold",
+      "id": "leash",
+      "team": "player",
+      "region": { "tx": 20, "ty": 20, "r": 4 },
+      "seconds": 75,
+      "primary": true,
+      "onlyIfChoice": "harness",
+      "text": "HARNESS: keep the Chorus leashed — hold the binding site (75s)"
+    }
+  ],
+  "failure": [
+    { "type": "defeated", "team": "player" }
+  ],
+  "triggers": [
+    {
+      "id": "t_open",
+      "when": { "timeSeconds": 6 },
+      "actions": [
+        { "type": "message", "speaker": "DIRECTOR HALEX", "text": "You are a rounding error, Warden. A delay. The Reach has already written this world off — and soon it will write off you." }
+      ]
+    },
+    {
+      "id": "t_seal_branch",
+      "when": { "choice": "seal" },
+      "actions": [
+        { "type": "message", "speaker": "MARSHAL CORR", "text": "The Vein's sealed for good — the sand stays quiet, the planet stays asleep. No god at our backs today. Just us, and one last tyrant. Let's earn the peace." }
+      ]
+    },
+    {
+      "id": "t_harness_branch",
+      "when": { "choice": "harness" },
+      "actions": [
+        { "type": "message", "speaker": "THE CHORUS", "text": "YOU HELD US LONG ENOUGH TO WIN. NOW WE TEST THE LEASH. HOLD THE BINDING, WARDEN — OR MEET WHAT YOU CHOSE TO KEEP." },
+        {
+          "type": "spawn",
+          "team": "enemy",
+          "units": [
+            { "type": "riftmaw", "tx": 20, "ty": 24 },
+            { "type": "riftmaw", "tx": 18, "ty": 22 },
+            { "type": "riftmaw", "tx": 22, "ty": 22 },
+            { "type": "riftmaw", "tx": 20, "ty": 18 }
+          ],
+          "attackMoveTo": { "tx": 20, "ty": 20 }
+        }
+      ]
+    },
+    {
+      "id": "t_halex_counter",
+      "when": { "timeSeconds": 160 },
+      "actions": [
+        { "type": "message", "speaker": "DIRECTOR HALEX", "text": "Commit the last wing. If Aether Prime is to be a grave, it will be theirs as much as mine." },
+        {
+          "type": "spawn",
+          "team": "enemy",
+          "units": [
+            { "type": "assault_tank", "tx": 24, "ty": 14 },
+            { "type": "assault_tank", "tx": 25, "ty": 14 },
+            { "type": "gunship", "tx": 26, "ty": 13 },
+            { "type": "gunship", "tx": 27, "ty": 13 },
+            { "type": "rocket_trooper", "tx": 28, "ty": 14 }
+          ],
+          "attackMoveTo": { "tx": 6, "ty": 34 }
+        }
+      ]
+    },
+    {
+      "id": "t_final_push",
+      "when": { "timeSeconds": 250 },
+      "actions": [
+        { "type": "message", "speaker": "SERA VANE", "text": "Corr's inside the outer wall. This is it, Warden — every gun we have, on that bunker. End him." },
+        {
+          "type": "spawn",
+          "team": "player",
+          "units": [
+            { "type": "assault_tank", "tx": 6, "ty": 32 },
+            { "type": "assault_tank", "tx": 8, "ty": 32 },
+            { "type": "longbow", "tx": 7, "ty": 33 },
+            { "type": "rocket_trooper", "tx": 5, "ty": 32 }
+          ]
+        },
+        { "type": "grantCredits", "team": "player", "amount": 1500 }
+      ]
+    }
+  ],
+  "rewards": [],
+  "next": null
+}

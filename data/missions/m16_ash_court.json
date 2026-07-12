@@ -1,0 +1,206 @@
+{
+  "id": "m16_ash_court",
+  "name": "Act III · The Ash Court",
+  "order": 16,
+  "inheritsChoice": true,
+  "map": { "width": 36, "height": 36, "seed": 16016 },
+  "briefing": {
+    "title": "THE ASH COURT",
+    "story": [
+      "Halex rules from a fortified court cut into the northern glass-flats — the",
+      "nerve centre that signed Cauterize and every order before it. Break it and",
+      "the Directorate on Aether Prime loses its head.",
+      "",
+      "SERA VANE: \"No more holding, no more running. We go to the man himself. Corr",
+      "takes the west approach; you take the throat. Kill the command, Warden — the",
+      "rest is just cleanup and grief.\""
+    ],
+    "objectives": [
+      "Destroy the Directorate forward command (their Construction Yard)"
+    ]
+  },
+  "debrief": {
+    "win": [
+      "The Ash Court caves in on itself, and Halex's signal cuts to static. His army",
+      "still stands — but leaderless, and afraid. One stronghold left, and the man",
+      "who called a planet a tumor is inside it.",
+      "CORR: \"West approach is clear. Whatever's left of the Directorate runs to Halex",
+      "now. We finish this at his door, Warden.\""
+    ],
+    "lose": [
+      "The court holds. Halex watches the assault break against his walls and does not",
+      "even rise from his chair."
+    ]
+  },
+  "naturalShardDensity": 210,
+  "fields": [
+    { "tx": 6, "ty": 28, "w": 3, "h": 2, "density": 700 },
+    { "tx": 26, "ty": 26, "w": 2, "h": 2, "density": 640 }
+  ],
+  "player": {
+    "credits": 3600,
+    "factionId": "emberhand",
+    "techTier": 3,
+    "buildings": [
+      { "type": "construction_yard", "tx": 5, "ty": 30 },
+      { "type": "refinery", "tx": 7, "ty": 31 },
+      { "type": "barracks", "tx": 8, "ty": 29 },
+      { "type": "war_factory", "tx": 5, "ty": 27 },
+      { "type": "radar", "tx": 3, "ty": 29 },
+      { "type": "power_node", "tx": 2, "ty": 30 },
+      { "type": "power_node", "tx": 9, "ty": 31 },
+      { "type": "defense_turret", "tx": 9, "ty": 27 }
+    ],
+    "units": [
+      { "type": "harvester", "tx": 8, "ty": 32 },
+      { "type": "infantry", "tx": 6, "ty": 33 },
+      { "type": "infantry", "tx": 7, "ty": 33 },
+      { "type": "rocket_trooper", "tx": 8, "ty": 33 },
+      { "type": "assault_tank", "tx": 5, "ty": 33 },
+      { "type": "assault_tank", "tx": 9, "ty": 33 },
+      { "type": "longbow", "tx": 4, "ty": 34 }
+    ]
+  },
+  "enemies": [
+    {
+      "team": "enemy",
+      "credits": 6000,
+      "factionId": "concord",
+      "techTier": 3,
+      "buildings": [
+        { "type": "construction_yard", "tx": 28, "ty": 5 },
+        { "type": "refinery", "tx": 26, "ty": 6 },
+        { "type": "barracks", "tx": 25, "ty": 8 },
+        { "type": "barracks", "tx": 30, "ty": 7 },
+        { "type": "war_factory", "tx": 29, "ty": 4 },
+        { "type": "radar", "tx": 27, "ty": 3 },
+        { "type": "defense_turret", "tx": 24, "ty": 9 },
+        { "type": "defense_turret", "tx": 27, "ty": 10 },
+        { "type": "defense_turret", "tx": 30, "ty": 10 },
+        { "type": "aa_turret", "tx": 26, "ty": 11 },
+        { "type": "power_node", "tx": 31, "ty": 5 },
+        { "type": "power_node", "tx": 25, "ty": 3 }
+      ],
+      "units": [
+        { "type": "harvester", "tx": 28, "ty": 8 },
+        { "type": "infantry", "tx": 25, "ty": 12 },
+        { "type": "infantry", "tx": 26, "ty": 12 },
+        { "type": "rocket_trooper", "tx": 27, "ty": 12 },
+        { "type": "assault_tank", "tx": 28, "ty": 12 },
+        { "type": "assault_tank", "tx": 29, "ty": 12 },
+        { "type": "gunship", "tx": 30, "ty": 11 }
+      ],
+      "fields": [
+        { "tx": 30, "ty": 9, "w": 3, "h": 2, "density": 740 }
+      ],
+      "ai": {
+        "attackTile": { "tx": 6, "ty": 30 },
+        "assaultValue": 700,
+        "assaultEscalationPerMin": 120,
+        "pressureValue": 420,
+        "raidUnitCap": 4,
+        "defendRadiusTiles": 9
+      }
+    }
+  ],
+  "objectives": [
+    {
+      "type": "destroy",
+      "id": "break_court",
+      "team": "enemy",
+      "kind": "construction_yard",
+      "primary": true,
+      "text": "Destroy the Directorate forward command (their Construction Yard)"
+    },
+    {
+      "type": "eliminate",
+      "id": "raze_court",
+      "team": "enemy",
+      "primary": false,
+      "text": "Optional: raze the Ash Court entirely — leave the Directorate nothing"
+    }
+  ],
+  "failure": [
+    { "type": "defeated", "team": "player" }
+  ],
+  "triggers": [
+    {
+      "id": "t_open",
+      "when": { "timeSeconds": 6 },
+      "actions": [
+        { "type": "message", "speaker": "SERA VANE", "text": "There's the court. Push north — Corr's drawing their armour west, so the throat should be soft. Should be." }
+      ]
+    },
+    {
+      "id": "t_seal_branch",
+      "when": { "choice": "seal" },
+      "actions": [
+        { "type": "message", "speaker": "MARSHAL CORR", "text": "The planet's gone still behind us — no more surprises from the sand. It's just soldiers now, Warden. I can work with soldiers. West flank's yours; armour inbound." },
+        {
+          "type": "spawn",
+          "team": "player",
+          "units": [
+            { "type": "assault_tank", "tx": 6, "ty": 28 },
+            { "type": "assault_tank", "tx": 8, "ty": 28 },
+            { "type": "rocket_trooper", "tx": 7, "ty": 28 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t_harness_branch",
+      "when": { "choice": "harness" },
+      "actions": [
+        { "type": "message", "speaker": "THE CHORUS", "text": "WE FEEL YOU MARCHING ON OUR LEASH. FINISH YOUR SMALL WAR, WARDEN. THEN WE WILL DISCUSS WHO HOLDS WHOM." },
+        {
+          "type": "spawn",
+          "team": "enemy",
+          "units": [
+            { "type": "riftmaw", "tx": 18, "ty": 18 },
+            { "type": "riftmaw", "tx": 20, "ty": 16 }
+          ],
+          "attackMoveTo": { "tx": 27, "ty": 8 }
+        }
+      ]
+    },
+    {
+      "id": "t_counter",
+      "when": { "timeSeconds": 150 },
+      "actions": [
+        { "type": "message", "speaker": "DIRECTOR HALEX", "text": "The renegade is at the gate. Release the reserve wing. Sentiment is a luxury; survival is not." },
+        {
+          "type": "spawn",
+          "team": "enemy",
+          "units": [
+            { "type": "assault_tank", "tx": 22, "ty": 12 },
+            { "type": "assault_tank", "tx": 23, "ty": 12 },
+            { "type": "gunship", "tx": 24, "ty": 11 },
+            { "type": "rocket_trooper", "tx": 25, "ty": 12 }
+          ],
+          "attackMoveTo": { "tx": 6, "ty": 30 }
+        }
+      ]
+    },
+    {
+      "id": "t_reinforce",
+      "when": { "timeSeconds": 240 },
+      "actions": [
+        { "type": "message", "speaker": "MARSHAL CORR", "text": "West wall's breached. I'm sending everything I can spare — hit the command NOW, while they're looking at me." },
+        {
+          "type": "spawn",
+          "team": "player",
+          "units": [
+            { "type": "assault_tank", "tx": 6, "ty": 29 },
+            { "type": "longbow", "tx": 8, "ty": 29 },
+            { "type": "rocket_trooper", "tx": 7, "ty": 29 }
+          ]
+        },
+        { "type": "grantCredits", "team": "player", "amount": 1200 }
+      ]
+    }
+  ],
+  "rewards": [
+    { "ifObjectiveComplete": "raze_court", "grant": { "nextMissionCredits": 800 } }
+  ],
+  "next": "m17_aethers_verdict"
+}

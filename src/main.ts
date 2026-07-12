@@ -57,6 +57,8 @@ import m12Data from '../data/missions/m12_renegade.json' with { type: 'json' };
 import m13Data from '../data/missions/m13_choir_of_glass.json' with { type: 'json' };
 import m14Data from '../data/missions/m14_first_vein.json' with { type: 'json' };
 import m15Data from '../data/missions/m15_aftershock.json' with { type: 'json' };
+import m16Data from '../data/missions/m16_ash_court.json' with { type: 'json' };
+import m17Data from '../data/missions/m17_aethers_verdict.json' with { type: 'json' };
 
 // Map configuration
 const MAP_WIDTH = 32;
@@ -714,6 +716,8 @@ const MISSIONS: Record<string, unknown> = {
   m13_choir_of_glass: m13Data,
   m14_first_vein: m14Data,
   m15_aftershock: m15Data,
+  m16_ash_court: m16Data,
+  m17_aethers_verdict: m17Data,
 };
 /** Campaign order (linear unlock: each mission unlocks the next). */
 const CAMPAIGN: { id: string; name: string; order: number }[] = [
@@ -732,6 +736,8 @@ const CAMPAIGN: { id: string; name: string; order: number }[] = [
   { id: 'm13_choir_of_glass', name: 'Act II · Choir of Glass', order: 13 },
   { id: 'm14_first_vein', name: 'Act II · The First Vein', order: 14 },
   { id: 'm15_aftershock', name: 'Act III · Aftershock', order: 15 },
+  { id: 'm16_ash_court', name: 'Act III · The Ash Court', order: 16 },
+  { id: 'm17_aethers_verdict', name: 'FINALE · Aether\'s Verdict', order: 17 },
 ];
 
 function openMissionSelect(): void {

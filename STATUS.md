@@ -17,7 +17,7 @@
 | Stealth + detection | ✅ | ✅ | ✅ unit tests + M10 gate |
 | Artillery, stances, garrisons, transports | ✅ | ✅ | ✅ unit tests + bunker gate |
 | Air + AA + storms + shields | ✅ | ✅ (shared-lite frame per panel) | ✅ unit tests + flight gate |
-| Campaign missions/acts | ship-quality, long | **15 shipped, 3 acts** — M7 "The Turn" (the defection) authored; Act III opened (M15 "Aftershock", branches on the Seal/Harness choice via inheritsChoice). M16–M17 pending. | ✅ boot + trigger + choice + branch gates |
+| Campaign missions/acts | ship-quality, long | **17 shipped, 3 full acts** — M7 "The Turn" (the defection); complete Act III (M15 Aftershock → M16 The Ash Court → M17 Aether's Verdict), all branching on the Seal/Harness choice via inheritsChoice; the finale is now data-driven, not hardcoded to M14. | ✅ boot + trigger + choice + both-branch gates (M7, M15×2, Act III×3) |
 | The M14 Choice (branch gameplay) | ✅ | ✅ (objectives/triggers branch; debriefs shared) | ✅ unit + gate |
 | Objectives honesty (contested hold, visible secondaries, true pointer) | ✅ | ✅ (v0.42) | ✅ unit tests |
 | Hero persistence + Veteran Reserve | ✅ | ✅ (loader fixed v0.42) | ✅ round-trip tests |
