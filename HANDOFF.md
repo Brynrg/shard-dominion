@@ -6,7 +6,15 @@
 ## What this is
 **Shard Dominion** — an IP-clean, late-1990s Westwood-style (C&C / Red Alert / Dune 2000) web RTS.
 - **Repo:** `~/Code/games/shard-dominion` (TypeScript + Canvas2D + Vite + Vitest + zod + ESLint, single pnpm pkg).
-- **Live:** https://speedrungames.net/games/shard-dominion/ — currently **v0.42.0**.
+- **Live:** https://speedrungames.net/games/shard-dominion/ — currently **v0.44.0**.
+- **SHIP-QUALITY PROGRAM (2026-07-12, `docs/SHIP_QUALITY_PLAN.md`):** operator goal = a fully-
+  realized, polished game in its OWN identity (WC3 = the execution/polish bar, NOT a feature
+  clone). Done so far: complete code-drawn art (v0.43); **complete 3-act, 17-mission campaign**
+  (v0.44) — M7 "The Turn" (the Warden's defection) + full Act III (M15→M16→M17) branching on the
+  Seal/Harness choice via a new `inheritsChoice` flag (campaign choice persists under a stable
+  key; the "finale" credits-roll is now data-driven = the campaign mission with `next:null`).
+  NEXT: S2 faction/character build depth (Shardborn made real, hero kits) · S3 economy depth
+  (upgrades tied to Resonance) · S4 polish (AI, a11y, MP field test, balance).
 - **Your role now:** you (Claude) **build it directly** and verify. (Earlier plan was to delegate slices to a
   local Qwen builder; in practice Claude builds and only occasionally hands a tightly-scaffolded sub-task to
   `hermes-ask code` — e.g. the S6B AI waves. Default to building it yourself + verifying.)
