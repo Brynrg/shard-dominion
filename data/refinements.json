@@ -1,0 +1,42 @@
+[
+  {
+    "id": "deep_extraction",
+    "name": "Deep Extraction",
+    "cost": 800,
+    "cells": 0,
+    "timeSeconds": 30,
+    "effect": "harvest",
+    "value": 0.33,
+    "desc": "Harvesters mine +33% Shard per pass"
+  },
+  {
+    "id": "munitions_doctrine",
+    "name": "Munitions Doctrine",
+    "cost": 1200,
+    "cells": 1,
+    "timeSeconds": 45,
+    "effect": "damage",
+    "value": 0.2,
+    "desc": "All your weapons deal +20% damage"
+  },
+  {
+    "id": "composite_plating",
+    "name": "Composite Plating",
+    "cost": 1000,
+    "cells": 1,
+    "timeSeconds": 40,
+    "effect": "armor",
+    "value": 0.2,
+    "desc": "Your units take -20% incoming damage"
+  },
+  {
+    "id": "resonance_dampers",
+    "name": "Resonance Dampers",
+    "cost": 900,
+    "cells": 2,
+    "timeSeconds": 35,
+    "effect": "resonance",
+    "value": 0.4,
+    "desc": "The planet hunts your extraction -40% as hard"
+  }
+]

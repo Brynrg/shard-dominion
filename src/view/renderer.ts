@@ -9,6 +9,7 @@ import { makeHUD } from './hud.js';
 import { validatePlacement, type ConfirmationMarker } from '../sim/systems/command.js';
 import type { StructureDef } from '../loaders/structures.js';
 import type { WeaponsFile } from '../loaders/schemas.js';
+import type { Refinement } from '../loaders/refinements.js';
 import type { Onboarding } from './onboarding.js';
 import type { EntityId } from '../sim/ids.js';
 import { makeSpriteBank, type SpriteBank, type UnitAnim } from './spritebank.js';
@@ -105,6 +106,7 @@ export interface ViewConfig {
   powerDemandOf?: (structureId: string) => number;
   /** XP-3: viewer's faction id (asymmetric build menu). */
   playerFactionId?: string;
+  refinements?: readonly Refinement[];
   /** XP-5: Shardstorm active (view tint + HUD chip). */
   isStorm?: () => boolean;
   /** Faction palettes (FG-6): override the default team styles. */
@@ -126,7 +128,7 @@ export interface View {
   /** Hit-test the sidebar build buttons; returns "train:infantry" / "build:barracks" / null. */
   hudButtonAt(sx: number, sy: number): string | null;
   /** Switch the sidebar tab (XP-1: STRUCT / UNITS). */
-  hudSetTab(tab: 'base' | 'def' | 'units'): void;
+  hudSetTab(tab: 'base' | 'def' | 'units' | 'tech'): void;
   /** The live rect of a sidebar button by action id (gates + tools). */
   hudButtonRect(action: string): { x: number; y: number; w: number; h: number } | null;
   /** The sprite bank (exposed for the real-asset loader + tests). */
@@ -155,7 +157,7 @@ export function makeView(cfg: ViewConfig): View {
   const context = ctx as CanvasRenderingContext2D;
 
   // Create HUD (clickable C&C-style build sidebar; getHover drives button highlight)
-  const hud = makeHUD({ canvas, simState, camera, getHover, cargoCapacity, viewerTeam: cfg.viewerTeam, isMuted: cfg.isMuted, unitCost: cfg.unitCost, powerDemandOf: cfg.powerDemandOf, playerFactionId: cfg.playerFactionId, isStorm: cfg.isStorm });
+  const hud = makeHUD({ canvas, simState, camera, getHover, cargoCapacity, viewerTeam: cfg.viewerTeam, isMuted: cfg.isMuted, unitCost: cfg.unitCost, powerDemandOf: cfg.powerDemandOf, playerFactionId: cfg.playerFactionId, isStorm: cfg.isStorm, refinements: cfg.refinements });
 
   // Pre-bake the directional sprite bank once (S7-2). Units get DIRS fixed-lit
   // facings; buildings get a lit body. Animated accents are drawn live on top.

@@ -4,6 +4,9 @@ import { makeSimState } from './sim/state.js';
 import { orderSystems } from './sim/loop.js';
 import { makeMovementSystem } from './sim/systems/movement.js';
 import { makeHarvestSystem } from './sim/systems/harvest.js';
+import { makeResearchSystem } from './sim/systems/research.js';
+import { loadRefinements } from './loaders/refinements.js';
+import refinementsData from '../data/refinements.json' with { type: 'json' };
 import { makeCommandSystem } from './sim/systems/command.js';
 import { makeConstructionSystem } from './sim/systems/construction.js';
 import { makePowerSystem } from './sim/systems/power.js';
@@ -111,6 +114,8 @@ const structures = loadStructures(structuresData);
 const weapons = loadWeapons(weaponsData);
 // Load units
 const units = loadUnits(unitsData);
+// Load refinements (economy depth: team-wide researched upgrades)
+const refinements = loadRefinements(refinementsData);
 
 /** Multiplayer session (FG-7), set by the pre-boot handshake before bootstrap runs. */
 let mpSession: { lockstep: Lockstep; seat: number } | null = null;
@@ -175,7 +180,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     push: (i) => { intentLog.push({ t: state.tick, i }); rawQueue.push(i); },
     drain: () => rawQueue.drain(),
   };
-  const commandSystem = makeCommandSystem(commandQueue, structures);
+  const commandSystem = makeCommandSystem(commandQueue, structures, ['warden', 'vane'], refinements);
 
   // Create construction system
   const constructionSystem = makeConstructionSystem(structures, commandQueue);
@@ -213,16 +218,17 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
       graceTicks: base.graceTicks ?? D.grace,
     }, structures);
   });
-  const planetSystem = makePlanetEventSystem(units);
+  const planetSystem = makePlanetEventSystem(units, refinements);
   const systems = orderSystems([
     commandSystem,
     makeMovementSystem(),
-    makeHarvestSystem(economy, teamFactions),
+    makeHarvestSystem(economy, teamFactions, refinements),
+    makeResearchSystem(),
     constructionSystem,
     powerSystem,
     makeCombatTargetingSystem(weapons),
     makeProjectileSystem(weapons),
-    makeDamageSystem(weapons),
+    makeDamageSystem(weapons, refinements),
     makeProductionSystem(units, teamFactions, mission.id.startsWith('m') ? (loadProgress().heroKills ?? 0) : 0),
     makeStealthSystem(),
     ...aiSystems,
@@ -281,6 +287,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     audio,                                                           // FX diff emits SFX
     getTimeScale: () => (paused ? 0 : speed),                        // pause/speed (FG-1)
     playerFactionId: teamFactions.player.id,
+    refinements,                                                     // economy depth: TECH tab
     playerPalette: teamFactions.player.palette,                      // faction colours (FG-6)
     enemyPalette: teamFactions.enemy.palette,
     enemyFactionId: teamFactions.enemy.id,                           // XP-3 faction skins

@@ -7,13 +7,14 @@ import { SIM_TICK_RATE } from '../loop.js';
 import { isStormActive } from './planetEvent.js';
 import { teamCells, grantCells, spendCredits, teamCredits } from '../ledger.js';
 import { isOperational } from '../factory.js';
+import { refinementValue, type Refinement } from '../../loaders/refinements.js';
 import type { EntityId } from '../ids.js';
 import type { HarvestComponent, EconomyComponent, PositionComponent, MovementComponent, FactionComponent } from '../components.js';
 
 // Dock slots per refinery (one per refinery for simplicity)
 const DOCK_SLOTS_PER_REFINERY = 1;
 
-export function makeHarvestSystem(economy: EconomyConstants, factions?: { player?: { salvageAll?: boolean }; enemy?: { salvageAll?: boolean } }): { name: 'harvest'; run(state: SimState): void } {
+export function makeHarvestSystem(economy: EconomyConstants, factions?: { player?: { salvageAll?: boolean }; enemy?: { salvageAll?: boolean } }, refinements: readonly Refinement[] = []): { name: 'harvest'; run(state: SimState): void } {
   // Cells (XP-2): per-team conversion tick counters (deterministic closure state).
   const cellTicks = new Map<string, number>();
   const CELL_COST = 100;        // Shard credits per Cell
@@ -137,7 +138,7 @@ export function makeHarvestSystem(economy: EconomyConstants, factions?: { player
             runSeek(state, e, pos, movement, harvest);
             break;
           case 'HARVEST':
-            runHarvest(state, e, pos, movement, harvest, economy);
+            runHarvest(state, e, pos, movement, harvest, economy, refinements);
             break;
           case 'RETURN':
             runReturn(state, e, pos, movement, harvest, dockUsage);
@@ -179,6 +180,7 @@ function runHarvest(
   movement: MovementComponent,
   harvest: HarvestComponent,
   economy: EconomyConstants,
+  refinements: readonly Refinement[] = [],
 ): void {
   // Check if we've reached the target tile
   if (harvest.targetTile) {
@@ -191,7 +193,10 @@ function runHarvest(
       if (density > 0 && harvest.cargo < economy.cargoCapacity) {
         // Harvest from tile
         // Storm harvesting (XP-5): 2× yield while the Shardstorm howls.
-        const rate = economy.harvestRate * (isStormActive(state.tick) ? 2 : 1);
+        // Refinement (economy depth): Deep Extraction lifts this team's yield.
+        const team = entity.components.faction?.team;
+        const deep = 1 + refinementValue(team ? state.refinements.get(team)?.done : undefined, refinements, 'harvest');
+        const rate = economy.harvestRate * (isStormActive(state.tick) ? 2 : 1) * deep;
         const amount = Math.min(rate, density, economy.cargoCapacity - harvest.cargo);
         state.shardDensity.set(densityKey, density - amount);
         harvest.cargo += amount;

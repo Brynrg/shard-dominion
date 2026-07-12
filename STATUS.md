@@ -32,7 +32,10 @@
 
 ## Ship-Quality program (docs/SHIP_QUALITY_PLAN.md — in progress)
 Toward a fully-realized, polished game in its own identity (WC3 = the execution/polish
-bar, not a feature clone). Done: complete code-drawn art (v0.43); M7 "The Turn" + Act III
-opener (v0.44, this pass). In flight: **S1** finish Act III (M16–M17) + deepen character
-presence · **S2** faction/team + character build depth (Shardborn made real; hero kits) ·
-**S3** economy depth tied to Resonance · **S4** polish (AI, a11y, MP field test, balance).
+bar, not a feature clone). Done: complete code-drawn art (v0.43); complete 3-act
+17-mission campaign (v0.44); **economy depth — Refinements** (v0.45): a TECH tab of
+team-wide researched upgrades at the Processing Plant (Deep Extraction, Munitions
+Doctrine, Composite Plating, and the identity-tied **Resonance Dampers** that softens the
+living planet's hunt), a credit+Cell sink applied deterministically at point-of-use. In
+flight: **S2** faction/character build depth (Shardborn made real; hero kits) · **S4**
+polish (AI research + sharpening, a11y, MP field test, balance).

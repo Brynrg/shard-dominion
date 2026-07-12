@@ -3,6 +3,8 @@
 import type { SimState } from '../sim/state.js';
 import type { Camera } from '../sim/coords.js';
 import type { ConstructionOutput } from '../sim/systems/construction.js';
+import type { Refinement } from '../loaders/refinements.js';
+import { SIM_TICK_RATE } from '../sim/loop.js';
 
 export interface HUDConfig {
   canvas: HTMLCanvasElement;
@@ -25,6 +27,8 @@ export interface HUDConfig {
   playerFactionId?: string;
   /** XP-5: live Shardstorm indicator. */
   isStorm?: () => boolean;
+  /** Economy depth: the researchable Refinement definitions (for the TECH tab). */
+  refinements?: readonly Refinement[];
 }
 
 /** The C&C-style sidebar build menu. `kind` decides the click action:
@@ -74,10 +78,10 @@ export function makeHUD(cfg: HUDConfig): {
   draw(): void;
   buttonAt(sx: number, sy: number): BuildAction | null;
   panelRect(): { x: number; y: number; w: number; h: number };
-  setTab(tab: 'base' | 'def' | 'units'): void;
+  setTab(tab: 'base' | 'def' | 'units' | 'tech'): void;
   rectOf(action: BuildAction): { x: number; y: number; w: number; h: number } | null;
 } {
-  let activeTab: 'base' | 'def' | 'units' = 'base';
+  let activeTab: 'base' | 'def' | 'units' | 'tech' = 'base';
   const { canvas, simState } = cfg;
   const viewerTeam = cfg.viewerTeam ?? 'player';
   const cargoCapacity = cfg.cargoCapacity ?? 600;
@@ -269,7 +273,7 @@ export function makeHUD(cfg: HUDConfig): {
     panelRect(): { x: number; y: number; w: number; h: number } {
       return { x: canvas.width - 184 - 8, y: 8, w: 184 + 8, h: 380 };
     },
-    setTab(tab: 'base' | 'def' | 'units'): void { activeTab = tab; },
+    setTab(tab: 'base' | 'def' | 'units' | 'tech'): void { activeTab = tab; },
     rectOf(action: BuildAction): { x: number; y: number; w: number; h: number } | null {
       const r = rects.find(r => r.action === action);
       return r ? { x: r.x, y: r.y, w: r.w, h: r.h } : null;
@@ -349,9 +353,10 @@ export function makeHUD(cfg: HUDConfig): {
       const isVehicle = (id: string): boolean => id === 'scout_vehicle' || id === 'assault_tank' || id === 'longbow' || id === 'skimmer_apc';
       const tech = getTech();
       const bw = pw - 16;
-      // Tab row.
-      const tabY = py + 118, tabH = 22, tabW = Math.floor(bw / 3) - 3;
-      for (const [i, tab] of (['base', 'def', 'units'] as const).entries()) {
+      // Tab row (4 tabs: BASE / DEF / UNITS / TECH).
+      const tabY = py + 118, tabH = 22, tabW = Math.floor(bw / 4) - 3;
+      const TAB_LABEL: Record<string, string> = { base: 'BASE', def: 'DEF', units: 'UNITS', tech: 'TECH' };
+      for (const [i, tab] of (['base', 'def', 'units', 'tech'] as const).entries()) {
         const tx0 = px + 8 + i * (tabW + 4);
         const active = activeTab === tab;
         rects.push({ action: `tab:${tab}`, x: tx0, y: tabY, w: tabW, h: tabH, enabled: true });
@@ -361,7 +366,7 @@ export function makeHUD(cfg: HUDConfig): {
         context.strokeRect(tx0 + 0.5, tabY + 0.5, tabW - 1, tabH - 1);
         context.fillStyle = active ? '#00e5ff' : '#8fa3b8';
         context.font = 'bold 10px monospace'; context.textBaseline = 'top';
-        context.fillText(tab === 'base' ? 'BASE' : tab === 'def' ? 'DEF' : 'UNITS', tx0 + 12, tabY + 6);
+        context.fillText(TAB_LABEL[tab]!, tx0 + 8, tabY + 6);
       }
       let by = py + 146;
       // HQ tier row (STRUCT tab): tier readout + the upgrade button.
@@ -389,7 +394,54 @@ export function makeHUD(cfg: HUDConfig): {
         by += 34;
       }
       const fid = cfg.playerFactionId ?? 'concord';
-      const menu = (activeTab === 'base' ? BASE_MENU : activeTab === 'def' ? DEF_MENU : UNIT_MENU)
+      // TECH tab (economy depth): team-wide Refinements researched at a Processing Plant.
+      if (activeTab === 'tech') {
+        const refs = cfg.refinements ?? [];
+        const led = simState.refinements.get(viewerTeam);
+        const done = led?.done ?? [];
+        const researching = led?.researching ?? null;
+        const busy = researching != null;
+        const hasPlant = [...simState.store.all()].some(e =>
+          e.components.faction?.team === viewerTeam &&
+          e.components.faction?.faction === 'processing_plant' &&
+          (e.components.health?.hp ?? 1) > 0);
+        for (const r of refs) {
+          const isDone = done.includes(r.id);
+          const isNow = researching === r.id;
+          const affordable = credits >= r.cost && (refinery?.cells ?? 0) >= (r.cells ?? 0);
+          const enabled = !isDone && !busy && affordable && hasPlant;
+          rects.push({ action: `research:${r.id}`, x: px + 8, y: by, w: bw, h: 34, enabled });
+          if (isNow && led) {
+            const total = Math.max(1, Math.round(r.timeSeconds * SIM_TICK_RATE));
+            const pct = Math.max(0, Math.min(1, 1 - led.ticksLeft / total));
+            context.fillStyle = 'rgba(0,229,255,0.22)'; context.fillRect(px + 8, by, Math.floor(bw * pct), 34);
+          } else if (isDone) {
+            context.fillStyle = 'rgba(80,200,120,0.14)'; context.fillRect(px + 8, by, bw, 34);
+          }
+          context.strokeStyle = isDone ? '#4fc27a' : isNow ? '#00e5ff' : enabled ? '#ffd34d' : '#3a4a5a';
+          context.strokeRect(px + 8.5, by + 0.5, bw - 1, 33);
+          context.fillStyle = isDone ? '#4fc27a' : isNow ? '#00e5ff' : enabled ? '#e6edf3' : '#68727e';
+          context.font = 'bold 11px monospace'; context.textBaseline = 'top';
+          context.fillText(`${isDone ? '✓ ' : ''}${r.name}`, px + 14, by + 5);
+          // Line 2: concise cost + effect hint (the panel is narrow — no long desc).
+          const pct = `${Math.round(r.value * 100)}%`;
+          const hint = r.effect === 'harvest' ? `+${pct} harvest` : r.effect === 'damage' ? `+${pct} damage`
+            : r.effect === 'armor' ? `-${pct} dmg taken` : `-${pct} planet aggro`;
+          context.font = '9px monospace';
+          if (isDone) { context.fillStyle = '#4fc27a'; context.fillText(`RESEARCHED · ${hint}`, px + 14, by + 20); }
+          else if (isNow) { context.fillStyle = '#00e5ff'; context.fillText(`RESEARCHING…`, px + 14, by + 20); }
+          else {
+            context.fillStyle = affordable ? '#ffd34d' : '#a04a4a';
+            context.fillText(`◈${r.cost}${r.cells ? ` ⬡${r.cells}` : ''}`, px + 14, by + 20);
+            context.fillStyle = '#8fa3b8';
+            context.fillText(hint, px + 92, by + 20);
+          }
+          by += 38;
+        }
+        context.font = '9px monospace'; context.fillStyle = '#68727e';
+        context.fillText(busy ? 'one refinement at a time' : hasPlant ? 'permanent, team-wide' : 'needs a Processing Plant', px + 14, by + 2);
+      }
+      const menu = activeTab === 'tech' ? [] : (activeTab === 'base' ? BASE_MENU : activeTab === 'def' ? DEF_MENU : UNIT_MENU)
         .filter(i => !i.factionLock || i.factionLock === fid); // XP-3 asymmetric rosters
       for (const item of menu) {
         // Which building makes this item? Harvester ← Refinery, vehicles ← War

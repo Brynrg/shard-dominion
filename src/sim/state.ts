@@ -15,6 +15,10 @@ export interface SimConfig {
   readonly mapHeight: number;
 }
 
+/** A team's researched-refinement ledger (economy depth): completed upgrade ids +
+ *  the single in-progress research and its remaining ticks. Deterministic. */
+export interface RefinementLedger { done: string[]; researching: string | null; ticksLeft: number }
+
 export interface SimState {
   /** Current tick (mutable; advanced by runTick). */
   tick: Tick;
@@ -26,6 +30,8 @@ export interface SimState {
   readonly prevPositions: Map<number, WorldPos>;
   /** Shard tile density map (mutable; tracks remaining resources per tile). */
   readonly shardDensity: Map<string, number>;
+  /** Per-team researched refinements (economy depth). Keyed by team. */
+  readonly refinements: Map<string, RefinementLedger>;
 }
 
 export function makeSimState(cfg: SimConfig): SimState {
@@ -38,7 +44,15 @@ export function makeSimState(cfg: SimConfig): SimState {
     rng: makeRng(cfg.seed),
     prevPositions: new Map<number, WorldPos>(),
     shardDensity: new Map<string, number>(),
+    refinements: new Map<string, RefinementLedger>(),
   };
+}
+
+/** Stable small integer for a string (deterministic; for hashing ids). */
+function strCode(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return h;
 }
 
 /**
@@ -94,5 +108,13 @@ export function stateHash(state: SimState): number {
   // leak nondeterminism into the hash.
   const shardKeys = [...state.shardDensity.keys()].sort();
   for (const k of shardKeys) ints.push(state.shardDensity.get(k)!);
+  // Refinements (economy depth): walked in sorted team order; done ids sorted so
+  // set-iteration order can't leak into the hash.
+  const refTeams = [...state.refinements.keys()].sort();
+  for (const team of refTeams) {
+    const led = state.refinements.get(team)!;
+    ints.push(strCode(team), led.ticksLeft, led.researching ? strCode(led.researching) : -1, led.done.length);
+    for (const id of [...led.done].sort()) ints.push(strCode(id));
+  }
   return hashInts(ints);
 }

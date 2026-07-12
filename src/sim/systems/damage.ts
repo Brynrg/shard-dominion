@@ -3,6 +3,7 @@
 // agitation/planetEvent. Pure sim: no DOM, no wall-clock, no screen concepts.
 import type { SimState } from '../state.js';
 import type { WeaponsFile } from '../../loaders/schemas.js';
+import { refinementValue, type Refinement } from '../../loaders/refinements.js';
 import { SIM_TICK_RATE } from '../loop.js';
 import { TILE_SUBUNITS } from '../coords.js';
 import { teamPowerShortage } from './power.js';
@@ -16,7 +17,7 @@ function distance(a: WorldPos, b: WorldPos): number {
 // The 'damage' system: for each unit with a weapon, a target, and a ready cooldown,
 // deal weapon.damage × matrix[weapon.type][targetArmor] to the target's hp, then
 // reset the cooldown. Range is checked in WORLD units. Sim-pure (state only).
-export function makeDamageSystem(weapons: WeaponsFile): { name: 'damage'; run(state: SimState): void } {
+export function makeDamageSystem(weapons: WeaponsFile, refinements: readonly Refinement[] = []): { name: 'damage'; run(state: SimState): void } {
   return {
     name: 'damage' as const,
     run(state: SimState): void {
@@ -84,7 +85,12 @@ export function makeDamageSystem(weapons: WeaponsFile): { name: 'damage'; run(st
           // Hero aura: +15% when a friendly Warden stands within 4 tiles.
           const team = e.components.faction?.team;
           const inAura = wardens.some(w => w.team === team && distance(pos, w.pos) <= AURA);
-          let dmg = weapon.damage * mult * (1 + 0.15 * rank) * (inAura ? 1.15 : 1);
+          // Refinements (economy depth): Munitions Doctrine boosts the attacker's
+          // damage; Composite Plating cuts the defender's incoming damage.
+          const atkBonus = 1 + refinementValue(team ? state.refinements.get(team)?.done : undefined, refinements, 'damage');
+          const defTeam = target.components.faction?.team;
+          const defCut = 1 - refinementValue(defTeam ? state.refinements.get(defTeam)?.done : undefined, refinements, 'armor');
+          let dmg = weapon.damage * mult * (1 + 0.15 * rank) * (inAura ? 1.15 : 1) * atkBonus * defCut;
           // Concord shields (XP-5): the absorb pool eats damage first, then hp.
           const sh = target.components.shield;
           if (sh && sh.hp > 0) {

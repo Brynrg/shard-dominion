@@ -7,6 +7,9 @@ import type { SimState } from '../state.js';
 import { teamTier } from '../tech.js';
 import { structureComponents } from '../factory.js';
 import { teamCredits, teamCells, spendCredits, spendCells } from '../ledger.js';
+import { teamLedger } from './research.js';
+import { SIM_TICK_RATE } from '../loop.js';
+import type { Refinement } from '../../loaders/refinements.js';
 import type { CommandIntent } from '../../view/input.js';
 import { TILE_SUBUNITS, tileToWorldCenter, worldToTile } from '../coords.js';
 import type { StructureDef } from '../../loaders/structures.js';
@@ -77,7 +80,7 @@ export interface CommandSystem {
 
 const MARKER_LIFETIME = 10 as const; // ~0.5s at 20Hz
 
-export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structures: StructureDef[], heroIds: readonly string[] = ['warden', 'vane']): CommandSystem {
+export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structures: StructureDef[], heroIds: readonly string[] = ['warden', 'vane'], refinements: readonly Refinement[] = []): CommandSystem {
   const markers: ConfirmationMarker[] = [];
   const groups = new Map<number, EntityId[]>();
   // XP-7 Faction Strike: pending orbital splashes { at, ticksLeft } (deterministic).
@@ -469,6 +472,27 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             spendCredits(state, actor, step.cost);      // TP-2 ledger
             if (cellPrice > 0) spendCells(state, actor, cellPrice);
             yard.components.tech = { tier: techC.tier, upgradingTo: step.toTier, ticksLeft: Math.max(1, Math.round(step.seconds * 20)) };
+            break;
+          }
+          case 'research': {
+            // Economy depth: research a team-wide Refinement at a powered Processing
+            // Plant. One at a time; no re-research; charged credits + Cells up front.
+            const ref = refinements.find(r => r.id === intent.refinementId);
+            if (!ref) break;
+            const led = teamLedger(state, actor);
+            if (led.researching || led.done.includes(ref.id)) break;
+            const hasPlant = state.store.all().some(e =>
+              e.components.faction?.team === actor &&
+              e.components.faction?.faction === 'processing_plant' &&
+              (e.components.health?.hp ?? 1) > 0 &&
+              e.components.building?.powered !== false);
+            if (!hasPlant) break;
+            const cellPrice = ref.cells ?? 0;
+            if (teamCredits(state, actor) < ref.cost || teamCells(state, actor) < cellPrice) break;
+            spendCredits(state, actor, ref.cost);
+            if (cellPrice > 0) spendCells(state, actor, cellPrice);
+            led.researching = ref.id;
+            led.ticksLeft = Math.max(1, Math.round(ref.timeSeconds * SIM_TICK_RATE));
             break;
           }
           case 'train': {

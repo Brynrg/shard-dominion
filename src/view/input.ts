@@ -40,6 +40,8 @@ export type CommandIntent = { team?: 'player' | 'enemy' } & (
   | { type: 'strike'; target: WorldPos }
   | { type: 'deploy' }
   | { type: 'place-structure'; structureId: string; tile: TilePos }
+  // Economy depth: research a team-wide Refinement (at a Processing Plant).
+  | { type: 'research'; refinementId: string }
   | { type: 'assign-group'; group: number }
   | { type: 'recall-group'; group: number }
   | { type: 'train'; unitId: string });
@@ -98,7 +100,7 @@ export function makeInputHandlers(
   minimap?: { jump(sx: number, sy: number): boolean },
   /** Optional sidebar build menu: a left-click on a build button queues a unit /
    *  enters structure placement (C&C-style), instead of selecting on the field. */
-  hud?: { buttonAt(sx: number, sy: number): string | null; setTab?(tab: 'base' | 'def' | 'units'): void },
+  hud?: { buttonAt(sx: number, sy: number): string | null; setTab?(tab: 'base' | 'def' | 'units' | 'tech'): void },
   /** Optional UI sounds: button click / selection blip / order acknowledgment. */
   sfx?: { click(): void; select(): void; ack(): void; place(): void },
   /** XP-3: which hero the E hotkey trains (faction-dependent; default warden). */
@@ -119,8 +121,9 @@ export function makeInputHandlers(
     const [kind, id] = action.split(':');
     if (kind === 'strike') { strikeArmed = true; return; }
     if (kind === 'train' && id) queue.push({ type: 'train', unitId: id });
-    else if (kind === 'tab' && (id === 'base' || id === 'def' || id === 'units')) hud?.setTab?.(id);
+    else if (kind === 'tab' && (id === 'base' || id === 'def' || id === 'units' || id === 'tech')) hud?.setTab?.(id);
     else if (kind === 'upgrade') queue.push({ type: 'upgrade-hq' });
+    else if (kind === 'research' && id) queue.push({ type: 'research', refinementId: id });
     else if (kind === 'build' && id) setPlacementMode(id);
     else if (kind === 'repair') queue.push({ type: 'repair' });
   }

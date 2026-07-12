@@ -20,6 +20,7 @@ export const SYSTEM_ORDER = [
   'harvest',
   'construction',
   'production',
+  'research',
   'power',
   'combatTargeting',
   'projectile',

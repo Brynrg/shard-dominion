@@ -19,6 +19,7 @@ import { tileToWorldCenter, TILE_SUBUNITS } from '../coords.js';
 import { nearestWalkable } from '../pathfind.js';
 import { SIM_TICK_RATE } from '../loop.js';
 import { grantCells } from '../ledger.js';
+import { refinementValue, type Refinement } from '../../loaders/refinements.js';
 import type { EntityId } from '../ids.js';
 
 const RIFTMAW_MINING_STEP = 3000;  // credits mined per awakening
@@ -39,7 +40,7 @@ export function isStormActive(tick: number): boolean {
 }
 const CELL_CAP = 12;
 
-export function makePlanetEventSystem(units: readonly UnitDef[]): { name: 'planetEvent'; run(state: SimState): void; debugRiftmaws: () => number } {
+export function makePlanetEventSystem(units: readonly UnitDef[], refinements: readonly Refinement[] = []): { name: 'planetEvent'; run(state: SimState): void; debugRiftmaws: () => number } {
   const riftmawDef = units.find(u => u.id === 'riftmaw');
   let prevTotalDensity: number | null = null;
   let totalMined = 0;
@@ -78,6 +79,9 @@ export function makePlanetEventSystem(units: readonly UnitDef[]): { name: 'plane
               mined += e.components.economy.minedTotal ?? 0;
               if (!bankPos && e.components.position) bankPos = e.components.position;
             }
+            // Refinement (economy depth): Resonance Dampers make the planet read this
+            // team's extraction as lighter — it hunts them less.
+            mined *= 1 - refinementValue(state.refinements.get(team)?.done, refinements, 'resonance');
             if (mined > heaviest && bankPos) { heaviest = mined; anchor = bankPos; }
           }
           let best: { key: string; d: number } | null = null;
