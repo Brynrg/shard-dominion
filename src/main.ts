@@ -48,6 +48,7 @@ import m3Data from '../data/missions/m3_hold_the_line.json' with { type: 'json' 
 import m4Data from '../data/missions/m4_the_vein.json' with { type: 'json' };
 import m5Data from '../data/missions/m5_iron_ash.json' with { type: 'json' };
 import m6Data from '../data/missions/m6_ashen_warlord.json' with { type: 'json' };
+import m7Data from '../data/missions/m7_the_turn.json' with { type: 'json' };
 import m8Data from '../data/missions/m8_ashfall.json' with { type: 'json' };
 import m9Data from '../data/missions/m9_the_exchange.json' with { type: 'json' };
 import m10Data from '../data/missions/m10_stormline.json' with { type: 'json' };
@@ -695,6 +696,7 @@ const MISSIONS: Record<string, unknown> = {
   m4_the_vein: m4Data,
   m5_iron_ash: m5Data,
   m6_ashen_warlord: m6Data,
+  m7_the_turn: m7Data,
   m8_ashfall: m8Data,
   m9_the_exchange: m9Data,
   m10_stormline: m10Data,
@@ -711,6 +713,7 @@ const CAMPAIGN: { id: string; name: string; order: number }[] = [
   { id: 'm4_the_vein', name: 'The Vein', order: 4 },
   { id: 'm5_iron_ash', name: 'Iron & Ash', order: 5 },
   { id: 'm6_ashen_warlord', name: 'The Ashen Warlord', order: 6 },
+  { id: 'm7_the_turn', name: 'The Turn', order: 7 },
   { id: 'm8_ashfall', name: 'Act II · Ashfall', order: 8 },
   { id: 'm9_the_exchange', name: 'Act II · The Exchange', order: 9 },
   { id: 'm10_stormline', name: 'Act II · Stormline', order: 10 },
