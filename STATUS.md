@@ -17,7 +17,7 @@
 | Stealth + detection | ✅ | ✅ | ✅ unit tests + M10 gate |
 | Artillery, stances, garrisons, transports | ✅ | ✅ | ✅ unit tests + bunker gate |
 | Air + AA + storms + shields | ✅ | ✅ (shared-lite frame per panel) | ✅ unit tests + flight gate |
-| Campaign 13 missions, 2 acts | 14 promised | 13 shipped — **M7 "The Turn" absent; Act I→II side-switch unexplained** | ✅ boot + trigger + choice gates |
+| Campaign missions/acts | ship-quality, long | **15 shipped, 3 acts** — M7 "The Turn" (the defection) authored; Act III opened (M15 "Aftershock", branches on the Seal/Harness choice via inheritsChoice). M16–M17 pending. | ✅ boot + trigger + choice + branch gates |
 | The M14 Choice (branch gameplay) | ✅ | ✅ (objectives/triggers branch; debriefs shared) | ✅ unit + gate |
 | Objectives honesty (contested hold, visible secondaries, true pointer) | ✅ | ✅ (v0.42) | ✅ unit tests |
 | Hero persistence + Veteran Reserve | ✅ | ✅ (loader fixed v0.42) | ✅ round-trip tests |
@@ -30,7 +30,9 @@
 | Art | painted everything | 14 painted sheets; expansion roster = procedural placeholders BY DESIGN | n/a (operator pipeline) |
 | Accessibility | — | minimal (keyboard focus only) | ✗ known gap |
 
-## Known gaps (deliberate, next-era)
-M7 + Act II identity repair (the audit's v0.45 story revision) · Shardborn as a true
-mechanical faction · visual editor · MP field test + reconnect · hero ability kits ·
-walk/fire/death animation strips (operator art drop) · accessibility mirror.
+## Ship-Quality program (docs/SHIP_QUALITY_PLAN.md — in progress)
+Toward a fully-realized, polished game in its own identity (WC3 = the execution/polish
+bar, not a feature clone). Done: complete code-drawn art (v0.43); M7 "The Turn" + Act III
+opener (v0.44, this pass). In flight: **S1** finish Act III (M16–M17) + deepen character
+presence · **S2** faction/team + character build depth (Shardborn made real; hero kits) ·
+**S3** economy depth tied to Resonance · **S4** polish (AI, a11y, MP field test, balance).
