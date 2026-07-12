@@ -25,6 +25,12 @@ export interface UnitOpts {
   experienceKills?: number;
 }
 
+/** Veterancy rank from lifetime kills. r1@3, r2@8, r3@15 (heroes ascend the ladder;
+ *  regular units share it). Single source of truth (damage + hero systems use it). */
+export function veterancyRank(kills: number): number {
+  return kills >= 15 ? 3 : kills >= 8 ? 2 : kills >= 3 ? 1 : 0;
+}
+
 /** Component bag for a UNIT of `kind` — identical on every creation path. */
 export function unitComponents(
   def: UnitDef,
@@ -50,7 +56,7 @@ export function unitComponents(
     ...(fm.shieldHp && def.id !== 'harvester'
       ? { shield: { hp: fm.shieldHp, max: fm.shieldHp, regenDelay: 0 } } : {}),
     ...(kills > 0
-      ? { experience: { kills, rank: kills >= 8 ? 2 : kills >= 3 ? 1 : 0 } } : {}),
+      ? { experience: { kills, rank: veterancyRank(kills) } } : {}),
     ...(def.id === 'harvester'
       ? { harvest: { state: 'SEEK' as const, targetTile: null, targetRefinery: null, cargo: 0 } }
       : { combat: { weaponId: def.weaponId, cooldownRemaining: 0, targetId: null, ...(def.ammo ? { ammo: def.ammo, ammoMax: def.ammo } : {}) } }),

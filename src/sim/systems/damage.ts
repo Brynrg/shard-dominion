@@ -4,6 +4,7 @@
 import type { SimState } from '../state.js';
 import type { WeaponsFile } from '../../loaders/schemas.js';
 import { refinementValue, type Refinement } from '../../loaders/refinements.js';
+import { veterancyRank } from '../factory.js';
 import { SIM_TICK_RATE } from '../loop.js';
 import { TILE_SUBUNITS } from '../coords.js';
 import { teamPowerShortage } from './power.js';
@@ -21,16 +22,16 @@ export function makeDamageSystem(weapons: WeaponsFile, refinements: readonly Ref
   return {
     name: 'damage' as const,
     run(state: SimState): void {
-      // Hero aura (FG-5): a living Warden emboldens nearby friendlies (+15% damage).
-      const wardens: { team: string; pos: WorldPos }[] = [];
+      // Hero aura (FG-5): a living Warden emboldens nearby friendlies. Ascendancy
+      // (character build): the bonus + radius grow with the hero's veterancy rank.
+      const wardens: { team: string; pos: WorldPos; rank: number }[] = [];
       for (const w of state.store.all()) {
         const wf = w.components.faction;
         const wk = wf?.faction;
         if (wf && (wk === 'warden' || wk === 'vane') && (w.components.health?.hp ?? 0) > 0 && w.components.position) {
-          wardens.push({ team: wf.team, pos: w.components.position });
+          wardens.push({ team: wf.team, pos: w.components.position, rank: veterancyRank(w.components.experience?.kills ?? 0) });
         }
       }
-      const AURA = 4 * TILE_SUBUNITS;
 
       for (const e of state.store.all()) {
         const combat = e.components.combat;
@@ -79,18 +80,21 @@ export function makeDamageSystem(weapons: WeaponsFile, refinements: readonly Ref
         } else {
           const armor = target.components.armor?.armorClass ?? 'NONE';
           const mult = weapons.matrix[weapon.type]?.[armor] ?? 0;
-          // Veterancy (FG-5): +15% damage per rank (3 kills → rank 1, 8 → rank 2).
-          const kills = e.components.experience?.kills ?? 0;
-          const rank = kills >= 8 ? 2 : kills >= 3 ? 1 : 0;
-          // Hero aura: +15% when a friendly Warden stands within 4 tiles.
+          // Veterancy (FG-5): +15% damage per rank (3/8/15 kills → rank 1/2/3).
+          const rank = veterancyRank(e.components.experience?.kills ?? 0);
+          // Hero aura: +15% base, +5%/rank, radius (4+rank) tiles, best nearby hero wins.
           const team = e.components.faction?.team;
-          const inAura = wardens.some(w => w.team === team && distance(pos, w.pos) <= AURA);
+          let auraBonus = 0;
+          for (const w of wardens) {
+            if (w.team !== team) continue;
+            if (distance(pos, w.pos) <= (4 + w.rank) * TILE_SUBUNITS) auraBonus = Math.max(auraBonus, 0.15 + 0.05 * w.rank);
+          }
           // Refinements (economy depth): Munitions Doctrine boosts the attacker's
           // damage; Composite Plating cuts the defender's incoming damage.
           const atkBonus = 1 + refinementValue(team ? state.refinements.get(team)?.done : undefined, refinements, 'damage');
           const defTeam = target.components.faction?.team;
           const defCut = 1 - refinementValue(defTeam ? state.refinements.get(defTeam)?.done : undefined, refinements, 'armor');
-          let dmg = weapon.damage * mult * (1 + 0.15 * rank) * (inAura ? 1.15 : 1) * atkBonus * defCut;
+          let dmg = weapon.damage * mult * (1 + 0.15 * rank) * (1 + auraBonus) * atkBonus * defCut;
           // Concord shields (XP-5): the absorb pool eats damage first, then hp.
           const sh = target.components.shield;
           if (sh && sh.hp > 0) {
@@ -102,7 +106,7 @@ export function makeDamageSystem(weapons: WeaponsFile, refinements: readonly Ref
           if (th.hp <= 0) {
             const xp = e.components.experience ?? { kills: 0, rank: 0 };
             xp.kills += 1;
-            xp.rank = xp.kills >= 8 ? 2 : xp.kills >= 3 ? 1 : 0;
+            xp.rank = veterancyRank(xp.kills);
             e.components.experience = xp;
           }
         }
