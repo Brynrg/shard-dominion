@@ -16,7 +16,9 @@
 // system charges the bank). The AI never receives hidden/recurring income here.
 import type { SimState } from '../state.js';
 import { structureComponents } from '../factory.js';
-import { teamCredits, spendCredits } from '../ledger.js';
+import { teamCredits, spendCredits, teamCells, spendCells } from '../ledger.js';
+import { teamLedger } from './research.js';
+import type { Refinement } from '../../loaders/refinements.js';
 import type { StructureDef } from '../../loaders/structures.js';
 import { teamTier } from '../tech.js';
 import type { UnitDef } from '../../loaders/units.js';
@@ -41,7 +43,7 @@ export interface AiConfig {
 
 const dist = (a: WorldPos, b: WorldPos): number => Math.hypot(a.wx - b.wx, a.wy - b.wy);
 
-export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig, structures: readonly StructureDef[] = []): { name: 'ai'; run(state: SimState): void; debugState: () => AiState } {
+export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig, structures: readonly StructureDef[] = [], refinements: readonly Refinement[] = []): { name: 'ai'; run(state: SimState): void; debugState: () => AiState } {
   const team = cfg.team;
   const evalInterval = cfg.evalInterval ?? 10;
   const assaultValue = cfg.assaultValue ?? 500;
@@ -216,6 +218,20 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig, structure
           spendCredits(state, team, 800);
           state.store.create({ position: tileToWorldCenter(spot), ...structureComponents('processing_plant', team, structures) });
           break;
+        }
+      }
+      // Economy depth: with the Processing Plant up and slack in the bank, research a
+      // Refinement (keeps a buffer so it never starves its army; order = data order).
+      if (plant && (plant.components.health?.hp ?? 1) > 0 && refinements.length > 0) {
+        const led = teamLedger(state, team);
+        if (!led.researching) {
+          const next = refinements.find(r => !led.done.includes(r.id) && credits >= r.cost + 800 && teamCells(state, team) >= (r.cells ?? 0));
+          if (next) {
+            spendCredits(state, team, next.cost);
+            if (next.cells) spendCells(state, team, next.cells);
+            led.researching = next.id;
+            led.ticksLeft = Math.max(1, Math.round(next.timeSeconds * SIM_TICK_RATE));
+          }
         }
       }
       // XP-5: reactive AA — the moment the player fields air, raise ONE AA turret.

@@ -6,7 +6,7 @@
 ## What this is
 **Shard Dominion** — an IP-clean, late-1990s Westwood-style (C&C / Red Alert / Dune 2000) web RTS.
 - **Repo:** `~/Code/games/shard-dominion` (TypeScript + Canvas2D + Vite + Vitest + zod + ESLint, single pnpm pkg).
-- **Live:** https://speedrungames.net/games/shard-dominion/ — currently **v0.45.0**.
+- **Live:** https://speedrungames.net/games/shard-dominion/ — currently **v0.47.0**.
 - **SHIP-QUALITY PROGRAM (2026-07-12, `docs/SHIP_QUALITY_PLAN.md`):** operator goal = a fully-
   realized, polished game in its OWN identity (WC3 = the execution/polish bar, NOT a feature
   clone). Done so far: complete code-drawn art (v0.43); **complete 3-act, 17-mission campaign**
@@ -18,9 +18,12 @@
   `src/sim/systems/research.ts`; state on `SimState.refinements` + in `stateHash`; a
   `research` command intent + SYSTEM_ORDER slot; effects applied point-of-use in
   damage/harvest/planetEvent). Deep Extraction / Munitions Doctrine / Composite Plating /
-  Resonance Dampers (the last softens the living-planet hunt — identity-tied). NEXT: S2
-  faction/character build depth (Shardborn made real, hero kits) · S4 polish (**AI doesn't
-  research yet** — do this + re-check the balance harness; a11y; MP field test).
+  Resonance Dampers (the last softens the living-planet hunt — identity-tied). **Hero
+  Ascendancy (v0.46):** the Warden/Vane grow with veterancy (rank 1/2/3 @ 3/8/15 kills →
+  +25% HP/rank healed-on-ascension, aura +15%→+30% & radius 4→7, r3 mends allies);
+  `src/sim/systems/hero.ts` + shared `veterancyRank()`. **AI research (v0.47):** the AI
+  now researches Refinements too (balance harness still 6/6). NEXT: S2a Shardborn as a true
+  mechanical faction (currently stat/palette) · S4 polish (accessibility; MP human field test).
 - **Your role now:** you (Claude) **build it directly** and verify. (Earlier plan was to delegate slices to a
   local Qwen builder; in practice Claude builds and only occasionally hands a tightly-scaffolded sub-task to
   `hermes-ask code` — e.g. the S6B AI waves. Default to building it yourself + verifying.)
