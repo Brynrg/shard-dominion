@@ -6,6 +6,7 @@ import { makeMovementSystem } from './sim/systems/movement.js';
 import { makeHarvestSystem } from './sim/systems/harvest.js';
 import { makeResearchSystem } from './sim/systems/research.js';
 import { makeHeroSystem } from './sim/systems/hero.js';
+import { makeRegenSystem } from './sim/systems/regen.js';
 import { loadRefinements } from './loaders/refinements.js';
 import refinementsData from '../data/refinements.json' with { type: 'json' };
 import { makeCommandSystem } from './sim/systems/command.js';
@@ -219,7 +220,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
       graceTicks: base.graceTicks ?? D.grace,
     }, structures, refinements);
   });
-  const planetSystem = makePlanetEventSystem(units, refinements);
+  const planetSystem = makePlanetEventSystem(units, refinements, teamFactions);
   const systems = orderSystems([
     commandSystem,
     makeMovementSystem(),
@@ -231,6 +232,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     makeProjectileSystem(weapons),
     makeDamageSystem(weapons, refinements),
     makeHeroSystem(units),
+    makeRegenSystem(teamFactions),
     makeProductionSystem(units, teamFactions, mission.id.startsWith('m') ? (loadProgress().heroKills ?? 0) : 0),
     makeStealthSystem(),
     ...aiSystems,

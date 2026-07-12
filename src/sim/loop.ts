@@ -26,6 +26,7 @@ export const SYSTEM_ORDER = [
   'projectile',
   'damage',
   'hero',
+  'regen',
   'agitation',
   'planetEvent',
   'fog',

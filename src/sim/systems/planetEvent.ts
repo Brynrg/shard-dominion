@@ -20,6 +20,7 @@ import { nearestWalkable } from '../pathfind.js';
 import { SIM_TICK_RATE } from '../loop.js';
 import { grantCells } from '../ledger.js';
 import { refinementValue, type Refinement } from '../../loaders/refinements.js';
+import type { TeamFactions } from '../factions.js';
 import type { EntityId } from '../ids.js';
 
 const RIFTMAW_MINING_STEP = 3000;  // credits mined per awakening
@@ -40,7 +41,11 @@ export function isStormActive(tick: number): boolean {
 }
 const CELL_CAP = 12;
 
-export function makePlanetEventSystem(units: readonly UnitDef[], refinements: readonly Refinement[] = []): { name: 'planetEvent'; run(state: SimState): void; debugRiftmaws: () => number } {
+export function makePlanetEventSystem(units: readonly UnitDef[], refinements: readonly Refinement[] = [], teamFactions?: TeamFactions): { name: 'planetEvent'; run(state: SimState): void; debugRiftmaws: () => number } {
+  const resonanceKin = (team: string): boolean => {
+    const f = team === 'player' ? teamFactions?.player : team === 'enemy' ? teamFactions?.enemy : undefined;
+    return f?.resonanceKin === true;
+  };
   const riftmawDef = units.find(u => u.id === 'riftmaw');
   let prevTotalDensity: number | null = null;
   let totalMined = 0;
@@ -73,6 +78,9 @@ export function makePlanetEventSystem(units: readonly UnitDef[], refinements: re
           let anchor: { wx: number; wy: number } | null = null;
           let heaviest = -1;
           for (const team of ['player', 'enemy'] as const) {
+            // Shardborn kinship: the planet never hunts its own — they're skipped
+            // from the "heaviest extractor" contest entirely.
+            if (resonanceKin(team)) continue;
             let mined = 0; let bankPos: { wx: number; wy: number } | null = null;
             for (const e of state.store.all()) {
               if (e.components.faction?.team !== team || !e.components.economy) continue;

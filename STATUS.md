@@ -24,7 +24,7 @@
 | Saves / replays (command-log) | ✅ | ✅ incl. boot-state (bonus/deployment/choice) | ✅ replay gate + unit tests |
 | Superweapon (Faction Strike) | ✅ | ✅ UI wired v0.42 (was sim-only) | ✅ sim tests; UI arm path in gate suite |
 | Multiplayer 1v1 / 2v2 lockstep | experimental | ✅ N-seat lockstep, full hash | ⚠️ machine-tested only — NO human field test yet; no reconnect; lobby via URL |
-| Faction identity | 3 mechanical | Concord shields · Emberhand salvage+stealth+hero · **Shardborn = stat/palette only** | ✅ what exists is tested |
+| Faction identity | 3 mechanical | Concord shields · Emberhand salvage+stealth+hero · **Shardborn = living-crystal regen + Chorus kinship (planet never hunts them)** — all 3 now mechanically distinct | ✅ unit tests + balance harness 6/6 |
 | AI | funded, goal-driven, finishes | ✅ FSM + finisher + sudden-death (v0.42) | ✅ balance harness: 6/6 matchups resolve decisively |
 | Editor | "editor" | **Mission Kit** (validated JSON launcher + templates) — not a visual editor | ✅ gate |
 | Art | painted everything | 14 painted sheets; expansion roster = procedural placeholders BY DESIGN | n/a (operator pipeline) |

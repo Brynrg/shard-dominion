@@ -20,6 +20,12 @@ export interface FactionMods {
   salvageAll?: boolean;
   /** XP-5 Concord identity: combat units spawn with an absorb shield. */
   shieldHp?: number;
+  /** Shardborn identity: living crystal — units + structures slowly regenerate HP.
+   *  Per-second floor (the regen system also mends ≥0.4%/s of max HP). */
+  regen?: number;
+  /** Shardborn identity: they ARE the Chorus — the living planet never hunts them
+   *  (Resonance / Riftmaw awakenings skip resonance-kin sides). */
+  resonanceKin?: boolean;
 }
 
 export const FACTIONS: Record<FactionId, FactionMods> = {
@@ -37,11 +43,12 @@ export const FACTIONS: Record<FactionId, FactionMods> = {
     costMult: 0.8, hpMult: 0.85, speedMult: 1.15, salvageAll: true,
     palette: { hull: '#d1503a', hullDark: '#8f3020', accent: '#ffb08f', stripe: '#ff4a3d' },
   },
-  // The planet's chosen: tough, slow, expensive — living crystal (FG-6b preview).
+  // The planet's chosen: tough, slow, expensive — living crystal that mends itself
+  // and is never hunted by the world it belongs to.
   shardborn: {
     id: 'shardborn',
     name: 'The Shardborn',
-    costMult: 1.15, hpMult: 1.25, speedMult: 0.85,
+    costMult: 1.15, hpMult: 1.25, speedMult: 0.85, regen: 3, resonanceKin: true,
     palette: { hull: '#7d5fae', hullDark: '#54407a', accent: '#d9c2ff', stripe: '#c9a6ff' },
   },
 };
