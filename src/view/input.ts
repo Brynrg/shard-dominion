@@ -44,6 +44,11 @@ export type CommandIntent = { team?: 'player' | 'enemy' } & (
   | { type: 'research'; refinementId: string }
   | { type: 'assign-group'; group: number }
   | { type: 'recall-group'; group: number }
+  // Control fit-and-finish (WC3-grade): Q = the whole army, I = cycle idle
+  // harvesters, O = the hero. Double-tapping any recall key centres the camera.
+  | { type: 'select-army' }
+  | { type: 'select-idle-harvester' }
+  | { type: 'select-hero' }
   | { type: 'train'; unitId: string });
 
 /** The command queue (view writes, command system reads). */
@@ -105,6 +110,9 @@ export function makeInputHandlers(
   sfx?: { click(): void; select(): void; ack(): void; place(): void },
   /** XP-3: which hero the E hotkey trains (faction-dependent; default warden). */
   heroUnitId = 'warden',
+  /** FG-7: which side this viewer commands (MP seat) — used only for the
+   *  view-side camera-centre on double-tapped recall keys. */
+  viewerTeam: 'player' | 'enemy' = 'player',
 ): InputHandlers {
   let selectStart: ScreenPos | null = null;
   let selectCurrent: ScreenPos | null = null;
@@ -115,6 +123,38 @@ export function makeInputHandlers(
   let attackMoveMode = false;                          // 'A' pressed → next click = attack-move
   let strikeArmed = false;                             // XP-7: STRIKE armed → next click targets it
   let lastClick: { at: number; sx: number; sy: number } | null = null; // dblclick detect
+  let lastKeyTap: { key: string; at: number } | null = null;           // double-tap recall → centre camera
+
+  // Double-tap a recall key (1-9 / Q / I / O) → centre the camera on the current
+  // selection (WC3 feel). Pure view action: reads selection, writes the camera.
+  function centerOnOwnSelection(): void {
+    if (!simStateRef) return;
+    let sumX = 0, sumY = 0, n = 0;
+    for (const e of simStateRef.store.all()) {
+      if (!e.components.selection?.selected) continue;
+      if (e.components.faction?.team !== viewerTeam) continue;
+      const p = e.components.position;
+      if (!p) continue;
+      sumX += p.wx; sumY += p.wy; n++;
+    }
+    if (n === 0) return;
+    const z = camera.zoom;
+    Object.assign(camera, {
+      x: sumX / n - (canvas.width / 2 / z) * WORLD_PER_PX,
+      y: sumY / n - (canvas.height / 2 / z) * WORLD_PER_PX,
+      zoom: z,
+    });
+  }
+
+  /** True (and swallows the intent) when this press is the second tap of a
+   *  double-tap: the first tap already selected, so this one just centres. */
+  function isDoubleTap(key: string): boolean {
+    const now = performance.now();
+    const dbl = lastKeyTap !== null && lastKeyTap.key === key && now - lastKeyTap.at < 450;
+    lastKeyTap = { key, at: now };
+    if (dbl) centerOnOwnSelection();
+    return dbl;
+  }
 
   // C&C-style build-button click: queue a unit or enter structure placement.
   function doBuildAction(action: string): void {
@@ -434,21 +474,33 @@ export function makeInputHandlers(
         e.preventDefault();
         queue.push({ type: 'train', unitId: 'harvester' });
         return;
-      case '1':
-      case '2':
-      case '3': {
+      case 'q': // Select the whole army (every combat unit) — double-tap centres
+      case 'Q':
+        e.preventDefault();
+        if (!isDoubleTap('q')) queue.push({ type: 'select-army' });
+        return;
+      case 'i': // Cycle idle harvesters (the WC3 idle-worker button) — double-tap centres
+      case 'I':
+        e.preventDefault();
+        if (!isDoubleTap('i')) queue.push({ type: 'select-idle-harvester' });
+        return;
+      case 'o': // Select the hero — double-tap centres on them
+      case 'O':
+        e.preventDefault();
+        if (!isDoubleTap('o')) queue.push({ type: 'select-hero' });
+        return;
+      case '1': case '2': case '3': case '4': case '5':
+      case '6': case '7': case '8': case '9': {
         const group = parseInt(e.key, 10);
+        e.preventDefault();
         if (e.ctrlKey || e.metaKey) {
-          // Ctrl/Meta+1/2/3 → assign-group
-          e.preventDefault();
+          // Ctrl/Meta+digit → assign the selection to that group
           queue.push({ type: 'assign-group', group });
-          return;
-        } else {
-          // 1/2/3 → recall-group
-          e.preventDefault();
+        } else if (!isDoubleTap(e.key)) {
+          // digit → recall the group; a second tap within 450ms centres the camera
           queue.push({ type: 'recall-group', group });
-          return;
         }
+        return;
       }
       default: return;
     }

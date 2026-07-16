@@ -24,7 +24,9 @@
 | Saves / replays (command-log) | ✅ | ✅ incl. boot-state (bonus/deployment/choice) | ✅ replay gate + unit tests |
 | Superweapon (Faction Strike) | ✅ | ✅ UI wired v0.42 (was sim-only) | ✅ sim tests; UI arm path in gate suite |
 | Multiplayer 1v1 / 2v2 lockstep | experimental | ✅ N-seat lockstep, full hash | ⚠️ machine-tested only — NO human field test yet; no reconnect; lobby via URL |
-| Faction identity | 3 mechanical | Concord shields · Emberhand salvage+stealth+hero · **Shardborn = living-crystal regen + Chorus kinship (planet never hunts them)** — all 3 now mechanically distinct | ✅ unit tests + balance harness 6/6 |
+| Faction identity | 3 mechanical | Concord shields · Emberhand salvage+stealth+hero · **Shardborn = living-crystal regen + Chorus kinship (planet never hunts them)** — all 3 now mechanically distinct | ✅ unit tests + balance harness 9/9 |
+| Balance fairness (v0.49) | all factions viable | **Shardborn retuned 15%→50% cross-faction win rate** (was 0/10 as defender; any speed deficit proved fatal — identity now toughness ×1.35 + regen 8/s + kinship at par cost/speed). Multi-seed win rates: concord 45% / emberhand 55% / shardborn 50%. | ✅ NEW `tests/balance/winrate.test.ts` (BALANCE_WINRATE=1, 30 games over 5 seeds, asserts no 0-win faction) + full 3×3 sweep matrix |
+| Control fit-and-finish (v0.49) | WC3-grade | **Groups 1–9** (was 1–3, now seat-scoped for MP) · **double-tap any recall key centres the camera** · **Q = select army** · **I = cycle idle harvesters** · **O = select hero** (no-op safe) · briefing hint documents them | ✅ +4 unit tests (seat-scoping, army, idle-cycle, hero no-op) + NEW `controls.spec.ts` gate |
 | AI | funded, goal-driven, finishes | ✅ FSM + finisher + sudden-death (v0.42) | ✅ balance harness: 6/6 matchups resolve decisively |
 | Editor | "editor" | **Mission Kit** (validated JSON launcher + templates) — not a visual editor | ✅ gate |
 | Art | painted everything | 14 painted sheets; expansion roster = procedural placeholders BY DESIGN | n/a (operator pipeline) |

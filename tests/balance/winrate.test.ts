@@ -1,7 +1,10 @@
-// ── Balance-validation sprint (XP plan §11): AI-vs-AI headless matchups ─────────
-// Runs ONLY with BALANCE=1 (skipped in the normal suite). Two full AI stacks fight
-// on the skirmish valley; we record who dies and when. The deterministic sim makes
-// each matchup a pure function of (factions, seed).
+// ── Multi-seed win-rate harness (balance tuning tool) ───────────────────────────
+// The sweep (sweep.test.ts) plays each matchup ONCE on the mission seed — a single
+// deterministic sample, so a stat tweak can flip it discontinuously. This harness
+// plays every cross-faction matchup over N map seeds and reports per-faction win
+// rates, which is the signal balance tuning actually needs. Runs ONLY with
+// BALANCE_WINRATE=1 (it's ~30-60s). It asserts a fairness floor: no faction may
+// lose EVERY game of the sweep (a 0% faction is a broken faction, not an underdog).
 import { describe, it, expect } from 'vitest';
 import { makeSimState, type SimState } from '../../src/sim/state.js';
 import { orderSystems, runTick } from '../../src/sim/loop.js';
@@ -34,6 +37,8 @@ const structures = loadStructures(structuresData);
 const weapons = loadWeapons(weaponsData);
 const economy = loadEconomyConstants(economyData);
 
+const SEEDS = [42, 1337, 7, 2026, 99];
+
 function alive(state: SimState, team: 'player' | 'enemy'): boolean {
   for (const e of state.store.all()) {
     if (e.components.faction?.team !== team) continue;
@@ -43,9 +48,10 @@ function alive(state: SimState, team: 'player' | 'enemy'): boolean {
   return false;
 }
 
-function playMatch(pf: FactionId, ef: FactionId, maxTicks = 24000): { winner: string; ticks: number } {
+/** Play one match on a given map seed; returns 'P' | 'E' | 'none' (deadlock/draw). */
+function playMatch(pf: FactionId, ef: FactionId, seed: number, maxTicks = 24000): 'P' | 'E' | 'none' {
   const mission = loadMission(skirmishData);
-  const state = makeSimState({ seed: mission.map.seed, mapWidth: 32, mapHeight: 32 });
+  const state = makeSimState({ seed, mapWidth: 32, mapHeight: 32 });
   const tf = makeTeamFactions(pf, ef);
   const meta = seedFromMission(state, mission, { units, structures, economy }, tf);
   const systems = orderSystems([
@@ -59,49 +65,53 @@ function playMatch(pf: FactionId, ef: FactionId, maxTicks = 24000): { winner: st
     runTick(state, systems);
     if (t % 40 !== 0) continue;
     const p = alive(state, 'player'), e = alive(state, 'enemy');
-    if (!p && !e) return { winner: 'draw', ticks: t };
-    if (!p) return { winner: `${ef}(E)`, ticks: t };
-    if (!e) return { winner: `${pf}(P)`, ticks: t };
+    if (!p && !e) return 'none';
+    if (!p) return 'E';
+    if (!e) return 'P';
   }
-  // TP-6 adjudication: a match that reaches the cap with BOTH economies exhausted
-  // is decided on points (remaining structures + army + bank). Sieges can no longer
-  // stall (the finisher commits the stronger side); only mutual exhaustion lands here.
+  // Same points adjudication as the sweep (TP-6).
   const points = (team: 'player' | 'enemy'): number => {
-    let p = 0;
+    let pts = 0;
     for (const e of state.store.all()) {
       if (e.components.faction?.team !== team) continue;
       if ((e.components.health?.hp ?? 0) <= 0) continue;
-      if (e.components.building) p += 2;
-      else if (e.components.combat) p += 1;
+      if (e.components.building) pts += 2;
+      else if (e.components.combat) pts += 1;
     }
     for (const e of state.store.all()) {
-      if (e.components.faction?.team === team && e.components.economy) p += (e.components.economy.credits ?? 0) / 500;
+      if (e.components.faction?.team === team && e.components.economy) pts += (e.components.economy.credits ?? 0) / 500;
     }
-    return p;
+    return pts;
   };
   const pp = points('player'), ep = points('enemy');
   const margin = Math.abs(pp - ep) / Math.max(pp, ep, 1);
-  if (margin < 0.1) return { winner: 'deadlock', ticks: maxTicks };
-  return { winner: pp > ep ? `${pf}(P·pts)` : `${ef}(E·pts)`, ticks: maxTicks };
+  if (margin < 0.1) return 'none';
+  return pp > ep ? 'P' : 'E';
 }
 
-describe.skipIf(!process.env.BALANCE)('balance sweep — AI vs AI', () => {
-  // The FULL 3×3 matrix (mirrors included) — every faction plays every faction
-  // from both seats, so a faction that only wins with the first-seat advantage
-  // (or never wins at all) is visible in the sweep output.
-  const matchups: [FactionId, FactionId][] = [
-    ['concord', 'concord'], ['concord', 'emberhand'], ['emberhand', 'concord'],
-    ['concord', 'shardborn'], ['emberhand', 'shardborn'], ['shardborn', 'emberhand'],
-    ['shardborn', 'concord'], ['emberhand', 'emberhand'], ['shardborn', 'shardborn'],
-  ];
-  for (const [pf, ef] of matchups) {
-    it(`${pf} vs ${ef}`, () => {
-      const r = playMatch(pf, ef);
-      const mins = (r.ticks / 20 / 60).toFixed(1);
-      console.log(`RESULT ${pf} vs ${ef}: winner=${r.winner} at ${mins}min`);
-      expect(r.winner).not.toBe('draw');
-      expect(r.winner, 'matches must CONCLUDE or adjudicate decisively (TP-6)').not.toBe('timeout');
-      expect(r.winner, 'no dead-even deadlocks').not.toBe('deadlock');
-    });
-  }
+describe.skipIf(!process.env.BALANCE_WINRATE)('balance win rates — multi-seed', () => {
+  it('no faction loses every cross-faction game', () => {
+    const factions: FactionId[] = ['concord', 'emberhand', 'shardborn'];
+    const wins: Record<FactionId, number> = { concord: 0, emberhand: 0, shardborn: 0 };
+    const games: Record<FactionId, number> = { concord: 0, emberhand: 0, shardborn: 0 };
+    for (const pf of factions) {
+      for (const ef of factions) {
+        if (pf === ef) continue;
+        for (const seed of SEEDS) {
+          const r = playMatch(pf, ef, seed);
+          games[pf]++; games[ef]++;
+          if (r === 'P') wins[pf]++;
+          else if (r === 'E') wins[ef]++;
+          console.log(`WINRATE ${pf} vs ${ef} seed=${seed}: ${r === 'P' ? pf : r === 'E' ? ef : 'none'}`);
+        }
+      }
+    }
+    for (const f of factions) {
+      const rate = ((wins[f] / games[f]) * 100).toFixed(0);
+      console.log(`TOTAL ${f}: ${wins[f]}/${games[f]} (${rate}%)`);
+    }
+    for (const f of factions) {
+      expect(wins[f], `${f} must win at least one cross-faction game`).toBeGreaterThan(0);
+    }
+  }, 600000);
 });

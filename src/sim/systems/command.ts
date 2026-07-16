@@ -74,15 +74,19 @@ export interface CommandSystem {
   run(state: SimState): void;
   /** Live confirmation markers, for the renderer. */
   readonly markers: ConfirmationMarker[];
-  /** Control groups: Map<groupNumber, EntityId[]> */
-  readonly groups: Map<number, EntityId[]>;
+  /** Control groups, SEAT-SCOPED (FG-7): keyed `${team}:${groupNumber}` so two
+   *  multiplayer seats' group slots never collide. */
+  readonly groups: Map<string, EntityId[]>;
 }
 
 const MARKER_LIFETIME = 10 as const; // ~0.5s at 20Hz
 
 export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structures: StructureDef[], heroIds: readonly string[] = ['warden', 'vane'], refinements: readonly Refinement[] = []): CommandSystem {
   const markers: ConfirmationMarker[] = [];
-  const groups = new Map<number, EntityId[]>();
+  const groups = new Map<string, EntityId[]>();
+  // Idle-harvester cycling cursor per seat (like the groups map, this closure
+  // state is rebuilt identically by replaying the same command log).
+  const idleCursor = new Map<string, number>();
   // XP-7 Faction Strike: pending orbital splashes { at, ticksLeft } (deterministic).
   const strikes: { wx: number; wy: number; ticksLeft: number }[] = [];
   const STRIKE_COST_CELLS = 5;
@@ -379,25 +383,27 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
           }
 
           case 'assign-group': {
+            // Only the acting seat's own selected entities enter its group slot.
             const selectedIds: EntityId[] = [];
             for (const e of state.store.all()) {
-              if (e.components.selection?.selected) {
+              if (e.components.selection?.selected && e.components.faction?.team === actor) {
                 selectedIds.push(e.id);
               }
             }
-            groups.set(intent.group, selectedIds);
+            groups.set(`${actor}:${intent.group}`, selectedIds);
             break;
           }
 
           case 'recall-group': {
-            // Deselect all first
+            // Deselect the acting seat's own selection only (FG-7: never trample
+            // the other seat's selection).
             for (const e of state.store.all()) {
-              if (e.components.selection) {
+              if (e.components.selection && e.components.faction?.team === actor) {
                 e.components.selection.selected = false;
               }
             }
             // Recall the stored group (skip dead/removed entities)
-            const stored = groups.get(intent.group);
+            const stored = groups.get(`${actor}:${intent.group}`);
             if (stored) {
               for (const id of stored) {
                 const e = state.store.get(id);
@@ -406,6 +412,63 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
                 }
               }
             }
+            break;
+          }
+
+          case 'select-army': {
+            // Q: select every living combat unit the seat owns (not buildings,
+            // not harvesters) — the "grab the army" key.
+            for (const e of state.store.all()) {
+              if (e.components.faction?.team !== actor) continue;
+              const combatant = !!e.components.combat && !e.components.building && (e.components.health?.hp ?? 1) > 0;
+              if (combatant) e.components.selection = { selected: true };
+              else if (e.components.selection) e.components.selection.selected = false;
+            }
+            break;
+          }
+
+          case 'select-idle-harvester': {
+            // I: the WC3 idle-worker button — cycle through the seat's harvesters
+            // whose FSM is IDLE (not mining/returning/docking). A manually-parked
+            // harvester still walking counts: it's economically idle either way.
+            // Deterministic: entity ids ascend, the cursor lives in the same
+            // replay-rebuilt closure as groups.
+            const idle: EntityId[] = [];
+            for (const e of state.store.all()) {
+              if (e.components.faction?.team !== actor) continue;
+              const h = e.components.harvest;
+              if (!h || h.state !== 'IDLE') continue;
+              if ((e.components.health?.hp ?? 1) <= 0) continue;
+              idle.push(e.id);
+            }
+            if (idle.length === 0) break; // nothing idle → keep the current selection
+            const cursor = idleCursor.get(actor) ?? 0;
+            const pick = idle[cursor % idle.length]!;
+            idleCursor.set(actor, (cursor + 1) % idle.length);
+            for (const e of state.store.all()) {
+              if (e.components.selection && e.components.faction?.team === actor) e.components.selection.selected = false;
+            }
+            const picked = state.store.get(pick);
+            if (picked) picked.components.selection = { selected: true };
+            break;
+          }
+
+          case 'select-hero': {
+            // O: select the seat's hero (if alive); no-op when there is none so a
+            // mispress never throws away the current selection.
+            let hero: ReturnType<typeof state.store.get> | undefined;
+            for (const e of state.store.all()) {
+              if (e.components.faction?.team !== actor) continue;
+              if (!heroIds.includes(e.components.faction.faction)) continue;
+              if ((e.components.health?.hp ?? 1) <= 0) continue;
+              hero = e;
+              break;
+            }
+            if (!hero) break;
+            for (const e of state.store.all()) {
+              if (e.components.selection && e.components.faction?.team === actor) e.components.selection.selected = false;
+            }
+            hero.components.selection = { selected: true };
             break;
           }
           case 'strike': {

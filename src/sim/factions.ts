@@ -43,12 +43,16 @@ export const FACTIONS: Record<FactionId, FactionMods> = {
     costMult: 0.8, hpMult: 0.85, speedMult: 1.15, salvageAll: true,
     palette: { hull: '#d1503a', hullDark: '#8f3020', accent: '#ffb08f', stripe: '#ff4a3d' },
   },
-  // The planet's chosen: tough, slow, expensive — living crystal that mends itself
-  // and is never hunted by the world it belongs to.
+  // The planet's chosen: hardened living crystal that mends itself and is never
+  // hunted by the world it belongs to. Balance note (2026-07-15): any speed deficit
+  // proved fatal in the multi-seed win-rate harness (tests/balance/winrate.test.ts
+  // — every fight happens on the faster side's terms), so the identity is carried
+  // by toughness + regen + kinship, NOT slowness. Tuned to ~50% cross-faction
+  // win rate (concord 45 / emberhand 55 / shardborn 50).
   shardborn: {
     id: 'shardborn',
     name: 'The Shardborn',
-    costMult: 1.15, hpMult: 1.25, speedMult: 0.85, regen: 3, resonanceKin: true,
+    costMult: 1.0, hpMult: 1.35, speedMult: 1.0, regen: 8, resonanceKin: true,
     palette: { hull: '#7d5fae', hullDark: '#54407a', accent: '#d9c2ff', stripe: '#c9a6ff' },
   },
 };

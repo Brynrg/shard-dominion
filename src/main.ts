@@ -320,7 +320,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   }, {
     buttonAt: (sx, sy) => view.hudButtonAt(sx, sy),
     setTab: (tab) => view.hudSetTab(tab),
-  }, audio, teamFactions.player.id === 'emberhand' ? 'vane' : 'warden');
+  }, audio, teamFactions.player.id === 'emberhand' ? 'vane' : 'warden', viewerTeam);
   // ── Continue (FG-6): replay the saved command log tick-for-tick, then go live.
   // Determinism makes the fast-forward EXACT (same mission + same log → same state).
   if (params.get('continue') === '1') {
