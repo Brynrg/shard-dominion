@@ -30,7 +30,7 @@
 | AI | funded, goal-driven, finishes | ✅ FSM + finisher + sudden-death (v0.42) | ✅ balance harness: 6/6 matchups resolve decisively |
 | Editor | "editor" | **Mission Kit** (validated JSON launcher + templates) — not a visual editor | ✅ gate |
 | Art | painted everything | 14 painted sheets; expansion roster = procedural placeholders BY DESIGN | n/a (operator pipeline) |
-| Accessibility | — | minimal (keyboard focus only) | ✗ known gap |
+| Accessibility | — | **v0.50:** aria-live screen-reader announcer (mission start · unit ready · under attack · power shortage · victory/defeat, deduped) + **colorblind team-shape markers** (○ own / ▲ hostile, dual-stroke, pause-menu toggle, persisted) + full hotkey legend in HUD & briefing | ✅ NEW `a11y.spec.ts` gate (announcer text, toggle, reload persistence) |
 
 ## Ship-Quality program (docs/SHIP_QUALITY_PLAN.md — in progress)
 Toward a fully-realized, polished game in its own identity (WC3 = the execution/polish

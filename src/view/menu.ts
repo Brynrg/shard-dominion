@@ -227,6 +227,9 @@ export interface PauseOpts {
   onMenu: () => void;
   /** Save the match (command-log snapshot, FG-6). */
   onSave?: () => void;
+  /** A11y: colorblind team-shape markers toggle (persisted). */
+  getTeamShapes?: () => boolean;
+  setTeamShapes?: (on: boolean) => void;
   audio: { getVolume(): number; setVolume(v: number): void; isMuted(): boolean; setMuted(m: boolean): void };
   getSpeed: () => number;
   setSpeed: (s: number) => void;
@@ -277,6 +280,27 @@ export function showPauseMenu(o: PauseOpts): () => void {
     spdRow.appendChild(b);
   }
   panel.appendChild(spdRow);
+
+  // Accessibility row: colorblind team-shape markers (○ own / ▲ hostile).
+  if (o.getTeamShapes && o.setTeamShapes) {
+    const a11yRow = document.createElement('div');
+    a11yRow.style.cssText = 'display:flex;align-items:center;gap:10px;justify-content:center;margin:2px 0 14px;color:#cfe0ee;font-size:13px;';
+    a11yRow.innerHTML = '<span>TEAM SHAPES</span>';
+    const tog = document.createElement('button');
+    tog.id = 'sd-a11y-shapes';
+    const style = (on: boolean): string =>
+      `font-family:monospace;font-size:11px;padding:4px 10px;cursor:pointer;border-radius:4px;border:1px solid ${on ? '#00e5ff' : '#3a4a5a'};background:${on ? 'rgba(0,229,255,0.14)' : 'rgba(20,26,34,0.9)'};color:${on ? '#00e5ff' : '#cfe0ee'};`;
+    const label = (): string => (o.getTeamShapes!() ? 'ON  (○ own / ▲ enemy)' : 'OFF');
+    tog.textContent = label();
+    tog.style.cssText = style(o.getTeamShapes());
+    tog.onclick = () => {
+      o.setTeamShapes!(!o.getTeamShapes!());
+      tog.textContent = label();
+      tog.style.cssText = style(o.getTeamShapes!());
+    };
+    a11yRow.appendChild(tog);
+    panel.appendChild(a11yRow);
+  }
 
   const resume = button('▶  RESUME', true);
   resume.onclick = () => o.onResume();

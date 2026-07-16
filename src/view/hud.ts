@@ -500,8 +500,9 @@ export function makeHUD(cfg: HUDConfig): {
       // Legend (footer).
       context.fillStyle = '#8894a4';
       context.font = '10px monospace';
-      context.fillText('L-click select · R-click move/attack/mine', px + 10, py + ph - 42);
-      context.fillText('A atk-move · S stop · E hero · dblclick=type', px + 10, py + ph - 30);
+      context.fillText('L-click select · R-click move/attack/mine', px + 10, py + ph - 54);
+      context.fillText('A atk-move · S stop · E hero · dblclick=type', px + 10, py + ph - 42);
+      context.fillText('Q army · I idle harv · O hero · Ctrl+1-9 grp', px + 10, py + ph - 30);
       context.fillText('X stance · U unload · P pause · M mute', px + 10, py + ph - 18);
 
       // Overflow warning (below panel, hard to miss).

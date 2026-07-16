@@ -15,6 +15,7 @@ import { makePowerSystem } from './sim/systems/power.js';
 import { makeView } from './view/index.js';
 import { makeInputHandlers, makeCommandQueue } from './view/input.js';
 import { makeOnboarding } from './view/onboarding.js';
+import { makeAnnouncer, makeA11ySettings } from './view/a11y.js';
 import { tileToWorldCenter, worldToScreen } from './sim/coords.js';
 import { loadEconomyConstants } from './loaders/economyConstants.js';
 import { loadStructures } from './loaders/structures.js';
@@ -103,6 +104,7 @@ declare global {
     __debugUnitScreenPos?: (kind: string) => { x: number; y: number } | null;
     __debugSprites?: unknown; // the sprite bank, for the real-asset loader smoke test
     __debugCamera?: () => { x: number; y: number; zoom: number };
+    __debugA11y?: () => { teamShapes: boolean; lastAnnouncement: string };
   }
 }
 
@@ -257,6 +259,10 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // Onboarding: per-mission briefing (sim paused until dismissed) + objective banner.
   const onboarding = makeOnboarding(mission.briefing, () => objectivesSystem.result.objectives, () => objectivesSystem.messages);
 
+  // Accessibility (view-level): screen-reader announcer + persisted settings.
+  const a11y = makeA11ySettings();
+  const announcer = makeAnnouncer();
+
   // Create the view — it reads the command system's confirmation markers and the
   // live selection box from input (both view-side; the sim stays screen-blind).
   const view = makeView({
@@ -298,6 +304,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     viewerTeam,                                                      // MP seat (FG-7)
     isMuted: () => audio.isMuted(),                                  // HUD mute chip
     isStorm: () => isStormActive(state.tick),                        // XP-5 weather
+    getTeamShapes: () => a11y.getTeamShapes(),                       // a11y shape markers
     unitCost: (base) => modCost(base, teamFactions.player),          // faction pricing on labels (QA BUG-2)
     powerDemandOf: (id) => structures.find(st => st.id === id)?.powerDemand ?? 0, // ⚡ warning (QA BUG-4)
     canRunTick: mp ? (t) => mp.lockstep.canRun(t) : undefined,
@@ -314,7 +321,10 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // Wire input, then start rendering (input must exist before the first render frame).
   const input = makeInputHandlers(canvas, view.getCamera(), commandQueue, panCamera, structures, {
     active: () => onboarding.briefingActive(),
-    dismiss: () => { audio.resume(); audio.startMusic(); onboarding.dismissBriefing(); },
+    dismiss: () => {
+      audio.resume(); audio.startMusic(); onboarding.dismissBriefing();
+      announcer.announce(`Mission started: ${mission.name}. ${mission.briefing?.objectives?.[0] ?? ''}`);
+    },
   }, {
     jump: (sx, sy) => view.minimapJump(sx, sy),
   }, {
@@ -358,6 +368,8 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
         audio,
         getSpeed: () => speed,
         setSpeed: (sp) => { speed = sp; },
+        getTeamShapes: () => a11y.getTeamShapes(),
+        setTeamShapes: (on) => a11y.setTeamShapes(on),
         onSave: () => {
           try {
             bootState.choice = mission.choice ? localStorage.getItem(`shardDominion.choice.${mission.id}`) : null;
@@ -398,6 +410,33 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // Capture phase: fires BEFORE input's bubble-phase keydown, so Escape-while-placing
   // sees placement still active and yields to input's cancel instead of also pausing.
   window.addEventListener('keydown', onHotkey, { capture: true });
+
+  // ── A11y announcer watcher (view-level, wall-clock — the sim never sees it).
+  // Once a second, diff the viewer's side and speak the transitions: match end,
+  // forces under attack, power shortage, a fresh unit off the line.
+  const a11yPrev = { over: false, ownHp: -1, powered: true, army: -1 };
+  window.setInterval(() => {
+    if (onboarding.briefingActive()) return;
+    const res = missionResult();
+    if (res.over && !a11yPrev.over) announcer.announce(res.winner === viewerTeam ? 'Victory. Mission complete.' : 'Defeat.', 0);
+    a11yPrev.over = res.over;
+    if (res.over) return;
+    let ownHp = 0, army = 0, supply = 0, demand = 0;
+    for (const e of state.store.all()) {
+      if (e.components.faction?.team !== viewerTeam) continue;
+      ownHp += Math.max(0, e.components.health?.hp ?? 0);
+      if (e.components.combat && !e.components.building && (e.components.health?.hp ?? 0) > 0) army++;
+      const pw = e.components.power;
+      if (pw) { supply += pw.powerSupply; demand += pw.powerDemand; }
+    }
+    if (a11yPrev.ownHp >= 0 && ownHp < a11yPrev.ownHp - 15) announcer.announce('Forces under attack.', 15000);
+    a11yPrev.ownHp = ownHp;
+    const powered = supply >= demand;
+    if (!powered && a11yPrev.powered) announcer.announce('Power shortage. Build a Power Node.', 20000);
+    a11yPrev.powered = powered;
+    if (a11yPrev.army >= 0 && army > a11yPrev.army) announcer.announce('Unit ready.');
+    a11yPrev.army = army;
+  }, 1000);
 
   // ── The Choice (XP-6): the finale asks before anything moves. Reload applies it.
   if (mission.choice && !bootChoice) {
@@ -529,6 +568,9 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
 
     return { supply, demand, powered: supply >= demand };
   };
+
+  // A11y debug hook (liveness gate): toggle state + the last announcement.
+  window.__debugA11y = () => ({ teamShapes: a11y.getTeamShapes(), lastAnnouncement: announcer.last() });
 
   // Building-count + ConYard locator hooks for the S3 liveness gate.
   window.__debugBuildingCount = () => {

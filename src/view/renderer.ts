@@ -114,6 +114,8 @@ export interface ViewConfig {
   enemyPalette?: { hull: string; hullDark: string; accent: string; stripe: string };
   /** Enemy faction id (XP-3 skins: delivered faction re-renders beat team paint). */
   enemyFactionId?: string;
+  /** A11y colorblind assist: draw team shape markers (○ own / ▲ hostile) on units. */
+  getTeamShapes?: () => boolean;
 }
 
 export interface View {
@@ -607,6 +609,37 @@ export function makeView(cfg: ViewConfig): View {
         context.moveTo(p.sx - 4 * camera.zoom, y);
         context.lineTo(p.sx, y - 3 * camera.zoom);
         context.lineTo(p.sx + 4 * camera.zoom, y);
+        context.stroke();
+      }
+    }
+  }
+
+  // Colorblind assist (a11y): when enabled, every UNIT carries a shape that tells
+  // its side without hue — viewer's own = ○ above the chassis, hostile = ▲.
+  // Dual-stroked (dark under light) so it reads on any hull or terrain.
+  function drawTeamShapeMarkers() {
+    if (!cfg.getTeamShapes?.()) return;
+    const viewer = cfg.viewerTeam ?? 'player';
+    for (const e of simState.store.all()) {
+      const pos = e.components.position;
+      const team = e.components.faction?.team;
+      if (!pos || !team || e.components.building) continue;
+      if ((e.components.health?.hp ?? 1) <= 0) continue;
+      const p = worldToScreen(pos, camera);
+      const r = 3.5 * camera.zoom;
+      const y = p.sy - 11 * camera.zoom;
+      for (const [stroke, width] of [['rgba(0,0,0,0.85)', 3.5], ['#ffffff', 1.5]] as const) {
+        context.strokeStyle = stroke;
+        context.lineWidth = width * camera.zoom;
+        context.beginPath();
+        if (team === viewer) {
+          context.arc(p.sx, y, r, 0, Math.PI * 2);
+        } else {
+          context.moveTo(p.sx, y - r);
+          context.lineTo(p.sx + r, y + r);
+          context.lineTo(p.sx - r, y + r);
+          context.closePath();
+        }
         context.stroke();
       }
     }
@@ -1146,6 +1179,7 @@ export function makeView(cfg: ViewConfig): View {
     drawEntities();
     drawParticles();
     drawRankChevrons();
+    drawTeamShapeMarkers();
     drawSelectionRings();
     drawBoxSelection();
     drawConfirmationMarkers();
