@@ -6,9 +6,9 @@
 ## What this is
 **Shard Dominion** — an IP-clean, late-1990s Westwood-style (C&C / Red Alert / Dune 2000) web RTS.
 - **Repo:** `~/Code/games/shard-dominion` (TypeScript + Canvas2D + Vite + Vitest + zod + ESLint, single pnpm pkg).
-- **Live:** https://speedrungames.net/games/shard-dominion/ — currently **v0.48.0** (repo is at
-  **v0.51.0, NOT yet deployed** — deploy is operator-gated; v0.49 balance+controls and v0.50 a11y
-  are ready to ship).
+- **Live:** https://speedrungames.net/games/shard-dominion/ — currently **v0.52.0** (deployed +
+  hash-verified 2026-07-16; v0.49 balance+controls · v0.50 a11y · v0.51 beyond-WC3 depth ·
+  v0.52 EVA/Sell all live).
 - **SHIP-QUALITY PROGRAM (2026-07-12, `docs/SHIP_QUALITY_PLAN.md`):** operator goal = a fully-
   realized, polished game in its OWN identity (WC3 = the execution/polish bar, NOT a feature
   clone). Done so far: complete code-drawn art (v0.43); **complete 3-act, 17-mission campaign**
@@ -43,9 +43,12 @@
   military-first box select; STATUS.md now carries an evidence-backed "exceeds WC3"
   scorecard (unlimited selection vs the 12-cap, global train keys, universal double-tap
   centring, a11y, measured 45-55% faction balance, any-tick deterministic saves).
+  **Westwood feedback layer (v0.52, research-driven):** a deep-research pass over the official
+  RA/Dune 2000 manuals + EA's GPL'd RA source produced the EVA announcer (text flash +
+  speechSynthesis voice, pause-menu toggle), refused-build-click feedback (buzz + reason), and
+  the sidebar SELL flow (50% refund; refund granted AFTER removal — the ConYard is a bank).
   REMAINING (honest): a real 2-HUMAN MP field test (operator-side — the relay + lockstep are
-  machine-verified but never carried a live 2-player match) · deploy of v0.49–v0.51
-  (operator-gated).
+  machine-verified but never carried a live 2-player match).
 - **Your role now:** you (Claude) **build it directly** and verify. (Earlier plan was to delegate slices to a
   local Qwen builder; in practice Claude builds and only occasionally hands a tightly-scaffolded sub-task to
   `hermes-ask code` — e.g. the S6B AI waves. Default to building it yourself + verifying.)
