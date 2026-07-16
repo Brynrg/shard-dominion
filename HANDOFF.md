@@ -6,7 +6,9 @@
 ## What this is
 **Shard Dominion** — an IP-clean, late-1990s Westwood-style (C&C / Red Alert / Dune 2000) web RTS.
 - **Repo:** `~/Code/games/shard-dominion` (TypeScript + Canvas2D + Vite + Vitest + zod + ESLint, single pnpm pkg).
-- **Live:** https://speedrungames.net/games/shard-dominion/ — currently **v0.48.0**.
+- **Live:** https://speedrungames.net/games/shard-dominion/ — currently **v0.48.0** (repo is at
+  **v0.50.0, NOT yet deployed** — deploy is operator-gated; v0.49 balance+controls and v0.50 a11y
+  are ready to ship).
 - **SHIP-QUALITY PROGRAM (2026-07-12, `docs/SHIP_QUALITY_PLAN.md`):** operator goal = a fully-
   realized, polished game in its OWN identity (WC3 = the execution/polish bar, NOT a feature
   clone). Done so far: complete code-drawn art (v0.43); **complete 3-act, 17-mission campaign**
@@ -27,10 +29,19 @@
   never hunts resonance-kin sides — planetEvent takes teamFactions). All 3 factions now
   mechanically distinct. **Every named goal pillar is shipped** (art · 17-mission 3-act
   branching story · research economy · ascending hero · 3 distinct factions · AI parity).
+  **Balance FIXED (v0.49):** a new multi-seed win-rate harness (`BALANCE_WINRATE=1 npx vitest
+  run tests/balance/winrate.test.ts`, 30 games × 5 seeds) showed Shardborn at 15% and 0/10 as
+  defender; the empirical finding is that ANY speed deficit is fatal in AI-vs-AI (fights happen
+  on the faster side's terms), so Shardborn identity moved to toughness ×1.35 + regen 8/s +
+  kinship at par cost/speed → win rates now concord 45 / emberhand 55 / shardborn 50, and the
+  sweep is the full 3×3 matrix (9/9, P-seat symmetric). **Controls (v0.49):** groups 1–9
+  (seat-scoped — fixed an MP selection-trample bug), double-tap recall centres the camera,
+  Q = army, I = idle-harvester cycle, O = hero; documented in HUD legend + briefing.
+  **Accessibility (v0.50):** aria-live announcer + colorblind team-shape markers (pause-menu
+  toggle, persisted) — `tests/liveness/a11y.spec.ts`.
   REMAINING (honest): a real 2-HUMAN MP field test (operator-side — the relay + lockstep are
-  machine-verified but never carried a live 2-player match) · optional deeper accessibility ·
-  ongoing balance tuning (the harness shows Shardborn currently an underdog — decisive, not
-  dominant).
+  machine-verified but never carried a live 2-player match) · deploy of v0.49+v0.50
+  (operator-gated).
 - **Your role now:** you (Claude) **build it directly** and verify. (Earlier plan was to delegate slices to a
   local Qwen builder; in practice Claude builds and only occasionally hands a tightly-scaffolded sub-task to
   `hermes-ask code` — e.g. the S6B AI waves. Default to building it yourself + verifying.)
