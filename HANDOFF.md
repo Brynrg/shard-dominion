@@ -7,7 +7,7 @@
 **Shard Dominion** — an IP-clean, late-1990s Westwood-style (C&C / Red Alert / Dune 2000) web RTS.
 - **Repo:** `~/Code/games/shard-dominion` (TypeScript + Canvas2D + Vite + Vitest + zod + ESLint, single pnpm pkg).
 - **Live:** https://speedrungames.net/games/shard-dominion/ — currently **v0.48.0** (repo is at
-  **v0.50.0, NOT yet deployed** — deploy is operator-gated; v0.49 balance+controls and v0.50 a11y
+  **v0.51.0, NOT yet deployed** — deploy is operator-gated; v0.49 balance+controls and v0.50 a11y
   are ready to ship).
 - **SHIP-QUALITY PROGRAM (2026-07-12, `docs/SHIP_QUALITY_PLAN.md`):** operator goal = a fully-
   realized, polished game in its OWN identity (WC3 = the execution/polish bar, NOT a feature
@@ -39,8 +39,12 @@
   Q = army, I = idle-harvester cycle, O = hero; documented in HUD legend + briefing.
   **Accessibility (v0.50):** aria-live announcer + colorblind team-shape markers (pause-menu
   toggle, persisted) — `tests/liveness/a11y.spec.ts`.
+  **Beyond-WC3 depth (v0.51):** shift-queued waypoint orders (dashed route rendered) +
+  military-first box select; STATUS.md now carries an evidence-backed "exceeds WC3"
+  scorecard (unlimited selection vs the 12-cap, global train keys, universal double-tap
+  centring, a11y, measured 45-55% faction balance, any-tick deterministic saves).
   REMAINING (honest): a real 2-HUMAN MP field test (operator-side — the relay + lockstep are
-  machine-verified but never carried a live 2-player match) · deploy of v0.49+v0.50
+  machine-verified but never carried a live 2-player match) · deploy of v0.49–v0.51
   (operator-gated).
 - **Your role now:** you (Claude) **build it directly** and verify. (Earlier plan was to delegate slices to a
   local Qwen builder; in practice Claude builds and only occasionally hands a tightly-scaffolded sub-task to
