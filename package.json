@@ -1,7 +1,7 @@
 {
   "name": "shard-dominion",
   "private": true,
-  "version": "0.50.0",
+  "version": "0.51.0",
   "type": "module",
   "packageManager": "pnpm@10.30.0",
   "description": "IP-clean late-90s Westwood-style web RTS. Pure deterministic sim + Canvas2D. Built slice by slice against pinned contracts.",

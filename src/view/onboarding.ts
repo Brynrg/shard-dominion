@@ -41,7 +41,7 @@ const BRIEF_HOWTO: readonly string[] = [
   '4.  Drag a box to select troops, then RIGHT-CLICK the enemy to attack.',
   '5.  Push north-east and destroy their base to win.',
 ];
-const BRIEF_HINT = 'SCROLL: screen edge · wheel = zoom · radar = jump  |  Q = army · I = idle harvester · O = hero · Ctrl+1-9 = group (tap ×2 centres)';
+const BRIEF_HINT = 'Q = army · I = idle harv · O = hero · Ctrl+1-9 = group (tap ×2 centres) · Shift+R-click = queue waypoints';
 
 export interface BriefingText { title: string; story: readonly string[]; objectives: readonly string[] }
 

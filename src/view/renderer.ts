@@ -683,6 +683,33 @@ export function makeView(cfg: ViewConfig): View {
         context.restore();
       }
 
+      // Shift-queued waypoints (v0.51): dashed route through the live target and
+      // every queued leg, a dot at each stop — so the plotted path is legible.
+      const mv = e.components.movement;
+      if (mv?.target && (mv.orderQueue?.length ?? 0) > 0) {
+        context.save();
+        context.strokeStyle = 'rgba(255,255,0,0.55)';
+        context.fillStyle = 'rgba(255,255,0,0.75)';
+        context.lineWidth = 1.5;
+        context.setLineDash([5, 5]);
+        context.beginPath();
+        context.moveTo(screenPos.sx, screenPos.sy);
+        const stops = [mv.target, ...(mv.orderQueue ?? [])];
+        for (const w of stops) {
+          const p = worldToScreen({ wx: w.wx, wy: w.wy }, camera);
+          context.lineTo(p.sx, p.sy);
+        }
+        context.stroke();
+        context.setLineDash([]);
+        for (const w of stops) {
+          const p = worldToScreen({ wx: w.wx, wy: w.wy }, camera);
+          context.beginPath();
+          context.arc(p.sx, p.sy, 3 * camera.zoom, 0, Math.PI * 2);
+          context.fill();
+        }
+        context.restore();
+      }
+
       // Draw selection ring
       context.strokeStyle = SELECTION_COLOR;
       context.lineWidth = 3;

@@ -90,6 +90,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
   // XP-7 Faction Strike: pending orbital splashes { at, ticksLeft } (deterministic).
   const strikes: { wx: number; wy: number; ticksLeft: number }[] = [];
   const STRIKE_COST_CELLS = 5;
+  const ORDER_QUEUE_CAP = 8; // shift-queued waypoints per unit (v0.51)
   const STRIKE_DELAY = 60;      // 3s of warning
   const STRIKE_RADIUS = 2.5 * TILE_SUBUNITS;
   const STRIKE_DAMAGE = 250;
@@ -131,11 +132,26 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             if (intent.worldRect) {
               // Selection is SEAT-SCOPED (FG-7): a side can only (de)select its own
               // entities, so two players' selections never trample each other.
+              // Military-first (v0.51, beyond-WC3 QoL): when the box holds BOTH
+              // combat units and support (harvesters/buildings), grab only the
+              // fighters — boxing your army near the base never steals workers.
               const { minWx, minWy, maxWx, maxWy } = intent.worldRect;
+              const inRect = (pos: { wx: number; wy: number }): boolean =>
+                pos.wx >= minWx && pos.wx <= maxWx && pos.wy >= minWy && pos.wy <= maxWy;
+              let hasMilitary = false;
               for (const e of state.store.all()) {
                 const pos = e.components.position;
                 if (!pos || e.components.faction?.team !== actor) continue;
-                const inside = pos.wx >= minWx && pos.wx <= maxWx && pos.wy >= minWy && pos.wy <= maxWy;
+                if (inRect(pos) && e.components.combat && !e.components.building && (e.components.health?.hp ?? 1) > 0) {
+                  hasMilitary = true;
+                  break;
+                }
+              }
+              for (const e of state.store.all()) {
+                const pos = e.components.position;
+                if (!pos || e.components.faction?.team !== actor) continue;
+                const military = !!e.components.combat && !e.components.building;
+                const inside = inRect(pos) && (!hasMilitary || military);
                 if (inside) {
                   e.components.selection = { selected: true };
                 } else if (e.components.selection) {
@@ -250,7 +266,19 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
                 if (e.components.movement) e.components.movement.target = null;
               } else {
                 if (!e.components.movement) e.components.movement = { target: null, path: [], speed: 10 };
-                e.components.movement.target = intent.target;
+                const mv = e.components.movement;
+                if (intent.queued && mv.target) {
+                  // Shift-queue (v0.51): append a waypoint; the unit keeps its
+                  // current leg. Capped so a held key can't grow state unbounded.
+                  mv.orderQueue = mv.orderQueue ?? [];
+                  if (mv.orderQueue.length < ORDER_QUEUE_CAP) {
+                    mv.orderQueue.push({ wx: intent.target.wx, wy: intent.target.wy });
+                  }
+                } else {
+                  mv.target = intent.target;
+                  mv.orderQueue = []; // a plain order replaces the whole queue
+                  mv.attackMove = false;
+                }
                 if (e.components.harvest) {
                   e.components.harvest.state = 'IDLE';
                   e.components.harvest.targetTile = null;
@@ -271,10 +299,19 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
               if (e.components.building) continue;
               if (!e.components.combat) continue; // only armed units attack-move
               if (!e.components.movement) e.components.movement = { target: null, path: [], speed: 10 };
-              e.components.movement.target = intent.target;
-              e.components.movement.pathGoal = null; // force a fresh path
-              e.components.movement.attackMove = true;
-              e.components.combat.targetId = null;   // re-acquire nearest en route
+              const mv = e.components.movement;
+              if (intent.queued && mv.target) {
+                mv.orderQueue = mv.orderQueue ?? [];
+                if (mv.orderQueue.length < ORDER_QUEUE_CAP) {
+                  mv.orderQueue.push({ wx: intent.target.wx, wy: intent.target.wy, attackMove: true });
+                }
+              } else {
+                mv.target = intent.target;
+                mv.pathGoal = null; // force a fresh path
+                mv.attackMove = true;
+                mv.orderQueue = [];
+                e.components.combat.targetId = null;   // re-acquire nearest en route
+              }
               if (e.components.harvest) e.components.harvest.state = 'IDLE';
             }
             markers.push({ target: intent.target, remaining: MARKER_LIFETIME });
@@ -288,7 +325,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
               if (e.components.faction?.team !== actor) continue;
               if (e.components.building) continue;
               if (e.components.movement) {
-                e.components.movement = { ...e.components.movement, target: null, path: [], pathGoal: null, attackMove: false };
+                e.components.movement = { ...e.components.movement, target: null, path: [], pathGoal: null, attackMove: false, orderQueue: [] };
               }
               if (e.components.combat) e.components.combat.targetId = null;
               if (e.components.harvest) e.components.harvest.state = 'IDLE';

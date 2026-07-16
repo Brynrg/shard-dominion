@@ -116,10 +116,19 @@ export function makeMovementSystem(): { name: 'movement'; run(state: SimState): 
             // Reached an intermediate waypoint → advance along the path.
             e.components.position = world(wp.wx, wp.wy);
             e.components.movement = { ...m, path: m.path.slice(1) };
+          } else if (m.orderQueue && m.orderQueue.length > 0) {
+            // Final waypoint, but shift-queued orders remain (v0.51) → the next
+            // waypoint becomes the live target, carrying its attack-move flag.
+            e.components.position = world(wp.wx, wp.wy);
+            const [next, ...rest] = m.orderQueue;
+            e.components.movement = {
+              ...m, target: world(next!.wx, next!.wy), path: [], pathGoal: null,
+              attackMove: next!.attackMove ?? false, orderQueue: rest,
+            };
           } else {
             // Final waypoint (or direct target) → arrive and clear the order.
-            e.components.position = world(wp.wx, wp.wy);
             e.components.movement = { ...m, target: null, path: [], pathGoal: null };
+            e.components.position = world(wp.wx, wp.wy);
           }
           continue;
         }

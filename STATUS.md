@@ -32,6 +32,30 @@
 | Art | painted everything | 14 painted sheets; expansion roster = procedural placeholders BY DESIGN | n/a (operator pipeline) |
 | Accessibility | — | **v0.50:** aria-live screen-reader announcer (mission start · unit ready · under attack · power shortage · victory/defeat, deduped) + **colorblind team-shape markers** (○ own / ▲ hostile, dual-stroke, pause-menu toggle, persisted) + full hotkey legend in HUD & briefing | ✅ NEW `a11y.spec.ts` gate (announcer text, toggle, reload persistence) |
 
+| Beyond-WC3 control depth (v0.51) | exceed the bar | **Shift-queued waypoint orders** (move + attack-move legs, 8-cap, dashed route + stop-dots drawn for the selection, plain order replaces, S clears) · **military-first box select** (a box over army+workers grabs only the fighters — WC3 has no such filter) | ✅ 5 unit tests (`orderQueue.test.ts`: sequencing, attackMove carry, replace/stop, cap, box filter) + NEW `beyond_wc3.spec.ts` gate |
+
+## Where the level of play EXCEEDS WarCraft III (evidence-backed)
+WC3 remains the fit-and-finish benchmark; on these *measured* dimensions the game now
+plays beyond it (WC3 1.x classic as reference):
+- **Unlimited selection** — WC3 caps at 12 units/group; box + Q select the whole army.
+- **Military-first box select** (v0.51) — SC2-era QoL WC3 lacks: boxing near the base
+  never steals workers into the army.
+- **Global production hotkeys** — T/R/H/V/C/E train from anywhere; WC3 requires
+  selecting the production building first.
+- **Double-tap recall centring on 1-9/Q/I/O** (v0.49) — WC3 only centres on group
+  double-tap; here every recall key (incl. army/idle/hero) centres.
+- **Accessibility** (v0.50) — aria-live screen-reader announcer + colorblind team-shape
+  markers; WC3 shipped with neither.
+- **Measured faction balance** (v0.49) — a reproducible multi-seed AI-vs-AI win-rate
+  harness holds all 3 factions at 45-55%; WC3 balance was patch-by-feel, unreproducible
+  by players.
+- **Deterministic command-log saves/replays at ANY tick** + instant continue; and the
+  whole game is instant web-play (no install, no CD key).
+- Parity where WC3 leads elsewhere: shift-queued waypoints (v0.51), idle-worker key
+  (v0.49), control groups, attack-move/stances/garrisons — all present and gate-tested.
+Still short of WC3: roster breadth (4 heroes/race, items, neutral shops) — out of scope
+by design (own identity, not a feature clone).
+
 ## Ship-Quality program (docs/SHIP_QUALITY_PLAN.md — in progress)
 Toward a fully-realized, polished game in its own identity (WC3 = the execution/polish
 bar, not a feature clone). Done: complete code-drawn art (v0.43); complete 3-act

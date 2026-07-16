@@ -77,8 +77,12 @@ export function stateHash(state: SimState): number {
     const eco = e.components.economy;
     if (eco) ints.push(q(eco.credits), eco.cells ?? 0, q(eco.minedTotal), eco.maxStorage);
     const m = e.components.movement;
-    if (m) ints.push(q(m.target?.wx), q(m.target?.wy), m.path.length, m.speed,
-      m.flying ? 1 : 0, m.attackMove ? 1 : 0, m.boardTargetId ?? -1);
+    if (m) {
+      ints.push(q(m.target?.wx), q(m.target?.wy), m.path.length, m.speed,
+        m.flying ? 1 : 0, m.attackMove ? 1 : 0, m.boardTargetId ?? -1,
+        m.orderQueue?.length ?? 0);
+      for (const w of m.orderQueue ?? []) ints.push(q(w.wx), q(w.wy), w.attackMove ? 1 : 0);
+    }
     const c = e.components.combat;
     if (c) ints.push(c.targetId ?? -1, c.cooldownRemaining, c.ammo ?? -1,
       c.stance === 'hold' ? 2 : c.stance === 'defensive' ? 1 : 0, c.revealedTicks ?? 0);

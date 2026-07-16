@@ -22,9 +22,11 @@ export type CommandIntent = { team?: 'player' | 'enemy' } & (
   | { type: 'move'; target: WorldPos }
   // Context-sensitive right-click: the command system resolves it to attack (enemy at
   // the point), harvest (Shard tile), or move (open ground) for the selected units.
-  | { type: 'order'; target: WorldPos; tile: TilePos }
+  // `queued` (v0.51): SHIFT was held — append as a waypoint instead of replacing
+  // the current order (WC3-style order queueing, capped sim-side).
+  | { type: 'order'; target: WorldPos; tile: TilePos; queued?: boolean }
   // Attack-move (FG-1): advance to target, HOLDING to fight anything acquired en route.
-  | { type: 'attack-move'; target: WorldPos; tile: TilePos }
+  | { type: 'attack-move'; target: WorldPos; tile: TilePos; queued?: boolean }
   // Stop (FG-1): halt selected units and drop their orders/targets.
   | { type: 'stop' }
   // Double-click (FG-1): select ALL player units of the kind at the point.
@@ -318,8 +320,8 @@ export function makeInputHandlers(
         sfx?.ack();
         strikeArmed = false;
       } else if (attackMoveMode) {
-        // Attack-move click: advance-and-engage toward the point.
-        queue.push({ type: 'attack-move', target: screenToWorld(start, camera), tile: screenToTile(start, camera) });
+        // Attack-move click: advance-and-engage toward the point (Shift = queue).
+        queue.push({ type: 'attack-move', target: screenToWorld(start, camera), tile: screenToTile(start, camera), queued: e.shiftKey || undefined });
         sfx?.ack();
         attackMoveMode = false;
       } else {
@@ -361,7 +363,7 @@ export function makeInputHandlers(
       setPlacementMode(null);
     } else {
       const pos = getMousePos(e);
-      queue.push({ type: 'order', target: screenToWorld(pos, camera), tile: screenToTile(pos, camera) });
+      queue.push({ type: 'order', target: screenToWorld(pos, camera), tile: screenToTile(pos, camera), queued: e.shiftKey || undefined });
       sfx?.ack();
     }
   }

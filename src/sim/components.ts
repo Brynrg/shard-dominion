@@ -29,6 +29,9 @@ export interface MovementComponent {
   boardTargetId?: import('./ids.js').EntityId | null;
   /** XP-5: flyers skip pathfinding, walls, and ground collision. */
   flying?: boolean;
+  /** Shift-queued follow-up orders (v0.51): on arrival the next waypoint becomes
+   *  the live target (carrying its attack-move flag). Additive; in stateHash. */
+  orderQueue?: { wx: number; wy: number; attackMove?: boolean }[];
 }
 export interface ResourceComponent { cargo: number; capacity: number } // harvester
 // XP-4 additive combat fields: stance (targeting posture) + revealedTicks
