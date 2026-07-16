@@ -16,6 +16,7 @@ import { makeView } from './view/index.js';
 import { makeInputHandlers, makeCommandQueue } from './view/input.js';
 import { makeOnboarding } from './view/onboarding.js';
 import { makeAnnouncer, makeA11ySettings } from './view/a11y.js';
+import { makeEva } from './view/eva.js';
 import { tileToWorldCenter, worldToScreen } from './sim/coords.js';
 import { loadEconomyConstants } from './loaders/economyConstants.js';
 import { loadStructures } from './loaders/structures.js';
@@ -105,6 +106,7 @@ declare global {
     __debugSprites?: unknown; // the sprite bank, for the real-asset loader smoke test
     __debugCamera?: () => { x: number; y: number; zoom: number };
     __debugA11y?: () => { teamShapes: boolean; lastAnnouncement: string };
+    __debugEva?: () => { last: string; voice: boolean };
   }
 }
 
@@ -262,6 +264,14 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // Accessibility (view-level): screen-reader announcer + persisted settings.
   const a11y = makeA11ySettings();
   const announcer = makeAnnouncer();
+  // EVA (v0.52, research-driven): Westwood-style event announcements — top-centre
+  // text flash + synthesized voice. Every EVA line also reaches the aria-live
+  // announcer so screen readers hear identical feedback.
+  const eva = makeEva(canvas, () => audio.isMuted());
+  const evaSay = (line: string, dedupeMs?: number): void => {
+    eva.announce(line, dedupeMs === undefined ? undefined : { dedupeMs });
+    announcer.announce(line, dedupeMs ?? 8000);
+  };
 
   // Create the view — it reads the command system's confirmation markers and the
   // live selection box from input (both view-side; the sim stays screen-blind).
@@ -329,8 +339,18 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     jump: (sx, sy) => view.minimapJump(sx, sy),
   }, {
     buttonAt: (sx, sy) => view.hudButtonAt(sx, sy),
+    deniedAt: (sx, sy) => view.hudDeniedAt(sx, sy),
     setTab: (tab) => view.hudSetTab(tab),
-  }, audio, teamFactions.player.id === 'emberhand' ? 'vane' : 'warden', viewerTeam);
+  }, {
+    click: () => audio.click(), select: () => audio.select(), ack: () => audio.ack(), place: () => audio.place(),
+    denied: (reason) => {
+      audio.denied();
+      evaSay(reason === 'funds' ? 'Insufficient funds'
+        : reason === 'tier' ? 'HQ upgrade required'
+        : reason === 'cells' ? 'Insufficient Cells'
+        : 'Production structure required', 1500);
+    },
+  }, teamFactions.player.id === 'emberhand' ? 'vane' : 'warden', viewerTeam);
   // ── Continue (FG-6): replay the saved command log tick-for-tick, then go live.
   // Determinism makes the fast-forward EXACT (same mission + same log → same state).
   if (params.get('continue') === '1') {
@@ -370,6 +390,8 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
         setSpeed: (sp) => { speed = sp; },
         getTeamShapes: () => a11y.getTeamShapes(),
         setTeamShapes: (on) => a11y.setTeamShapes(on),
+        getEvaVoice: () => eva.getVoiceEnabled(),
+        setEvaVoice: (on) => eva.setVoiceEnabled(on),
         onSave: () => {
           try {
             bootState.choice = mission.choice ? localStorage.getItem(`shardDominion.choice.${mission.id}`) : null;
@@ -411,31 +433,46 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // sees placement still active and yields to input's cancel instead of also pausing.
   window.addEventListener('keydown', onHotkey, { capture: true });
 
-  // ── A11y announcer watcher (view-level, wall-clock — the sim never sees it).
-  // Once a second, diff the viewer's side and speak the transitions: match end,
-  // forces under attack, power shortage, a fresh unit off the line.
-  const a11yPrev = { over: false, ownHp: -1, powered: true, army: -1 };
+  // ── EVA + a11y event watcher (view-level, wall-clock — the sim never sees it).
+  // Once a second, diff the viewer's side and announce the transitions (Westwood
+  // vocabulary, v0.52): match end, under attack, low power, unit ready,
+  // construction complete, new construction options (tier-up), storage full.
+  const evaPrev = { over: false, ownHp: -1, powered: true, army: -1, builtCount: -1, tier: -1, storageFull: false };
   window.setInterval(() => {
     if (onboarding.briefingActive()) return;
     const res = missionResult();
-    if (res.over && !a11yPrev.over) announcer.announce(res.winner === viewerTeam ? 'Victory. Mission complete.' : 'Defeat.', 0);
-    a11yPrev.over = res.over;
+    if (res.over && !evaPrev.over) evaSay(res.winner === viewerTeam ? 'Victory. Mission complete.' : 'Defeat.', 0);
+    evaPrev.over = res.over;
     if (res.over) return;
-    let ownHp = 0, army = 0, supply = 0, demand = 0;
+    let ownHp = 0, army = 0, supply = 0, demand = 0, builtCount = 0, tier = 1;
+    let storage = 0, maxStorage = 0;
     for (const e of state.store.all()) {
       if (e.components.faction?.team !== viewerTeam) continue;
       ownHp += Math.max(0, e.components.health?.hp ?? 0);
       if (e.components.combat && !e.components.building && (e.components.health?.hp ?? 0) > 0) army++;
       const pw = e.components.power;
       if (pw) { supply += pw.powerSupply; demand += pw.powerDemand; }
+      const b = e.components.building;
+      if (b && (b.buildProgress ?? 100) >= 100 && (e.components.health?.hp ?? 1) > 0) builtCount++;
+      const t = e.components.tech;
+      if (t && t.tier > tier) tier = t.tier;
+      const eco = e.components.economy;
+      if (b && eco) { storage += eco.refineryStorage ?? 0; maxStorage += eco.maxStorage ?? 0; }
     }
-    if (a11yPrev.ownHp >= 0 && ownHp < a11yPrev.ownHp - 15) announcer.announce('Forces under attack.', 15000);
-    a11yPrev.ownHp = ownHp;
+    if (evaPrev.ownHp >= 0 && ownHp < evaPrev.ownHp - 15) evaSay('Base under attack.', 15000);
+    evaPrev.ownHp = ownHp;
     const powered = supply >= demand;
-    if (!powered && a11yPrev.powered) announcer.announce('Power shortage. Build a Power Node.', 20000);
-    a11yPrev.powered = powered;
-    if (a11yPrev.army >= 0 && army > a11yPrev.army) announcer.announce('Unit ready.');
-    a11yPrev.army = army;
+    if (!powered && evaPrev.powered) evaSay('Low power. Build a Power Node.', 20000);
+    evaPrev.powered = powered;
+    if (evaPrev.army >= 0 && army > evaPrev.army) evaSay('Unit ready.');
+    evaPrev.army = army;
+    if (evaPrev.builtCount >= 0 && builtCount > evaPrev.builtCount) evaSay('Construction complete.');
+    evaPrev.builtCount = builtCount;
+    if (evaPrev.tier >= 1 && tier > evaPrev.tier) evaSay('New construction options.', 0);
+    evaPrev.tier = tier;
+    const storageFull = maxStorage > 0 && storage >= maxStorage;
+    if (storageFull && !evaPrev.storageFull) evaSay('Storage full. Shard is being lost.', 30000);
+    evaPrev.storageFull = storageFull;
   }, 1000);
 
   // ── The Choice (XP-6): the finale asks before anything moves. Reload applies it.
@@ -571,6 +608,8 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
 
   // A11y debug hook (liveness gate): toggle state + the last announcement.
   window.__debugA11y = () => ({ teamShapes: a11y.getTeamShapes(), lastAnnouncement: announcer.last() });
+  // EVA debug hook (v0.52 gate): last line + voice toggle state.
+  window.__debugEva = () => ({ last: eva.last(), voice: eva.getVoiceEnabled() });
 
   // Building-count + ConYard locator hooks for the S3 liveness gate.
   window.__debugBuildingCount = () => {

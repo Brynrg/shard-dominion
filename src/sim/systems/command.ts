@@ -6,7 +6,7 @@
 import type { SimState } from '../state.js';
 import { teamTier } from '../tech.js';
 import { structureComponents } from '../factory.js';
-import { teamCredits, teamCells, spendCredits, spendCells } from '../ledger.js';
+import { teamCredits, teamCells, spendCredits, spendCells, grantCredits } from '../ledger.js';
 import { teamLedger } from './research.js';
 import { SIM_TICK_RATE } from '../loop.js';
 import type { Refinement } from '../../loaders/refinements.js';
@@ -416,6 +416,28 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
               if (h.hp >= h.maxHp) { b.repairing = false; continue; }
               b.repairing = !b.repairing;
             }
+            break;
+          }
+
+          case 'sell': {
+            // Sell (v0.52, Westwood convention): selected own COMPLETED buildings
+            // are demolished for a 50% refund — the classic last-ditch play. Under-
+            // construction sites are excluded (cancel-refund is a different flow).
+            // Demolish FIRST, refund AFTER: the sold building can itself be a bank
+            // (the ConYard is), and a refund granted before removal dies with it.
+            let refund = 0;
+            for (const e of [...state.store.all()]) {
+              if (!e.components.selection?.selected) continue;
+              if (e.components.faction?.team !== actor) continue;
+              const b = e.components.building;
+              if (!b || (b.buildProgress ?? 100) < 100) continue;
+              const def = structures.find(st => st.id === e.components.faction?.faction);
+              if (!def) continue; // unsellable (mission set-pieces without a def)
+              refund += Math.floor(def.cost * 0.5);
+              state.store.remove(e.id);
+            }
+            // If no bank survives the sale, the refund is forfeit (you sold the base).
+            if (refund > 0) grantCredits(state, actor, refund, true);
             break;
           }
 

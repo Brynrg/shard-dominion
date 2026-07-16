@@ -34,6 +34,8 @@
 
 | Beyond-WC3 control depth (v0.51) | exceed the bar | **Shift-queued waypoint orders** (move + attack-move legs, 8-cap, dashed route + stop-dots drawn for the selection, plain order replaces, S clears) · **military-first box select** (a box over army+workers grabs only the fighters — WC3 has no such filter) | ✅ 5 unit tests (`orderQueue.test.ts`: sequencing, attackMove carry, replace/stop, cap, box filter) + NEW `beyond_wc3.spec.ts` gate |
 
+| Westwood feedback layer (v0.52) | research-driven | **EVA announcer** (top-centre text flash + synthesized voice, toggleable+persisted, mirrors to aria-live): construction complete · unit ready · low power · base under attack · new construction options (tier-up) · storage full · **insufficient funds/tier/prereq/cells on refused build clicks** (denied clicks now buzz + swallow instead of falling through to field-select) · **SELL button** (Westwood convention: demolish selected completed buildings for 50% refund; refund granted AFTER removal — the ConYard is itself a bank). Sourced from the official RA/D2K manuals + EA's GPL'd RA source (deep-research run, 24 sources). | ✅ 2 sell unit tests + NEW `eva_sell.spec.ts` gate (EVA line + banner + sell refund/demolish) |
+
 ## Where the level of play EXCEEDS WarCraft III (evidence-backed)
 WC3 remains the fit-and-finish benchmark; on these *measured* dimensions the game now
 plays beyond it (WC3 1.x classic as reference):

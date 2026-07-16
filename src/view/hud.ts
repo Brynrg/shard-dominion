@@ -74,9 +74,13 @@ const HQ_UPGRADES = [{ toTier: 2, cost: 1000, seconds: 30 }, { toTier: 3, cost: 
 /** A build-menu button hit-test result: `"train:infantry"`, `"build:barracks"`, … */
 export type BuildAction = string;
 
+/** Why a disabled build button refused the click (v0.52 EVA feedback). */
+export type DenyReason = 'funds' | 'tier' | 'prereq' | 'cells';
+
 export function makeHUD(cfg: HUDConfig): {
   draw(): void;
   buttonAt(sx: number, sy: number): BuildAction | null;
+  deniedAt(sx: number, sy: number): DenyReason | null;
   panelRect(): { x: number; y: number; w: number; h: number };
   setTab(tab: 'base' | 'def' | 'units' | 'tech'): void;
   rectOf(action: BuildAction): { x: number; y: number; w: number; h: number } | null;
@@ -228,9 +232,9 @@ export function makeHUD(cfg: HUDConfig): {
   // Clickable C&C-style build button. Records its rect (+ enabled) for hit-testing.
   // `progress` 0-100 = the item currently building (draws a fill); `queued` = how many
   // more of it are waiting.
-  const rects: { action: BuildAction; x: number; y: number; w: number; h: number; enabled: boolean }[] = [];
-  function drawBuildButton(item: BuildItem, x: number, y: number, w: number, h: number, enabled: boolean, hovered: boolean, progress: number, queued: number, powerWarn = false): void {
-    rects.push({ action: `${item.kind}:${item.id}`, x, y, w, h, enabled });
+  const rects: { action: BuildAction; x: number; y: number; w: number; h: number; enabled: boolean; denyReason?: DenyReason }[] = [];
+  function drawBuildButton(item: BuildItem, x: number, y: number, w: number, h: number, enabled: boolean, hovered: boolean, progress: number, queued: number, powerWarn = false, denyReason?: DenyReason): void {
+    rects.push({ action: `${item.kind}:${item.id}`, x, y, w, h, enabled, denyReason });
     context.fillStyle = !enabled ? 'rgba(70,72,82,0.20)' : hovered ? 'rgba(74,144,226,0.50)' : 'rgba(74,144,226,0.22)';
     context.fillRect(x, y, w, h);
     // Production fill: a green wash sweeping left→right as the unit builds.
@@ -277,6 +281,12 @@ export function makeHUD(cfg: HUDConfig): {
     rectOf(action: BuildAction): { x: number; y: number; w: number; h: number } | null {
       const r = rects.find(r => r.action === action);
       return r ? { x: r.x, y: r.y, w: r.w, h: r.h } : null;
+    },
+    deniedAt(sx: number, sy: number): DenyReason | null {
+      // A click on a DISABLED build button (v0.52 EVA feedback): report WHY it
+      // was refused so the announcer can say the right line.
+      for (const r of rects) if (!r.enabled && sx >= r.x && sx <= r.x + r.w && sy >= r.y && sy <= r.y + r.h) return r.denyReason ?? 'funds';
+      return null;
     },
     buttonAt(sx: number, sy: number): BuildAction | null {
       for (const r of rects) if (r.enabled && sx >= r.x && sx <= r.x + r.w && sy >= r.y && sy <= r.y + r.h) return r.action;
@@ -465,7 +475,9 @@ export function makeHUD(cfg: HUDConfig): {
         const hovered = !!hover && hover.sx >= px + 8 && hover.sx <= px + 8 + bw && hover.sy >= by && hover.sy <= by + 30;
         const progress = producer?.current === item.id ? (producer?.progress ?? 0) : 0;
         const queued = producer ? producer.queue.filter(q => q === item.id).length : 0;
-        drawBuildButton({ ...item, cost: shownCost }, px + 8, by, bw, 30, enabled, hovered, progress, queued, powerWarn);
+        const denyReason: DenyReason | undefined = enabled ? undefined
+          : !tierOk ? 'tier' : !prereqMet ? 'prereq' : !cellsOk ? 'cells' : 'funds';
+        drawBuildButton({ ...item, cost: shownCost }, px + 8, by, bw, 30, enabled, hovered, progress, queued, powerWarn, denyReason);
         if (!tierOk) { // tier chip: teaches WHY it's grey (XP-1)
           context.fillStyle = '#c9a24a'; context.font = 'bold 10px monospace';
           context.fillText(`T${item.tier}`, px + 8 + bw - 70, by + 4);
@@ -495,6 +507,27 @@ export function makeHUD(cfg: HUDConfig): {
         context.fillStyle = '#ffe9b0';
         context.font = 'bold 12px monospace'; context.textBaseline = 'top';
         context.fillText(active ? '🔧 REPAIRING…  (click to stop)' : '🔧 REPAIR  (drains credits)', px + 16, by + 7);
+        by += 30;
+      }
+
+      // Sell button (v0.52, Westwood convention): shown while any own COMPLETED
+      // building is selected — demolish for a 50% refund (the last-ditch classic).
+      let sellTarget = false;
+      for (const e of simState.store.all()) {
+        if (!e.components.selection?.selected) continue;
+        if (e.components.faction?.team !== viewerTeam) continue;
+        const b = e.components.building;
+        if (b && (b.buildProgress ?? 100) >= 100) { sellTarget = true; break; }
+      }
+      if (sellTarget) {
+        rects.push({ action: 'sell:selected', x: px + 8, y: by, w: bw, h: 26, enabled: true });
+        context.fillStyle = 'rgba(226,74,74,0.28)';
+        context.fillRect(px + 8, by, bw, 26);
+        context.strokeStyle = '#e24a4a';
+        context.strokeRect(px + 8.5, by + 0.5, bw - 1, 25);
+        context.fillStyle = '#ffc9c9';
+        context.font = 'bold 12px monospace'; context.textBaseline = 'top';
+        context.fillText('$ SELL  (50% refund, demolishes)', px + 16, by + 7);
       }
 
       // Legend (footer).

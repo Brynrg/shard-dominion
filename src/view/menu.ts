@@ -230,6 +230,9 @@ export interface PauseOpts {
   /** A11y: colorblind team-shape markers toggle (persisted). */
   getTeamShapes?: () => boolean;
   setTeamShapes?: (on: boolean) => void;
+  /** EVA announcer voice toggle (v0.52, persisted). */
+  getEvaVoice?: () => boolean;
+  setEvaVoice?: (on: boolean) => void;
   audio: { getVolume(): number; setVolume(v: number): void; isMuted(): boolean; setMuted(m: boolean): void };
   getSpeed: () => number;
   setSpeed: (s: number) => void;
@@ -300,6 +303,26 @@ export function showPauseMenu(o: PauseOpts): () => void {
     };
     a11yRow.appendChild(tog);
     panel.appendChild(a11yRow);
+  }
+
+  // EVA voice row (v0.52): the battle-computer announcements.
+  if (o.getEvaVoice && o.setEvaVoice) {
+    const evaRow = document.createElement('div');
+    evaRow.style.cssText = 'display:flex;align-items:center;gap:10px;justify-content:center;margin:2px 0 14px;color:#cfe0ee;font-size:13px;';
+    evaRow.innerHTML = '<span>EVA VOICE</span>';
+    const tog = document.createElement('button');
+    tog.id = 'sd-eva-voice';
+    const style = (on: boolean): string =>
+      `font-family:monospace;font-size:11px;padding:4px 10px;cursor:pointer;border-radius:4px;border:1px solid ${on ? '#00e5ff' : '#3a4a5a'};background:${on ? 'rgba(0,229,255,0.14)' : 'rgba(20,26,34,0.9)'};color:${on ? '#00e5ff' : '#cfe0ee'};`;
+    tog.textContent = o.getEvaVoice() ? 'ON' : 'OFF';
+    tog.style.cssText = style(o.getEvaVoice());
+    tog.onclick = () => {
+      o.setEvaVoice!(!o.getEvaVoice!());
+      tog.textContent = o.getEvaVoice!() ? 'ON' : 'OFF';
+      tog.style.cssText = style(o.getEvaVoice!());
+    };
+    evaRow.appendChild(tog);
+    panel.appendChild(evaRow);
   }
 
   const resume = button('▶  RESUME', true);

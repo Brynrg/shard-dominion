@@ -33,6 +33,8 @@ export type CommandIntent = { team?: 'player' | 'enemy' } & (
   | { type: 'select-type'; target: WorldPos }
   // Repair toggle (FG-2): flips `repairing` on the selected damaged player buildings.
   | { type: 'repair' }
+  // Sell (v0.52): demolish the selected own completed buildings for a 50% refund.
+  | { type: 'sell' }
   // HQ tech upgrade (XP-1): advance the Construction Yard to the next tier.
   | { type: 'upgrade-hq' }
   // XP-4: cycle stance / unload a container.
@@ -107,9 +109,9 @@ export function makeInputHandlers(
   minimap?: { jump(sx: number, sy: number): boolean },
   /** Optional sidebar build menu: a left-click on a build button queues a unit /
    *  enters structure placement (C&C-style), instead of selecting on the field. */
-  hud?: { buttonAt(sx: number, sy: number): string | null; setTab?(tab: 'base' | 'def' | 'units' | 'tech'): void },
+  hud?: { buttonAt(sx: number, sy: number): string | null; deniedAt?(sx: number, sy: number): 'funds' | 'tier' | 'prereq' | 'cells' | null; setTab?(tab: 'base' | 'def' | 'units' | 'tech'): void },
   /** Optional UI sounds: button click / selection blip / order acknowledgment. */
-  sfx?: { click(): void; select(): void; ack(): void; place(): void },
+  sfx?: { click(): void; select(): void; ack(): void; place(): void; denied?(reason: 'funds' | 'tier' | 'prereq' | 'cells'): void },
   /** XP-3: which hero the E hotkey trains (faction-dependent; default warden). */
   heroUnitId = 'warden',
   /** FG-7: which side this viewer commands (MP seat) — used only for the
@@ -168,6 +170,7 @@ export function makeInputHandlers(
     else if (kind === 'research' && id) queue.push({ type: 'research', refinementId: id });
     else if (kind === 'build' && id) setPlacementMode(id);
     else if (kind === 'repair') queue.push({ type: 'repair' });
+    else if (kind === 'sell') queue.push({ type: 'sell' });
   }
 
   // Context cursor (C&C feel): crosshair over enemies, pointer over own units /
@@ -265,6 +268,15 @@ export function makeInputHandlers(
     if (action) {
       sfx?.click();
       doBuildAction(action);
+      selectStart = null;
+      selectCurrent = null;
+      return;
+    }
+    // A DISABLED build button (v0.52): refuse audibly (EVA says why) + swallow —
+    // a refused build click must never fall through and select on the field.
+    const deny = hud?.deniedAt?.(pos.sx, pos.sy);
+    if (deny) {
+      sfx?.denied?.(deny);
       selectStart = null;
       selectCurrent = null;
       return;

@@ -129,6 +129,7 @@ export interface View {
   minimapJump(sx: number, sy: number): boolean;
   /** Hit-test the sidebar build buttons; returns "train:infantry" / "build:barracks" / null. */
   hudButtonAt(sx: number, sy: number): string | null;
+  hudDeniedAt(sx: number, sy: number): 'funds' | 'tier' | 'prereq' | 'cells' | null;
   /** Switch the sidebar tab (XP-1: STRUCT / UNITS). */
   hudSetTab(tab: 'base' | 'def' | 'units' | 'tech'): void;
   /** The live rect of a sidebar button by action id (gates + tools). */
@@ -1291,6 +1292,7 @@ export function makeView(cfg: ViewConfig): View {
     },
     spriteBank: sprites,
     hudButtonAt: (sx, sy) => hud.buttonAt(sx, sy),
+    hudDeniedAt: (sx, sy) => hud.deniedAt(sx, sy),
     hudSetTab: (tab) => hud.setTab(tab),
     hudButtonRect: (action) => hud.rectOf(action),
     minimapRect,

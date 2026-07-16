@@ -22,6 +22,7 @@ export interface AudioEngine {
   startMusic(): void;
   // ── SFX events (each self-throttles) ──
   click(): void;          // UI button
+  denied(): void;         // v0.52: build click refused (insufficient funds/tier/prereq)
   select(): void;         // unit selected
   ack(): void;            // move/attack order acknowledged
   shot(rocket: boolean): void;
@@ -174,6 +175,7 @@ export function makeAudioEngine(): AudioEngine {
     startMusic() { if (ensure()) startMusicInternal(); },
 
     click() { if (gate('click', 60)) tone(880, 0.05, 'square', 0.12); },
+    denied() { if (gate('denied', 250)) motif([220, 165], 0.09, 0.10, 'square', 0.14); }, // v0.52: refused build click (low descending buzz)
     select() { if (gate('select', 90)) tone(520, 0.06, 'square', 0.10, 700); },
     ack() { if (gate('ack', 120)) motif([620, 830], 0.055, 0.07, 'square', 0.10); },
     shot(rocket: boolean) {
