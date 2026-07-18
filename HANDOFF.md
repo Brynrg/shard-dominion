@@ -6,9 +6,9 @@
 ## What this is
 **Shard Dominion** — an IP-clean, late-1990s Westwood-style (C&C / Red Alert / Dune 2000) web RTS.
 - **Repo:** `~/Code/games/shard-dominion` (TypeScript + Canvas2D + Vite + Vitest + zod + ESLint, single pnpm pkg).
-- **Live:** https://speedrungames.net/games/shard-dominion/ — currently **v0.52.0** (deployed +
-  hash-verified 2026-07-16; v0.49 balance+controls · v0.50 a11y · v0.51 beyond-WC3 depth ·
-  v0.52 EVA/Sell all live).
+- **Live:** https://speedrungames.net/games/shard-dominion/ — currently **v0.54.0** (deployed +
+  hash-verified 2026-07-18; v0.49 balance+controls · v0.50 a11y · v0.51 beyond-WC3 depth ·
+  v0.52 EVA/Sell · v0.53 playtest smoothness · v0.54 MP lobby + placement feel all live).
 - **SHIP-QUALITY PROGRAM (2026-07-12, `docs/SHIP_QUALITY_PLAN.md`):** operator goal = a fully-
   realized, polished game in its OWN identity (WC3 = the execution/polish bar, NOT a feature
   clone). Done so far: complete code-drawn art (v0.43); **complete 3-act, 17-mission campaign**
@@ -47,8 +47,14 @@
   RA/Dune 2000 manuals + EA's GPL'd RA source produced the EVA announcer (text flash +
   speechSynthesis voice, pause-menu toggle), refused-build-click feedback (buzz + reason), and
   the sidebar SELL flow (50% refund; refund granted AFTER removal — the ConYard is a bank).
-  REMAINING (honest): a real 2-HUMAN MP field test (operator-side — the relay + lockstep are
-  machine-verified but never carried a live 2-player match).
+  **MP made one-click (v0.54):** title-menu MULTIPLAYER lobby (relay/room/mode + copyable
+  invite link) + waiting room with honest status; a 5-min contested 2-browser SOAK over the
+  real relay verified 5,805 lockstep ticks / zero desync / exact world agreement
+  (`MPSOAK=1 npx playwright test tests/liveness/_mp_soak.spec.ts`). The soak also caught +
+  fixed silent placement-refusal (now RA red-grid feel: ghost stays in hand + EVA line).
+  REMAINING (honest): the 2-HUMAN field test itself — run `node server/relay.mjs` on a
+  LAN/tailnet host, both players click MULTIPLAYER on the live site, enter that relay +
+  the same room. Everything else is machine-verified.
 - **Your role now:** you (Claude) **build it directly** and verify. (Earlier plan was to delegate slices to a
   local Qwen builder; in practice Claude builds and only occasionally hands a tightly-scaffolded sub-task to
   `hermes-ask code` — e.g. the S6B AI waves. Default to building it yourself + verifying.)
