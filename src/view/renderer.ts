@@ -825,7 +825,7 @@ export function makeView(cfg: ViewConfig): View {
     if (!structure) return;
 
     // Validity + reason come from the ONE contract validator (no duplicated rules).
-    const result = validatePlacement(simState, structure, placement.tile);
+    const result = validatePlacement(simState, structure, placement.tile, cfg.viewerTeam ?? 'player');
     const valid = result.valid;
     const reason = result.reason ?? '';
 

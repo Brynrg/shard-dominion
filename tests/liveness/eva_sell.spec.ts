@@ -32,11 +32,23 @@ test.describe('EVA + Sell gate', () => {
       .toContain('Insufficient funds');
     await expect(page.locator('#sd-eva')).toContainText('INSUFFICIENT FUNDS');
 
-    // ── Sell: select the ConYard, press the sidebar SELL button → the building
-    //    demolishes and half its cost lands in the bank. ──
+    // ── Placement refusal (v0.54): B, then click ON the ConYard (occupied →
+    //    invalid) — EVA refuses and the ghost STAYS in hand (RA red-grid feel). ──
     const cy = await page.evaluate(() =>
       (window as { __debugConYardScreenPos?: () => { x: number; y: number } | null }).__debugConYardScreenPos?.() ?? null);
     expect(cy).not.toBeNull();
+    const placement = () => page.evaluate(() =>
+      (window as { __debugPlacement?: () => { structureId: string } | null }).__debugPlacement?.() ?? null);
+    await page.keyboard.press('b');
+    await page.mouse.click(box.x + cy!.x, box.y + cy!.y); // occupied tile → refused
+    await expect.poll(async () => (await evaState())?.last ?? '', { timeout: 3000, intervals: [150] })
+      .toContain('Cannot deploy there');
+    expect((await placement())?.structureId, 'ghost must stay in hand after a refused click').toBe('barracks');
+    await page.keyboard.press('Escape'); // cancel placement before the sell flow
+    await page.waitForTimeout(200);
+
+    // ── Sell: select the ConYard, press the sidebar SELL button → the building
+    //    demolishes and half its cost lands in the bank. ──
     await page.mouse.click(box.x + cy!.x, box.y + cy!.y);
     await page.waitForTimeout(400);
     const sellBtn = (await rectOf('sell:selected'))!;

@@ -9,7 +9,7 @@ import { makeHeroSystem } from './sim/systems/hero.js';
 import { makeRegenSystem } from './sim/systems/regen.js';
 import { loadRefinements } from './loaders/refinements.js';
 import refinementsData from '../data/refinements.json' with { type: 'json' };
-import { makeCommandSystem } from './sim/systems/command.js';
+import { makeCommandSystem, validatePlacement } from './sim/systems/command.js';
 import { makeConstructionSystem } from './sim/systems/construction.js';
 import { makePowerSystem } from './sim/systems/power.js';
 import { makeView } from './view/index.js';
@@ -41,7 +41,7 @@ import { makeLockstep, type Lockstep } from './net/lockstep.js';
 import { stateHash } from './sim/state.js';
 import { runTick as simRunTick } from './sim/loop.js';
 import { loadMission } from './loaders/missions.js';
-import { showTitleMenu, showEndScreen, showPauseMenu, showMissionSelect, showSkirmishSetup, showDevMenu, showDeployment, showChoice, showCredits, markCompleted, addBonus, takeBonus, loadProgress, recordCampaignCarry } from './view/menu.js';
+import { showTitleMenu, showEndScreen, showPauseMenu, showMissionSelect, showSkirmishSetup, showMultiplayerSetup, showDevMenu, showDeployment, showChoice, showCredits, markCompleted, addBonus, takeBonus, loadProgress, recordCampaignCarry } from './view/menu.js';
 import { makeAudioEngine } from './view/audio.js';
 import economyConstantsData from '../data/economyConstants.json' with { type: 'json' };
 import structuresData from '../data/structures.json' with { type: 'json' };
@@ -107,6 +107,7 @@ declare global {
     __debugCamera?: () => { x: number; y: number; zoom: number };
     __debugA11y?: () => { teamShapes: boolean; lastAnnouncement: string };
     __debugEva?: () => { last: string; voice: boolean };
+    __debugPlacement?: () => { structureId: string; tile: { tx: number; ty: number } } | null;
   }
 }
 
@@ -348,9 +349,14 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
       evaSay(reason === 'funds' ? 'Insufficient funds'
         : reason === 'tier' ? 'HQ upgrade required'
         : reason === 'cells' ? 'Insufficient Cells'
+        : reason === 'placement' ? 'Cannot deploy there'
         : 'Production structure required', 1500);
     },
-  }, teamFactions.player.id === 'emberhand' ? 'vane' : 'warden', viewerTeam);
+  }, teamFactions.player.id === 'emberhand' ? 'vane' : 'warden', viewerTeam,
+  (structureId, tile) => {
+    const def = structures.find(st => st.id === structureId);
+    return def ? validatePlacement(state, def, tile, viewerTeam).valid : false;
+  });
   // ── Continue (FG-6): replay the saved command log tick-for-tick, then go live.
   // Determinism makes the fast-forward EXACT (same mission + same log → same state).
   if (params.get('continue') === '1') {
@@ -614,6 +620,8 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
 
   // A11y debug hook (liveness gate): toggle state + the last announcement.
   window.__debugA11y = () => ({ teamShapes: a11y.getTeamShapes(), lastAnnouncement: announcer.last() });
+  // Placement-mode debug hook (v0.54 gate): is the ghost still in hand?
+  window.__debugPlacement = () => input.getPlacementMode();
   // EVA debug hook (v0.52 gate): last line + voice toggle state.
   window.__debugEva = () => ({ last: eva.last(), voice: eva.getVoiceEnabled() });
 
@@ -858,6 +866,17 @@ const SKIRMISH_MAPS = [
 function openTitle(): void {
   showTitleMenu(id => {
     if (id === '__campaign__') { openMissionSelect(); return; }
+    if (id === '__multiplayer__') {
+      showMultiplayerSetup({
+        onStart: (relay, room, mode) => {
+          const q = new URLSearchParams({ mp: '1', room, relay });
+          if (mode === '2v2') q.set('mode', '2v2');
+          location.search = `?${q.toString()}`;
+        },
+        onBack: () => openTitle(),
+      });
+      return;
+    }
     showSkirmishSetup({
       maps: SKIRMISH_MAPS,
       onStart: (mapId, faction, difficulty) => { location.search = `?mission=${mapId}&faction=${faction}&difficulty=${difficulty}`; },
@@ -871,6 +890,23 @@ function startMultiplayer(params: URLSearchParams): void {
   const room = params.get('room') ?? 'duel';
   const missionId = params.get('mission') ?? 'skirmish';
   const size = params.get('mode') === '2v2' ? 4 : 2; // XP-7
+  // Waiting room (v0.54): show status + the invite link while the room fills —
+  // a blank screen here made the field test feel broken before it began.
+  const wait = document.createElement('div');
+  wait.id = 'sd-mp-wait';
+  wait.style.cssText = 'position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(4,6,10,0.96);z-index:40;color:#cfe0ee;font-family:monospace;text-align:center;';
+  const inviteUrl = `${location.origin}${location.pathname}?${new URLSearchParams({ mp: '1', room, relay, ...(size === 4 ? { mode: '2v2' } : {}) }).toString()}`;
+  wait.innerHTML =
+    `<div style="font-size:30px;font-weight:bold;color:#ffd34d;letter-spacing:2px;">MULTIPLAYER</div>` +
+    `<div id="sd-mp-status" style="font-size:14px;color:#8fb7c9;">Connecting to relay…</div>` +
+    `<div style="font-size:11px;color:#9fd8a9;max-width:600px;word-break:break-all;padding:8px 12px;background:rgba(10,14,20,0.85);border:1px solid #2a3a4a;border-radius:4px;">INVITE: ${inviteUrl}</div>`;
+  const backBtn = document.createElement('button');
+  backBtn.textContent = 'BACK TO MENU';
+  backBtn.style.cssText = 'font-family:monospace;font-size:12px;padding:6px 14px;cursor:pointer;background:rgba(20,26,34,0.9);color:#cfe0ee;border:1px solid #3a4a5a;border-radius:4px;';
+  backBtn.onclick = () => { location.search = ''; };
+  wait.appendChild(backBtn);
+  document.body.appendChild(wait);
+  const status = (t: string): void => { const e = document.getElementById('sd-mp-status'); if (e) e.textContent = t; };
   const ws = new WebSocket(relay);
   let seat = -1;
   const listeners: ((msg: string) => void)[] = [];
@@ -878,8 +914,13 @@ function startMultiplayer(params: URLSearchParams): void {
     const raw = String(ev.data);
     let msg: { type?: string; slot?: number } = {};
     try { msg = JSON.parse(raw); } catch { /* forwarded frame */ }
-    if (msg.type === 'joined') { seat = msg.slot ?? 0; return; }
+    if (msg.type === 'joined') {
+      seat = msg.slot ?? 0;
+      status(`In room '${room}' as seat ${seat + 1}/${size} — waiting for the other ${size - 1 === 1 ? 'player' : 'players'}… send them the invite link.`);
+      return;
+    }
     if (msg.type === 'start') {
+      wait.remove();
       const lockstep = makeLockstep(seat, {
         send: (m) => ws.send(m),
         onMessage: (cb) => listeners.push(cb),
@@ -891,7 +932,9 @@ function startMultiplayer(params: URLSearchParams): void {
     for (const cb of listeners) cb(raw);
   };
   ws.onopen = () => ws.send(JSON.stringify({ type: 'join', room, size }));
-  ws.onclose = () => { if (seat === -1) alert('Relay unreachable / room full.'); };
+  ws.onclose = () => {
+    if (seat === -1) status('Relay unreachable or the room is full. Check the relay address (node server/relay.mjs) and try again.');
+    };
 }
 
 if (typeof window !== 'undefined') {

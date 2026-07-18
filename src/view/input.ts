@@ -111,12 +111,15 @@ export function makeInputHandlers(
    *  enters structure placement (C&C-style), instead of selecting on the field. */
   hud?: { buttonAt(sx: number, sy: number): string | null; deniedAt?(sx: number, sy: number): 'funds' | 'tier' | 'prereq' | 'cells' | null; setTab?(tab: 'base' | 'def' | 'units' | 'tech'): void },
   /** Optional UI sounds: button click / selection blip / order acknowledgment. */
-  sfx?: { click(): void; select(): void; ack(): void; place(): void; denied?(reason: 'funds' | 'tier' | 'prereq' | 'cells'): void },
+  sfx?: { click(): void; select(): void; ack(): void; place(): void; denied?(reason: 'funds' | 'tier' | 'prereq' | 'cells' | 'placement'): void },
   /** XP-3: which hero the E hotkey trains (faction-dependent; default warden). */
   heroUnitId = 'warden',
   /** FG-7: which side this viewer commands (MP seat) — used only for the
    *  view-side camera-centre on double-tapped recall keys. */
   viewerTeam: 'player' | 'enemy' = 'player',
+  /** v0.54: advisory placement validity (the ghost's check) — an invalid click
+   *  refuses + keeps placement mode instead of silently consuming it. */
+  canPlace?: (structureId: string, tile: TilePos) => boolean,
 ): InputHandlers {
   let selectStart: ScreenPos | null = null;
   let selectCurrent: ScreenPos | null = null;
@@ -322,10 +325,16 @@ export function makeInputHandlers(
     if (dragDistance < 5) {
       // Single click → check if in placement mode
       if (placementMode) {
-        // Place structure intent (NOT select)
-        queue.push({ type: 'place-structure', structureId: placementMode.structureId, tile: placementMode.tile });
-        sfx?.place();
-        setPlacementMode(null); // Exit placement mode after placing
+        // RA feel (v0.54): clicking a RED (invalid) tile refuses audibly and KEEPS
+        // the ghost in hand — the player repositions instead of re-pressing the
+        // hotkey. The view check is advisory; the sim validator stays authoritative.
+        if (canPlace && !canPlace(placementMode.structureId, placementMode.tile)) {
+          sfx?.denied?.('placement');
+        } else {
+          queue.push({ type: 'place-structure', structureId: placementMode.structureId, tile: placementMode.tile });
+          sfx?.place();
+          setPlacementMode(null); // Exit placement mode after placing
+        }
       } else if (strikeArmed) {
         // XP-7: the armed STRIKE fires at the clicked point.
         queue.push({ type: 'strike', target: screenToWorld(start, camera) });

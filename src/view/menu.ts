@@ -174,11 +174,14 @@ export function showTitleMenu(onSelect: (missionId: string) => void, campaignMis
     '<div style="color:#8fb7c9;margin:6px 0 28px;">Aether Prime — the war for Shard</div>';
   const campaign = button('▶  CAMPAIGN', true);
   const skirmish = button('SKIRMISH');
+  const multi = button('MULTIPLAYER');
   // Remove THIS overlay before handing off (mission select stacks its own).
   campaign.onclick = () => { el.remove(); onSelect(campaignMissionId); };
   skirmish.onclick = () => { el.remove(); onSelect('skirmish'); };
+  multi.onclick = () => { el.remove(); onSelect('__multiplayer__'); };
   panel.appendChild(campaign);
   panel.appendChild(skirmish);
+  panel.appendChild(multi);
   // REPLAYS (XP-7): the save history — pick one, it becomes the quick save + boots.
   try {
     const hist = JSON.parse(localStorage.getItem('shardDominion.saves') ?? '[]') as { label: string; payload: { missionId: string; faction?: string; difficulty?: string } }[];
@@ -502,5 +505,90 @@ export function showCredits(onDone: () => void): void {
   done.style.marginTop = '24px';
   done.onclick = () => { el.remove(); onDone(); };
   panel.appendChild(done);
+  el.appendChild(panel);
+}
+
+
+// ── Multiplayer lobby (v0.54): host/join a lockstep match without hand-building
+//    URLs. Both players just enter the same room on the same relay; the panel
+//    shows a copyable invite link for the second player. ─────────────────────────
+export interface MultiplayerOpts {
+  onStart: (relay: string, room: string, mode: '1v1' | '2v2') => void;
+  onBack: () => void;
+}
+
+export function showMultiplayerSetup(o: MultiplayerOpts): void {
+  const el = overlay();
+  backdrop(el, 'title_backdrop');
+  const panel = document.createElement('div');
+  panel.style.cssText = 'text-align:center;max-width:560px;';
+  panel.innerHTML =
+    '<div style="font-size:34px;font-weight:bold;color:#ffd34d;letter-spacing:2px;">MULTIPLAYER</div>' +
+    '<div style="color:#8fb7c9;margin:4px 0 18px;font-size:13px;">1v1 lockstep — both players enter the same room on the same relay</div>';
+
+  const field = (label: string, value: string): { row: HTMLDivElement; input: HTMLInputElement } => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;justify-content:center;margin:8px 0;color:#cfe0ee;font-size:13px;';
+    const span = document.createElement('span');
+    span.textContent = label; span.style.cssText = 'width:70px;text-align:right;';
+    const input = document.createElement('input');
+    input.type = 'text'; input.value = value;
+    input.style.cssText = 'font-family:monospace;font-size:13px;padding:6px 10px;width:280px;background:rgba(10,14,20,0.9);color:#e7f3ff;border:1px solid #3a4a5a;border-radius:4px;';
+    row.appendChild(span); row.appendChild(input);
+    return { row, input };
+  };
+
+  // Relay default: same host as the game, port 8787 (LAN/tailnet). Persisted.
+  let savedRelay = '';
+  try { savedRelay = localStorage.getItem('shardDominion.mp.relay') ?? ''; } catch { /* storage unavailable */ }
+  const relayF = field('RELAY', savedRelay || `ws://${location.hostname || 'localhost'}:8787`);
+  const roomF = field('ROOM', Math.random().toString(36).slice(2, 7).toUpperCase());
+  panel.appendChild(relayF.row);
+  panel.appendChild(roomF.row);
+
+  // Mode row.
+  let mode: '1v1' | '2v2' = '1v1';
+  const modeRow = document.createElement('div');
+  modeRow.style.cssText = 'display:flex;align-items:center;gap:6px;justify-content:center;margin:8px 0 4px;color:#cfe0ee;font-size:13px;';
+  modeRow.innerHTML = '<span>MODE</span>';
+  const modeBtns: HTMLButtonElement[] = [];
+  for (const m of ['1v1', '2v2'] as const) {
+    const b = document.createElement('button');
+    const style = (on: boolean): string =>
+      `font-family:monospace;font-size:11px;padding:4px 12px;cursor:pointer;border-radius:4px;border:1px solid ${on ? '#00e5ff' : '#3a4a5a'};background:${on ? 'rgba(0,229,255,0.14)' : 'rgba(20,26,34,0.9)'};color:${on ? '#00e5ff' : '#cfe0ee'};`;
+    b.textContent = m; b.style.cssText = style(m === mode);
+    b.onclick = () => { mode = m; for (const [i, bb] of modeBtns.entries()) bb.style.cssText = style((['1v1', '2v2'] as const)[i] === mode); };
+    modeBtns.push(b); modeRow.appendChild(b);
+  }
+  panel.appendChild(modeRow);
+
+  // Live invite link + copy — the other player opens exactly this URL.
+  const invite = document.createElement('div');
+  invite.style.cssText = 'margin:12px auto 4px;padding:8px 10px;max-width:520px;background:rgba(10,14,20,0.85);border:1px solid #2a3a4a;border-radius:4px;color:#9fd8a9;font-size:11px;font-family:monospace;word-break:break-all;';
+  const inviteUrl = (): string => {
+    const q = new URLSearchParams({ mp: '1', room: roomF.input.value.trim() || 'duel', relay: relayF.input.value.trim() });
+    if (mode === '2v2') q.set('mode', '2v2');
+    return `${location.origin}${location.pathname}?${q.toString()}`;
+  };
+  const refreshInvite = (): void => { invite.textContent = `INVITE (send to the other player): ${inviteUrl()}`; };
+  relayF.input.oninput = refreshInvite; roomF.input.oninput = refreshInvite;
+  for (const b of modeBtns) b.addEventListener('click', refreshInvite);
+  refreshInvite();
+  panel.appendChild(invite);
+  const copy = document.createElement('button');
+  copy.textContent = '⧉ COPY INVITE LINK';
+  copy.style.cssText = 'font-family:monospace;font-size:11px;margin:2px 0 12px;padding:4px 12px;cursor:pointer;background:rgba(20,26,34,0.9);color:#cfe0ee;border:1px solid #3a4a5a;border-radius:4px;';
+  copy.onclick = () => { void navigator.clipboard?.writeText(inviteUrl()).then(() => { copy.textContent = '⧉ COPIED ✓'; }); };
+  panel.appendChild(copy);
+
+  const start = button('▶  ENTER ROOM', true);
+  start.onclick = () => {
+    try { localStorage.setItem('shardDominion.mp.relay', relayF.input.value.trim()); } catch { /* storage unavailable */ }
+    el.remove();
+    o.onStart(relayF.input.value.trim(), roomF.input.value.trim() || 'duel', mode);
+  };
+  const back = button('BACK');
+  back.onclick = () => { el.remove(); o.onBack(); };
+  panel.appendChild(start); panel.appendChild(back);
   el.appendChild(panel);
 }
