@@ -437,19 +437,22 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // Once a second, diff the viewer's side and announce the transitions (Westwood
   // vocabulary, v0.52): match end, under attack, low power, unit ready,
   // construction complete, new construction options (tier-up), storage full.
-  const evaPrev = { over: false, ownHp: -1, powered: true, army: -1, builtCount: -1, tier: -1, storageFull: false };
+  const evaPrev = { over: false, baseHp: -1, harvesters: -1, powered: true, army: -1, builtCount: -1, tier: -1, storageFull: false };
   window.setInterval(() => {
     if (onboarding.briefingActive()) return;
     const res = missionResult();
     if (res.over && !evaPrev.over) evaSay(res.winner === viewerTeam ? 'Victory. Mission complete.' : 'Defeat.', 0);
     evaPrev.over = res.over;
     if (res.over) return;
-    let ownHp = 0, army = 0, supply = 0, demand = 0, builtCount = 0, tier = 1;
+    let baseHp = 0, army = 0, harvesters = 0, supply = 0, demand = 0, builtCount = 0, tier = 1;
     let storage = 0, maxStorage = 0;
     for (const e of state.store.all()) {
       if (e.components.faction?.team !== viewerTeam) continue;
-      ownHp += Math.max(0, e.components.health?.hp ?? 0);
+      // Base-under-attack tracks STRUCTURE hp only (RA: the base alarm never
+      // fires for field skirmishes — units trading fire is normal, not an alarm).
+      if (e.components.building) baseHp += Math.max(0, e.components.health?.hp ?? 0);
       if (e.components.combat && !e.components.building && (e.components.health?.hp ?? 0) > 0) army++;
+      if (e.components.harvest && (e.components.health?.hp ?? 1) > 0) harvesters++;
       const pw = e.components.power;
       if (pw) { supply += pw.powerSupply; demand += pw.powerDemand; }
       const b = e.components.building;
@@ -459,8 +462,11 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
       const eco = e.components.economy;
       if (b && eco) { storage += eco.refineryStorage ?? 0; maxStorage += eco.maxStorage ?? 0; }
     }
-    if (evaPrev.ownHp >= 0 && ownHp < evaPrev.ownHp - 15) evaSay('Base under attack.', 15000);
-    evaPrev.ownHp = ownHp;
+    if (evaPrev.baseHp >= 0 && baseHp < evaPrev.baseHp - 10) evaSay('Base under attack.', 15000);
+    evaPrev.baseHp = baseHp;
+    // Losing the economy engine is THE pivotal event — it gets its own line.
+    if (evaPrev.harvesters >= 0 && harvesters < evaPrev.harvesters) evaSay('Harvester lost.', 0);
+    evaPrev.harvesters = harvesters;
     const powered = supply >= demand;
     if (!powered && evaPrev.powered) evaSay('Low power. Build a Power Node.', 20000);
     evaPrev.powered = powered;

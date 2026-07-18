@@ -41,7 +41,9 @@ const BRIEF_HOWTO: readonly string[] = [
   '4.  Drag a box to select troops, then RIGHT-CLICK the enemy to attack.',
   '5.  Push north-east and destroy their base to win.',
 ];
-const BRIEF_HINT = 'Q = army · I = idle harv · O = hero · Ctrl+1-9 = group (tap ×2 centres) · Shift+R-click = queue waypoints';
+// Two lines — the single long line clipped off the briefing frame (playtest v0.53).
+const BRIEF_HINT = 'SCROLL: screen edge · wheel = zoom · radar click = jump';
+const BRIEF_HINT2 = 'Q army · I idle · O hero · Ctrl+1-9 groups (tap ×2 centres) · Shift+R-click queues';
 
 export interface BriefingText { title: string; story: readonly string[]; objectives: readonly string[] }
 
@@ -252,7 +254,8 @@ export function makeOnboarding(
     y += 6;
     ctx.fillStyle = '#8894a4';
     ctx.font = '12px monospace';
-    ctx.fillText(BRIEF_HINT, pad + 34, y);
+    ctx.fillText(BRIEF_HINT, pad + 34, y); y += 18;
+    ctx.fillText(BRIEF_HINT2, pad + 34, y);
 
     // Painted speaker portrait (ART_HANDOFF §F) — bottom-right of the frame like a
     // comm officer on the line; drawn LAST so it sits opaque over any long lines.

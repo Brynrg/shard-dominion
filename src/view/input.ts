@@ -376,7 +376,15 @@ export function makeInputHandlers(
     } else {
       const pos = getMousePos(e);
       queue.push({ type: 'order', target: screenToWorld(pos, camera), tile: screenToTile(pos, camera), queued: e.shiftKey || undefined });
-      sfx?.ack();
+      // RA feel (v0.53): acknowledge only when the viewer HAS a selection — an
+      // empty right-click stays silent (the sim likewise draws no marker).
+      let anySelected = false;
+      if (simStateRef) {
+        for (const en of simStateRef.store.all()) {
+          if (en.components.selection?.selected && en.components.faction?.team === viewerTeam) { anySelected = true; break; }
+        }
+      }
+      if (anySelected) sfx?.ack();
     }
   }
 

@@ -207,3 +207,48 @@ describe('command system', () => {
     expect(markers?.length).toBe(0);
   });
 });
+
+// ── v0.53 playtest fixes: honest acks + harvester force-return ─────────────────
+import { tileToWorldCenter as ttwc53 } from '../../src/sim/coords.js';
+import { loadStructures as ls53 } from '../../src/loaders/structures.js';
+import structuresData53 from '../../data/structures.json' with { type: 'json' };
+
+describe('order feedback honesty (v0.53)', () => {
+  it('an order with NOTHING selected pushes no confirmation marker', () => {
+    const state = makeSimState({ seed: 42, mapWidth: 32, mapHeight: 32 });
+    const queue = makeCommandQueue();
+    const cmd = makeCommandSystem(queue, []);
+    const systems = orderSystems([cmd]);
+    queue.push({ type: 'order', target: ttwc53({ tx: 9, ty: 9 }), tile: { tx: 9, ty: 9 } });
+    runTick(state, systems);
+    expect(cmd.markers.length).toBe(0);
+  });
+
+  it('right-clicking an own refinery with a LOADED harvester force-returns it', () => {
+    const structures = ls53(structuresData53);
+    const state = makeSimState({ seed: 42, mapWidth: 32, mapHeight: 32 });
+    const queue = makeCommandQueue();
+    const cmd = makeCommandSystem(queue, structures);
+    const systems = orderSystems([cmd]);
+    const refId = state.store.create({
+      position: ttwc53({ tx: 8, ty: 8 }),
+      building: { buildProgress: 100, onSlab: true, powered: true },
+      economy: { credits: 0, cells: 0, minedTotal: 0, maxStorage: 3500, refineryStorage: 0 },
+      health: { hp: 400, maxHp: 400 },
+      faction: { team: 'player', faction: 'refinery' },
+    });
+    const harv = state.store.create({
+      position: ttwc53({ tx: 4, ty: 4 }),
+      movement: { target: null, path: [], speed: 10 },
+      harvest: { state: 'HARVEST', targetTile: { tx: 4, ty: 4 }, targetRefinery: null, cargo: 250 },
+      faction: { team: 'player', faction: 'harvester' },
+      selection: { selected: true },
+    });
+    queue.push({ type: 'order', target: ttwc53({ tx: 8, ty: 8 }), tile: { tx: 8, ty: 8 } });
+    runTick(state, systems);
+    const h = state.store.get(harv)!.components.harvest!;
+    expect(h.state).toBe('RETURN');
+    expect(h.targetRefinery).toBe(refId);
+    expect(cmd.markers.length).toBe(1); // and the ack marker DID draw (someone obeyed)
+  });
+});

@@ -223,6 +223,21 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             }
             const key = `${intent.tile.tx},${intent.tile.ty}`;
             const isShard = state.grid.terrainAt(intent.tile) === 'SHARD' || (state.shardDensity.get(key) ?? 0) > 0;
+            // Force-return (RA/D2K, v0.53): right-click an OWN refinery — a selected
+            // harvester with cargo docks early instead of treating it as a move.
+            let ownRefinery: ReturnType<typeof state.store.all>[number] | null = null;
+            let rd0 = TILE_SUBUNITS * 1.2;
+            for (const e of state.store.all()) {
+              if (e.components.faction?.team !== actor) continue;
+              if (e.components.faction.faction !== 'refinery') continue; // docks live at refineries only
+              if (!e.components.building || !e.components.economy) continue;
+              if ((e.components.building.buildProgress ?? 100) < 100) continue;
+              if ((e.components.health?.hp ?? 1) <= 0) continue;
+              const pos = e.components.position;
+              if (!pos) continue;
+              const d = Math.hypot(pos.wx - intent.target.wx, pos.wy - intent.target.wy);
+              if (d < rd0) { rd0 = d; ownRefinery = e; }
+            }
             // Garrison (XP-4): right-click an OWN container (bunker/APC) → board it.
             let container: ReturnType<typeof state.store.all>[number] | null = null;
             let cd0 = TILE_SUBUNITS * 0.9;
@@ -234,6 +249,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
               if (d < cd0) { cd0 = d; container = e; }
             }
 
+            let accepted = 0; // units that took the order — no takers, no ack marker
             for (const e of state.store.all()) {
               if (!e.components.selection?.selected) continue;
               if (e.components.faction?.team !== actor) continue;
@@ -242,6 +258,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
                 // where its freshly-built units gather. Buildings still never move.
                 if (e.components.production && !enemy && !isShard) {
                   e.components.production = { ...e.components.production, rally: intent.target };
+                  accepted++;
                 }
                 continue;
               }
@@ -251,19 +268,28 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
                 e.components.movement.target = container.components.position!;
                 e.components.movement.boardTargetId = container.id;
                 markers.push({ target: container.components.position!, remaining: MARKER_LIFETIME });
+                accepted++;
                 continue;
               }
-              if (enemy && e.components.combat) {
+              if (ownRefinery && e.components.harvest && (e.components.harvest.cargo ?? 0) > 0 && !enemy) {
+                // Force-return: head home and dock what's in the hold now.
+                e.components.harvest.state = 'RETURN';
+                e.components.harvest.targetRefinery = ownRefinery.id;
+                if (e.components.movement) e.components.movement.target = null;
+                accepted++;
+              } else if (enemy && e.components.combat) {
                 const epos = enemy.components.position!;
                 if (!e.components.movement) e.components.movement = { target: null, path: [], speed: 10 };
                 e.components.movement.target = { wx: epos.wx, wy: epos.wy };
                 e.components.combat.targetId = enemy.id;
                 if (e.components.harvest) e.components.harvest.state = 'IDLE';
+                accepted++;
               } else if (isShard && e.components.harvest) {
                 e.components.harvest.state = 'SEEK';
                 e.components.harvest.targetTile = { tx: intent.tile.tx, ty: intent.tile.ty };
                 e.components.harvest.targetRefinery = null;
                 if (e.components.movement) e.components.movement.target = null;
+                accepted++;
               } else {
                 if (!e.components.movement) e.components.movement = { target: null, path: [], speed: 10 };
                 const mv = e.components.movement;
@@ -284,9 +310,13 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
                   e.components.harvest.targetTile = null;
                   e.components.harvest.targetRefinery = null;
                 }
+                accepted++;
               }
             }
-            markers.push({ target: intent.target, remaining: MARKER_LIFETIME });
+            // RA feel: acknowledge only when someone will obey. An empty-selection
+            // right-click draws nothing (the old unconditional marker read as a
+            // phantom accepted order).
+            if (accepted > 0) markers.push({ target: intent.target, remaining: MARKER_LIFETIME });
             break;
           }
 

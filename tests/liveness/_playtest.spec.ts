@@ -39,8 +39,6 @@ test.describe('playtest session', () => {
 
     // Enemy must exist via the MENU flow (buildings incl. enemy base).
     const enemyAlive = await page.evaluate(() => {
-      let enemyEntities = 0;
-      // Count via selection-independent hook: match() counts units only; probe harder.
       const m = (window as any).__debugMatch?.();
       return m ? { units: m.enemyUnits, credits: m.enemyCredits } : null;
     });
