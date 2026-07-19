@@ -1,0 +1,115 @@
+{
+  "id": "m18_act4_ruins",
+  "name": "Act IV · The Ruins",
+  "order": 18,
+  "inheritsChoice": true,
+  "map": { "width": 42, "height": 42, "seed": 18018 },
+  "briefing": {
+    "title": "THE RUINS",
+    "story": [
+      "Halex is gone. The Directorate falls like sand. But Aether Prime does not forgive,",
+      "and the planet is still awake — a god that walked, not slept. The Chorus stirs",
+      "beneath the glass-flats, and the crust is fracturing.",
+      "",
+      "SERA VANE: \"The binding holds, but it's not perfect. We need to stabilize the",
+      "convergence zones before the whole continent splits. That means we secure the",
+      "ruins and the remaining spore towers — they are anchors, and they're ours now.\"",
+      "",
+      "MARSHAL CORR: \"One more campaign. One more, and we bring Aether Prime to heel.\""
+    ],
+    "objectives": [
+      "Secure the three spore tower sites (hold each for 45s)",
+      "Defend the binding site at the Vein (must survive entire battle)"
+    ]
+  },
+  "debrief": {
+    "win": [
+      "The towers sing now in harmony with the waking god. The convergence zones stabilize,",
+      "and Aether Prime ceases its violent thrashing. The continent holds. The Chorus dreams",
+      "on, bound by your choice at the First Vein, held by the towers you claimed.",
+      "The real work begins now: learning to live with a world that thinks."
+    ],
+    "lose": [
+      "The towers fall silent. The convergence accelerates, and the crust opens into",
+      "a chasm that swallows whole cities. Aether Prime, uncontrolled, becomes a tomb."
+    ]
+  },
+  "naturalShardDensity": 250,
+  "fields": [
+    { "tx": 5, "ty": 5, "w": 2, "h": 2, "density": 600 },
+    { "tx": 35, "ty": 5, "w": 2, "h": 2, "density": 600 },
+    { "tx": 20, "ty": 35, "w": 2, "h": 2, "density": 600 }
+  ],
+  "player": {
+    "credits": 3500,
+    "factionId": "emberhand",
+    "techTier": 3,
+    "buildings": [
+      { "type": "construction_yard", "tx": 8, "ty": 8 },
+      { "type": "refinery", "tx": 10, "ty": 8 },
+      { "type": "refinery", "tx": 6, "ty": 8 },
+      { "type": "barracks", "tx": 11, "ty": 10 },
+      { "type": "war_factory", "tx": 8, "ty": 6 },
+      { "type": "radar", "tx": 6, "ty": 6 },
+      { "type": "power_node", "tx": 5, "ty": 7 },
+      { "type": "power_node", "tx": 11, "ty": 7 },
+      { "type": "defense_turret", "tx": 12, "ty": 9 },
+      { "type": "defense_turret", "tx": 4, "ty": 9 }
+    ],
+    "units": [
+      { "type": "harvester", "tx": 10, "ty": 11 },
+      { "type": "harvester", "tx": 7, "ty": 11 },
+      { "type": "infantry", "tx": 8, "ty": 12 },
+      { "type": "rocket_trooper", "tx": 9, "ty": 12 },
+      { "type": "rocket_trooper", "tx": 10, "ty": 12 },
+      { "type": "assault_tank", "tx": 8, "ty": 13 },
+      { "type": "assault_tank", "tx": 10, "ty": 13 }
+    ]
+  },
+  "enemies": [
+    {
+      "team": "enemy",
+      "credits": 4000,
+      "factionId": "concord",
+      "techTier": 2,
+      "buildings": [
+        { "type": "construction_yard", "tx": 35, "ty": 35 },
+        { "type": "refinery", "tx": 33, "ty": 35 },
+        { "type": "barracks", "tx": 35, "ty": 33 },
+        { "type": "war_factory", "tx": 37, "ty": 35 },
+        { "type": "radar", "tx": 33, "ty": 33 },
+        { "type": "defense_turret", "tx": 32, "ty": 36 },
+        { "type": "defense_turret", "tx": 38, "ty": 36 },
+        { "type": "power_node", "tx": 34, "ty": 36 },
+        { "type": "power_node", "tx": 36, "ty": 36 }
+      ],
+      "units": [
+        { "type": "harvester", "tx": 34, "ty": 37 },
+        { "type": "infantry", "tx": 35, "ty": 38 },
+        { "type": "infantry", "tx": 36, "ty": 38 },
+        { "type": "rocket_trooper", "tx": 37, "ty": 38 },
+        { "type": "scout_vehicle", "tx": 36, "ty": 39 }
+      ],
+      "ai": {
+        "assaultValue": 450,
+        "pressureValue": 250
+      }
+    }
+  ],
+  "neutrals": [
+    { "type": "spore_tower", "tx": 5, "ty": 5 },
+    { "type": "spore_tower", "tx": 35, "ty": 5 },
+    { "type": "spore_tower", "tx": 20, "ty": 35 }
+  ],
+  "objectives": [
+    { "type": "hold", "team": "player", "region": { "tx": 5, "ty": 5, "r": 3 }, "seconds": 45, "primary": true, "text": "Hold the north spore tower" },
+    { "type": "hold", "team": "player", "region": { "tx": 35, "ty": 5, "r": 3 }, "seconds": 45, "primary": true, "text": "Hold the east spore tower" },
+    { "type": "hold", "team": "player", "region": { "tx": 20, "ty": 35, "r": 3 }, "seconds": 45, "primary": true, "text": "Hold the south spore tower" },
+    { "type": "survive", "team": "player", "seconds": 300, "primary": true, "text": "Keep the binding site secure" }
+  ],
+  "failure": [
+    { "type": "defeated", "team": "player" },
+    { "type": "defend", "team": "player", "kind": "construction_yard" }
+  ],
+  "next": "m19_act4_convergence"
+}

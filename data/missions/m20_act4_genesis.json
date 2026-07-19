@@ -1,0 +1,129 @@
+{
+  "id": "m20_act4_genesis",
+  "name": "Act IV · Genesis",
+  "order": 20,
+  "inheritsChoice": true,
+  "map": { "width": 46, "height": 46, "seed": 20020 },
+  "briefing": {
+    "title": "GENESIS",
+    "story": [
+      "The defenses fall. The towers sing in harmony. The binding holds firm, and Aether Prime",
+      "settles into a new equilibrium — not the sleep of ages, but the waking rest of a god",
+      "that has learned consent, learned partnership with the fragile things that walk its crust.",
+      "",
+      "But there is one last threat. The Chorus itself has fragments, splinters of consciousness",
+      "that were never part of the binding. They rage at the edges of the planet, calling to the",
+      "deep places, trying to break free. One final push, one last battle. Then, peace.",
+      "",
+      "SERA VANE: \"This is it. Everything we've fought for comes down to this single moment.",
+      "Take the field. Seal the cracks in the world. End this war. And let something new begin.\""
+    ],
+    "objectives": [
+      "Achieve total victory — destroy all enemy forces",
+      "Secure the genesis point (control the center of the map for 60s)"
+    ]
+  },
+  "debrief": {
+    "win": [
+      "The last fragments of Aether Prime's fractured consciousness are sealed away,",
+      "integrated into the binding, made whole. The planet rests, truly rests, for the first time",
+      "in a thousand years. And on its surface, two factions — enemies for so long — stand",
+      "together in the ruins of the old world, looking toward something new.",
+      "",
+      "MARSHAL CORR: \"We came to fight a god. We leave as something more — something that",
+      "helped create the world that's coming next.\"",
+      "",
+      "SERA VANE: \"The war is over. The real work begins now. Aether Prime is listening.",
+      "Let's give it something worth hearing.\""
+    ],
+    "lose": [
+      "The fragments break free. The binding shatters like glass. Aether Prime wakes",
+      "fully, and in that waking, the world ends. You fought with honor, fought with courage —",
+      "but some things are too powerful, too vast, to ever truly defeat.",
+      "",
+      "Your sacrifice will echo in the ruins, remembered by no one."
+    ]
+  },
+  "naturalShardDensity": 300,
+  "fields": [
+    { "tx": 8, "ty": 8, "w": 2, "h": 2, "density": 700 },
+    { "tx": 38, "ty": 8, "w": 2, "h": 2, "density": 700 },
+    { "tx": 23, "ty": 38, "w": 2, "h": 2, "density": 700 },
+    { "tx": 8, "ty": 38, "w": 2, "h": 2, "density": 700 }
+  ],
+  "player": {
+    "credits": 5000,
+    "factionId": "emberhand",
+    "techTier": 3,
+    "buildings": [
+      { "type": "construction_yard", "tx": 10, "ty": 10 },
+      { "type": "refinery", "tx": 12, "ty": 10 },
+      { "type": "refinery", "tx": 8, "ty": 10 },
+      { "type": "barracks", "tx": 13, "ty": 12 },
+      { "type": "war_factory", "tx": 10, "ty": 8 },
+      { "type": "radar", "tx": 6, "ty": 8 },
+      { "type": "power_node", "tx": 7, "ty": 9 },
+      { "type": "power_node", "tx": 13, "ty": 9 },
+      { "type": "power_node", "tx": 10, "ty": 6 },
+      { "type": "defense_turret", "tx": 14, "ty": 11 },
+      { "type": "defense_turret", "tx": 6, "ty": 11 }
+    ],
+    "units": [
+      { "type": "harvester", "tx": 12, "ty": 13 },
+      { "type": "harvester", "tx": 8, "ty": 13 },
+      { "type": "infantry", "tx": 10, "ty": 14 },
+      { "type": "infantry", "tx": 11, "ty": 14 },
+      { "type": "rocket_trooper", "tx": 12, "ty": 14 },
+      { "type": "rocket_trooper", "tx": 13, "ty": 14 },
+      { "type": "assault_tank", "tx": 10, "ty": 15 },
+      { "type": "assault_tank", "tx": 12, "ty": 15 },
+      { "type": "assault_tank", "tx": 14, "ty": 15 },
+      { "type": "longbow", "tx": 11, "ty": 16 }
+    ]
+  },
+  "enemies": [
+    {
+      "team": "enemy",
+      "credits": 6000,
+      "factionId": "concord",
+      "techTier": 2,
+      "buildings": [
+        { "type": "construction_yard", "tx": 36, "ty": 36 },
+        { "type": "refinery", "tx": 34, "ty": 36 },
+        { "type": "refinery", "tx": 38, "ty": 36 },
+        { "type": "barracks", "tx": 35, "ty": 34 },
+        { "type": "barracks", "tx": 37, "ty": 34 },
+        { "type": "war_factory", "tx": 36, "ty": 38 },
+        { "type": "radar", "tx": 34, "ty": 34 },
+        { "type": "power_node", "tx": 33, "ty": 37 },
+        { "type": "power_node", "tx": 39, "ty": 37 },
+        { "type": "power_node", "tx": 36, "ty": 40 },
+        { "type": "defense_turret", "tx": 32, "ty": 37 },
+        { "type": "defense_turret", "tx": 40, "ty": 37 }
+      ],
+      "units": [
+        { "type": "harvester", "tx": 36, "ty": 38 },
+        { "type": "harvester", "tx": 34, "ty": 38 },
+        { "type": "infantry", "tx": 35, "ty": 40 },
+        { "type": "infantry", "tx": 36, "ty": 40 },
+        { "type": "infantry", "tx": 37, "ty": 40 },
+        { "type": "rocket_trooper", "tx": 38, "ty": 40 },
+        { "type": "assault_tank", "tx": 36, "ty": 41 },
+        { "type": "assault_tank", "tx": 38, "ty": 41 },
+        { "type": "assault_tank", "tx": 34, "ty": 41 }
+      ],
+      "ai": {
+        "assaultValue": 350,
+        "pressureValue": 180
+      }
+    }
+  ],
+  "objectives": [
+    { "type": "eliminate", "team": "enemy", "primary": true, "text": "Destroy all enemy forces" },
+    { "type": "hold", "team": "player", "region": { "tx": 23, "ty": 23, "r": 4 }, "seconds": 60, "primary": true, "text": "Secure the genesis point" }
+  ],
+  "failure": [
+    { "type": "defeated", "team": "player" }
+  ],
+  "next": null
+}

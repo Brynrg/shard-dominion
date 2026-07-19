@@ -1,0 +1,75 @@
+{
+  "id": "skirmish_desert_clash",
+  "name": "Desert Clash (2P Skirmish)",
+  "order": 100,
+  "map": { "width": 40, "height": 40, "seed": 4001 },
+  "briefing": {
+    "title": "DESERT CLASH",
+    "story": [
+      "Two armies. One desert. No story — just strategy, tactics, and the will to dominate",
+      "the Shard fields between you."
+    ],
+    "objectives": [
+      "Destroy all enemy forces or break their economy"
+    ]
+  },
+  "debrief": {
+    "win": [
+      "Victory is yours. The desert remembers only the strong."
+    ],
+    "lose": [
+      "Defeat. The sands shift, and you are forgotten."
+    ]
+  },
+  "naturalShardDensity": 200,
+  "fields": [
+    { "tx": 5, "ty": 20, "w": 3, "h": 2, "density": 600 },
+    { "tx": 32, "ty": 20, "w": 3, "h": 2, "density": 600 }
+  ],
+  "player": {
+    "credits": 2000,
+    "factionId": "concord",
+    "techTier": 1,
+    "buildings": [
+      { "type": "construction_yard", "tx": 5, "ty": 5 },
+      { "type": "refinery", "tx": 7, "ty": 5 },
+      { "type": "barracks", "tx": 5, "ty": 7 },
+      { "type": "power_node", "tx": 4, "ty": 6 }
+    ],
+    "units": [
+      { "type": "harvester", "tx": 8, "ty": 6 },
+      { "type": "infantry", "tx": 6, "ty": 8 },
+      { "type": "infantry", "tx": 7, "ty": 8 }
+    ]
+  },
+  "enemies": [
+    {
+      "team": "enemy",
+      "credits": 2000,
+      "factionId": "emberhand",
+      "techTier": 1,
+      "buildings": [
+        { "type": "construction_yard", "tx": 34, "ty": 34 },
+        { "type": "refinery", "tx": 32, "ty": 34 },
+        { "type": "barracks", "tx": 34, "ty": 32 },
+        { "type": "power_node", "tx": 35, "ty": 33 }
+      ],
+      "units": [
+        { "type": "harvester", "tx": 31, "ty": 33 },
+        { "type": "infantry", "tx": 33, "ty": 31 },
+        { "type": "infantry", "tx": 32, "ty": 31 }
+      ],
+      "ai": {
+        "attackTile": { "tx": 5, "ty": 5 },
+        "assaultValue": 400
+      }
+    }
+  ],
+  "objectives": [
+    { "type": "eliminate", "team": "enemy", "primary": true, "text": "Destroy all enemy forces" }
+  ],
+  "failure": [
+    { "type": "defeated", "team": "player" }
+  ],
+  "next": null
+}
