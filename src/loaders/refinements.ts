@@ -10,9 +10,11 @@ export const RefinementSchema = z.object({
   cost: z.number().nonnegative(),
   cells: z.number().nonnegative().default(0),
   timeSeconds: z.number().positive(),
-  effect: z.enum(['harvest', 'damage', 'armor', 'resonance']),
+  effect: z.enum(['harvest', 'damage', 'armor', 'resonance', 'buildTime', 'range', 'firepower']),
   value: z.number().positive(),
   desc: z.string(),
+  prerequisites: z.array(z.string()).optional(),
+  faction: z.enum(['concord', 'emberhand', 'shardborn']).optional(),
 });
 export type Refinement = z.infer<typeof RefinementSchema>;
 

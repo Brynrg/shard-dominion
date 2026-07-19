@@ -7,7 +7,8 @@
     "timeSeconds": 30,
     "effect": "harvest",
     "value": 0.33,
-    "desc": "Harvesters mine +33% Shard per pass"
+    "desc": "Harvesters mine +33% Shard per pass",
+    "tier": 1
   },
   {
     "id": "munitions_doctrine",
@@ -17,7 +18,8 @@
     "timeSeconds": 45,
     "effect": "damage",
     "value": 0.2,
-    "desc": "All your weapons deal +20% damage"
+    "desc": "All your weapons deal +20% damage",
+    "tier": 1
   },
   {
     "id": "composite_plating",
@@ -27,7 +29,8 @@
     "timeSeconds": 40,
     "effect": "armor",
     "value": 0.2,
-    "desc": "Your units take -20% incoming damage"
+    "desc": "Your units take -20% incoming damage",
+    "tier": 1
   },
   {
     "id": "resonance_dampers",
@@ -37,6 +40,112 @@
     "timeSeconds": 35,
     "effect": "resonance",
     "value": 0.4,
-    "desc": "The planet hunts your extraction -40% as hard"
+    "desc": "The planet hunts your extraction -40% as hard",
+    "tier": 1
+  },
+  {
+    "id": "advanced_munitions",
+    "name": "Advanced Munitions",
+    "cost": 1800,
+    "cells": 2,
+    "timeSeconds": 60,
+    "effect": "damage",
+    "value": 0.25,
+    "desc": "Weapons deal +25% additional damage (requires Munitions Doctrine)",
+    "tier": 2,
+    "prerequisites": ["munitions_doctrine"]
+  },
+  {
+    "id": "reinforced_armor",
+    "name": "Reinforced Armor",
+    "cost": 1500,
+    "cells": 2,
+    "timeSeconds": 50,
+    "effect": "armor",
+    "value": 0.25,
+    "desc": "Units take -25% additional incoming damage (requires Composite Plating)",
+    "tier": 2,
+    "prerequisites": ["composite_plating"]
+  },
+  {
+    "id": "extended_range",
+    "name": "Extended Range",
+    "cost": 1400,
+    "cells": 1,
+    "timeSeconds": 55,
+    "effect": "range",
+    "value": 0.2,
+    "desc": "Unit weapon ranges +20%"
+  },
+  {
+    "id": "rapid_fire",
+    "name": "Rapid Fire",
+    "cost": 1300,
+    "cells": 1,
+    "timeSeconds": 50,
+    "effect": "firepower",
+    "value": 0.15,
+    "desc": "Unit reload speed +15%"
+  },
+  {
+    "id": "cloaking_field",
+    "name": "Cloaking Field",
+    "cost": 2000,
+    "cells": 3,
+    "timeSeconds": 70,
+    "effect": "resonance",
+    "value": 0.5,
+    "desc": "Stealthy units cloak automatically (Emberhand exclusive)",
+    "tier": 2,
+    "faction": "emberhand"
+  },
+  {
+    "id": "salvage_operations",
+    "name": "Salvage Operations",
+    "cost": 1200,
+    "cells": 1,
+    "timeSeconds": 40,
+    "effect": "harvest",
+    "value": 0.25,
+    "desc": "Destroyed enemy units drop extra resources (Emberhand exclusive)",
+    "tier": 2,
+    "faction": "emberhand"
+  },
+  {
+    "id": "crystalline_regeneration",
+    "name": "Crystalline Regeneration",
+    "cost": 1800,
+    "cells": 3,
+    "timeSeconds": 65,
+    "effect": "armor",
+    "value": 0.3,
+    "desc": "Shardborn units slowly regenerate HP in combat",
+    "tier": 2,
+    "faction": "shardborn"
+  },
+  {
+    "id": "resonance_cascade",
+    "name": "Resonance Cascade",
+    "cost": 2200,
+    "cells": 4,
+    "timeSeconds": 80,
+    "effect": "damage",
+    "value": 0.35,
+    "desc": "Shardborn weapons damage increases with resonance (Shardborn exclusive)",
+    "tier": 2,
+    "faction": "shardborn",
+    "prerequisites": ["resonance_dampers"]
+  },
+  {
+    "id": "quantum_leap",
+    "name": "Quantum Leap",
+    "cost": 2500,
+    "cells": 5,
+    "timeSeconds": 90,
+    "effect": "buildTime",
+    "value": 0.3,
+    "desc": "Structure and unit build times -30%",
+    "tier": 3,
+    "prerequisites": ["advanced_munitions", "reinforced_armor"]
   }
 ]

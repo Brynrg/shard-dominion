@@ -81,7 +81,7 @@ export interface CommandSystem {
 
 const MARKER_LIFETIME = 10 as const; // ~0.5s at 20Hz
 
-export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structures: StructureDef[], heroIds: readonly string[] = ['warden', 'vane'], refinements: readonly Refinement[] = []): CommandSystem {
+export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structures: StructureDef[], heroIds: readonly string[] = ['warden', 'vane'], refinements: readonly Refinement[] = [], units: readonly { id: string; cost: number }[] = [], teamFactions?: { player: { costMult: number }; enemy: { costMult: number } }): CommandSystem {
   const markers: ConfirmationMarker[] = [];
   const groups = new Map<string, EntityId[]>();
   // Idle-harvester cycling cursor per seat (like the groups map, this closure
@@ -405,18 +405,70 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             break;
           }
 
+          case 'build-structure': {
+            // RA build flow (v0.55): ONE structure per team constructs in the
+            // sidebar. Paid UPFRONT; the clock sweeps on the button; at 0 it's
+            // READY and waits for placement.
+            if (state.structureBuild.get(actor)) break; // one at a time (RA rule)
+            const def = structures.find((s) => s.id === intent.structureId);
+            if (!def) break;
+            if ((def.tier ?? 1) > teamTier(state, actor)) break;
+            const cost = def.cost ?? 0;
+            if (cost > 0 && !spendCredits(state, actor, cost)) break;
+            const totalTicks = Math.max(1, Math.round((def.buildTimeSeconds ?? 10) * 20));
+            state.structureBuild.set(actor, { structureId: intent.structureId, ticksLeft: totalTicks, totalTicks });
+            break;
+          }
+
+          case 'cancel-structure': {
+            // Right-click the sidebar icon (RA): cancel the job — full refund,
+            // whether mid-build or READY.
+            const job = state.structureBuild.get(actor);
+            if (!job) break;
+            const def = structures.find((s) => s.id === job.structureId);
+            if (def && (def.cost ?? 0) > 0) grantCredits(state, actor, def.cost, true);
+            state.structureBuild.delete(actor);
+            break;
+          }
+
+          case 'cancel-train': {
+            // Right-click a unit button (RA): pop the LAST queued (unpaid) copy;
+            // if only the in-production one remains, cancel it and refund.
+            for (const e of state.store.all()) {
+              if (e.components.faction?.team !== actor) continue;
+              const prod = e.components.production;
+              if (!prod) continue;
+              const qi = prod.queue.lastIndexOf(intent.unitId);
+              if (qi >= 0) {
+                const nq = [...prod.queue];
+                nq.splice(qi, 1);
+                e.components.production = { ...prod, queue: nq };
+                break;
+              }
+              if (prod.current === intent.unitId) {
+                const u = units.find(uu => uu.id === intent.unitId);
+                const mult = teamFactions ? (actor === 'player' ? teamFactions.player.costMult : teamFactions.enemy.costMult) : 1;
+                if (u) grantCredits(state, actor, Math.round(u.cost * mult), true);
+                e.components.production = { ...prod, current: null, progress: 0 };
+                break;
+              }
+            }
+            break;
+          }
+
           case 'place-structure': {
             const structure = structures.find((s) => s.id === intent.structureId);
             if (!structure) break;
-            // Tech gate (XP-1): T2/T3 structures need the HQ tier. Sim-authoritative.
-            if ((structure.tier ?? 1) > teamTier(state, actor)) break;
+            // RA build flow (v0.55): placement REQUIRES a READY sidebar job for
+            // this structure — the build time was served in the sidebar and the
+            // cost already paid. (The AI founds structures directly through the
+            // factory, not through this intent.)
+            const job = state.structureBuild.get(actor);
+            if (!job || job.structureId !== intent.structureId || job.ticksLeft > 0) break;
 
             const result = validatePlacement(state, structure, intent.tile, actor);
             if (!result.valid) break;
-
-            // TP-2: charge the TEAM LEDGER (spend across all owned banks).
-            const cost = structure.cost ?? 0;
-            if (cost > 0 && !spendCredits(state, actor, cost)) break;
+            state.structureBuild.delete(actor); // consumed (already paid)
 
             // Spawn the structure at the tile centre (contract fn, no inline math).
             // Per-kind components (FG-2): barracks trains combat units; a built
@@ -426,12 +478,11 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             const tileCenter = tileToWorldCenter(intent.tile);
             // CANONICAL factory (v0.42): player placement builds the exact same
             // structure the missions seed and the AI founds.
-            state.store.create({
-              position: tileCenter,
-              // TP-3: player builds START as construction sites (progress 0) and
-              // become operational when the construction system finishes them.
-              ...structureComponents(intent.structureId, actor, structures, { buildProgress: 0 }),
-            });
+            const comps = structureComponents(intent.structureId, actor, structures, { buildProgress: 0 });
+            // RA feel: the on-field phase is the short UNFOLD animation — the real
+            // build time was already served in the sidebar.
+            if (comps.building) (comps.building as { unfoldFast?: boolean }).unfoldFast = true;
+            state.store.create({ position: tileCenter, ...comps });
             markers.push({ target: tileCenter, remaining: MARKER_LIFETIME });
             break;
           }
@@ -629,10 +680,39 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
           case 'research': {
             // Economy depth: research a team-wide Refinement at a powered Processing
             // Plant. One at a time; no re-research; charged credits + Cells up front.
+            // Prerequisites: all required refinements must be done first.
             const ref = refinements.find(r => r.id === intent.refinementId);
             if (!ref) break;
             const led = teamLedger(state, actor);
             if (led.researching || led.done.includes(ref.id)) break;
+
+            // Check tier gated (tier 2+ via War Factory + Tech Lab)
+            if ((ref as any).tier && (ref as any).tier >= 2) {
+              const hasWarFactory = state.store.all().some(e =>
+                e.components.faction?.team === actor &&
+                e.components.faction?.faction === 'war_factory' &&
+                (e.components.health?.hp ?? 1) > 0);
+              const hasTechLab = state.store.all().some(e =>
+                e.components.faction?.team === actor &&
+                e.components.faction?.faction === 'tech_lab' &&
+                (e.components.health?.hp ?? 1) > 0);
+              if (!(hasWarFactory && hasTechLab)) break; // tier 2+ requires both
+            }
+
+            // Check faction lock (faction-exclusive refinements)
+            if ((ref as any).faction) {
+              const playerFaction = (state as any).playerFaction ?? 'concord';
+              if ((ref as any).faction !== playerFaction) break;
+            }
+
+            // Check prerequisites (all must be done first)
+            if ((ref as any).prerequisites && (ref as any).prerequisites.length > 0) {
+              for (const prereqId of (ref as any).prerequisites) {
+                if (!led.done.includes(prereqId)) break; // missing prerequisite
+              }
+              if ((ref as any).prerequisites.some((p: string) => !led.done.includes(p))) break;
+            }
+
             const hasPlant = state.store.all().some(e =>
               e.components.faction?.team === actor &&
               e.components.faction?.faction === 'processing_plant' &&
