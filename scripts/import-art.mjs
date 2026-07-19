@@ -21,9 +21,11 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CHROMA = '#ff00ff';
 
 // Unit ids come from the sim's own roster so new units never fall into "building".
-export const UNIT_IDS = new Set(
-  JSON.parse(readFileSync(join(ROOT, 'data', 'units.json'), 'utf8')).units.map((u) => u.id),
-);
+// MCV is deployable / not always listed in units.json but is always a unit sheet.
+export const UNIT_IDS = new Set([
+  ...JSON.parse(readFileSync(join(ROOT, 'data', 'units.json'), 'utf8')).units.map((u) => u.id),
+  'mcv',
+]);
 
 // Animation strips (§0.6): frame count is fixed by the prompt package; fps tuned by eye.
 export const STRIP_STATES = {
@@ -64,9 +66,35 @@ export function classify(file) {
   return { kind: isUnit ? 'unit' : 'building', stem, ext, assetId, team, state };
 }
 
+/** Read PNG IHDR width/height without a decoder dependency. */
+export function pngSize(file) {
+  try {
+    const buf = readFileSync(file);
+    if (buf.length < 24 || buf.toString('ascii', 1, 4) !== 'PNG') return null;
+    return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
+  } catch { return null; }
+}
+
+/** Detect horizontal strip frame count from image aspect (square cells). */
+export function detectStripFrames(file, state) {
+  const known = STRIP_STATES[state];
+  if (known) return known;
+  // Building/unit idle|move delivered as N×1 pulse strip (width ≈ N * height).
+  if (state === 'idle' || state === 'move') {
+    const sz = pngSize(file);
+    if (sz && sz.h > 0) {
+      const n = Math.round(sz.w / sz.h);
+      if (n >= 2 && n <= 8 && Math.abs(sz.w / sz.h - n) < 0.08) {
+        return { frames: n, fps: state === 'idle' ? 6 : 8 };
+      }
+    }
+  }
+  return null;
+}
+
 /** The JSON sidecar for a unit/building sheet (single sprite or strip). */
-export function sidecarFor(c) {
-  const strip = STRIP_STATES[c.state];
+export function sidecarFor(c, filePath) {
+  const strip = filePath ? detectStripFrames(filePath, c.state) : STRIP_STATES[c.state];
   return {
     facings: 1,
     frames: strip?.frames ?? 1,
@@ -122,11 +150,13 @@ export function importArt(src, ART) {
     const outDir = join(ART, sub);
     mkdirSync(outDir, { recursive: true });
     copyFileSync(file, join(outDir, `${c.stem}${c.ext}`));
-    const meta = sidecarFor(c);
+    const meta = sidecarFor(c, file);
     writeFileSync(join(outDir, `${c.stem}.json`), JSON.stringify(meta, null, 2) + '\n');
     sheets.push(`${sub}/${c.stem}`);
     imported++;
-    const anim = STRIP_STATES[c.state] ? `strip ${meta.frames}f@${meta.fps}fps` : (c.kind === 'unit' ? 'unit·rotates' : 'building·static');
+    const anim = meta.frames > 1
+      ? `strip ${meta.frames}f@${meta.fps}fps`
+      : (c.kind === 'unit' ? 'unit·rotates' : 'building·static');
     console.log(`imported ${sub}/${c.stem}  (${anim}, w=${meta.inGameWidthPx})`);
   }
 

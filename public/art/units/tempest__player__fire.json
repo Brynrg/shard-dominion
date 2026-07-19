@@ -1,0 +1,9 @@
+{
+  "facings": 1,
+  "frames": 2,
+  "fps": 6,
+  "chromaKey": "#ff00ff",
+  "rotateFrom": "north",
+  "inGameWidthPx": 56,
+  "image": "tempest__player__fire.png"
+}

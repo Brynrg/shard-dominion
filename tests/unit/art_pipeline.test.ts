@@ -5,7 +5,7 @@ import { describe, it, expect } from 'vitest';
 import { sheetCandidates } from '../../src/view/spritebank.js';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — plain .mjs script, no type surface; helpers are exported for tests.
-import { classify, sidecarFor, UNIT_IDS, STRIP_STATES } from '../../scripts/import-art.mjs';
+import { classify, sidecarFor, UNIT_IDS, STRIP_STATES, detectStripFrames } from '../../scripts/import-art.mjs';
 
 describe('sheetCandidates — delivered-sheet preference order', () => {
   it('idle: faction skin beats team paint beats neutral, base state only', () => {
@@ -86,20 +86,29 @@ describe('import-art classification', () => {
   });
 
   it('writes strip sidecars with frames+fps, single sprites without', () => {
-    const walk = sidecarFor(classify('infantry__player__walk.png'));
+    const walk = sidecarFor(classify('infantry__player__walk.png')!);
     expect(walk.frames).toBe(STRIP_STATES.walk.frames);
     expect(walk.fps).toBeGreaterThan(0);
     expect(walk.rotateFrom).toBe('north');
 
-    const fire = sidecarFor(classify('longbow__player__fire.png'));
+    const fire = sidecarFor(classify('longbow__player__fire.png')!);
     expect(fire.frames).toBe(2); // §0.6 fire strips are 2-frame recoil poses
 
-    const single = sidecarFor(classify('assault_tank__enemy__move.png'));
+    const single = sidecarFor(classify('assault_tank__enemy__move.png')!);
     expect(single.frames).toBe(1);
     expect(single.fps).toBe(0);
 
-    const bldg = sidecarFor(classify('war_factory__player__idle.png'));
+    const bldg = sidecarFor(classify('war_factory__player__idle.png')!);
     expect(bldg.rotateFrom).toBeUndefined();
     expect(bldg.inGameWidthPx).toBe(96);
+  });
+
+  it('treats mcv as a unit sheet and detects multi-frame idle pulses from PNG aspect', () => {
+    expect(UNIT_IDS.has('mcv')).toBe(true);
+    expect(classify('mcv__player__drive.png')?.kind).toBe('unit');
+    // Live barracks idle pulse strip in public/art (4×512 wide).
+    const pulse = detectStripFrames('public/art/buildings/barracks__player__idle.png', 'idle');
+    expect(pulse?.frames).toBe(4);
+    expect(pulse?.fps).toBe(6);
   });
 });

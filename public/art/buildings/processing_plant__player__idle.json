@@ -1,7 +1,7 @@
 {
   "facings": 1,
-  "frames": 1,
-  "fps": 0,
+  "frames": 4,
+  "fps": 6,
   "chromaKey": "#ff00ff",
   "inGameWidthPx": 52,
   "image": "processing_plant__player__idle.png"

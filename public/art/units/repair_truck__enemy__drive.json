@@ -1,0 +1,9 @@
+{
+  "facings": 1,
+  "frames": 4,
+  "fps": 10,
+  "chromaKey": "#ff00ff",
+  "rotateFrom": "north",
+  "inGameWidthPx": 48,
+  "image": "repair_truck__enemy__drive.png"
+}

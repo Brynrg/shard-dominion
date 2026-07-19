@@ -1,0 +1,9 @@
+{
+  "facings": 1,
+  "frames": 4,
+  "fps": 8,
+  "chromaKey": "#ff00ff",
+  "rotateFrom": "north",
+  "inGameWidthPx": 32,
+  "image": "vane__emberhand__walk.png"
+}

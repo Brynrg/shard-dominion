@@ -1,0 +1,9 @@
+{
+  "facings": 1,
+  "frames": 1,
+  "fps": 0,
+  "chromaKey": "#ff00ff",
+  "rotateFrom": "north",
+  "inGameWidthPx": 56,
+  "image": "tempest__enemy__move.png"
+}

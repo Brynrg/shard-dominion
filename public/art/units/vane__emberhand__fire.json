@@ -1,0 +1,9 @@
+{
+  "facings": 1,
+  "frames": 2,
+  "fps": 6,
+  "chromaKey": "#ff00ff",
+  "rotateFrom": "north",
+  "inGameWidthPx": 32,
+  "image": "vane__emberhand__fire.png"
+}
