@@ -81,7 +81,7 @@ export interface CommandSystem {
 
 const MARKER_LIFETIME = 10 as const; // ~0.5s at 20Hz
 
-export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structures: StructureDef[], heroIds: readonly string[] = ['warden', 'vane'], refinements: readonly Refinement[] = [], units: readonly { id: string; cost: number }[] = [], teamFactions?: { player: { costMult: number }; enemy: { costMult: number } }): CommandSystem {
+export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structures: StructureDef[], heroIds: readonly string[] = ['warden', 'vane'], refinements: readonly Refinement[] = [], units: readonly { id: string; cost: number }[] = [], teamFactions?: { player: { id?: string; costMult: number }; enemy: { id?: string; costMult: number } }): CommandSystem {
   const markers: ConfirmationMarker[] = [];
   const groups = new Map<string, EntityId[]>();
   // Idle-harvester cycling cursor per seat (like the groups map, this closure
@@ -687,7 +687,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             if (led.researching || led.done.includes(ref.id)) break;
 
             // Check tier gated (tier 2+ via War Factory + Tech Lab)
-            if ((ref as any).tier && (ref as any).tier >= 2) {
+            if (ref.tier && ref.tier >= 2) {
               const hasWarFactory = state.store.all().some(e =>
                 e.components.faction?.team === actor &&
                 e.components.faction?.faction === 'war_factory' &&
@@ -699,19 +699,17 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
               if (!(hasWarFactory && hasTechLab)) break; // tier 2+ requires both
             }
 
-            // Check faction lock (faction-exclusive refinements)
-            if ((ref as any).faction) {
-              const playerFaction = (state as any).playerFaction ?? 'concord';
-              if ((ref as any).faction !== playerFaction) break;
+            // Check faction lock (faction-exclusive refinements). The ACTOR's
+            // faction comes from the match's team factions — SimState carries no
+            // faction field (the original read a nonexistent one, so locks never
+            // engaged).
+            if (ref.faction && teamFactions) {
+              const actorFaction = actor === 'player' ? teamFactions.player.id : teamFactions.enemy.id;
+              if (ref.faction !== actorFaction) break;
             }
 
             // Check prerequisites (all must be done first)
-            if ((ref as any).prerequisites && (ref as any).prerequisites.length > 0) {
-              for (const prereqId of (ref as any).prerequisites) {
-                if (!led.done.includes(prereqId)) break; // missing prerequisite
-              }
-              if ((ref as any).prerequisites.some((p: string) => !led.done.includes(p))) break;
-            }
+            if (ref.prerequisites?.some(pr => !led.done.includes(pr))) break;
 
             const hasPlant = state.store.all().some(e =>
               e.components.faction?.team === actor &&

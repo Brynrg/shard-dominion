@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { loadChallenges, loadChallengeProgress, completeChallenge, saveChallengeProgress } from '../../src/loaders/challenges.js';
+import { loadChallenges } from '../../src/loaders/challenges.js';
 import challengesData from '../../data/challenges.json' with { type: 'json' };
 
 describe('challenges', () => {

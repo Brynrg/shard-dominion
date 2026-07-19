@@ -15,6 +15,8 @@ export const RefinementSchema = z.object({
   desc: z.string(),
   prerequisites: z.array(z.string()).optional(),
   faction: z.enum(['concord', 'emberhand', 'shardborn']).optional(),
+  /** Phase 1c tech tree: research tier (2+ needs War Factory + Tech Lab). */
+  tier: z.number().int().min(1).max(3).optional(),
 });
 export type Refinement = z.infer<typeof RefinementSchema>;
 

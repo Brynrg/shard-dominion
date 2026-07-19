@@ -22,6 +22,7 @@ import type { Refinement } from '../../loaders/refinements.js';
 import type { StructureDef } from '../../loaders/structures.js';
 import { teamTier } from '../tech.js';
 import type { UnitDef } from '../../loaders/units.js';
+import type { Entity } from '../components.js';
 import { tileToWorldCenter, worldToTile, TILE_SUBUNITS, type TilePos } from '../coords.js';
 import { SIM_TICK_RATE } from '../loop.js';
 import type { EntityId } from '../ids.js';
@@ -409,8 +410,8 @@ function chooseUnit(tick: number, evalInterval: number, rifle: number, rocket: n
 /** Phase 2 enhancement: group units into squads by type and proximity (TILE_SUBUNITS*3 = ~15 world units).
  *  Returns an array of squads, each containing entities of the same faction & type.
  *  Squads within proximity stay coordinated (focus-fire target). Deterministic by entity ID. */
-function groupBySquad(units: any[], squadRadius: number = TILE_SUBUNITS * 3): any[][] {
-  const squads: any[][] = [];
+function groupBySquad(units: Entity[], squadRadius: number = TILE_SUBUNITS * 3): Entity[][] {
+  const squads: Entity[][] = [];
   const used = new Set<EntityId>();
 
   for (const u of units) {
@@ -442,15 +443,17 @@ function groupBySquad(units: any[], squadRadius: number = TILE_SUBUNITS * 3): an
 
 /** Phase 2 enhancement: coordinate squad targeting — the squad's "leader" (highest vet or first in list)
  *  picks the target; all other squad members adopt the same target. Prevents thrashing and enables focus-fire. */
-function coordinateSquadTargets(squads: any[][]): void {
+function coordinateSquadTargets(squads: Entity[][]): void {
   for (const squad of squads) {
     if (squad.length <= 1) continue;
 
-    // Elect a leader (highest veterancy, fallback: first)
-    let leader = squad[0];
+    // Elect a leader (highest veterancy RANK — the component is `experience`;
+    // the original read a nonexistent `veterancy` field, silently making every
+    // election fall back to squad[0]).
+    let leader = squad[0]!;
     for (const u of squad) {
-      const uv = u.components.veterancy?.level ?? 0;
-      const lv = leader.components.veterancy?.level ?? 0;
+      const uv = u.components.experience?.rank ?? 0;
+      const lv = leader.components.experience?.rank ?? 0;
       if (uv > lv) leader = u;
     }
 
