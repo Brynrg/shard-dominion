@@ -139,6 +139,59 @@
       "cooldown": 0.8,
       "range": 3.0,
       "type": "FLAME"
+    },
+    "howitzer": {
+      "damage": 75,
+      "cooldown": 3.5,
+      "range": 8.0,
+      "minRange": 3,
+      "type": "SIEGE",
+      "splash": 2.0,
+      "friendlyFire": true
+    },
+    "laser_rifle": {
+      "damage": 12,
+      "cooldown": 0.5,
+      "range": 5.0,
+      "type": "BULLET"
+    },
+    "plasma_charge": {
+      "damage": 25,
+      "cooldown": 1.2,
+      "range": 4.5,
+      "type": "ROCKET",
+      "splash": 0.8
+    },
+    "defense_gun": {
+      "damage": 16,
+      "cooldown": 0.6,
+      "range": 5.0,
+      "type": "BULLET"
+    },
+    "repair_beam": {
+      "damage": 0,
+      "cooldown": 2.0,
+      "range": 4.0,
+      "type": "SONIC"
+    },
+    "demolition_charge": {
+      "damage": 45,
+      "cooldown": 2.5,
+      "range": 3.0,
+      "type": "EXPLOSIVE",
+      "splash": 1.2
+    },
+    "homing_missile": {
+      "damage": 48,
+      "cooldown": 2.0,
+      "range": 7.5,
+      "type": "ROCKET"
+    },
+    "twin_laser": {
+      "damage": 22,
+      "cooldown": 0.8,
+      "range": 5.5,
+      "type": "BULLET"
     }
   }
 }

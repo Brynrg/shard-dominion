@@ -334,6 +334,295 @@
           "factionStripe": "player"
         }
       }
+    },
+    {
+      "id": "howitzer",
+      "name": "Howitzer",
+      "cost": 950,
+      "hp": 100,
+      "armorClass": "HEAVY",
+      "weaponId": "howitzer",
+      "speed": 6,
+      "buildTimeSeconds": 20,
+      "team": "player",
+      "tier": 2,
+      "leavesWreck": true,
+      "graphics": {
+        "sprite_id": "howitzer",
+        "fallback_geometry": {
+          "chassis": "LIGHT_VEHICLE",
+          "chassisMod": "HEAVY_BLOCK",
+          "weaponGlyph": "SIEGE",
+          "barrelClass": "LONG",
+          "roleBadge": "SIEGE",
+          "rangeMarks": 4,
+          "hazard": "SPLASH",
+          "factionStripe": "player"
+        }
+      }
+    },
+    {
+      "id": "engineer",
+      "name": "Engineer",
+      "cost": 250,
+      "hp": 25,
+      "armorClass": "LIGHT",
+      "weaponId": "rifle",
+      "speed": 12,
+      "buildTimeSeconds": 5,
+      "team": "player",
+      "tier": 2,
+      "graphics": {
+        "sprite_id": "engineer",
+        "fallback_geometry": {
+          "chassis": "INFANTRY",
+          "chassisMod": "NONE",
+          "weaponGlyph": "SUPPORT",
+          "barrelClass": "NONE",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 2,
+          "hazard": "CONTROL",
+          "factionStripe": "player"
+        }
+      }
+    },
+    {
+      "id": "transport_apc",
+      "name": "Transport APC",
+      "cost": 550,
+      "hp": 160,
+      "armorClass": "MEDIUM",
+      "weaponId": "defense_gun",
+      "speed": 14,
+      "buildTimeSeconds": 12,
+      "team": "player",
+      "tier": 2,
+      "leavesWreck": true,
+      "container": 8,
+      "graphics": {
+        "sprite_id": "transport_apc",
+        "fallback_geometry": {
+          "chassis": "LIGHT_VEHICLE",
+          "chassisMod": "HEAVY_BLOCK",
+          "weaponGlyph": "SUPPORT",
+          "barrelClass": "SHORT",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 2,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      }
+    },
+    {
+      "id": "defense_drone",
+      "name": "Defense Drone",
+      "cost": 400,
+      "hp": 60,
+      "armorClass": "AIR",
+      "weaponId": "defense_gun",
+      "speed": 18,
+      "buildTimeSeconds": 10,
+      "team": "player",
+      "tier": 2,
+      "flying": true,
+      "ammo": 10,
+      "graphics": {
+        "sprite_id": "defense_drone",
+        "fallback_geometry": {
+          "chassis": "AIR",
+          "chassisMod": "NONE",
+          "weaponGlyph": "ANTI_INFANTRY",
+          "barrelClass": "SHORT",
+          "roleBadge": "ANTI_AIR",
+          "rangeMarks": 2,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      }
+    },
+    {
+      "id": "repair_truck",
+      "name": "Repair Truck",
+      "cost": 600,
+      "hp": 120,
+      "armorClass": "MEDIUM",
+      "weaponId": "repair_beam",
+      "speed": 12,
+      "buildTimeSeconds": 14,
+      "team": "player",
+      "tier": 2,
+      "leavesWreck": true,
+      "graphics": {
+        "sprite_id": "repair_truck",
+        "fallback_geometry": {
+          "chassis": "LIGHT_VEHICLE",
+          "chassisMod": "NONE",
+          "weaponGlyph": "SUPPORT",
+          "barrelClass": "NONE",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 2,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      }
+    },
+    {
+      "id": "medium_tank",
+      "name": "Medium Tank",
+      "cost": 550,
+      "hp": 140,
+      "armorClass": "HEAVY",
+      "weaponId": "tank_shell_f",
+      "speed": 11,
+      "buildTimeSeconds": 15,
+      "team": "player",
+      "tier": 2,
+      "leavesWreck": true,
+      "graphics": {
+        "sprite_id": "medium_tank",
+        "fallback_geometry": {
+          "chassis": "TANK",
+          "chassisMod": "CHAMFER",
+          "weaponGlyph": "ANTI_VEHICLE",
+          "barrelClass": "MEDIUM",
+          "roleBadge": "ANTI_VEHICLE",
+          "rangeMarks": 2,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      }
+    },
+    {
+      "id": "super_heavy_tank",
+      "name": "Super-Heavy Tank",
+      "cost": 1200,
+      "hp": 300,
+      "armorClass": "HEAVY",
+      "weaponId": "behemoth_gun",
+      "speed": 7,
+      "buildTimeSeconds": 25,
+      "team": "player",
+      "tier": 3,
+      "leavesWreck": true,
+      "graphics": {
+        "sprite_id": "super_heavy_tank",
+        "fallback_geometry": {
+          "chassis": "TANK",
+          "chassisMod": "HEAVY_BLOCK",
+          "weaponGlyph": "ANTI_VEHICLE",
+          "barrelClass": "LONG",
+          "roleBadge": "ANTI_VEHICLE",
+          "rangeMarks": 3,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      }
+    },
+    {
+      "id": "commando",
+      "name": "Commando",
+      "cost": 300,
+      "hp": 30,
+      "armorClass": "LIGHT",
+      "weaponId": "demolition_charge",
+      "speed": 13,
+      "buildTimeSeconds": 8,
+      "team": "player",
+      "tier": 2,
+      "stealth": true,
+      "graphics": {
+        "sprite_id": "commando",
+        "fallback_geometry": {
+          "chassis": "INFANTRY",
+          "chassisMod": "NONE",
+          "weaponGlyph": "ANTI_VEHICLE",
+          "barrelClass": "NONE",
+          "roleBadge": "RAIDER",
+          "rangeMarks": 2,
+          "hazard": "SPLASH",
+          "factionStripe": "player"
+        }
+      }
+    },
+    {
+      "id": "laser_trooper",
+      "name": "Laser Trooper",
+      "cost": 180,
+      "hp": 18,
+      "armorClass": "LIGHT",
+      "weaponId": "laser_rifle",
+      "speed": 11,
+      "buildTimeSeconds": 4,
+      "team": "player",
+      "tier": 2,
+      "graphics": {
+        "sprite_id": "laser_trooper",
+        "fallback_geometry": {
+          "chassis": "INFANTRY",
+          "chassisMod": "NONE",
+          "weaponGlyph": "ANTI_AIR",
+          "barrelClass": "SHORT",
+          "roleBadge": "ANTI_AIR",
+          "rangeMarks": 2,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      }
+    },
+    {
+      "id": "razor",
+      "name": "Razor",
+      "cost": 900,
+      "hp": 140,
+      "armorClass": "LIGHT",
+      "weaponId": "twin_laser",
+      "speed": 15,
+      "buildTimeSeconds": 16,
+      "team": "player",
+      "tier": 2,
+      "cellCost": 2,
+      "hero": true,
+      "graphics": {
+        "sprite_id": "razor",
+        "fallback_geometry": {
+          "chassis": "INFANTRY",
+          "chassisMod": "NONE",
+          "weaponGlyph": "ANTI_AIR",
+          "barrelClass": "TWIN_LAUNCHER",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 3,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
+      }
+    },
+    {
+      "id": "tempest",
+      "name": "Tempest",
+      "cost": 1000,
+      "hp": 180,
+      "armorClass": "HEAVY",
+      "weaponId": "homing_missile",
+      "speed": 10,
+      "buildTimeSeconds": 20,
+      "team": "player",
+      "tier": 3,
+      "cellCost": 3,
+      "hero": true,
+      "factionLock": "shardborn",
+      "graphics": {
+        "sprite_id": "tempest",
+        "fallback_geometry": {
+          "chassis": "TANK",
+          "chassisMod": "SWEPT_WEDGE",
+          "weaponGlyph": "ANTI_VEHICLE",
+          "barrelClass": "TWIN_LAUNCHER",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 3,
+          "hazard": "SPLASH",
+          "factionStripe": "player"
+        }
+      }
     }
   ]
 }
