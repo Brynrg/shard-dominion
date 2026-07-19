@@ -38,11 +38,15 @@ export const IN_GAME_W = {
   infantry: 30, rocket_trooper: 30, vehicle: 46, harvester: 56, mcv: 50, generic: 40,
   scout_vehicle: 42, assault_tank: 50, longbow: 54, skimmer_apc: 52, gunship: 50,
   riftmaw: 72, warden: 34, ghostwalker: 30, vane: 32,
+  howitzer: 54, engineer: 30, transport_apc: 52, defense_drone: 40, repair_truck: 48,
+  medium_tank: 50, super_heavy_tank: 60, commando: 30, laser_trooper: 30, razor: 34, tempest: 56,
   // buildings
   power_node: 44, barracks: 66, refinery: 98, construction_yard: 88, concrete_slab: 32,
   generic_structure: 48, war_factory: 96, defense_turret: 44, aa_turret: 44, radar: 52,
   processing_plant: 52, skypad: 56, wall: 32, gate: 40, bunker: 46, infirmary: 52,
   machine_shop: 52, derrick: 56, relay: 56, wreck: 52,
+  tech_lab: 56, heavy_gate: 44, barracks_elite: 72, armor_upgrade_center: 52,
+  air_pad: 56, radar_addon: 44, ion_cannon: 96, resonance_device: 88,
 };
 
 /** Classify one source file. Returns null for non-images / unrecognizable names. */

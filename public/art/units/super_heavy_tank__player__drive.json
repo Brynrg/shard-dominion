@@ -1,0 +1,9 @@
+{
+  "facings": 1,
+  "frames": 4,
+  "fps": 10,
+  "chromaKey": "#ff00ff",
+  "rotateFrom": "north",
+  "inGameWidthPx": 60,
+  "image": "super_heavy_tank__player__drive.png"
+}

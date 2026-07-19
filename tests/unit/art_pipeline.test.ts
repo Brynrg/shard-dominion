@@ -67,7 +67,9 @@ describe('portraitFor — briefing speaker → portrait file', () => {
 describe('import-art classification', () => {
   it('knows every post-v0.22 unit (the stale-UNIT_IDS regression)', () => {
     for (const id of ['scout_vehicle', 'assault_tank', 'longbow', 'skimmer_apc', 'gunship',
-      'riftmaw', 'warden', 'ghostwalker', 'vane']) {
+      'riftmaw', 'warden', 'ghostwalker', 'vane',
+      'howitzer', 'engineer', 'transport_apc', 'defense_drone', 'repair_truck',
+      'medium_tank', 'super_heavy_tank', 'commando', 'laser_trooper', 'razor', 'tempest']) {
       expect(UNIT_IDS.has(id), id).toBe(true);
       expect(classify(`${id}__player__move.png`)?.kind).toBe('unit');
     }

@@ -454,13 +454,293 @@ function genericStructure(team) {
   return S(p, g.def, body);
 }
 
+// ============================ EXPANSION BUILDINGS ============================
+
+function techLab(team) {
+  const p = pal(team); const g = topGrad(p);
+  const body = `
+    ${block(120, 160, 272, 230, 24, p, g.id, 16)}
+    ${seams(120, 160, 272, 230, p, 3, 2)}
+    <!-- research dome -->
+    <circle cx="256" cy="250" r="70" fill="${shade(p.main, 0.05)}" stroke="${shade(p.shadow, -0.4)}" stroke-width="3.5"/>
+    <circle cx="256" cy="250" r="42" fill="${shade(p.shadow, -0.1)}"/>
+    ${light(256, 250, 18, p.accent)}
+    ${vent(140, 340, 70, 36, p)} ${vent(302, 340, 70, 36, p)}
+    ${light(150, 178, 7, p.accent)} ${light(362, 178, 7, p.accent)}`;
+  return S(p, g.def, body);
+}
+
+function heavyGate(team) {
+  const p = pal(team); const g = topGrad(p);
+  const body = `
+    ${block(100, 190, 100, 130, 20, p, g.id, 10)} ${block(312, 190, 100, 130, 20, p, g.id, 10)}
+    <g fill="${shade(p.main, 0.08)}">${Array.from({ length: 2 }, (_, i) => `<rect x="${110 + i * 50}" y="176" width="30" height="18" rx="3"/>`).join('')}${Array.from({ length: 2 }, (_, i) => `<rect x="${322 + i * 50}" y="176" width="30" height="18" rx="3"/>`).join('')}</g>
+    <!-- thick reinforced throat -->
+    <rect x="200" y="220" width="112" height="70" fill="${shade(p.shadow, -0.55)}"/>
+    <rect x="208" y="228" width="96" height="54" fill="${p.accent}" opacity="0.22" filter="url(#glow)"/>
+    <g stroke="${shade(p.shadow, -0.25)}" stroke-width="5"><line x1="220" y1="236" x2="292" y2="236"/><line x1="220" y1="256" x2="292" y2="256"/><line x1="220" y1="276" x2="292" y2="276"/></g>
+    ${light(150, 206, 7, p.accent)} ${light(362, 206, 7, p.accent)}`;
+  return S(p, g.def, body);
+}
+
+function barracksElite(team) {
+  const p = pal(team); const g = topGrad(p);
+  const body = `
+    ${block(110, 140, 292, 250, 26, p, g.id, 18)}
+    ${seams(110, 140, 292, 250, p, 3, 4)}
+    ${vent(130, 162, 250, 36, p)}
+    <!-- elite chevron banner -->
+    <polygon points="256,200 300,260 256,240 212,260" fill="${p.accent}" opacity="0.55" filter="url(#glow)"/>
+    <rect x="200" y="320" width="112" height="56" rx="6" fill="${shade(p.shadow, -0.5)}"/>
+    <rect x="210" y="328" width="92" height="40" fill="${shade(p.accent, 0.2)}" opacity="0.85"/>
+    <g fill="${shade(p.main, -0.05)}" stroke="${shade(p.shadow, -0.3)}" stroke-width="1.5">
+      ${Array.from({ length: 7 }, (_, i) => `<ellipse cx="${130 + i * 38}" cy="388" rx="15" ry="10"/>`).join('')}
+    </g>
+    ${light(140, 158, 7, p.accent)} ${light(372, 158, 7, p.accent)}`;
+  return S(p, g.def, body);
+}
+
+function armorUpgradeCenter(team) {
+  const p = pal(team); const g = topGrad(p);
+  const body = `
+    ${block(130, 170, 252, 210, 24, p, g.id, 16)}
+    ${seams(130, 170, 252, 210, p, 2, 2)}
+    <!-- anvil / plating press -->
+    <rect x="186" y="230" width="140" height="90" rx="10" fill="${shade(p.shadow, -0.2)}" stroke="${shade(p.shadow, -0.4)}" stroke-width="3"/>
+    <rect x="206" y="210" width="100" height="30" rx="6" fill="${shade(p.main, 0.05)}" stroke="${shade(p.shadow, -0.35)}" stroke-width="2.5"/>
+    <g fill="${shade(p.accent, 0.15)}" opacity="0.7">${Array.from({ length: 3 }, (_, i) => `<rect x="${220 + i * 28}" y="250" width="18" height="50" rx="3"/>`).join('')}</g>
+    ${vent(150, 340, 80, 30, p)}
+    ${light(160, 188, 7, p.accent)} ${light(352, 188, 7, p.accent)}`;
+  return S(p, g.def, body);
+}
+
+function airPad(team) {
+  const p = pal(team); const g = topGrad(p);
+  const body = `
+    ${block(130, 200, 252, 170, 22, p, g.id, 16)}
+    <circle cx="256" cy="290" r="88" fill="${shade(p.shadow, -0.12)}" stroke="${shade(p.shadow, -0.4)}" stroke-width="3"/>
+    <circle cx="256" cy="290" r="88" fill="none" stroke="${p.accent}" stroke-width="3" opacity="0.5" filter="url(#glow)"/>
+    <!-- landing chevrons -->
+    <g fill="${shade(p.hi, 0)}" opacity="0.65"><polygon points="256,240 276,280 236,280"/><polygon points="256,340 276,300 236,300"/></g>
+    <rect x="140" y="210" width="48" height="50" rx="8" fill="${shade(p.main, 0.05)}" stroke="${shade(p.shadow, -0.35)}" stroke-width="2.5"/>
+    ${light(164, 222, 6, p.accent)} ${light(348, 222, 6, p.accent)}`;
+  return S(p, g.def, body);
+}
+
+function radarAddon(team) {
+  const p = pal(team); const g = topGrad(p);
+  const body = `
+    ${block(180, 260, 152, 110, 18, p, g.id, 12)}
+    <rect x="248" y="140" width="16" height="130" rx="5" fill="${shade(p.main, 0.1)}" stroke="${shade(p.shadow, -0.35)}" stroke-width="2.5"/>
+    <ellipse cx="256" cy="140" rx="64" ry="32" fill="${shade(p.main, 0.06)}" stroke="${shade(p.shadow, -0.4)}" stroke-width="3" transform="rotate(-22 256 140)"/>
+    <line x1="256" y1="140" x2="300" y2="112" stroke="${shade(p.accent, 0.15)}" stroke-width="3"/>
+    ${light(300, 112, 6, p.accent)} ${light(210, 300, 6, p.accent)}`;
+  return S(p, g.def, body);
+}
+
+function ionCannon(team) {
+  const p = pal(team); const g = topGrad(p);
+  const body = `
+    ${block(90, 160, 332, 250, 28, p, g.id, 18)}
+    ${seams(90, 160, 332, 250, p, 3, 2)}
+    <!-- massive dish / emitter -->
+    <ellipse cx="256" cy="240" rx="110" ry="70" fill="${shade(p.shadow, -0.15)}" stroke="${shade(p.shadow, -0.45)}" stroke-width="4"/>
+    <ellipse cx="256" cy="240" rx="70" ry="42" fill="${shade(p.main, 0.05)}"/>
+    <circle cx="256" cy="240" r="28" fill="${shade(p.accent, 0.2)}" filter="url(#glow)"/>
+    ${barrel(256, 240, 180, 22, p, p.accent)}
+    <rect x="120" y="340" width="80" height="50" rx="8" fill="${shade(p.shadow, -0.3)}"/>
+    <rect x="312" y="340" width="80" height="50" rx="8" fill="${shade(p.shadow, -0.3)}"/>
+    ${light(256, 200, 10, p.accent)} ${light(130, 180, 7, p.accent)} ${light(382, 180, 7, p.accent)}`;
+  return S(p, g.def, body);
+}
+
+function resonanceDevice(team) {
+  const p = pal(team === 'enemy' ? 'shardborn' : team); const g = topGrad(p);
+  const crystal = '#b48bff';
+  const body = `
+    ${block(100, 170, 312, 230, 26, p, g.id, 16)}
+    ${seams(100, 170, 312, 230, p, 2, 2)}
+    <!-- living crystal core -->
+    <polygon points="256,140 320,230 256,320 192,230" fill="${crystal}" opacity="0.85" filter="url(#glow)"/>
+    <polygon points="256,160 300,230 256,300 212,230" fill="${shade(crystal, 0.25)}"/>
+    <g stroke="${shade(crystal, -0.2)}" stroke-width="3" fill="none">
+      <line x1="160" y1="200" x2="210" y2="230"/><line x1="352" y1="200" x2="302" y2="230"/>
+      <line x1="160" y1="320" x2="210" y2="280"/><line x1="352" y1="320" x2="302" y2="280"/>
+    </g>
+    ${light(256, 230, 14, crystal)} ${light(140, 190, 6, p.accent)} ${light(372, 190, 6, p.accent)}`;
+  return S(p, g.def, body);
+}
+
+// ============================ EXPANSION UNITS ============================
+
+function howitzer(team) {
+  const p = pal(team); const g = topGrad(p);
+  const body = `
+    ${tracks(158, 316, 200, 42, 170, p)}
+    ${langShape([[190, 230], [322, 230], [322, 380], [190, 380]], p, g.id, hashStr('howitzer'))}
+    <g fill="${shade(p.shadow, -0.1)}" stroke="${shade(p.shadow, -0.4)}" stroke-width="2.5">
+      <polygon points="190,250 140,220 160,268"/><polygon points="322,250 372,220 352,268"/>
+    </g>
+    ${vent(210, 320, 92, 36, p)}
+    <circle cx="256" cy="300" r="34" fill="${shade(p.main, 0.06)}" stroke="${shade(p.shadow, -0.4)}" stroke-width="3"/>
+    <!-- short fat siege barrel -->
+    ${barrel(256, 290, 160, 28, p, p.accent)}
+    <rect x="236" y="150" width="40" height="22" rx="6" fill="${shade(p.shadow, -0.2)}"/>
+    ${light(256, 148, 6, p.accent)}`;
+  return S(p, g.def, body);
+}
+
+function engineer(team) {
+  const p = pal(team);
+  const body = `
+    ${soldier(256, 268, p, { weapon: 'rifle' })}
+    <!-- tool pack + wrench silhouette -->
+    <rect x="300" y="240" width="48" height="70" rx="10" fill="${shade(p.shadow, -0.15)}" stroke="${shade(p.shadow, -0.4)}" stroke-width="2.5"/>
+    <rect x="312" y="200" width="10" height="50" rx="3" fill="${shade(p.accent, 0.1)}" transform="rotate(25 317 225)"/>
+    <rect x="300" y="210" width="36" height="10" rx="3" fill="${shade(p.accent, 0.1)}" transform="rotate(25 318 215)"/>
+    ${light(324, 250, 5, p.accent)}`;
+  return S(p, '', body);
+}
+
+function transportApc(team) {
+  const p = pal(team); const g = topGrad(p);
+  const body = `
+    ${wheels(170, 340, 200, 360, 28, 3, p)}
+    ${langShape([[170, 190], [342, 190], [342, 380], [170, 380]], p, g.id, hashStr('transport_apc'))}
+    <rect x="190" y="220" width="132" height="130" rx="12" fill="${shade(p.shadow, -0.18)}"/>
+    <g fill="${shade(p.accent, 0.12)}">${Array.from({ length: 4 }, (_, i) => `<rect x="${200 + i * 28}" y="240" width="16" height="28" rx="3"/>`).join('')}</g>
+    <line x1="190" y1="360" x2="322" y2="360" stroke="${shade(p.shadow, -0.4)}" stroke-width="5"/>
+    <rect x="240" y="160" width="32" height="40" rx="6" fill="${shade(p.main, 0.08)}" stroke="${shade(p.shadow, -0.35)}" stroke-width="2.5"/>
+    ${light(256, 164, 5, p.accent)}`;
+  return S(p, g.def, body);
+}
+
+function defenseDrone(team) {
+  const p = pal(team); const g = topGrad(p);
+  const body = `
+    <!-- compact flying disc -->
+    <ellipse cx="256" cy="270" rx="90" ry="50" fill="${p.accent}" opacity="0.2" filter="url(#glow)"/>
+    ${langShape([[210, 220], [302, 220], [320, 300], [192, 300]], p, g.id, hashStr('defense_drone'))}
+    <circle cx="256" cy="260" r="28" fill="${shade(p.shadow, -0.1)}" stroke="${shade(p.shadow, -0.4)}" stroke-width="2.5"/>
+    ${barrel(256, 250, 70, 10, p, p.accent)}
+    ${rotorDisc(180, 240, 40)} ${rotorDisc(332, 240, 40)}
+    ${light(256, 248, 5, p.accent)}`;
+  return S(p, g.def, body);
+}
+
+function repairTruck(team) {
+  const p = pal(team); const g = topGrad(p);
+  const body = `
+    ${wheels(176, 336, 210, 350, 28, 2, p)}
+    ${langShape([[186, 200], [326, 200], [326, 370], [186, 370]], p, g.id, hashStr('repair_truck'))}
+    <!-- crane arm -->
+    <g stroke="${shade(p.shadow, -0.35)}" stroke-width="10" fill="none" stroke-linecap="round">
+      <path d="M256 230 L 256 160 L 330 130"/>
+    </g>
+    <circle cx="256" cy="230" r="18" fill="${shade(p.main, 0.1)}" stroke="${shade(p.shadow, -0.4)}" stroke-width="2.5"/>
+    <rect x="210" y="280" width="92" height="60" rx="8" fill="${shade(p.shadow, -0.2)}"/>
+    <!-- medical/repair cross -->
+    <rect x="244" y="292" width="24" height="36" rx="4" fill="#e8f6ff"/>
+    <rect x="232" y="304" width="48" height="20" rx="4" fill="#e8f6ff"/>
+    ${light(330, 130, 6, p.accent)}`;
+  return S(p, g.def, body);
+}
+
+function mediumTank(team) {
+  const p = pal(team); const g = topGrad(p);
+  const body = `
+    ${tracks(160, 318, 190, 42, 180, p)}
+    ${langShape([[196, 180], [316, 180], [316, 360], [196, 360]], p, g.id, hashStr('medium_tank'))}
+    <polygon points="256,180 296,216 216,216" fill="${shade(p.hi, 0)}" opacity="0.28"/>
+    ${vent(210, 300, 92, 28, p)}
+    ${turret(256, 270, 48, p)}
+    ${barrel(256, 252, 110, 14, p, p.accent)}
+    ${light(256, 150, 5, p.accent)}`;
+  return S(p, g.def, body);
+}
+
+function superHeavyTank(team) {
+  const p = pal(team); const g = topGrad(p);
+  const body = `
+    ${tracks(130, 330, 150, 52, 230, p)}
+    ${langShape([[170, 140], [342, 140], [354, 380], [158, 380]], p, g.id, hashStr('super_heavy_tank'))}
+    <polygon points="256,140 310,190 202,190" fill="${shade(p.hi, 0)}" opacity="0.25"/>
+    ${vent(200, 300, 112, 40, p)}
+    ${turret(256, 260, 64, p)}
+    ${barrel(256, 240, 160, 20, p, p.accent)}
+    <!-- side sponsons -->
+    <rect x="150" y="250" width="36" height="70" rx="8" fill="${shade(p.main, 0.02)}" stroke="${shade(p.shadow, -0.4)}" stroke-width="2.5"/>
+    <rect x="326" y="250" width="36" height="70" rx="8" fill="${shade(p.main, 0.02)}" stroke="${shade(p.shadow, -0.4)}" stroke-width="2.5"/>
+    ${light(256, 120, 7, p.accent)}`;
+  return S(p, g.def, body);
+}
+
+function commando(team) {
+  const p = pal(team);
+  const body = `
+    ${soldier(256, 268, p, { weapon: 'rifle' })}
+    <!-- satchel charge pack -->
+    <rect x="290" y="250" width="44" height="56" rx="8" fill="${shade(p.shadow, -0.2)}" stroke="${shade(p.shadow, -0.45)}" stroke-width="2.5"/>
+    <rect x="300" y="262" width="24" height="16" rx="3" fill="#c8203a" opacity="0.8"/>
+    ${light(312, 270, 4, '#ff6a2b')}`;
+  return S(p, '', body);
+}
+
+function laserTrooper(team) {
+  const p = pal(team);
+  const body = `
+    ${soldier(256, 268, p, { weapon: 'rifle' })}
+    <!-- glowing laser emitter replacing muzzle -->
+    <rect x="244" y="120" width="24" height="70" rx="6" fill="${shade(p.accent, 0.15)}" filter="url(#glow)"/>
+    <rect x="248" y="110" width="16" height="18" rx="4" fill="${p.accent}" opacity="0.9"/>
+    ${light(256, 116, 6, p.accent)}`;
+  return S(p, '', body);
+}
+
+function razor(team) {
+  const p = pal(team);
+  const body = `
+    <g fill="${shade(p.main, 0.04)}" stroke="${shade(p.shadow, -0.4)}" stroke-width="3.5">
+      <ellipse cx="170" cy="250" rx="40" ry="28"/><ellipse cx="342" cy="250" rx="40" ry="28"/>
+    </g>
+    ${soldier(256, 270, p, { hero: true, weapon: 'rifle' })}
+    <!-- twin laser emitters -->
+    <rect x="160" y="140" width="18" height="90" rx="5" fill="${shade(p.accent, 0.2)}" filter="url(#glow)"/>
+    <rect x="334" y="140" width="18" height="90" rx="5" fill="${shade(p.accent, 0.2)}" filter="url(#glow)"/>
+    ${light(169, 146, 5, p.accent)} ${light(343, 146, 5, p.accent)}
+    <rect x="220" y="248" width="72" height="14" rx="5" fill="${shade(p.accent, -0.05)}" opacity="0.85"/>`;
+  return S(p, '', body);
+}
+
+function tempest(team) {
+  const p = pal(team === 'player' ? 'shardborn' : team); const g = topGrad(p);
+  const body = `
+    ${tracks(150, 320, 170, 46, 200, p)}
+    ${langShape([[200, 160], [312, 160], [340, 370], [172, 370]], p, g.id, hashStr('tempest'))}
+    <!-- crystal wedge prow -->
+    <polygon points="256,130 300,200 212,200" fill="#b48bff" opacity="0.7" filter="url(#glow)"/>
+    ${turret(256, 270, 50, p)}
+    <!-- missile pods -->
+    <rect x="170" y="250" width="36" height="80" rx="8" fill="${shade(p.shadow, -0.2)}" stroke="${shade(p.shadow, -0.4)}" stroke-width="2.5"/>
+    <rect x="306" y="250" width="36" height="80" rx="8" fill="${shade(p.shadow, -0.2)}" stroke="${shade(p.shadow, -0.4)}" stroke-width="2.5"/>
+    ${barrel(256, 250, 100, 14, p, '#b48bff')}
+    ${light(256, 140, 7, '#b48bff')}`;
+  return S(p, g.def, body);
+}
+
 export const SHAPES = {
   vehicle, generic_structure: genericStructure,
   construction_yard: constructionYard, barracks, refinery, power_node: powerNode,
   war_factory: warFactory, defense_turret: defenseTurret, aa_turret: aaTurret,
   radar, processing_plant: processingPlant, skypad, wall, gate, bunker,
   infirmary, machine_shop: machineShop, derrick, relay, wreck,
+  tech_lab: techLab, heavy_gate: heavyGate, barracks_elite: barracksElite,
+  armor_upgrade_center: armorUpgradeCenter, air_pad: airPad, radar_addon: radarAddon,
+  ion_cannon: ionCannon, resonance_device: resonanceDevice,
   assault_tank: assaultTank, scout_vehicle: scoutVehicle, longbow,
   skimmer_apc: skimmerApc, gunship, harvester, infantry, rocket_trooper: rocketTrooper,
   warden, ghostwalker, vane, riftmaw,
+  howitzer, engineer, transport_apc: transportApc, defense_drone: defenseDrone,
+  repair_truck: repairTruck, medium_tank: mediumTank, super_heavy_tank: superHeavyTank,
+  commando, laser_trooper: laserTrooper, razor, tempest,
 };

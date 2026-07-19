@@ -572,10 +572,18 @@ export function makeView(cfg: ViewConfig): View {
       const r = (d.big ? 16 : 8) * camera.zoom;
       context.save();
       context.globalAlpha = a;
-      context.fillStyle = '#14100c';
-      context.beginPath();
-      context.ellipse(p.sx, p.sy, r, r * 0.7, 0, 0, Math.PI * 2);
-      context.fill();
+      // Prefer scorched terrain stamps when loaded; fall back to procedural ellipse.
+      const stamp = sprites.getNamedTerrainTile(d.big ? 'scorched' : 'scorched_2')
+        ?? sprites.getNamedTerrainTile('scorched');
+      if (stamp) {
+        const sz = r * 2.4;
+        context.drawImage(stamp, p.sx - sz / 2, p.sy - sz * 0.35, sz, sz * 0.7);
+      } else {
+        context.fillStyle = '#14100c';
+        context.beginPath();
+        context.ellipse(p.sx, p.sy, r, r * 0.7, 0, 0, Math.PI * 2);
+        context.fill();
+      }
       for (const c of d.chunks) {
         context.fillStyle = c.hue;
         context.fillRect(p.sx + c.dx * camera.zoom, p.sy + c.dy * camera.zoom, c.w * camera.zoom, c.h * camera.zoom);
@@ -1168,6 +1176,16 @@ export function makeView(cfg: ViewConfig): View {
       context.save();
       context.translate(s.sx, s.sy);
       context.scale(camera.zoom, camera.zoom);
+      // Crystal lattice underlay under Avarice cracks (view-only; PNG already loaded).
+      const lattice = sprites.getNamedTerrainTile(bucket % 2 ? 'crystal_lattice_2' : 'crystal_lattice')
+        ?? sprites.getNamedTerrainTile('crystal_lattice');
+      if (lattice) {
+        const reach = TILE_SIZE_PX * (0.6 + CORRUPTION_REACH_TILES * (bucket / (AVARICE_BUCKETS - 1)));
+        const side = reach * 2.2;
+        context.globalAlpha = 0.18 + avarice * 0.35;
+        context.drawImage(lattice, -side / 2, -side / 2, side, side);
+        context.globalAlpha = 1;
+      }
       drawCrackNetwork(context, entry.branches, { colorCore: '#c23ff0', colorEdge: '#6b1a8f', intensity: avarice, pulse, baseWidth: 1.6 });
       context.restore();
     }

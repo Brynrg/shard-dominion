@@ -339,6 +339,8 @@ export interface SpriteBank {
   loadTerrain(baseUrl?: string): Promise<void>;
   /** The real tile for a sim terrain type (variant/density aware), or null → procedural. */
   getTerrainTile(type: string, variant: number, density: number): CanvasImageSource | null;
+  /** Named overlay tiles (scorched, crystal_lattice, …) for view-only stamps. */
+  getNamedTerrainTile(name: string): CanvasImageSource | null;
   readonly U: number;
   readonly BLDG: number;
 }
@@ -468,6 +470,9 @@ export function makeSpriteBank(teams: Record<string, TeamStyle>, neutral: TeamSt
         }
         default: return null;
       }
+    },
+    getNamedTerrainTile(name) {
+      return terrainTiles.get(name) ?? null;
     },
     async loadManifest(baseUrl = 'art') {
       let sheets: string[];
