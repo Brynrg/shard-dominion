@@ -108,6 +108,7 @@ declare global {
     __debugA11y?: () => { teamShapes: boolean; lastAnnouncement: string };
     __debugEva?: () => { last: string; voice: boolean };
     __debugPlacement?: () => { structureId: string; tile: { tx: number; ty: number } } | null;
+    __debugStructureJob?: () => { structureId: string; ticksLeft: number; ready: boolean } | null;
   }
 }
 
@@ -187,7 +188,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     push: (i) => { intentLog.push({ t: state.tick, i }); rawQueue.push(i); },
     drain: () => rawQueue.drain(),
   };
-  const commandSystem = makeCommandSystem(commandQueue, structures, ['warden', 'vane'], refinements);
+  const commandSystem = makeCommandSystem(commandQueue, structures, ['warden', 'vane'], refinements, units, teamFactions);
 
   // Create construction system
   const constructionSystem = makeConstructionSystem(structures, commandQueue);
@@ -340,6 +341,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     jump: (sx, sy) => view.minimapJump(sx, sy),
   }, {
     buttonAt: (sx, sy) => view.hudButtonAt(sx, sy),
+    anyButtonAt: (sx, sy) => view.hudAnyButtonAt(sx, sy),
     deniedAt: (sx, sy) => view.hudDeniedAt(sx, sy),
     setTab: (tab) => view.hudSetTab(tab),
   }, {
@@ -349,6 +351,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
       evaSay(reason === 'funds' ? 'Insufficient funds'
         : reason === 'tier' ? 'HQ upgrade required'
         : reason === 'cells' ? 'Insufficient Cells'
+        : reason === 'busy' ? 'Unable to comply — building in progress'
         : reason === 'placement' ? 'Cannot deploy there'
         : 'Production structure required', 1500);
     },
@@ -356,6 +359,10 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   (structureId, tile) => {
     const def = structures.find(st => st.id === structureId);
     return def ? validatePlacement(state, def, tile, viewerTeam).valid : false;
+  },
+  () => {
+    const job = state.structureBuild.get(viewerTeam);
+    return job ? { structureId: job.structureId, ready: job.ticksLeft <= 0 } : null;
   });
   // ── Continue (FG-6): replay the saved command log tick-for-tick, then go live.
   // Determinism makes the fast-forward EXACT (same mission + same log → same state).
@@ -443,14 +450,14 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // Once a second, diff the viewer's side and announce the transitions (Westwood
   // vocabulary, v0.52): match end, under attack, low power, unit ready,
   // construction complete, new construction options (tier-up), storage full.
-  const evaPrev = { over: false, baseHp: -1, harvesters: -1, powered: true, army: -1, builtCount: -1, tier: -1, storageFull: false };
+  const evaPrev = { over: false, baseHp: -1, harvesters: -1, powered: true, army: -1, jobReady: false, tier: -1, storageFull: false };
   window.setInterval(() => {
     if (onboarding.briefingActive()) return;
     const res = missionResult();
     if (res.over && !evaPrev.over) evaSay(res.winner === viewerTeam ? 'Victory. Mission complete.' : 'Defeat.', 0);
     evaPrev.over = res.over;
     if (res.over) return;
-    let baseHp = 0, army = 0, harvesters = 0, supply = 0, demand = 0, builtCount = 0, tier = 1;
+    let baseHp = 0, army = 0, harvesters = 0, supply = 0, demand = 0, tier = 1;
     let storage = 0, maxStorage = 0;
     for (const e of state.store.all()) {
       if (e.components.faction?.team !== viewerTeam) continue;
@@ -461,12 +468,10 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
       if (e.components.harvest && (e.components.health?.hp ?? 1) > 0) harvesters++;
       const pw = e.components.power;
       if (pw) { supply += pw.powerSupply; demand += pw.powerDemand; }
-      const b = e.components.building;
-      if (b && (b.buildProgress ?? 100) >= 100 && (e.components.health?.hp ?? 1) > 0) builtCount++;
       const t = e.components.tech;
       if (t && t.tier > tier) tier = t.tier;
       const eco = e.components.economy;
-      if (b && eco) { storage += eco.refineryStorage ?? 0; maxStorage += eco.maxStorage ?? 0; }
+      if (e.components.building && eco) { storage += eco.refineryStorage ?? 0; maxStorage += eco.maxStorage ?? 0; }
     }
     if (evaPrev.baseHp >= 0 && baseHp < evaPrev.baseHp - 10) evaSay('Base under attack.', 15000);
     evaPrev.baseHp = baseHp;
@@ -478,8 +483,10 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     evaPrev.powered = powered;
     if (evaPrev.army >= 0 && army > evaPrev.army) evaSay('Unit ready.');
     evaPrev.army = army;
-    if (evaPrev.builtCount >= 0 && builtCount > evaPrev.builtCount) evaSay('Construction complete.');
-    evaPrev.builtCount = builtCount;
+    const job = state.structureBuild.get(viewerTeam);
+    const jobReady = !!job && job.ticksLeft <= 0;
+    if (jobReady && !evaPrev.jobReady) evaSay('Construction complete.'); // RA: READY to place
+    evaPrev.jobReady = jobReady;
     if (evaPrev.tier >= 1 && tier > evaPrev.tier) evaSay('New construction options.', 0);
     evaPrev.tier = tier;
     const storageFull = maxStorage > 0 && storage >= maxStorage;
@@ -620,6 +627,11 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
 
   // A11y debug hook (liveness gate): toggle state + the last announcement.
   window.__debugA11y = () => ({ teamShapes: a11y.getTeamShapes(), lastAnnouncement: announcer.last() });
+  // RA build-flow debug hook (v0.55 gate): the viewer team's sidebar job.
+  window.__debugStructureJob = () => {
+    const j = state.structureBuild.get(viewerTeam);
+    return j ? { structureId: j.structureId, ticksLeft: j.ticksLeft, ready: j.ticksLeft <= 0 } : null;
+  };
   // Placement-mode debug hook (v0.54 gate): is the ghost still in hand?
   window.__debugPlacement = () => input.getPlacementMode();
   // EVA debug hook (v0.52 gate): last line + voice toggle state.

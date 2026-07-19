@@ -43,7 +43,14 @@ export type CommandIntent = { team?: 'player' | 'enemy' } & (
   // XP-7: the faction strike (T3 + 5 Cells) — a delayed orbital splash at a point.
   | { type: 'strike'; target: WorldPos }
   | { type: 'deploy' }
+  // RA build flow (v0.55): structures build in the SIDEBAR — start a job, cancel
+  // it (full refund), then place the READY structure (a short on-field unfold).
+  | { type: 'build-structure'; structureId: string }
+  | { type: 'cancel-structure' }
   | { type: 'place-structure'; structureId: string; tile: TilePos }
+  // Right-click a unit button: pop the last queued (unpaid) unit, else refund the
+  // one in production.
+  | { type: 'cancel-train'; unitId: string }
   // Economy depth: research a team-wide Refinement (at a Processing Plant).
   | { type: 'research'; refinementId: string }
   | { type: 'assign-group'; group: number }
@@ -109,9 +116,9 @@ export function makeInputHandlers(
   minimap?: { jump(sx: number, sy: number): boolean },
   /** Optional sidebar build menu: a left-click on a build button queues a unit /
    *  enters structure placement (C&C-style), instead of selecting on the field. */
-  hud?: { buttonAt(sx: number, sy: number): string | null; deniedAt?(sx: number, sy: number): 'funds' | 'tier' | 'prereq' | 'cells' | null; setTab?(tab: 'base' | 'def' | 'units' | 'tech'): void },
+  hud?: { buttonAt(sx: number, sy: number): string | null; anyButtonAt?(sx: number, sy: number): string | null; deniedAt?(sx: number, sy: number): 'funds' | 'tier' | 'prereq' | 'cells' | 'busy' | null; setTab?(tab: 'base' | 'def' | 'units' | 'tech'): void },
   /** Optional UI sounds: button click / selection blip / order acknowledgment. */
-  sfx?: { click(): void; select(): void; ack(): void; place(): void; denied?(reason: 'funds' | 'tier' | 'prereq' | 'cells' | 'placement'): void },
+  sfx?: { click(): void; select(): void; ack(): void; place(): void; denied?(reason: 'funds' | 'tier' | 'prereq' | 'cells' | 'busy' | 'placement'): void },
   /** XP-3: which hero the E hotkey trains (faction-dependent; default warden). */
   heroUnitId = 'warden',
   /** FG-7: which side this viewer commands (MP seat) — used only for the
@@ -120,6 +127,9 @@ export function makeInputHandlers(
   /** v0.54: advisory placement validity (the ghost's check) — an invalid click
    *  refuses + keeps placement mode instead of silently consuming it. */
   canPlace?: (structureId: string, tile: TilePos) => boolean,
+  /** RA build flow (v0.55): the viewer team's live sidebar job, for routing build
+   *  clicks/hotkeys (start job → wait → READY → arm placement). */
+  structureJob?: () => { structureId: string; ready: boolean } | null,
 ): InputHandlers {
   let selectStart: ScreenPos | null = null;
   let selectCurrent: ScreenPos | null = null;
@@ -164,6 +174,16 @@ export function makeInputHandlers(
   }
 
   // C&C-style build-button click: queue a unit or enter structure placement.
+  // RA build flow (v0.55): a structure request either STARTS the sidebar job,
+  // arms placement when that job is READY, or refuses while another builds.
+  function requestStructure(id: string): void {
+    if (!hasConYard()) return;
+    const job = structureJob?.() ?? null;
+    if (!job) { queue.push({ type: 'build-structure', structureId: id }); return; }
+    if (job.ready && job.structureId === id) { setPlacementMode(id); return; }
+    sfx?.denied?.('busy'); // one structure at a time (the RA rule)
+  }
+
   function doBuildAction(action: string): void {
     const [kind, id] = action.split(':');
     if (kind === 'strike') { strikeArmed = true; return; }
@@ -171,7 +191,7 @@ export function makeInputHandlers(
     else if (kind === 'tab' && (id === 'base' || id === 'def' || id === 'units' || id === 'tech')) hud?.setTab?.(id);
     else if (kind === 'upgrade') queue.push({ type: 'upgrade-hq' });
     else if (kind === 'research' && id) queue.push({ type: 'research', refinementId: id });
-    else if (kind === 'build' && id) setPlacementMode(id);
+    else if (kind === 'build' && id) requestStructure(id);
     else if (kind === 'repair') queue.push({ type: 'repair' });
     else if (kind === 'sell') queue.push({ type: 'sell' });
   }
@@ -378,6 +398,19 @@ export function makeInputHandlers(
 
   function onContextMenu(e: MouseEvent): void {
     e.preventDefault();
+    // RA (v0.55): right-click on a sidebar button CANCELS — a structure job
+    // (full refund, incl. READY) or the last queued copy of a unit. Uses the
+    // any-state hit-test: the in-progress button is disabled but must respond.
+    const rpos = getMousePos(e);
+    const raction = hud?.anyButtonAt?.(rpos.sx, rpos.sy);
+    if (raction) {
+      const [kind, id] = raction.split(':');
+      if (kind === 'build') {
+        if (structureJob?.()) { queue.push({ type: 'cancel-structure' }); sfx?.click(); setPlacementMode(null); }
+        return; // a right-click on the sidebar never becomes a field order
+      }
+      if (kind === 'train' && id) { queue.push({ type: 'cancel-train', unitId: id }); sfx?.click(); return; }
+    }
     // If in placement mode, cancel it; otherwise issue a context-sensitive order
     // (the command system decides attack / harvest / move from what's at the point).
     if (placementMode) {
@@ -417,17 +450,17 @@ export function makeInputHandlers(
       case 'b': // Build a Barracks (needs a Construction Yard for build radius)
       case 'B':
         e.preventDefault();
-        if (hasConYard()) setPlacementMode('barracks');
+        requestStructure('barracks');
         return;
       case 'n': // Build a Power Node
       case 'N':
         e.preventDefault();
-        if (hasConYard()) setPlacementMode('power_node');
+        requestStructure('power_node');
         return;
       case 'f': // Build a Refinery (FG-2: expand the economy)
       case 'F':
         e.preventDefault();
-        if (hasConYard()) setPlacementMode('refinery');
+        requestStructure('refinery');
         return;
       case 'x': // Cycle stance (XP-4)
       case 'X':
@@ -442,22 +475,22 @@ export function makeInputHandlers(
       case 'l': // Build a Wall segment (XP-1)
       case 'L':
         e.preventDefault();
-        if (hasConYard()) setPlacementMode('wall');
+        requestStructure('wall');
         break;
       case 'j': // Build a Radar (XP-1, T2)
       case 'J':
         e.preventDefault();
-        if (hasConYard()) setPlacementMode('radar');
+        requestStructure('radar');
         break;
       case 'g': // Build a Defense Turret (FG-2)
       case 'G':
         e.preventDefault();
-        if (hasConYard()) setPlacementMode('defense_turret');
+        requestStructure('defense_turret');
         return;
       case 'w': // Build a War Factory (FG-3)
       case 'W':
         e.preventDefault();
-        if (hasConYard()) setPlacementMode('war_factory');
+        requestStructure('war_factory');
         return;
       case 'v': // Train a Scout Vehicle (FG-3)
       case 'V':

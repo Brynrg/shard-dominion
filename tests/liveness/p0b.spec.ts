@@ -28,6 +28,12 @@ test.describe('P0b liveness gate', () => {
     // Build a Barracks (needed before you can train).
     const cy = await page.evaluate(() => (window as { __debugConYardScreenPos?: () => { x: number; y: number } | null }).__debugConYardScreenPos?.() ?? null);
     expect(cy).not.toBeNull();
+    // RA build flow (v0.55): B starts the SIDEBAR job; when READY, B again arms
+    // placement and the click drops the structure (short unfold).
+    const jobReady = () => page.evaluate(() =>
+      (window as { __debugStructureJob?: () => { ready: boolean } | null }).__debugStructureJob?.()?.ready ?? false);
+    await page.keyboard.press('b');
+    await expect.poll(jobReady, { timeout: 30000, intervals: [500] }).toBe(true);
     await page.keyboard.press('b');
     await page.waitForTimeout(100);
     const tx = canvasBox.x + cy!.x, ty = canvasBox.y + cy!.y - 96;

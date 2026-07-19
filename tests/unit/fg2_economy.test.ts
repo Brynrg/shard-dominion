@@ -63,6 +63,11 @@ describe('FG-2 — buildable refinery + turret', () => {
   it('placing a refinery charges 1200 and creates a dock/bank/producer with NO free harvester', () => {
     addConYard(state, 8, 8);
     addBank(state, 1500);
+    // RA build flow (v0.55): the sidebar job serves the build time; tests
+    // fast-forward it, then place the READY structure.
+    queue.push({ type: 'build-structure', structureId: 'refinery' });
+    runTick(state, systems);
+    { const j = state.structureBuild.get('player'); if (j) j.ticksLeft = 0; }
     queue.push({ type: 'place-structure', structureId: 'refinery', tile: { tx: 10, ty: 8 } });
     runTick(state, systems);
     const refineries = state.store.all().filter(e => e.components.faction?.faction === 'refinery' && e.components.faction?.team === 'player');
@@ -79,6 +84,11 @@ describe('FG-2 — buildable refinery + turret', () => {
   it('a placed turret autonomously fires on an enemy in range (and never moves)', () => {
     addConYard(state, 8, 8);
     addBank(state, 1000);
+    // RA build flow (v0.55): the sidebar job serves the build time; tests
+    // fast-forward it, then place the READY structure.
+    queue.push({ type: 'build-structure', structureId: 'defense_turret' });
+    runTick(state, systems);
+    { const j = state.structureBuild.get('player'); if (j) j.ticksLeft = 0; }
     queue.push({ type: 'place-structure', structureId: 'defense_turret', tile: { tx: 10, ty: 10 } });
     runTick(state, systems);
     const turret = state.store.all().find(e => e.components.faction?.faction === 'defense_turret')!;

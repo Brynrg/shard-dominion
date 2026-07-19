@@ -32,7 +32,16 @@ test.describe('S3 liveness gate', () => {
     const cy = await page.evaluate(() => (window as { __debugConYardScreenPos?: () => { x: number; y: number } | null }).__debugConYardScreenPos?.() ?? null);
     expect(cy).not.toBeNull();
 
-    // Press B (barracks placement), then place 3 tiles north of the ConYard (in radius).
+    // RA flow (v0.55): B starts the sidebar job (charges NOW); B again when READY
+    // arms placement, then click drops the structure.
+    const jobReady = () => page.evaluate(() =>
+      (window as { __debugStructureJob?: () => { ready: boolean } | null }).__debugStructureJob?.()?.ready ?? false);
+    await page.keyboard.press('b');
+    // RA charges UPFRONT at job start — assert the drop before mining income masks it.
+    await page.waitForTimeout(400);
+    const creditsAtStart = await page.evaluate(() => (window as { __debugEconomy?: () => { credits: number } }).__debugEconomy?.().credits ?? 0);
+    expect(creditsAtStart).toBeLessThan(credits0);
+    await expect.poll(jobReady, { timeout: 30000, intervals: [500] }).toBe(true);
     await page.keyboard.press('b');
     await page.waitForTimeout(100);
     const tx = canvasBox.x + cy!.x, ty = canvasBox.y + cy!.y - 96;
@@ -44,8 +53,7 @@ test.describe('S3 liveness gate', () => {
     const counts1 = await page.evaluate(() => (window as { __debugBuildingCount?: () => Counts }).__debugBuildingCount?.() ?? zero);
     expect(counts1.barracks).toBe(1);
 
-    const credits1 = await page.evaluate(() => (window as { __debugEconomy?: () => { credits: number } }).__debugEconomy?.().credits ?? 0);
-    expect(credits1).toBeLessThan(credits0); // charged for the build
+    // (charge already asserted at job start — mining income may exceed it by now)
 
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, 's3-capture.png'), fullPage: true });
   });

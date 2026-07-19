@@ -41,6 +41,7 @@ export function makeCombatTargetingSystem(weapons: WeaponsFile): { name: 'combat
         }
 
         // 2) Otherwise scan for the nearest LIVING ENEMY (different team) in range.
+        // Phase 2 enhancement: threat matrix prioritizes turrets > mobile units > harvesters.
         let bestId: EntityId | null = null;
         let bestScore = Infinity;
         for (const other of state.store.all()) {
@@ -57,11 +58,20 @@ export function makeCombatTargetingSystem(weapons: WeaponsFile): { name: 'combat
           const d = distance(pos, op);
           if (d < minRangeWorld) continue; // artillery ignores what's under its barrel
           if (d > rangeWorld) continue;    // range is a hard bound (true distance)
-          // TP-6 threat priority: among IN-RANGE options, harvesters and unarmed
-          // passives rank 1.5× farther, so a passing wave fights the ARMY first
-          // instead of deleting the economy en route. Range itself is unaffected.
-          const passive = !other.components.combat || other.components.harvest;
-          const score = d * (passive ? 1.5 : 1);
+
+          // Phase 2 threat matrix: turrets/AA > mobile combat > harvesters/passives
+          // Multipliers apply per-category: lower = higher priority
+          const isTurret = other.components.building && other.components.combat;
+          const isMobileCombat = other.components.combat && !other.components.building && !other.components.harvest;
+          const isHarvester = other.components.harvest;
+
+          let threatMult = 1.0;
+          if (isTurret) threatMult = 0.7;           // turrets are 30% "closer" — high priority
+          else if (isMobileCombat) threatMult = 1.0; // mobile units: standard
+          else if (isHarvester) threatMult = 1.5;   // harvesters: deprioritized
+          else threatMult = 1.5;                     // other passives: also deprioritized
+
+          const score = d * threatMult;
           if (score < bestScore) { bestScore = score; bestId = other.id; }
         }
         combat.targetId = bestId; // null clears the target when nothing is in range

@@ -269,6 +269,13 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig, structure
         }
       }
 
+      // ── Squad-based coordination (Phase 2 enhancement) ──────────────────────
+      // Group units into squads by type/proximity, then coordinate targeting within
+      // each squad so focus-fire is coherent (all target same enemy). Veteran units
+      // lead; others adopt the leader's target.
+      const squads = groupBySquad(army);
+      coordinateSquadTargets(squads);
+
       // ── Act on the plan ─────────────────────────────────────────────────────
       const idleFresh = army.filter(u => !committed.has(u.id) && u.components.movement?.target == null && (u.components.combat?.targetId ?? null) === null);
 
@@ -396,4 +403,64 @@ function chooseUnit(tick: number, evalInterval: number, rifle: number, rocket: n
   if (rifle >= rocket && rifle > 0) return 'vehicle';                                 // scout guns beat massed rifles
   if (rocket > 0) return 'infantry';                                                  // cheap bodies vs slow rockets
   return 'infantry';                                                                  // default opener
+}
+
+/** Phase 2 enhancement: group units into squads by type and proximity (TILE_SUBUNITS*3 = ~15 world units).
+ *  Returns an array of squads, each containing entities of the same faction & type.
+ *  Squads within proximity stay coordinated (focus-fire target). Deterministic by entity ID. */
+function groupBySquad(units: any[], squadRadius: number = TILE_SUBUNITS * 3): any[][] {
+  const squads: any[][] = [];
+  const used = new Set<EntityId>();
+
+  for (const u of units) {
+    if (used.has(u.id)) continue;
+    const squad = [u];
+    used.add(u.id);
+
+    const faction = u.components.faction?.faction;
+    const pos = u.components.position;
+    if (!faction || !pos) continue;
+
+    // Recruit nearby same-type units into this squad
+    for (const other of units) {
+      if (used.has(other.id) || other.components.faction?.faction !== faction) continue;
+      const opos = other.components.position;
+      if (!opos) continue;
+      const d = Math.hypot(pos.wx - opos.wx, pos.wy - opos.wy);
+      if (d <= squadRadius) {
+        squad.push(other);
+        used.add(other.id);
+      }
+    }
+
+    if (squad.length > 0) squads.push(squad);
+  }
+
+  return squads;
+}
+
+/** Phase 2 enhancement: coordinate squad targeting — the squad's "leader" (highest vet or first in list)
+ *  picks the target; all other squad members adopt the same target. Prevents thrashing and enables focus-fire. */
+function coordinateSquadTargets(squads: any[][]): void {
+  for (const squad of squads) {
+    if (squad.length <= 1) continue;
+
+    // Elect a leader (highest veterancy, fallback: first)
+    let leader = squad[0];
+    for (const u of squad) {
+      const uv = u.components.veterancy?.level ?? 0;
+      const lv = leader.components.veterancy?.level ?? 0;
+      if (uv > lv) leader = u;
+    }
+
+    const leaderTarget = leader.components.combat?.targetId ?? null;
+    if (leaderTarget !== null) {
+      // Squaddies adopt the leader's target
+      for (const u of squad) {
+        if (u !== leader && u.components.combat) {
+          u.components.combat.targetId = leaderTarget;
+        }
+      }
+    }
+  }
 }

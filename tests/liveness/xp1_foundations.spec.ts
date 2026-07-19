@@ -57,7 +57,11 @@ test.describe('XP-1 foundations gate', () => {
     await clickAction('upgrade:hq');
     await expect.poll(tier, { timeout: 30_000, intervals: [500] }).toBe(2);
 
-    // Build the radar (T2, now clickable) next to the ConYard.
+    // Build the radar (T2, now clickable) — RA flow: job → READY → place.
+    const jobReady = () => page.evaluate(() =>
+      (window as { __debugStructureJob?: () => { ready: boolean } | null }).__debugStructureJob?.()?.ready ?? false);
+    await clickAction('build:radar');
+    await expect.poll(jobReady, { timeout: 40000, intervals: [500] }).toBe(true);
     await clickAction('build:radar');
     const cy = await page.evaluate(() => (window as { __debugConYardScreenPos?: () => { x: number; y: number } | null }).__debugConYardScreenPos?.() ?? null);
     expect(cy).not.toBeNull();

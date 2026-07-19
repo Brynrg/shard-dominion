@@ -25,6 +25,13 @@ test.describe('FG-2 economy gate', () => {
 
     // Turret button via its live rect (XP-1 tabs).
     await clickAction('tab:def');
+    const jobReady = () => page.evaluate(() =>
+      (window as { __debugStructureJob?: () => { ready: boolean } | null }).__debugStructureJob?.()?.ready ?? false);
+    await clickAction('build:defense_turret');
+    await page.waitForTimeout(400);
+    const creditsAtStart = await page.evaluate(() => (window as { __debugEconomy?: () => { credits: number } }).__debugEconomy?.().credits ?? 0);
+    expect(creditsAtStart).toBeLessThan(credits0); // charged upfront (RA)
+    await expect.poll(jobReady, { timeout: 40000, intervals: [500] }).toBe(true);
     await clickAction('build:defense_turret');
     await page.waitForTimeout(80);
 
@@ -39,7 +46,6 @@ test.describe('FG-2 economy gate', () => {
       () => page.evaluate(() => ((window as { __debugBuildingCount?: () => Counts }).__debugBuildingCount?.() ?? { refinery: 0, defense_turret: 0 }).defense_turret),
       { timeout: 4000, intervals: [200] },
     ).toBe(1);
-    const credits1 = await page.evaluate(() => (window as { __debugEconomy?: () => { credits: number } }).__debugEconomy?.().credits ?? 0);
-    expect(credits1).toBeLessThan(credits0);
+    // (charge already asserted at job start)
   });
 });

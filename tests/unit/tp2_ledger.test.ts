@@ -36,6 +36,11 @@ describe('TP-2 — split banks are ONE wallet', () => {
     expect(teamCredits(state, 'player')).toBe(600);
     const queue = makeCommandQueue();
     const sys = orderSystems([makeCommandSystem(queue, structures)]);
+    // RA build flow (v0.55): the sidebar job serves the build time; tests
+    // fast-forward it, then place the READY structure.
+    queue.push({ type: 'build-structure', structureId: 'defense_turret' });
+    runTick(state, sys);
+    { const j = state.structureBuild.get('player'); if (j) j.ticksLeft = 0; }
     queue.push({ type: 'place-structure', structureId: 'defense_turret', tile: { tx: 9, ty: 11 } });
     runTick(state, sys);
     expect(state.store.all().some(e => e.components.faction?.faction === 'defense_turret')).toBe(true);

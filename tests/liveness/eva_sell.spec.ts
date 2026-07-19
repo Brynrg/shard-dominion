@@ -39,12 +39,17 @@ test.describe('EVA + Sell gate', () => {
     expect(cy).not.toBeNull();
     const placement = () => page.evaluate(() =>
       (window as { __debugPlacement?: () => { structureId: string } | null }).__debugPlacement?.() ?? null);
+    const jobReady = () => page.evaluate(() =>
+      (window as { __debugStructureJob?: () => { ready: boolean } | null }).__debugStructureJob?.()?.ready ?? false);
+    // RA flow (v0.55): B starts the sidebar job; B again at READY arms the ghost.
+    await page.keyboard.press('b');
+    await expect.poll(jobReady, { timeout: 30000, intervals: [500] }).toBe(true);
     await page.keyboard.press('b');
     await page.mouse.click(box.x + cy!.x, box.y + cy!.y); // occupied tile → refused
     await expect.poll(async () => (await evaState())?.last ?? '', { timeout: 3000, intervals: [150] })
       .toContain('Cannot deploy there');
     expect((await placement())?.structureId, 'ghost must stay in hand after a refused click').toBe('barracks');
-    await page.keyboard.press('Escape'); // cancel placement before the sell flow
+    await page.keyboard.press('Escape'); // drop the ghost (the READY job persists — RA keeps it)
     await page.waitForTimeout(200);
 
     // ── Sell: select the ConYard, press the sidebar SELL button → the building

@@ -13,33 +13,58 @@ import type { Refinement } from '../loaders/refinements.js';
 import type { Onboarding } from './onboarding.js';
 import type { EntityId } from '../sim/ids.js';
 import { makeSpriteBank, type SpriteBank, type UnitAnim } from './spritebank.js';
+import {
+  hashStr, shatterFacetRect, chamferedRectPath,
+  jitteredLine, buildCrackNetwork, drawCrackNetwork, type CrackBranch,
+} from './facet.js';
 
-// ── Terrain palette (base + a darker/lighter pair for per-tile texturing) ──────
-// Each tile gets base fill + deterministic grain/detail so the desert reads as a
-// gritty surface instead of a flat pastel block (the P1 "not even Dune-2000" fix).
+// ── Terrain palette — "Obsidian Bloom": basalt facet field. Ground steps stay
+// within a cool #16141c-ish dark family (legible but moody); impassable rock goes
+// warmer/darker toward #0c0b10; Shard resource keeps its own violet-crystal family
+// (deliberately NOT magenta — magenta is reserved solely for the corruption/Avarice
+// alarm so the two never read as the same signal). Each tile still gets baked
+// grain/detail (bakeTerrain(), NOT per-frame — see the render-cost note there).
 interface TerrainStyle { base: string; dark: string; light: string; }
 const TERRAIN: Record<string, TerrainStyle> = {
-  SAND:       { base: '#d9be86', dark: '#c9ac74', light: '#e7d19d' },
-  DEEP_SAND:  { base: '#c9a566', dark: '#b8934f', light: '#dab97e' },
-  DUNE:       { base: '#d8b979', dark: '#c2a061', light: '#ecd399' },
-  ROCK:       { base: '#7a6650', dark: '#5f4f3c', light: '#96806a' },
-  SHARD:      { base: '#7d6a9a', dark: '#5f5079', light: '#b49bd8' },
-  IMPASSABLE: { base: '#3c3630', dark: '#2a2621', light: '#4d453c' },
+  SAND:       { base: '#1e1a29', dark: '#171420', light: '#332c47' },
+  DEEP_SAND:  { base: '#191623', dark: '#13111a', light: '#2b2439' },
+  DUNE:       { base: '#211d2c', dark: '#191623', light: '#3a3350' },
+  ROCK:       { base: '#141118', dark: '#0f0d12', light: '#221d29' },
+  SHARD:      { base: '#241f36', dark: '#1a1626', light: '#4a3d68' },
+  IMPASSABLE: { base: '#0c0b10', dark: '#08070b', light: '#17141d' },
 };
-const TERRAIN_FALLBACK: TerrainStyle = { base: '#888888', dark: '#666666', light: '#aaaaaa' };
-// Terrain that reads as RAISED — casts a soft ambient shadow onto lower neighbours.
+const TERRAIN_FALLBACK: TerrainStyle = { base: '#222222', dark: '#161616', light: '#333333' };
+// Terrain that reads as RAISED — casts a soft ambient shadow onto lower neighbours,
+// and gets the grafted contour/elevation-hint pass at its edge (bakeTerrain()).
 const RAISED_TERRAIN = new Set(['ROCK', 'IMPASSABLE']);
+const CONTOUR_COLOR = '#8fe8ff'; // neutral cyan-white — passability hint, never confused with magenta corruption
 
 // Slab color (poured concrete foundation)
 const SLAB_COLOR = '#6e6e73';
 
-// ── Team accent palette (faction = outer stripe + tint; §11.1) ────────────────
+// ── Team accent palette — "Obsidian Bloom" faction shape language (§ FACTION
+// SHAPE LANGUAGE): default 1v1 is Concord (player) vs Emberhand (enemy); XP-3
+// faction skins can override either side to Shardborn via playerPalette/enemyPalette
+// upstream. Kept in sync with scripts/art-gen/kit.mjs PALETTES.
 interface TeamStyle { hull: string; hullDark: string; accent: string; stripe: string; }
 const TEAM: Record<string, TeamStyle> = {
-  player: { hull: '#3d7fd6', hullDark: '#28568f', accent: '#a7d6ff', stripe: '#00e5ff' },
-  enemy:  { hull: '#d1503a', hullDark: '#8f3020', accent: '#ffb08f', stripe: '#ff4a3d' },
+  player: { hull: '#c7d6e8', hullDark: '#2a2f38', accent: '#4fd6ff', stripe: '#4fd6ff' }, // Concord
+  enemy:  { hull: '#ff6a2b', hullDark: '#211a17', accent: '#ffb23e', stripe: '#ffb23e' }, // Emberhand
 };
-const NEUTRAL_TEAM: TeamStyle = { hull: '#9a9a9a', hullDark: '#6a6a6a', accent: '#d8d8d8', stripe: '#ffffff' };
+const NEUTRAL_TEAM: TeamStyle = { hull: '#8a8f98', hullDark: '#33363c', accent: '#ffcf4a', stripe: '#ffffff' };
+
+// ── Grafted designator tag lookup (faction id → 2-letter stencil code) ────────
+const DESIGNATOR: Record<string, string> = {
+  construction_yard: 'CY', barracks: 'BK', refinery: 'RF', power_node: 'PW',
+  war_factory: 'WF', defense_turret: 'DT', aa_turret: 'AA', radar: 'RD',
+  processing_plant: 'PP', skypad: 'SK', wall: 'WL', gate: 'GT', bunker: 'BN',
+  infirmary: 'IF', machine_shop: 'MS', derrick: 'DK', relay: 'RL', wreck: 'WK',
+  concrete_slab: 'SL', generic_structure: 'GN',
+  assault_tank: 'AT', scout_vehicle: 'SV', longbow: 'LB', skimmer_apc: 'AP',
+  gunship: 'GS', harvester: 'HV', infantry: 'IN', rocket_trooper: 'RT', vehicle: 'VH',
+  warden: 'WD', ghostwalker: 'GW', vane: 'VN', riftmaw: 'RM',
+};
+function designatorFor(kind: string): string { return DESIGNATOR[kind] ?? kind.slice(0, 2).toUpperCase(); }
 
 // Selection ring color
 const SELECTION_COLOR = '#ffff00';
@@ -129,7 +154,8 @@ export interface View {
   minimapJump(sx: number, sy: number): boolean;
   /** Hit-test the sidebar build buttons; returns "train:infantry" / "build:barracks" / null. */
   hudButtonAt(sx: number, sy: number): string | null;
-  hudDeniedAt(sx: number, sy: number): 'funds' | 'tier' | 'prereq' | 'cells' | null;
+  hudAnyButtonAt(sx: number, sy: number): string | null;
+  hudDeniedAt(sx: number, sy: number): 'funds' | 'tier' | 'prereq' | 'cells' | 'busy' | null;
   /** Switch the sidebar tab (XP-1: STRUCT / UNITS). */
   hudSetTab(tab: 'base' | 'def' | 'units' | 'tech'): void;
   /** The live rect of a sidebar button by action id (gates + tools). */
@@ -177,7 +203,10 @@ export function makeView(cfg: ViewConfig): View {
   // Best-effort: swap in any delivered real sprite sheets (docs/ART_ASSETS_SPEC.md).
   // No manifest / missing sheets → silently stays procedural. Exposed for testing.
   void sprites.loadManifest('art');
-  void sprites.loadTerrain('art'); // seamless ground tileset (procedural fallback per-tile)
+  // Seamless ground tileset (procedural fallback per-tile). Loads async — if the
+  // terrain bake already ran off the fallback, force a rebake once the real tiles
+  // land so they don't wait for the next map reload.
+  void sprites.loadTerrain('art').then(() => { terrainBaked = null; });
 
   // ── Radar minimap (bottom-left) ─────────────────────────────────────────────
   const MM = { size: 168, margin: 12 };
@@ -714,10 +743,38 @@ export function makeView(cfg: ViewConfig): View {
       // Draw selection ring
       context.strokeStyle = SELECTION_COLOR;
       context.lineWidth = 3;
+      const ringR = size / 2 + 4;
       context.beginPath();
-      context.arc(screenPos.sx, screenPos.sy, size / 2 + 4, 0, Math.PI * 2);
+      context.arc(screenPos.sx, screenPos.sy, ringR, 0, Math.PI * 2);
       context.stroke();
+
+      // Grafted designator tag (War Room Dossier): a stenciled 2-letter unit/
+      // building code, shown ONLY in the selection state, anchored at the ring's
+      // chamfered corner — solves unit-TYPE id at 20-40px zoom that faction
+      // silhouette alone doesn't cover. Near-free: this module already draws canvas
+      // text for the HUD.
+      const kind = e.components.faction?.faction;
+      if (kind) drawDesignatorTag(designatorFor(kind), screenPos.sx, screenPos.sy, ringR);
     }
+  }
+
+  // Anchored at the NE point of the selection ring, chamfered like the HUD chrome.
+  function drawDesignatorTag(code: string, cx: number, cy: number, ringR: number): void {
+    const ax = cx + ringR * Math.SQRT1_2, ay = cy - ringR * Math.SQRT1_2;
+    const w = 22, h = 14;
+    context.save();
+    chamferedRectPath(context, ax - 2, ay - h, w, h, 3);
+    context.fillStyle = 'rgba(8,9,12,0.82)';
+    context.fill();
+    context.strokeStyle = SELECTION_COLOR;
+    context.lineWidth = 1;
+    context.stroke();
+    context.fillStyle = '#e8ecf2';
+    context.font = 'bold 9px monospace';
+    context.textAlign = 'left';
+    context.textBaseline = 'middle';
+    context.fillText(code, ax + 2, ay - h / 2 + 1);
+    context.restore();
   }
 
   // Draw the live box-selection rectangle (screen pixels, provided by input).
@@ -889,129 +946,227 @@ export function makeView(cfg: ViewConfig): View {
     return h / 4294967296;
   }
 
-  function drawTerrain() {
+  // ── Terrain: baked ONCE at map load, blitted every frame ──────────────────────
+  // RENDER-COST DISCIPLINE: the old implementation re-ran per-tile fill + jittered
+  // detail + edge-blend for every VISIBLE tile every frame — real jitter/triangulation
+  // recompute at 60fps. Obsidian Bloom bakes the whole static field (base fill +
+  // shatterFacet grain + edge blends + the grafted contour/elevation-hint pass) into
+  // one offscreen canvas here; drawTerrain() below just blits a camera-transformed
+  // view of it. Only the fog-of-war overlay (flat alpha rects, no jitter) stays
+  // per-frame — cheap, and it has to (fog changes tick to tick).
+  let terrainBaked: HTMLCanvasElement | null = null;
+
+  function bakeTerrain(): HTMLCanvasElement {
     const { width, height } = simState.grid;
-    const fog = getFog?.();
+    const cv = document.createElement('canvas');
+    cv.width = Math.max(1, width * TILE_SIZE_PX);
+    cv.height = Math.max(1, height * TILE_SIZE_PX);
+    const c = cv.getContext('2d') as CanvasRenderingContext2D;
     for (let ty = 0; ty < height; ty++) {
       for (let tx = 0; tx < width; tx++) {
         const type = simState.grid.terrainAt({ tx, ty });
         const tileKey = `${tx},${ty}`;
-        const isVisible = fog ? fog.visible.has(tileKey) : true;
-        const isExplored = fog ? fog.explored.has(tileKey) : true;
-
-        const tilePos = tileToWorldCenter({ tx, ty });
-        const screenPos = worldToScreen(tilePos, camera);
-        // Tile size scales with zoom (+1 overdraw avoids seam gaps from rounding).
-        const TS = TILE_SIZE_PX * camera.zoom;
-        const px = Math.floor(screenPos.sx - TS / 2);
-        const py = Math.floor(screenPos.sy - TS / 2);
-        const DS = Math.ceil(TS) + 1;
-
-        if (!isExplored) {
-          // Unexplored: solid near-black (no detail leaks the map shape).
-          context.fillStyle = '#070707';
-          context.fillRect(px, py, DS, DS);
-          continue;
-        }
-
-        const style = TERRAIN[type] ?? TERRAIN_FALLBACK;
-        // Explored-but-not-visible tiles are drawn dimmed (fog memory).
-        const dim = isVisible ? 1 : 0.42;
-
-        // Real seamless tile if delivered; else procedural texture (fallback).
+        const px = tx * TILE_SIZE_PX, py = ty * TILE_SIZE_PX, S = TILE_SIZE_PX;
         const density = simState.shardDensity.get(tileKey) ?? 0;
         const tile = sprites.getTerrainTile(type, tileHash(tx, ty, 7) < 0.5 ? 0 : 1, density);
         if (tile) {
-          context.drawImage(tile, px, py, DS, DS);
-          if (dim < 1) { // fog-memory dim overlay
-            context.fillStyle = `rgba(6,8,11,${((1 - dim) * 0.62).toFixed(3)})`;
-            context.fillRect(px, py, DS, DS);
-          }
-          continue;
+          c.drawImage(tile, px, py, S, S);
+        } else {
+          // Procedural fallback: shatterFacet basalt field + per-terrain detail.
+          const style = TERRAIN[type] ?? TERRAIN_FALLBACK;
+          const v = tileHash(tx, ty, 1);
+          c.fillStyle = mix(style.base, v < 0.5 ? style.dark : style.light, 0.22);
+          c.fillRect(px, py, S, S);
+          shatterFacetRect(c, px, py, S, S, {
+            seed: hashStr(`terrain|${tx}|${ty}`), facetScale: Math.max(16, Math.round(S * 0.55)),
+            baseColor: style.base, valueJitter: 0.12, jitter: 0.4,
+          });
+          bakeTerrainDetail(c, type, style, tx, ty, px, py);
         }
-
-        // Procedural fallback: varied base fill + per-terrain detail + soft edges.
-        const v = tileHash(tx, ty, 1);
-        context.fillStyle = shade(mix(style.base, v < 0.5 ? style.dark : style.light, 0.22), dim);
-        context.fillRect(px, py, DS, DS);
-        drawTerrainDetail(type, style, tx, ty, px, py, dim);
-        drawTerrainEdges(type, style, tx, ty, px, py, dim, width, height, fog);
+        bakeTerrainEdges(c, type, tx, ty, px, py, width, height);
       }
     }
+    return cv;
   }
 
   // Blend each tile edge toward a differing neighbour + ambient shadow under raised
-  // rock, so the terrain reads as continuous ground instead of a grid of squares.
-  function drawTerrainEdges(
-    type: string, style: TerrainStyle, tx: number, ty: number, px: number, py: number,
-    dim: number, width: number, height: number, fog: { visible: Set<string>; explored: Set<string> } | undefined,
-  ): void {
-    const S = TILE_SIZE_PX, B = 6; // blend-strip width
+  // rock + the grafted contour/elevation-hint pass: a jittered neutral cyan-white
+  // line paralleling any RAISED_TERRAIN boundary (reuses the SAME jitteredLine the
+  // corruption cracks use, just recolored — "passable vs not" readable at a glance,
+  // zero new primitives). Baked once, not per-frame.
+  function bakeTerrainEdges(c: CanvasRenderingContext2D, type: string, tx: number, ty: number, px: number, py: number, width: number, height: number): void {
+    const style = TERRAIN[type] ?? TERRAIN_FALLBACK;
+    const S = TILE_SIZE_PX, B = 6;
     const sides: [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]];
     for (const [dx, dy] of sides) {
       const nx = tx + dx, ny = ty + dy;
       if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-      if (fog && !fog.explored.has(`${nx},${ny}`)) continue;
       const nt = simState.grid.terrainAt({ tx: nx, ty: ny });
       if (nt === type) continue;
       const nStyle = TERRAIN[nt] ?? TERRAIN_FALLBACK;
 
-      // Feathered strip of the blended colour hugging the shared edge.
-      context.fillStyle = shade(mix(style.base, nStyle.base, 0.5), dim);
-      context.globalAlpha = 0.45;
-      if (dx === 1) context.fillRect(px + S - B, py, B, S);
-      else if (dx === -1) context.fillRect(px, py, B, S);
-      else if (dy === 1) context.fillRect(px, py + S - B, S, B);
-      else context.fillRect(px, py, S, B);
+      c.fillStyle = mix(style.base, nStyle.base, 0.5);
+      c.globalAlpha = 0.45;
+      if (dx === 1) c.fillRect(px + S - B, py, B, S);
+      else if (dx === -1) c.fillRect(px, py, B, S);
+      else if (dy === 1) c.fillRect(px, py + S - B, S, B);
+      else c.fillRect(px, py, S, B);
 
-      // Ambient shadow cast FROM a raised neighbour ONTO this lower tile.
-      if (RAISED_TERRAIN.has(nt) && !RAISED_TERRAIN.has(type)) {
-        context.fillStyle = 'rgba(0,0,0,0.28)';
-        context.globalAlpha = dim * 0.5;
-        if (dx === 1) context.fillRect(px + S - 3, py, 3, S);
-        else if (dx === -1) context.fillRect(px, py, 3, S);
-        else if (dy === 1) context.fillRect(px, py + S - 3, S, 3);
-        else context.fillRect(px, py, S, 3);
+      const raisedHere = RAISED_TERRAIN.has(type), raisedThere = RAISED_TERRAIN.has(nt);
+      if (raisedThere && !raisedHere) {
+        c.fillStyle = 'rgba(0,0,0,0.28)';
+        c.globalAlpha = 0.5;
+        if (dx === 1) c.fillRect(px + S - 3, py, 3, S);
+        else if (dx === -1) c.fillRect(px, py, 3, S);
+        else if (dy === 1) c.fillRect(px, py + S - 3, S, 3);
+        else c.fillRect(px, py, S, 3);
       }
-      context.globalAlpha = 1;
+      c.globalAlpha = 1;
+
+      // Contour hint, drawn once per pair (from the raised side only).
+      if (raisedHere && !raisedThere) {
+        const seed = hashStr(`contour|${tx}|${ty}|${dx}|${dy}`);
+        const opts = { seed, amplitude: 3, segments: 5, color: CONTOUR_COLOR, alpha: 0.22, lineWidth: 1.4 };
+        if (dx === 1) jitteredLine(c, px + S, py, px + S, py + S, opts);
+        else if (dx === -1) jitteredLine(c, px, py, px, py + S, opts);
+        else if (dy === 1) jitteredLine(c, px, py + S, px + S, py + S, opts);
+        else jitteredLine(c, px, py, px + S, py, opts);
+      }
     }
   }
 
-  // Cheap deterministic grain/cracks/ridges/flecks per terrain type.
-  function drawTerrainDetail(type: string, style: TerrainStyle, tx: number, ty: number, px: number, py: number, dim: number): void {
+  // Cheap deterministic grain/cracks/ridges/flecks per terrain type (baked).
+  function bakeTerrainDetail(c: CanvasRenderingContext2D, type: string, style: TerrainStyle, tx: number, ty: number, px: number, py: number): void {
     const S = TILE_SIZE_PX;
-    if (type === 'ROCK') {
-      // Blocky facets + a couple of dark cracks.
-      context.fillStyle = shade(style.dark, dim);
+    if (type === 'ROCK' || type === 'IMPASSABLE') {
+      c.fillStyle = style.dark;
       for (let i = 0; i < 3; i++) {
         const hx = tileHash(tx, ty, 10 + i), hy = tileHash(tx, ty, 20 + i);
-        context.fillRect(px + Math.floor(hx * (S - 8)), py + Math.floor(hy * (S - 8)), 4 + Math.floor(hx * 4), 3 + Math.floor(hy * 3));
+        c.fillRect(px + Math.floor(hx * (S - 8)), py + Math.floor(hy * (S - 8)), 4 + Math.floor(hx * 4), 3 + Math.floor(hy * 3));
       }
-      context.fillStyle = shade(style.light, dim);
-      context.fillRect(px + 2, py + 2, S - 4, 1);
+      c.fillStyle = style.light;
+      c.fillRect(px + 2, py + 2, S - 4, 1);
     } else if (type === 'SHARD') {
-      // Crystalline flecks that catch light (the resource — should draw the eye).
+      // Crystalline flecks — violet-teal, deliberately not magenta (corruption stays uncontested).
       for (let i = 0; i < 5; i++) {
         const hx = tileHash(tx, ty, 30 + i), hy = tileHash(tx, ty, 40 + i);
-        context.fillStyle = shade(i % 2 ? style.light : '#e6d4ff', dim);
+        c.fillStyle = i % 2 ? style.light : '#8fe8d4';
         const s = 2 + Math.floor(tileHash(tx, ty, 50 + i) * 2);
-        context.fillRect(px + Math.floor(hx * (S - s)), py + Math.floor(hy * (S - s)), s, s);
+        c.fillRect(px + Math.floor(hx * (S - s)), py + Math.floor(hy * (S - s)), s, s);
       }
     } else if (type === 'DUNE') {
-      // Wind ridges (a couple of light horizontal streaks + shadow under each).
-      context.fillStyle = shade(style.light, dim);
+      c.fillStyle = style.light;
       const r = Math.floor(tileHash(tx, ty, 60) * (S - 12)) + 4;
-      context.fillRect(px + 3, py + r, S - 6, 2);
-      context.fillStyle = shade(style.dark, dim);
-      context.fillRect(px + 3, py + r + 2, S - 6, 1);
+      c.fillRect(px + 3, py + r, S - 6, 2);
+      c.fillStyle = style.dark;
+      c.fillRect(px + 3, py + r + 2, S - 6, 1);
     } else {
-      // SAND / DEEP_SAND / other: scattered grain speckles.
       for (let i = 0; i < 4; i++) {
         const hx = tileHash(tx, ty, 70 + i), hy = tileHash(tx, ty, 80 + i);
-        context.fillStyle = shade(hx < 0.5 ? style.dark : style.light, dim);
-        context.fillRect(px + Math.floor(hx * (S - 3)), py + Math.floor(hy * (S - 3)), 2, 2);
+        c.fillStyle = hx < 0.5 ? style.dark : style.light;
+        c.fillRect(px + Math.floor(hx * (S - 3)), py + Math.floor(hy * (S - 3)), 2, 2);
       }
     }
+  }
+
+  // Blit the baked field through the camera transform, then the per-frame fog
+  // overlay (flat rects only — no jitter recompute, so this part staying live is fine).
+  function drawTerrain(): void {
+    if (!terrainBaked) terrainBaked = bakeTerrain();
+    const worldToBakedPx = TILE_SIZE_PX / TILE_SUBUNITS;
+    context.save();
+    context.setTransform(
+      camera.zoom, 0, 0, camera.zoom,
+      -camera.x * worldToBakedPx * camera.zoom, -camera.y * worldToBakedPx * camera.zoom,
+    );
+    context.drawImage(terrainBaked, 0, 0);
+    context.restore();
+
+    const fog = getFog?.();
+    if (!fog) return;
+    const { width, height } = simState.grid;
+    for (let ty = 0; ty < height; ty++) {
+      for (let tx = 0; tx < width; tx++) {
+        const tileKey = `${tx},${ty}`;
+        const isVisible = fog.visible.has(tileKey);
+        const isExplored = fog.explored.has(tileKey);
+        if (isExplored && isVisible) continue; // fully lit — nothing to overlay
+        const tilePos = tileToWorldCenter({ tx, ty });
+        const screenPos = worldToScreen(tilePos, camera);
+        const TS = TILE_SIZE_PX * camera.zoom;
+        const px = Math.floor(screenPos.sx - TS / 2);
+        const py = Math.floor(screenPos.sy - TS / 2);
+        const DS = Math.ceil(TS) + 1;
+        context.fillStyle = isExplored ? 'rgba(6,8,11,0.62)' : '#070707';
+        context.fillRect(px, py, DS, DS);
+      }
+    }
+  }
+
+  // ── Corruption / Avarice (grafted War Room idea): a bounded, localized crack-
+  // network alarm at over-harvested Shard nodes. There is no sim "Avarice" field —
+  // this derives a purely VIEW-side metric from the existing shardDensity ledger
+  // (1 - current/initialAtLoad), which keeps it presentation-only per the sim/view
+  // boundary (§1 AGENTS.md — no new SimState field, no sim system touched). Crack
+  // GEOMETRY is cached per tile and only regenerated when the Avarice BUCKET changes
+  // ("incremental redraw only on tiles whose Avarice value changed"); the pulse/
+  // colour intensity are live per-frame off the cached geometry (cheap — a redraw,
+  // not a re-triangulation). Magenta (#c23ff0→#6b1a8f) is reserved solely for this
+  // signal — Shard's resource glow stays violet-teal (bakeTerrainDetail above) so
+  // the two never read as the same alarm.
+  const initialShardDensity = new Map(simState.shardDensity);
+  interface CorruptionEntry { bucket: number; seed: number; branches: CrackBranch[]; }
+  const corruptionCache = new Map<string, CorruptionEntry>();
+  const AVARICE_THRESHOLD = 0.18;
+  const AVARICE_BUCKETS = 8;
+  const CORRUPTION_REACH_TILES = 2.2; // hard cap — never blanket the visible map
+
+  function avariceAt(tileKey: string): number {
+    const initial = initialShardDensity.get(tileKey) ?? 0;
+    if (initial <= 0) return 0;
+    const current = simState.shardDensity.get(tileKey) ?? 0;
+    return Math.max(0, Math.min(1, 1 - current / initial));
+  }
+
+  function drawCorruption(): void {
+    if (initialShardDensity.size === 0) return;
+    const fog = getFog?.();
+    const now = Date.now();
+    for (const tileKey of initialShardDensity.keys()) {
+      const avarice = avariceAt(tileKey);
+      if (avarice < AVARICE_THRESHOLD) { corruptionCache.delete(tileKey); continue; }
+      if (fog && !fog.visible.has(tileKey)) continue; // don't leak the alarm through fog
+      const sep = tileKey.indexOf(',');
+      const tx = Number(tileKey.slice(0, sep)), ty = Number(tileKey.slice(sep + 1));
+      const tilePos = tileToWorldCenter({ tx, ty });
+      const s = worldToScreen(tilePos, camera);
+      if (s.sx < -100 || s.sx > canvas.width + 100 || s.sy < -100 || s.sy > canvas.height + 100) continue;
+
+      const bucket = Math.min(AVARICE_BUCKETS - 1, Math.floor(avarice * AVARICE_BUCKETS));
+      let entry = corruptionCache.get(tileKey);
+      if (!entry || entry.bucket !== bucket) {
+        const seed = hashStr(`avarice|${tileKey}`) ^ (bucket * 0x1000193);
+        const reach = TILE_SIZE_PX * (0.6 + CORRUPTION_REACH_TILES * (bucket / (AVARICE_BUCKETS - 1)));
+        entry = { bucket, seed, branches: buildCrackNetwork(seed, 0, 0, reach, avarice) };
+        corruptionCache.set(tileKey, entry);
+      }
+      const pulse = 0.5 + 0.5 * Math.sin(now / 420 + (entry.seed % 1000) * 0.01);
+      context.save();
+      context.translate(s.sx, s.sy);
+      context.scale(camera.zoom, camera.zoom);
+      drawCrackNetwork(context, entry.branches, { colorCore: '#c23ff0', colorEdge: '#6b1a8f', intensity: avarice, pulse, baseWidth: 1.6 });
+      context.restore();
+    }
+  }
+
+  // ── QA silhouette toggle (?silhouette=1 or window.__debugSilhouette=true): flat
+  // grayscale render, no color/glow — a same-day tool for judging readability
+  // independent of palette (VALIDATION GATE eye-fatigue / silhouette checks).
+  const SILHOUETTE_QS = (() => {
+    try { return new URLSearchParams(window.location.search).get('silhouette') === '1'; } catch { return false; }
+  })();
+  function silhouetteActive(): boolean {
+    return SILHOUETTE_QS || (globalThis as unknown as { __debugSilhouette?: boolean }).__debugSilhouette === true;
   }
 
   // ── Color helpers ─────────────────────────────────────────────────────────
@@ -1023,11 +1178,6 @@ export function makeView(cfg: ViewConfig): View {
   }
   function toHex(n: number): string {
     return Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0');
-  }
-  // Multiply brightness (factor 1 = original, 0 = black) — used for fog dimming.
-  function shade(hex: string, factor: number): string {
-    const [r, g, b] = rgb(hex);
-    return `#${toHex(r * factor)}${toHex(g * factor)}${toHex(b * factor)}`;
   }
   // Linear blend a→b by t in [0,1].
   function mix(a: string, b: string, t: number): string {
@@ -1109,6 +1259,15 @@ export function makeView(cfg: ViewConfig): View {
       const style = (team && TEAM[team]) ? TEAM[team] : NEUTRAL_TEAM;
       const kind = e.components.faction?.faction ?? '';
 
+      // Hunter events (Riftmaw = the planet's punishing hunter, always neutral):
+      // a live achromatic filter swaps the draw to grayscale + drops any colour
+      // glow, so an awakened hunter reads as a distinct alarm silhouette rather
+      // than another faction unit. The QA silhouette toggle takes priority when on.
+      const isHunter = kind === 'riftmaw';
+      const entityFilter = silhouetteActive() ? 'grayscale(1) saturate(0) brightness(0.6) contrast(1.35)'
+        : isHunter ? 'grayscale(1) brightness(0.92)' : 'none';
+      if (entityFilter !== 'none') context.filter = entityFilter;
+
       if (e.components.building) {
         // Baked lit body (S7-2) + live animated accents on top.
         sprites.drawBuildingBody(context, kind, teamKey, sx, sy, frame, camera.zoom);
@@ -1135,6 +1294,7 @@ export function makeView(cfg: ViewConfig): View {
           sprites.drawUnit(context, kind, teamKey, undefined, facingAngle(e, interp), sx, sy, frame, camera.zoom, unitAnim(e, pos, prevPos));
         }
       }
+      if (entityFilter !== 'none') context.filter = 'none';
       context.globalAlpha = 1; // reset the stealth ghosting (XP-3)
     }
   }
@@ -1202,6 +1362,7 @@ export function makeView(cfg: ViewConfig): View {
 
     drawTerrain();
     drawSlabs();
+    drawCorruption(); // bounded Avarice crack-network alarm, ground layer
     drawDecals();
     drawProjectiles();
     drawEntities();
@@ -1292,6 +1453,7 @@ export function makeView(cfg: ViewConfig): View {
     },
     spriteBank: sprites,
     hudButtonAt: (sx, sy) => hud.buttonAt(sx, sy),
+    hudAnyButtonAt: (sx, sy) => hud.anyButtonAt(sx, sy),
     hudDeniedAt: (sx, sy) => hud.deniedAt(sx, sy),
     hudSetTab: (tab) => hud.setTab(tab),
     hudButtonRect: (action) => hud.rectOf(action),

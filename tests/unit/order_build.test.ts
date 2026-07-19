@@ -101,6 +101,11 @@ describe('order + build commands', () => {
       economy: { credits: 700, refineryStorage: 700, maxStorage: 2000 },
       health: { hp: 1500, maxHp: 1500 }, armor: { armorClass: 'BUILDING' },
     });
+    // RA build flow (v0.55): the sidebar job serves the build time; tests
+    // fast-forward it, then place the READY structure.
+    queue.push({ type: 'build-structure', structureId: 'barracks' });
+    runTick(state, systems);
+    { const j = state.structureBuild.get('player'); if (j) j.ticksLeft = 0; }
     queue.push({ type: 'place-structure', structureId: 'barracks', tile: { tx: 8, ty: 6 } });
     runTick(state, systems);
     const barracks = state.store.all().find(e =>
@@ -124,6 +129,11 @@ describe('order + build commands', () => {
       economy: { credits: 100, refineryStorage: 100, maxStorage: 2000 }, // < 300
       health: { hp: 1500, maxHp: 1500 }, armor: { armorClass: 'BUILDING' },
     });
+    // RA build flow (v0.55): the sidebar job serves the build time; tests
+    // fast-forward it, then place the READY structure.
+    queue.push({ type: 'build-structure', structureId: 'barracks' });
+    runTick(state, systems);
+    { const j = state.structureBuild.get('player'); if (j) j.ticksLeft = 0; }
     queue.push({ type: 'place-structure', structureId: 'barracks', tile: { tx: 8, ty: 6 } });
     runTick(state, systems);
     const barracks = state.store.all().find(e => e.components.faction?.faction === 'barracks');

@@ -82,8 +82,9 @@ test.describe('S2 liveness gate', () => {
     expect(hudPixels1).toBeGreaterThan(0.05);
 
     // Issue a move order by right-clicking a destination
-    // Click about 200px to the right of the harvester
-    const destX = pos1.x + 200;
+    // Click right of the harvester but ON THE FIELD — since v0.55 the sidebar
+    // swallows right-clicks (RA: sidebar right-click = cancel, never a field order).
+    const destX = Math.min(pos1.x + 200, 590);
     const destY = pos1.y;
     await page.mouse.click(canvasBox.x + destX, canvasBox.y + destY, { button: 'right' });
     await page.waitForTimeout(100); // Allow command to process

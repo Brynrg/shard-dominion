@@ -129,6 +129,11 @@ describe('TP-1 — structure parity across creation paths', () => {
     state.store.create({ position: tileToWorldCenter({ tx: 9, ty: 8 }), ...structureComponents('refinery', 'player', structures, { credits: 5000, refineryMaxStorage: 5000 }) });
     const queue = makeCommandQueue();
     const sys = orderSystems([makeCommandSystem(queue, structures)]);
+    // RA build flow (v0.55): the sidebar job serves the build time; tests
+    // fast-forward it, then place the READY structure.
+    queue.push({ type: 'build-structure', structureId: 'aa_turret' });
+    runTick(state, sys);
+    { const j = state.structureBuild.get('player'); if (j) j.ticksLeft = 0; }
     queue.push({ type: 'place-structure', structureId: 'aa_turret', tile: { tx: 11, ty: 9 } });
     runTick(state, sys);
     const aa = state.store.all().find(e => e.components.faction?.faction === 'aa_turret');

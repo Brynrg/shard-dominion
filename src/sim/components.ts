@@ -49,6 +49,9 @@ export interface CombatComponent {
 export interface ExperienceComponent { kills: number; rank: number } // veterancy (dormant by default)
 export interface RenderableComponent { spriteId: string }
 export interface BuildingComponent {
+  /** RA build flow (v0.55): site placed from a READY sidebar job — unfolds in ~3s
+   *  instead of serving the full build time on the field. */
+  unfoldFast?: boolean;
   onSlab: boolean;
   buildProgress: number;
   powered: boolean;

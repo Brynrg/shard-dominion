@@ -42,10 +42,28 @@ export function makeConstructionSystem(
     name: 'construction' as const,
     output: { buildQueue: [], readyStructures: [] },
     run(state: SimState): void {
+      // ── RA build flow (v0.55): tick the per-team SIDEBAR structure jobs. Low
+      // power halves construction speed (the RA manual's low-power penalty).
+      for (const team of ['player', 'enemy']) {
+        const job = state.structureBuild.get(team);
+        if (!job || job.ticksLeft <= 0) continue;
+        let supply = 0, demand = 0;
+        for (const e of state.store.all()) {
+          if (e.components.faction?.team !== team) continue;
+          const pw = e.components.power;
+          if (pw) { supply += pw.powerSupply; demand += pw.powerDemand; }
+        }
+        // Deterministic half-rate: skip every other tick while underpowered.
+        if (supply < demand && state.tick % 2 === 0) continue;
+        job.ticksLeft = Math.max(0, job.ticksLeft - 1);
+      }
+
       // ── TP-3: construction SITES build up in real time. Placement spawns a
       // building at buildProgress 0 / 20% hp; this pass advances progress per the
       // def's buildTimeSeconds and grows hp toward max. At 100 it's operational
       // (production/power/turret systems gate on isOperational).
+      // v0.55: a site placed from a READY sidebar job served its build time in the
+      // sidebar already — on the field it only UNFOLDS (~3s, RA-style).
       for (const site of state.store.all()) {
         const b = site.components.building;
         const h = site.components.health;
@@ -53,7 +71,7 @@ export function makeConstructionSystem(
         if ((h.hp ?? 0) <= 0) continue;
         const kind = site.components.faction?.faction ?? '';
         const def = structureMap.get(kind);
-        const seconds = def?.buildTimeSeconds ?? 10;
+        const seconds = b.unfoldFast ? 3 : (def?.buildTimeSeconds ?? 10);
         const step = 100 / (seconds * 20);
         b.buildProgress = Math.min(100, b.buildProgress + step);
         // hp climbs from the 20% scaffold toward max alongside progress.

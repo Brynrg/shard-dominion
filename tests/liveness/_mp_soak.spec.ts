@@ -57,8 +57,12 @@ test.describe('mp soak', () => {
       const box = (await p.locator('#game-canvas').boundingBox())!;
       const cy = await cyPos(p);
       if (!cy) return;
+      // RA flow (v0.55): start the sidebar job, wait READY, then try tiles.
+      await p.keyboard.press('b');
+      const jobReady = () => p.evaluate(() => (window as any).__debugStructureJob?.()?.ready ?? false);
+      for (let i = 0; i < 60 && !(await jobReady()); i++) await p.waitForTimeout(500);
       for (const [dx, dy] of [[80, -60], [-60, 50], [-90, -50], [60, 70]] as [number, number][]) {
-        await p.keyboard.press('b');
+        await p.keyboard.press('b'); // READY → arm placement
         await p.mouse.click(box.x + Math.max(40, cy.x + dx), box.y + Math.min(560, cy.y + dy));
         await p.waitForTimeout(400);
         const bc = await p.evaluate(() => (window as any).__debugBuildingCount?.() ?? null);

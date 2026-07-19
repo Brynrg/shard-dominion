@@ -19,6 +19,11 @@ export interface SimConfig {
  *  the single in-progress research and its remaining ticks. Deterministic. */
 export interface RefinementLedger { done: string[]; researching: string | null; ticksLeft: number }
 
+/** RA-style sidebar structure production (v0.55): ONE structure per team builds
+ *  in the sidebar; at ticksLeft 0 it is READY and waits to be placed. Paid
+ *  upfront; cancel refunds in full. */
+export interface StructureJob { structureId: string; ticksLeft: number; totalTicks: number }
+
 export interface SimState {
   /** Current tick (mutable; advanced by runTick). */
   tick: Tick;
@@ -32,6 +37,8 @@ export interface SimState {
   readonly shardDensity: Map<string, number>;
   /** Per-team researched refinements (economy depth). Keyed by team. */
   readonly refinements: Map<string, RefinementLedger>;
+  /** RA build flow (v0.55): the per-team sidebar structure job. Keyed by team. */
+  readonly structureBuild: Map<string, StructureJob>;
 }
 
 export function makeSimState(cfg: SimConfig): SimState {
@@ -45,6 +52,7 @@ export function makeSimState(cfg: SimConfig): SimState {
     prevPositions: new Map<number, WorldPos>(),
     shardDensity: new Map<string, number>(),
     refinements: new Map<string, RefinementLedger>(),
+    structureBuild: new Map<string, StructureJob>(),
   };
 }
 
@@ -106,6 +114,11 @@ export function stateHash(state: SimState): number {
     if (pj) ints.push(pj.target.wx, pj.target.wy, pj.speed);
     const pw = e.components.power;
     if (pw) ints.push(pw.powerSupply, pw.powerDemand);
+  }
+  // RA build flow (v0.55): the sidebar structure jobs are authoritative state.
+  for (const team of ['player', 'enemy']) {
+    const job = state.structureBuild.get(team);
+    ints.push(job ? strCode(job.structureId) : 0, job?.ticksLeft ?? -1, job?.totalTicks ?? -1);
   }
   // Shard density is gameplay-critical state (harvesting depletes it; regrowth/blooms
   // will write it) → fold it in, walked in sorted-key order so Map iteration order can't

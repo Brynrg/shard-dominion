@@ -67,6 +67,11 @@ describe('XP-1 — HQ tech tiers', () => {
     const queue = makeCommandQueue();
     const systems = orderSystems([makeCommandSystem(queue, structures), makeConstructionSystem(structures, queue)]);
     const count = () => state.store.all().filter(e => e.components.faction?.faction === 'war_factory').length;
+    // RA build flow (v0.55): the sidebar job serves the build time; tests
+    // fast-forward it, then place the READY structure.
+    queue.push({ type: 'build-structure', structureId: 'war_factory' });
+    runTick(state, systems);
+    { const j = state.structureBuild.get('player'); if (j) j.ticksLeft = 0; }
     queue.push({ type: 'place-structure', structureId: 'war_factory', tile: { tx: 14, ty: 10 } });
     runTick(state, systems);
     expect(count()).toBe(0); // T1 → rejected, nothing spawned
@@ -75,6 +80,11 @@ describe('XP-1 — HQ tech tiers', () => {
     // Raise the tier directly, then place again.
     const yard = state.store.all().find(e => e.components.tech)!;
     yard.components.tech = { tier: 2, upgradingTo: null, ticksLeft: 0 };
+    // RA build flow (v0.55): the sidebar job serves the build time; tests
+    // fast-forward it, then place the READY structure.
+    queue.push({ type: 'build-structure', structureId: 'war_factory' });
+    runTick(state, systems);
+    { const j = state.structureBuild.get('player'); if (j) j.ticksLeft = 0; }
     queue.push({ type: 'place-structure', structureId: 'war_factory', tile: { tx: 14, ty: 10 } });
     runTick(state, systems);
     expect(count()).toBe(1);

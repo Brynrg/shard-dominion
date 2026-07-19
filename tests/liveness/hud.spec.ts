@@ -30,7 +30,15 @@ test.describe('HUD build-button gate', () => {
 
     const credits0 = await page.evaluate(() => (window as { __debugEconomy?: () => { credits: number } }).__debugEconomy?.().credits ?? 0);
 
-    // Click the Barracks button on the STRUCT tab (NOT the 'b' key).
+    // RA flow (v0.55): the button click STARTS the sidebar job; when READY the
+    // same button arms placement.
+    const jobReady = () => page.evaluate(() =>
+      (window as { __debugStructureJob?: () => { ready: boolean } | null }).__debugStructureJob?.()?.ready ?? false);
+    await clickAction('build:barracks');
+    await page.waitForTimeout(400);
+    const creditsAtStart = await page.evaluate(() => (window as { __debugEconomy?: () => { credits: number } }).__debugEconomy?.().credits ?? 0);
+    expect(creditsAtStart).toBeLessThan(credits0); // charged upfront (RA)
+    await expect.poll(jobReady, { timeout: 30000, intervals: [500] }).toBe(true);
     await clickAction('build:barracks');
     await page.waitForTimeout(80);
 
@@ -45,8 +53,7 @@ test.describe('HUD build-button gate', () => {
 
     const counts = await page.evaluate(() => (window as { __debugBuildingCount?: () => Counts }).__debugBuildingCount?.() ?? zero);
     expect(counts.barracks).toBe(1);
-    const credits1 = await page.evaluate(() => (window as { __debugEconomy?: () => { credits: number } }).__debugEconomy?.().credits ?? 0);
-    expect(credits1).toBeLessThan(credits0);
+    // (charge already asserted at job start)
 
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'hud-build-click.png'), fullPage: true });
   });

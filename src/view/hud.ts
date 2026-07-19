@@ -75,11 +75,12 @@ const HQ_UPGRADES = [{ toTier: 2, cost: 1000, seconds: 30 }, { toTier: 3, cost: 
 export type BuildAction = string;
 
 /** Why a disabled build button refused the click (v0.52 EVA feedback). */
-export type DenyReason = 'funds' | 'tier' | 'prereq' | 'cells';
+export type DenyReason = 'funds' | 'tier' | 'prereq' | 'cells' | 'busy';
 
 export function makeHUD(cfg: HUDConfig): {
   draw(): void;
   buttonAt(sx: number, sy: number): BuildAction | null;
+  anyButtonAt(sx: number, sy: number): BuildAction | null;
   deniedAt(sx: number, sy: number): DenyReason | null;
   panelRect(): { x: number; y: number; w: number; h: number };
   setTab(tab: 'base' | 'def' | 'units' | 'tech'): void;
@@ -282,6 +283,12 @@ export function makeHUD(cfg: HUDConfig): {
       const r = rects.find(r => r.action === action);
       return r ? { x: r.x, y: r.y, w: r.w, h: r.h } : null;
     },
+    anyButtonAt(sx: number, sy: number): BuildAction | null {
+      // Hit-test IGNORING enabled state (v0.55: right-click cancel must land on
+      // the disabled in-progress button too).
+      for (const r of rects) if (sx >= r.x && sx <= r.x + r.w && sy >= r.y && sy <= r.y + r.h) return r.action;
+      return null;
+    },
     deniedAt(sx: number, sy: number): DenyReason | null {
       // A click on a DISABLED build button (v0.52 EVA feedback): report WHY it
       // was refused so the announcer can say the right line.
@@ -471,13 +478,30 @@ export function makeHUD(cfg: HUDConfig): {
         const powerWarn = itemDemand > 0 && power.supply < power.demand + itemDemand;
         const tierOk = (item.tier ?? 1) <= tech.tier;
         const cellsOk = (item.cellCost ?? 0) <= (refinery?.cells ?? 0);
-        const enabled = credits >= shownCost && prereqMet && tierOk && cellsOk;
+        // RA build flow (v0.55): the per-team SIDEBAR job drives structure buttons —
+        // this item building (clock fill), READY (click to place), or another
+        // structure busy (one at a time).
+        const job = item.kind === 'build' ? simState.structureBuild.get(viewerTeam) : undefined;
+        const jobMine = !!job && job.structureId === item.id;
+        const jobReady = jobMine && job.ticksLeft <= 0;
+        const busyOther = item.kind === 'build' && !!job && !jobMine;
+        const enabled = (jobReady) || (credits >= shownCost && prereqMet && tierOk && cellsOk && !busyOther && !jobMine);
         const hovered = !!hover && hover.sx >= px + 8 && hover.sx <= px + 8 + bw && hover.sy >= by && hover.sy <= by + 30;
-        const progress = producer?.current === item.id ? (producer?.progress ?? 0) : 0;
+        const progress = jobMine && !jobReady && job ? Math.round((1 - job.ticksLeft / job.totalTicks) * 100)
+          : producer?.current === item.id ? (producer?.progress ?? 0) : 0;
         const queued = producer ? producer.queue.filter(q => q === item.id).length : 0;
         const denyReason: DenyReason | undefined = enabled ? undefined
+          : (busyOther || (jobMine && !jobReady)) ? 'busy'
           : !tierOk ? 'tier' : !prereqMet ? 'prereq' : !cellsOk ? 'cells' : 'funds';
         drawBuildButton({ ...item, cost: shownCost }, px + 8, by, bw, 30, enabled, hovered, progress, queued, powerWarn, denyReason);
+        if (jobReady) {
+          // Pulsing READY across the icon (the RA signature).
+          const pulse = 0.65 + 0.35 * Math.sin(Date.now() / 180);
+          context.fillStyle = `rgba(255, 231, 122, ${pulse.toFixed(3)})`;
+          context.font = 'bold 13px monospace';
+          context.textBaseline = 'top';
+          context.fillText('READY — click to place', px + 20, by + 8);
+        }
         if (!tierOk) { // tier chip: teaches WHY it's grey (XP-1)
           context.fillStyle = '#c9a24a'; context.font = 'bold 10px monospace';
           context.fillText(`T${item.tier}`, px + 8 + bw - 70, by + 4);

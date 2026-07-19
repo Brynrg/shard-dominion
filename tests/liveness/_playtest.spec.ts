@@ -69,9 +69,14 @@ test.describe('playtest session', () => {
 
     // ── 3. Build a Barracks near base; time it; EVA construction-complete ──
     const cy = (await page.evaluate(() => (window as any).__debugConYardScreenPos?.() ?? null))!;
+    // RA flow (v0.55): B starts the sidebar job; B at READY arms placement.
+    const jobReady = () => page.evaluate(() => (window as any).__debugStructureJob?.()?.ready ?? false);
+    const tBuild = Date.now();
+    await page.keyboard.press('b');
+    await page.waitForTimeout(200);
+    for (let i = 0; i < 60 && !(await jobReady()); i++) await page.waitForTimeout(500);
     await page.keyboard.press('b');
     await page.mouse.click(box.x + cy.x - 60, box.y + cy.y + 50);
-    const tBuild = Date.now();
     await page.waitForTimeout(300);
     log(`barracks placed: buildings=${JSON.stringify(await bcount())} eco=${JSON.stringify(await eco())}`);
     // wait for construction complete (EVA line or building operational) max 60s

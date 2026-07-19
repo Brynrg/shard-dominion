@@ -1,6 +1,6 @@
 // Shape library: SHAPES[assetId](team) -> full <svg> string. Palette-driven, so
 // enemy/emberhand/shardborn recolors come for free. Top-down, painted Westwood look.
-import { pal, shade, block, seams, vent, light, topGrad, svg, tracks, wheels, turret, barrel, soldier, rotorDisc } from './kit.mjs';
+import { pal, shade, block, seams, vent, light, topGrad, svg, tracks, wheels, turret, barrel, soldier, rotorDisc, langShape, hashStr } from './kit.mjs';
 
 const F = 512; // frame size
 const S = (p, def, body) => svg(F, F, def, body);
@@ -273,7 +273,7 @@ function assaultTank(team) {
   const p = pal(team); const g = topGrad(p);
   const body = `
     ${tracks(150, 316, 168, 46, 200, p)}
-    <polygon points="256,150 344,210 344,360 168,360 168,210" fill="url(#${g.id})" stroke="${shade(p.shadow, -0.4)}" stroke-width="3.5"/>
+    ${langShape([[256, 150], [344, 210], [344, 360], [168, 360], [168, 210]], p, g.id, hashStr('assault_tank'))}
     <polygon points="256,150 300,196 212,196" fill="${shade(p.hi, 0)}" opacity="0.3"/>
     ${vent(198, 322, 116, 30, p)}
     ${turret(256, 270, 52, p)}
@@ -287,7 +287,7 @@ function scoutVehicle(team) {
   const body = `
     ${wheels(178, 334, 210, 350, 30, 2, p)}
     <!-- open frame body -->
-    <rect x="196" y="196" width="120" height="170" rx="20" fill="url(#${g.id})" stroke="${shade(p.shadow, -0.4)}" stroke-width="3.5"/>
+    ${langShape([[196, 196], [316, 196], [316, 366], [196, 366]], p, g.id, hashStr('scout_vehicle'))}
     <rect x="216" y="220" width="80" height="120" rx="12" fill="${shade(p.shadow, -0.2)}"/>
     <!-- roll cage bars -->
     <g stroke="${shade(p.shadow, -0.35)}" stroke-width="6" fill="none"><rect x="216" y="220" width="80" height="120" rx="12"/><line x1="256" y1="220" x2="256" y2="340"/></g>
@@ -302,7 +302,7 @@ function longbow(team) {
   const p = pal(team); const g = topGrad(p);
   const body = `
     ${tracks(158, 316, 210, 40, 158, p)}
-    <rect x="196" y="220" width="120" height="150" rx="16" fill="url(#${g.id})" stroke="${shade(p.shadow, -0.4)}" stroke-width="3.5"/>
+    ${langShape([[196, 220], [316, 220], [316, 370], [196, 370]], p, g.id, hashStr('longbow'))}
     <!-- splayed stabiliser feet -->
     <g fill="${shade(p.shadow, -0.1)}" stroke="${shade(p.shadow, -0.4)}" stroke-width="2.5"><polygon points="196,232 150,206 168,244"/><polygon points="316,232 362,206 344,244"/><polygon points="196,358 150,384 168,346"/><polygon points="316,358 362,384 344,346"/></g>
     <!-- ammo rack -->
@@ -320,7 +320,7 @@ function skimmerApc(team) {
   const body = `
     <!-- glowing hover skirt -->
     <rect x="164" y="180" width="184" height="210" rx="30" fill="${p.accent}" opacity="0.28" filter="url(#glow)"/>
-    <rect x="176" y="188" width="160" height="196" rx="22" fill="url(#${g.id})" stroke="${shade(p.shadow, -0.4)}" stroke-width="3.5"/>
+    ${langShape([[176, 188], [336, 188], [336, 384], [176, 384]], p, g.id, hashStr('skimmer_apc'))}
     <rect x="176" y="188" width="60" height="196" rx="22" fill="${shade(p.hi, 0)}" opacity="0.18"/>
     <!-- side viewports -->
     <g fill="${shade(p.accent, 0.1)}">${Array.from({ length: 3 }, (_, i) => `<rect x="188" y="${226 + i * 46}" width="16" height="24" rx="3"/><rect x="308" y="${226 + i * 46}" width="16" height="24" rx="3"/>`).join('')}</g>
@@ -335,7 +335,7 @@ function gunship(team) {
   const p = pal(team); const g = topGrad(p);
   const body = `
     <!-- narrow fuselage -->
-    <polygon points="256,150 288,230 280,360 232,360 224,230" fill="url(#${g.id})" stroke="${shade(p.shadow, -0.4)}" stroke-width="3.5"/>
+    ${langShape([[256, 150], [288, 230], [280, 360], [232, 360], [224, 230]], p, g.id, hashStr('gunship'))}
     <ellipse cx="256" cy="210" rx="22" ry="30" fill="${shade(p.accent, 0.1)}"/>
     <!-- stub wings + missile pods -->
     <rect x="150" y="250" width="80" height="26" rx="8" fill="${shade(p.main, 0.02)}" stroke="${shade(p.shadow, -0.4)}" stroke-width="2.5"/>
@@ -354,7 +354,7 @@ function harvester(team) {
   const body = `
     ${tracks(150, 322, 200, 40, 180, p)}
     <!-- big ore hopper body -->
-    <polygon points="256,158 356,214 356,372 156,372 156,214" fill="url(#${g.id})" stroke="${shade(p.shadow, -0.4)}" stroke-width="3.5"/>
+    ${langShape([[256, 158], [356, 214], [356, 372], [156, 372], [156, 214]], p, g.id, hashStr('harvester'))}
     <rect x="196" y="230" width="120" height="120" rx="10" fill="${shade(ore, -0.1)}" stroke="${shade(p.shadow, -0.35)}" stroke-width="2.5"/>
     <g fill="${shade(ore, 0.1)}"><circle cx="224" cy="262" r="12"/><circle cx="256" cy="250" r="14"/><circle cx="288" cy="266" r="11"/><circle cx="240" cy="292" r="10"/><circle cx="276" cy="300" r="12"/></g>
     <!-- front intake scoop -->
@@ -436,7 +436,7 @@ function vehicle(team) {
   const p = pal(team); const g = topGrad(p);
   const body = `
     ${tracks(168, 314, 200, 40, 150, p)}
-    <rect x="196" y="200" width="120" height="150" rx="14" fill="url(#${g.id})" stroke="${shade(p.shadow, -0.4)}" stroke-width="3.5"/>
+    ${langShape([[196, 200], [316, 200], [316, 350], [196, 350]], p, g.id, hashStr('vehicle'))}
     <polygon points="256,200 296,232 216,232" fill="${shade(p.hi, 0)}" opacity="0.28"/>
     ${turret(256, 268, 44, p)}
     ${barrel(256, 252, 96, 13, p, p.accent)}
