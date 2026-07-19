@@ -67,6 +67,7 @@ import m14Data from '../data/missions/m14_first_vein.json' with { type: 'json' }
 import m15Data from '../data/missions/m15_aftershock.json' with { type: 'json' };
 import m16Data from '../data/missions/m16_ash_court.json' with { type: 'json' };
 import m17Data from '../data/missions/m17_aethers_verdict.json' with { type: 'json' };
+import challengesData from '../data/challenges.json' with { type: 'json' };
 
 // Map configuration
 const MAP_WIDTH = 32;
@@ -134,6 +135,41 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   const params = new URLSearchParams(location.search);
   const mp = mpSession;
   const viewerTeam: 'player' | 'enemy' = (mp?.seat ?? 0) % 2 === 1 ? 'enemy' : 'player'; // TP-4: seats pair by parity (2v2)
+
+  // Challenge mode (single-player progression): apply challenge rules to the mission
+  let activeChallenge: Challenge | null = null;
+  const challengeId = params.get('challenge');
+  if (challengeId && !mp) {
+    const challenges = loadChallenges(challengesData);
+    activeChallenge = challenges.find(c => c.id === challengeId) ?? null;
+    if (activeChallenge) {
+      // Apply challenge rules to the mission
+      const rules = activeChallenge.rules;
+      if (rules.type === 'survive') {
+        // Replace mission objectives with survival objective
+        mission.objectives = [{
+          type: 'survive',
+          id: 'survive_challenge',
+          seconds: rules.durationSeconds,
+          primary: true,
+          text: `Survive for ${rules.durationSeconds / 60} minutes`,
+        }];
+        mission.debrief = {
+          win: [`Challenge complete: ${activeChallenge.name}`],
+          lose: ['Challenge failed.'],
+        };
+      }
+      // Apply mission modifier rules (credits, units, etc.)
+      if (rules.type === 'destroy') {
+        if (rules.playerStartCredits !== undefined) {
+          mission.player.credits = rules.playerStartCredits;
+        }
+        if (rules.enemyStartCredits !== undefined) {
+          mission.enemies[0]!.credits = rules.enemyStartCredits;
+        }
+      }
+    }
+  }
 
   // ── Factions (FG-6): mission defaults, URL ?faction= overrides the player. ──
   const playerFaction = (params.get('faction') as FactionId | null) ?? mission.player.factionId ?? 'concord';
@@ -544,6 +580,11 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     closePauseMenu?.(); closePauseMenu = null; paused = false;
     const won = r.winner === 'player';
     audio.matchEnd(won);
+    // Challenge completion tracking
+    if (won && activeChallenge) {
+      completeChallenge(activeChallenge.id, activeChallenge.reward);
+      evaSay(`Challenge complete: ${activeChallenge.name}. Cosmetic unlocked: ${activeChallenge.reward.label}.`);
+    }
     if (won && mission.id !== 'skirmish') {
       markCompleted(mission.id);
       // XP-3 persistence: the hero's kills + surviving veterans carry forward.
@@ -879,6 +920,7 @@ const SKIRMISH_MAPS = [
 function openTitle(): void {
   showTitleMenu(id => {
     if (id === '__campaign__') { openMissionSelect(); return; }
+    if (id === '__challenges__') { openChallengeSelect(); return; }
     if (id === '__multiplayer__') {
       showMultiplayerSetup({
         onStart: (relay, room, mode) => {
@@ -890,12 +932,31 @@ function openTitle(): void {
       });
       return;
     }
-    showSkirmishSetup({
-      maps: SKIRMISH_MAPS,
-      onStart: (mapId, faction, difficulty) => { location.search = `?mission=${mapId}&faction=${faction}&difficulty=${difficulty}`; },
-      onBack: () => openTitle(),
-    });
+    // Fallback to skirmish setup if missionId is a string
+    if (typeof id === 'string') {
+      showSkirmishSetup({
+        maps: SKIRMISH_MAPS,
+        onStart: (mapId, faction, difficulty) => { location.search = `?mission=${mapId}&faction=${faction}&difficulty=${difficulty}`; },
+        onBack: () => openTitle(),
+      });
+    }
   }, '__campaign__');
+}
+
+function openChallengeSelect(): void {
+  const challenges = loadChallenges(challengesData);
+  const progress = loadChallengeProgress();
+  const entries = challenges.map(c => ({
+    id: c.id,
+    name: c.name,
+    description: c.description,
+    category: c.category,
+    difficulty: c.difficulty,
+    completed: progress.completed.includes(c.id),
+  }));
+  showChallengeSelect(entries, id => {
+    location.search = `?mission=skirmish&challenge=${id}`;
+  }, () => openTitle());
 }
 
 function startMultiplayer(params: URLSearchParams): void {

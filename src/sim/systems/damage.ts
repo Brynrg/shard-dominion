@@ -94,7 +94,11 @@ export function makeDamageSystem(weapons: WeaponsFile, refinements: readonly Ref
           const atkBonus = 1 + refinementValue(team ? state.refinements.get(team)?.done : undefined, refinements, 'damage');
           const defTeam = target.components.faction?.team;
           const defCut = 1 - refinementValue(defTeam ? state.refinements.get(defTeam)?.done : undefined, refinements, 'armor');
-          let dmg = weapon.damage * mult * (1 + 0.15 * rank) * (1 + auraBonus) * atkBonus * defCut;
+          // Phase 2: veterancy armor bonus — experienced defenders reduce incoming
+          // damage by 5% per rank, stacking with refinement armor.
+          const defRank = veterancyRank(target.components.experience?.kills ?? 0);
+          const defVetBonus = 1 - 0.05 * defRank;
+          let dmg = weapon.damage * mult * (1 + 0.15 * rank) * (1 + auraBonus) * atkBonus * defCut * defVetBonus;
           // Concord shields (XP-5): the absorb pool eats damage first, then hp.
           const sh = target.components.shield;
           if (sh && sh.hp > 0) {
