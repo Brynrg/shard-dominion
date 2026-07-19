@@ -169,7 +169,7 @@
       "type": "BULLET"
     },
     "repair_beam": {
-      "damage": 0,
+      "damage": 1,
       "cooldown": 2.0,
       "range": 4.0,
       "type": "SONIC"

@@ -128,6 +128,50 @@ export function showSkirmishSetup(o: SkirmishSetup): void {
   el.appendChild(panel);
 }
 
+export interface ChallengeEntry { id: string; name: string; description: string; category: string; difficulty: string; completed: boolean }
+
+/** Challenge select screen (single-player progression): pick a challenge and run it. */
+export function showChallengeSelect(challenges: readonly ChallengeEntry[], onPick: (id: string) => void, onBack: () => void): void {
+  const el = overlay();
+  const panel = document.createElement('div');
+  panel.style.textAlign = 'center';
+  panel.innerHTML =
+    '<div style="font-size:34px;font-weight:bold;color:#ffd34d;letter-spacing:2px;">CHALLENGES</div>' +
+    '<div style="color:#8fb7c9;margin:4px 0 20px;font-size:13px;">Replayable skirmish variants</div>';
+
+  // Group by category
+  const categories = ['defense', 'speed', 'economy', 'terrain', 'management'];
+  for (const cat of categories) {
+    const catChallenges = challenges.filter(c => c.category === cat);
+    if (catChallenges.length === 0) continue;
+
+    const catDiv = document.createElement('div');
+    catDiv.style.cssText = 'margin:16px auto;max-width:400px;';
+    const catLabel = document.createElement('div');
+    catLabel.textContent = cat.toUpperCase();
+    catLabel.style.cssText = 'color:#9fb4cc;font-size:11px;margin-bottom:8px;font-weight:bold;';
+    catDiv.appendChild(catLabel);
+
+    for (const c of catChallenges) {
+      const b = button(
+        `${c.completed ? '✔ ' : ''}${c.name} [${c.difficulty.toUpperCase().slice(0, 1)}]`,
+        !c.completed
+      );
+      b.style.cssText += ';font-size:13px;padding:10px;width:360px;text-align:left;';
+      b.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><span>${escapeHtml(b.textContent || '')}</span><span style="font-size:11px;color:#9fb4cc;">${escapeHtml(c.description.slice(0, 40))}…</span></div>`;
+      if (!c.completed) b.onclick = () => onPick(c.id);
+      else b.disabled = true;
+      catDiv.appendChild(b);
+    }
+    panel.appendChild(catDiv);
+  }
+
+  const back = button('BACK');
+  back.onclick = () => { el.remove(); onBack(); };
+  panel.appendChild(back);
+  el.appendChild(panel);
+}
+
 function overlay(): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'sd-overlay';
@@ -164,7 +208,7 @@ function escapeHtml(s: string): string {
 }
 
 /** The title screen: Campaign vs Skirmish. `onSelect(missionId)` starts that match. */
-export function showTitleMenu(onSelect: (missionId: string) => void, campaignMissionId = 'm1_first_light'): void {
+export function showTitleMenu(onSelect: (missionId: string | { _challenge: string }) => void, campaignMissionId = 'm1_first_light'): void {
   const el = overlay();
   backdrop(el, 'title_backdrop');
   const panel = document.createElement('div');
@@ -174,13 +218,16 @@ export function showTitleMenu(onSelect: (missionId: string) => void, campaignMis
     '<div style="color:#8fb7c9;margin:6px 0 28px;">Aether Prime — the war for Shard</div>';
   const campaign = button('▶  CAMPAIGN', true);
   const skirmish = button('SKIRMISH');
+  const challenges = button('⭐  CHALLENGES');
   const multi = button('MULTIPLAYER');
   // Remove THIS overlay before handing off (mission select stacks its own).
   campaign.onclick = () => { el.remove(); onSelect(campaignMissionId); };
   skirmish.onclick = () => { el.remove(); onSelect('skirmish'); };
+  challenges.onclick = () => { el.remove(); onSelect('__challenges__'); };
   multi.onclick = () => { el.remove(); onSelect('__multiplayer__'); };
   panel.appendChild(campaign);
   panel.appendChild(skirmish);
+  panel.appendChild(challenges);
   panel.appendChild(multi);
   // REPLAYS (XP-7): the save history — pick one, it becomes the quick save + boots.
   try {

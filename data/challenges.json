@@ -1,0 +1,124 @@
+{
+  "challenges": [
+    {
+      "id": "defend_10min",
+      "name": "Defend The Line",
+      "category": "defense",
+      "description": "Survive 10 minutes of endless attacks. No base destruction.",
+      "difficulty": "normal",
+      "map": "skirmish",
+      "rules": {
+        "type": "survive",
+        "durationSeconds": 600,
+        "playerCanAttack": false,
+        "playerCanBuild": true
+      },
+      "reward": {
+        "cosmetic": "chevron_gold",
+        "label": "Gold Chevron"
+      }
+    },
+    {
+      "id": "victory_5min",
+      "name": "Blitzkrieg",
+      "category": "speed",
+      "description": "Destroy the enemy base in 5 minutes or less.",
+      "difficulty": "hard",
+      "map": "skirmish",
+      "rules": {
+        "type": "destroy",
+        "maxDurationSeconds": 300,
+        "playerStartCredits": 2000,
+        "enemyStartCredits": 1000
+      },
+      "reward": {
+        "cosmetic": "emblem_lightning",
+        "label": "Lightning Emblem"
+      }
+    },
+    {
+      "id": "no_harvester_loss",
+      "name": "The Harvest",
+      "category": "economy",
+      "description": "Win without losing a single Harvester.",
+      "difficulty": "hard",
+      "map": "skirmish",
+      "rules": {
+        "type": "destroyWithConstraint",
+        "constraint": "noHarvesterLoss"
+      },
+      "reward": {
+        "cosmetic": "decal_shard",
+        "label": "Shard Decal"
+      }
+    },
+    {
+      "id": "eco_limited",
+      "name": "Lean Economy",
+      "category": "economy",
+      "description": "Win with only 500 starting credits.",
+      "difficulty": "hard",
+      "map": "skirmish",
+      "rules": {
+        "type": "destroy",
+        "playerStartCredits": 500,
+        "playerStartUnits": [
+          { "type": "harvester", "count": 2 }
+        ]
+      },
+      "reward": {
+        "cosmetic": "banner_austere",
+        "label": "Austere Banner"
+      }
+    },
+    {
+      "id": "badlands_hold",
+      "name": "Badlands Stand",
+      "category": "terrain",
+      "description": "Survive 8 minutes on Badlands with rougher terrain.",
+      "difficulty": "normal",
+      "map": "skirmish_badlands",
+      "rules": {
+        "type": "survive",
+        "durationSeconds": 480
+      },
+      "reward": {
+        "cosmetic": "palette_rust",
+        "label": "Rust Palette"
+      }
+    },
+    {
+      "id": "three_base_chain",
+      "name": "Expansion",
+      "category": "economy",
+      "description": "Build 3 Refineries and win.",
+      "difficulty": "normal",
+      "map": "skirmish",
+      "rules": {
+        "type": "destroy",
+        "constraint": "buildRefineries",
+        "constraintParam": 3
+      },
+      "reward": {
+        "cosmetic": "insignia_builder",
+        "label": "Builder's Insignia"
+      }
+    },
+    {
+      "id": "no_power_loss",
+      "name": "Grid Stable",
+      "category": "management",
+      "description": "Win without ever losing power.",
+      "difficulty": "hard",
+      "map": "skirmish",
+      "rules": {
+        "type": "destroy",
+        "constraint": "noPowerLoss"
+      },
+      "reward": {
+        "cosmetic": "aura_stable",
+        "label": "Stable Aura"
+      }
+    }
+  ]
+}

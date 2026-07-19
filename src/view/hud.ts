@@ -5,6 +5,7 @@ import type { Camera } from '../sim/coords.js';
 import type { ConstructionOutput } from '../sim/systems/construction.js';
 import type { Refinement } from '../loaders/refinements.js';
 import { SIM_TICK_RATE } from '../sim/loop.js';
+import { chamferedRectPath, shatterFacetRect, hashStr } from './facet.js';
 
 export interface HUDConfig {
   canvas: HTMLCanvasElement;
@@ -197,17 +198,47 @@ export function makeHUD(cfg: HUDConfig): {
     context.fillText(`${Math.floor(value)} / ${max}`, x + 5, y + 1);
   }
 
-  // Beveled panel frame (Westwood command-bar look: dark fill, light top edge, dark base).
+  // Baked HUD panel fill (Obsidian Bloom): a fine-scale shatterFacet field baked to
+  // an offscreen canvas at UI init / whenever the panel size actually changes —
+  // NOT per-frame (RENDER-COST DISCIPLINE). draw() just blits + clips it every frame.
+  let panelTexture: HTMLCanvasElement | null = null;
+  let panelTextureKey = '';
+  function panelFillTexture(w: number, h: number): HTMLCanvasElement {
+    const key = `${Math.round(w)}x${Math.round(h)}`;
+    if (panelTexture && panelTextureKey === key) return panelTexture;
+    const cv = document.createElement('canvas');
+    cv.width = Math.max(1, Math.round(w)); cv.height = Math.max(1, Math.round(h));
+    const c = cv.getContext('2d') as CanvasRenderingContext2D;
+    c.fillStyle = '#0e1015'; c.fillRect(0, 0, cv.width, cv.height);
+    shatterFacetRect(c, 0, 0, cv.width, cv.height, {
+      seed: hashStr(`hud-panel|${key}`), facetScale: 18, baseColor: '#14161c', valueJitter: 0.10, jitter: 0.4,
+    });
+    panelTexture = cv; panelTextureKey = key;
+    return cv;
+  }
+
+  // Chamfered chrome frame (Obsidian Bloom HUD chrome: 45°-cut corners, no
+  // rounding, a baked facet fill, a #e8ecf2 chrome-bevel stroke) — replaces the
+  // old flat beveled rect panel.
   function drawPanel(x: number, y: number, w: number, h: number): void {
-    context.fillStyle = 'rgba(14,16,20,0.88)';
+    context.save();
+    chamferedRectPath(context, x, y, w, h, 12);
+    context.clip();
+    context.drawImage(panelFillTexture(w, h), x, y);
+    context.fillStyle = 'rgba(6,7,10,0.32)'; // depth wash so text stays legible over the facets
     context.fillRect(x, y, w, h);
-    context.strokeStyle = '#5a6472';
-    context.lineWidth = 1;
-    context.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
-    context.fillStyle = 'rgba(255,255,255,0.10)';   // top highlight
-    context.fillRect(x + 1, y + 1, w - 2, 1);
+    context.restore();
+    context.save();
+    chamferedRectPath(context, x, y, w, h, 12);
+    context.strokeStyle = '#e8ecf2';
+    context.lineWidth = 1.25;
+    context.globalAlpha = 0.55;
+    context.stroke();
+    context.restore();
+    context.fillStyle = 'rgba(255,255,255,0.08)';   // top highlight
+    context.fillRect(x + 12, y + 1, w - 24, 1);
     context.fillStyle = 'rgba(0,0,0,0.35)';          // bottom shadow
-    context.fillRect(x + 1, y + h - 2, w - 2, 1);
+    context.fillRect(x + 12, y + h - 2, w - 24, 1);
   }
 
   function hasBarracks(): boolean {
@@ -326,6 +357,24 @@ export function makeHUD(cfg: HUDConfig): {
       context.fillStyle = '#ffd34a';
       context.font = 'bold 20px monospace';
       context.fillText(`◈ ${credits}`, px + 10, py + 28);
+
+      // Sine-pulsed amber divider (Obsidian Bloom HUD chrome): a thin glowing rule
+      // under the resource readout, contextual amber — the ONE new pulse element,
+      // reusing the legacy #ffcf4a token untouched elsewhere in this file.
+      {
+        const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 900);
+        context.save();
+        context.strokeStyle = '#ffcf4a';
+        context.globalAlpha = 0.35 + pulse * 0.35;
+        context.shadowColor = '#ffcf4a';
+        context.shadowBlur = 3 + pulse * 3;
+        context.lineWidth = 1;
+        context.beginPath();
+        context.moveTo(px + 8, py + 42);
+        context.lineTo(px + pw - 8, py + 42);
+        context.stroke();
+        context.restore();
+      }
       // Cells (XP-2): the elite-systems charges.
       context.fillStyle = '#7dd3fc';
       context.font = 'bold 13px monospace';
@@ -379,6 +428,20 @@ export function makeHUD(cfg: HUDConfig): {
         rects.push({ action: `tab:${tab}`, x: tx0, y: tabY, w: tabW, h: tabH, enabled: true });
         context.fillStyle = active ? 'rgba(0,229,255,0.18)' : 'rgba(20,26,34,0.9)';
         context.fillRect(tx0, tabY, tabW, tabH);
+        if (active) {
+          // Sine-pulsed faction-glow divider under the active tab (contextual glow).
+          const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 700);
+          context.save();
+          context.strokeStyle = '#00e5ff';
+          context.shadowColor = '#00e5ff';
+          context.shadowBlur = 2 + pulse * 4;
+          context.lineWidth = 1.5;
+          context.beginPath();
+          context.moveTo(tx0 + 2, tabY + tabH - 1);
+          context.lineTo(tx0 + tabW - 2, tabY + tabH - 1);
+          context.stroke();
+          context.restore();
+        }
         context.strokeStyle = active ? '#00e5ff' : '#3a4a5a';
         context.strokeRect(tx0 + 0.5, tabY + 0.5, tabW - 1, tabH - 1);
         context.fillStyle = active ? '#00e5ff' : '#8fa3b8';

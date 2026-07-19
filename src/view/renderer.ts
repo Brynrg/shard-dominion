@@ -14,7 +14,7 @@ import type { Onboarding } from './onboarding.js';
 import type { EntityId } from '../sim/ids.js';
 import { makeSpriteBank, type SpriteBank, type UnitAnim } from './spritebank.js';
 import {
-  hashStr, shatterFacetRect, chamferedRectPath,
+  hashStr, shatterFacetRect, chamferedRectPath, hexFacetPath,
   jitteredLine, buildCrackNetwork, drawCrackNetwork, type CrackBranch,
 } from './facet.js';
 
@@ -244,13 +244,28 @@ export function makeView(cfg: ViewConfig): View {
     }
     return false;
   }
+  // Hex-faceted radar frame (Obsidian Bloom HUD chrome), replacing the plain rect
+  // backing — the CONTENT rect (x,y,w,h: terrain/fog/blips/viewport) is unchanged,
+  // this only re-skins the decorative outer backing so minimapRect() hit-testing
+  // and minimapJump() stay exactly as before.
+  function drawRadarFrame(x: number, y: number, w: number, h: number): void {
+    context.save();
+    hexFacetPath(context, x - 3, y - 16, w + 6, h + 19);
+    context.fillStyle = '#0a0d12';
+    context.fill();
+    context.strokeStyle = '#e8ecf2';
+    context.globalAlpha = 0.4;
+    context.lineWidth = 1;
+    context.stroke();
+    context.restore();
+  }
+
   function drawMinimap(): void {
     if (!mmTerrain) mmTerrain = bakeMinimapTerrain();
     const { x, y, w, h } = minimapRect();
     if (!viewerHasRadar()) {
       // No radar → static-dark panel (classic C&C: the map is a reward for tech).
-      context.fillStyle = '#0a0d12';
-      context.fillRect(x - 3, y - 16, w + 6, h + 19);
+      drawRadarFrame(x, y, w, h);
       context.fillStyle = '#8fb7c9'; context.font = '11px monospace'; context.textAlign = 'left';
       context.textBaseline = 'alphabetic';
       context.fillText('RADAR', x, y - 5);
@@ -265,8 +280,7 @@ export function makeView(cfg: ViewConfig): View {
     const fog = getFog?.();
 
     // Frame + backing.
-    context.fillStyle = '#0a0d12';
-    context.fillRect(x - 3, y - 16, w + 6, h + 19);
+    drawRadarFrame(x, y, w, h);
     context.fillStyle = '#8fb7c9'; context.font = '11px monospace'; context.textAlign = 'left';
     context.textBaseline = 'alphabetic';
     context.fillText('RADAR', x, y - 5);

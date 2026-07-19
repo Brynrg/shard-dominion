@@ -269,13 +269,6 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig, structure
         }
       }
 
-      // ── Squad-based coordination (Phase 2 enhancement) ──────────────────────
-      // Group units into squads by type/proximity, then coordinate targeting within
-      // each squad so focus-fire is coherent (all target same enemy). Veteran units
-      // lead; others adopt the leader's target.
-      const squads = groupBySquad(army);
-      coordinateSquadTargets(squads);
-
       // ── Act on the plan ─────────────────────────────────────────────────────
       const idleFresh = army.filter(u => !committed.has(u.id) && u.components.movement?.target == null && (u.components.combat?.targetId ?? null) === null);
 
@@ -347,6 +340,14 @@ export function makeAiSystem(units: readonly UnitDef[], cfg: AiConfig, structure
         }
         // Develop: accumulate; the production block above does the work.
       }
+
+      // ── Squad-based coordination (Phase 2 enhancement, post-assignment) ────────
+      // After movement/targeting orders are issued, coordinate squad targets so
+      // focus-fire is coherent (all units in a squad target same enemy). Veteran
+      // units lead; others adopt the leader's combat targetId. Runs AFTER plan
+      // execution so movement assignment is not corrupted by early target adoption.
+      const squads = groupBySquad(army);
+      coordinateSquadTargets(squads);
 
       lastArmyCount = army.length;
     },

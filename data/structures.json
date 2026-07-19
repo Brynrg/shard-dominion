@@ -554,7 +554,10 @@
       "cost": 850,
       "buildTimeSeconds": 22,
       "hp": 600,
-      "footprint": {"w": 1, "h": 1},
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
       "powerSupply": 0,
       "powerDemand": 20,
       "onSlabHpFraction": 1.0,
@@ -564,7 +567,16 @@
       "tier": 2,
       "graphics": {
         "sprite_id": "tech_lab",
-        "fallback_geometry": {"chassis": "BUILDING", "chassisMod": "NONE", "weaponGlyph": "NONE", "barrelClass": "NONE", "roleBadge": "SUPPORT", "rangeMarks": 0, "hazard": "NONE", "factionStripe": "player"}
+        "fallback_geometry": {
+          "chassis": "BUILDING",
+          "chassisMod": "NONE",
+          "weaponGlyph": "NONE",
+          "barrelClass": "NONE",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 0,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
       }
     },
     {
@@ -573,7 +585,10 @@
       "cost": 200,
       "buildTimeSeconds": 8,
       "hp": 500,
-      "footprint": {"w": 1, "h": 1},
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
       "powerSupply": 0,
       "powerDemand": 0,
       "onSlabHpFraction": 1.0,
@@ -585,7 +600,16 @@
       "teamPass": true,
       "graphics": {
         "sprite_id": "heavy_gate",
-        "fallback_geometry": {"chassis": "BUILDING", "chassisMod": "HEAVY_BLOCK", "weaponGlyph": "NONE", "barrelClass": "NONE", "roleBadge": "SUPPORT", "rangeMarks": 0, "hazard": "NONE", "factionStripe": "player"}
+        "fallback_geometry": {
+          "chassis": "BUILDING",
+          "chassisMod": "HEAVY_BLOCK",
+          "weaponGlyph": "NONE",
+          "barrelClass": "NONE",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 0,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
       }
     },
     {
@@ -594,7 +618,10 @@
       "cost": 600,
       "buildTimeSeconds": 20,
       "hp": 1000,
-      "footprint": {"w": 2, "h": 2},
+      "footprint": {
+        "w": 2,
+        "h": 2
+      },
       "powerSupply": 0,
       "powerDemand": 15,
       "onSlabHpFraction": 1.0,
@@ -604,7 +631,16 @@
       "tier": 2,
       "graphics": {
         "sprite_id": "barracks_elite",
-        "fallback_geometry": {"chassis": "BUILDING", "chassisMod": "CHAMFER", "weaponGlyph": "NONE", "barrelClass": "NONE", "roleBadge": "SUPPORT", "rangeMarks": 0, "hazard": "NONE", "factionStripe": "player"}
+        "fallback_geometry": {
+          "chassis": "BUILDING",
+          "chassisMod": "CHAMFER",
+          "weaponGlyph": "NONE",
+          "barrelClass": "NONE",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 0,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
       }
     },
     {
@@ -613,7 +649,10 @@
       "cost": 700,
       "buildTimeSeconds": 18,
       "hp": 700,
-      "footprint": {"w": 1, "h": 1},
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
       "powerSupply": 0,
       "powerDemand": 25,
       "onSlabHpFraction": 1.0,
@@ -621,10 +660,18 @@
       "providesBuildRadius": false,
       "isDeployable": false,
       "tier": 2,
-      "aura": {"boosts": "armor", "radiusTiles": 10, "armorBonus": 1},
       "graphics": {
         "sprite_id": "armor_center",
-        "fallback_geometry": {"chassis": "BUILDING", "chassisMod": "NONE", "weaponGlyph": "NONE", "barrelClass": "NONE", "roleBadge": "SUPPORT", "rangeMarks": 0, "hazard": "NONE", "factionStripe": "player"}
+        "fallback_geometry": {
+          "chassis": "BUILDING",
+          "chassisMod": "NONE",
+          "weaponGlyph": "NONE",
+          "barrelClass": "NONE",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 0,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
       }
     },
     {
@@ -633,7 +680,10 @@
       "cost": 500,
       "buildTimeSeconds": 14,
       "hp": 600,
-      "footprint": {"w": 1, "h": 1},
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
       "powerSupply": 0,
       "powerDemand": 12,
       "onSlabHpFraction": 1.0,
@@ -643,7 +693,16 @@
       "tier": 2,
       "graphics": {
         "sprite_id": "air_pad",
-        "fallback_geometry": {"chassis": "BUILDING", "chassisMod": "NONE", "weaponGlyph": "NONE", "barrelClass": "NONE", "roleBadge": "SUPPORT", "rangeMarks": 0, "hazard": "NONE", "factionStripe": "player"}
+        "fallback_geometry": {
+          "chassis": "BUILDING",
+          "chassisMod": "NONE",
+          "weaponGlyph": "NONE",
+          "barrelClass": "NONE",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 0,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
       }
     },
     {
@@ -652,7 +711,10 @@
       "cost": 300,
       "buildTimeSeconds": 10,
       "hp": 400,
-      "footprint": {"w": 1, "h": 1},
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
       "powerSupply": 0,
       "powerDemand": 10,
       "onSlabHpFraction": 1.0,
@@ -662,7 +724,16 @@
       "tier": 2,
       "graphics": {
         "sprite_id": "radar_addon",
-        "fallback_geometry": {"chassis": "BUILDING", "chassisMod": "NONE", "weaponGlyph": "NONE", "barrelClass": "NONE", "roleBadge": "SUPPORT", "rangeMarks": 0, "hazard": "NONE", "factionStripe": "player"}
+        "fallback_geometry": {
+          "chassis": "BUILDING",
+          "chassisMod": "NONE",
+          "weaponGlyph": "NONE",
+          "barrelClass": "NONE",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 0,
+          "hazard": "NONE",
+          "factionStripe": "player"
+        }
       }
     },
     {
@@ -671,7 +742,10 @@
       "cost": 2500,
       "buildTimeSeconds": 120,
       "hp": 1500,
-      "footprint": {"w": 2, "h": 2},
+      "footprint": {
+        "w": 2,
+        "h": 2
+      },
       "powerSupply": 0,
       "powerDemand": 100,
       "onSlabHpFraction": 1.0,
@@ -681,7 +755,16 @@
       "tier": 3,
       "graphics": {
         "sprite_id": "ion_cannon",
-        "fallback_geometry": {"chassis": "BUILDING", "chassisMod": "HEAVY_BLOCK", "weaponGlyph": "SIEGE", "barrelClass": "LONG", "roleBadge": "SUPPORT", "rangeMarks": 4, "hazard": "SPLASH", "factionStripe": "player"}
+        "fallback_geometry": {
+          "chassis": "BUILDING",
+          "chassisMod": "HEAVY_BLOCK",
+          "weaponGlyph": "SIEGE",
+          "barrelClass": "LONG",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 4,
+          "hazard": "SPLASH",
+          "factionStripe": "player"
+        }
       }
     },
     {
@@ -690,7 +773,10 @@
       "cost": 2200,
       "buildTimeSeconds": 100,
       "hp": 1200,
-      "footprint": {"w": 2, "h": 2},
+      "footprint": {
+        "w": 2,
+        "h": 2
+      },
       "powerSupply": 0,
       "powerDemand": 80,
       "onSlabHpFraction": 1.0,
@@ -701,7 +787,16 @@
       "factionLock": "shardborn",
       "graphics": {
         "sprite_id": "resonance_device",
-        "fallback_geometry": {"chassis": "BUILDING", "chassisMod": "SWEPT_WEDGE", "weaponGlyph": "NONE", "barrelClass": "NONE", "roleBadge": "SUPPORT", "rangeMarks": 2, "hazard": "SPLASH", "factionStripe": "player"}
+        "fallback_geometry": {
+          "chassis": "BUILDING",
+          "chassisMod": "SWEPT_WEDGE",
+          "weaponGlyph": "NONE",
+          "barrelClass": "NONE",
+          "roleBadge": "SUPPORT",
+          "rangeMarks": 2,
+          "hazard": "SPLASH",
+          "factionStripe": "player"
+        }
       }
     }
   ]
