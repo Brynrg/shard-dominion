@@ -45,7 +45,7 @@ function alive(state: SimState, team: 'player' | 'enemy'): boolean {
 
 function playMatch(pf: FactionId, ef: FactionId, maxTicks = 24000): { winner: string; ticks: number } {
   const mission = loadMission(skirmishData);
-  const state = makeSimState({ seed: mission.map.seed, mapWidth: 32, mapHeight: 32 });
+  const state = makeSimState({ seed: mission.map.seed, mapWidth: mission.map.width, mapHeight: mission.map.height });
   const tf = makeTeamFactions(pf, ef);
   const meta = seedFromMission(state, mission, { units, structures, economy }, tf);
   const systems = orderSystems([

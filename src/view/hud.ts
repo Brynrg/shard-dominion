@@ -646,6 +646,25 @@ export function makeHUD(cfg: HUDConfig): {
         by += 32;
       }
 
+      // ── Faction Strike row (XP-7) ───────────────────────────────────────────
+      // The old hardcoded DEF menu carried a "☄ STRIKE" button; the data-driven
+      // rewrite dropped it. Restored as an action row: T3 + 5 Cells arms a
+      // 3s-telegraphed orbital splash at the next clicked point (command.ts is
+      // unchanged — it always kept the intent).
+      if (tech.tier >= 3) {
+        const cellsHave = refinery?.cells ?? 0;
+        const canFire = cellsHave >= 5;
+        rects.push({ action: 'strike:arm', x: px + 8, y: by, w: bw, h: 26, enabled: canFire, denyReason: 'cells' });
+        context.fillStyle = canFire ? 'rgba(201,166,255,0.28)' : 'rgba(70,72,82,0.20)';
+        context.fillRect(px + 8, by, bw, 26);
+        context.strokeStyle = canFire ? '#c9a6ff' : '#3a4a5a';
+        context.strokeRect(px + 8.5, by + 0.5, bw - 1, 25);
+        context.fillStyle = canFire ? '#e8dcff' : '#6d6d75';
+        context.font = 'bold 12px monospace'; context.textBaseline = 'top';
+        context.fillText(`☄ FACTION STRIKE  ⬡5`, px + 16, by + 6);
+        by += 30;
+      }
+
       // Repair button (FG-2): shown while a damaged player building is selected.
       let repairTarget: { repairing: boolean } | null = null;
       for (const e of simState.store.all()) {

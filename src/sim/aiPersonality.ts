@@ -112,9 +112,11 @@ const HARD: AiPersonality = {
   maxExpansions: 2,
   targetHarvesters: 4,
   armyCap: 60,
-  assaultValue: 800,
-  assaultEscalationPerMin: 70,
-  pressureValue: 400,
+  // Big-map tuning: mass a decisive wave (trickled squads die crossing a 48-tile
+  // map into a defended base) and keep pressure forces meaningful.
+  assaultValue: 1600,
+  assaultEscalationPerMin: 40,
+  pressureValue: 900,
   graceTicks: 20 * 45,
   evalInterval: 8,
   waveLullTicks: 20 * 10,

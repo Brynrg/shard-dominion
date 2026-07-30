@@ -13,6 +13,11 @@ export interface SimConfig {
   readonly seed: number;
   readonly mapWidth: number;
   readonly mapHeight: number;
+  /** Terrain seed override. Missions author their layouts against ONE terrain
+   *  (map.seed); harnesses that vary `seed` for run-to-run variance must pin this,
+   *  or the mesas move underneath the authored base positions — the difficulty
+   *  harness was unknowingly burying the enemy base on 4 of its 5 seeds. */
+  readonly terrainSeed?: number;
 }
 
 /** A team's researched-refinement ledger (economy depth): completed upgrade ids +
@@ -49,7 +54,7 @@ export interface SimState {
 }
 
 export function makeSimState(cfg: SimConfig): SimState {
-  const terrain = generateMap({ seed: cfg.seed, width: cfg.mapWidth, height: cfg.mapHeight });
+  const terrain = generateMap({ seed: cfg.terrainSeed ?? cfg.seed, width: cfg.mapWidth, height: cfg.mapHeight });
   return {
     tick: asTick(0),
     seed: cfg.seed,

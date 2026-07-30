@@ -21,11 +21,13 @@ const ObjectiveSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('hold'), id: z.string().optional(), team: Team, region: Region, seconds: z.number().positive(), primary: z.boolean().optional(), text: z.string(), onlyIfChoice: z.string().optional() }),
   z.object({ type: z.literal('accumulate'), id: z.string().optional(), team: Team, credits: z.number().nonnegative(), primary: z.boolean().optional(), text: z.string(), onlyIfChoice: z.string().optional() }),
   z.object({ type: z.literal('build'), id: z.string().optional(), team: Team, kind: z.string(), primary: z.boolean().optional(), text: z.string(), onlyIfChoice: z.string().optional() }),
+  z.object({ type: z.literal('buildCount'), id: z.string().optional(), team: Team, kind: z.string(), count: z.number().int().positive(), primary: z.boolean().optional(), text: z.string(), onlyIfChoice: z.string().optional() }),
   z.object({ type: z.literal('reach'), id: z.string().optional(), team: Team, region: Region, primary: z.boolean().optional(), text: z.string(), onlyIfChoice: z.string().optional() }),
 ]);
 const FailureSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('defend'), team: Team, kind: z.string().optional() }),
   z.object({ type: z.literal('defeated'), team: Team }),
+  z.object({ type: z.literal('timeLimit'), seconds: z.number().positive() }),
 ]);
 
 // ── Placed entities + fields ─────────────────────────────────────────────────

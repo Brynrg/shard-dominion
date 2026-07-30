@@ -20,8 +20,12 @@ test.describe('Beyond-WC3 control depth gate', () => {
     //    only the 2 fighters may land in the selection. ──
     const ip = (await infantryPos())!;
     const hp0 = (await harvesterPos())!;
-    const x0 = Math.min(ip.x, hp0.x) - 120, y0 = Math.min(ip.y, hp0.y) - 120;
-    const x1 = Math.max(ip.x, hp0.x) + 120, y1 = Math.max(ip.y, hp0.y) + 120;
+    // Clamp the drag inside the canvas and clear of the COMMAND panel — on the
+    // 48x48 map the units sit farther apart on screen and a naive ±120px box ran
+    // off the edge (a drag that starts outside the canvas selects nothing).
+    const panelX = box.width - 200;
+    const x0 = Math.max(8, Math.min(ip.x, hp0.x) - 120), y0 = Math.max(8, Math.min(ip.y, hp0.y) - 120);
+    const x1 = Math.min(panelX, Math.max(ip.x, hp0.x) + 120), y1 = Math.min(box.height - 8, Math.max(ip.y, hp0.y) + 120);
     await page.mouse.move(box.x + x0, box.y + y0);
     await page.mouse.down();
     await page.mouse.move(box.x + x1, box.y + y1, { steps: 5 });

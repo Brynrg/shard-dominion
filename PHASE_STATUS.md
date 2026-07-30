@@ -1,5 +1,13 @@
 # Shard Dominion — Phase Completion Status
 
+> **SUPERSEDED (2026-07-30):** the v0.56 gameplay overhaul (`docs/GAMEPLAY_OVERHAUL_PLAN.md`,
+> summarized at the top of `STATUS.md`) landed the items this file listed as "next":
+> super-weapons SHIPPED (ion cannon + resonance device fire from the sidebar), the
+> Phase 1a-1d content is now actually REACHABLE in-game (it was on disk but the
+> hardcoded sidebar stranded ~half of it), the tech tree enforces its prerequisites,
+> and enhanced stealth/cloaking-vs-AI works because the AI is fog-limited. This file
+> is kept as history of the content-expansion session only.
+
 ## Overview
 Autonomous multi-phase implementation of OpenRA parity roadmap. Completed Phases 1-2 (1d); ready for Phase 3.
 

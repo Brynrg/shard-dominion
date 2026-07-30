@@ -24,6 +24,9 @@ test.describe('S6A liveness gate', () => {
     await page.locator('#game-canvas').click({ position: { x: 400, y: 300 } });
     await page.waitForTimeout(60);
     await page.waitForTimeout(500);
+    // 2x sim speed: the first hard assault lands ~5-6 SIM minutes in (measured by
+    // the headless probe); at 1x that is a ~6-minute wall-clock wait per attempt.
+    await page.evaluate(() => (window as { __debugSetSpeed?: (s: number) => void }).__debugSetSpeed?.(2));
 
     const match = () => page.evaluate(() =>
       (window as { __debugMatch?: () => Match }).__debugMatch?.() ?? { enemyUnits: -1, playerUnits: -1, enemyCredits: -1 });

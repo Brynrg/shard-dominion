@@ -8,8 +8,6 @@ const ChallengeRulesSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('survive'),
     durationSeconds: z.number().positive(),
-    playerCanAttack: z.boolean().optional(),
-    playerCanBuild: z.boolean().optional(),
   }),
   z.object({
     type: z.literal('destroy'),

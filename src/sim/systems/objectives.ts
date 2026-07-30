@@ -29,11 +29,13 @@ export type Objective =
   | { type: 'hold'; id?: string; team: Team; region: Region; seconds: number; primary?: boolean; text: string; onlyIfChoice?: string }
   | { type: 'accumulate'; id?: string; team: Team; credits: number; primary?: boolean; text: string; onlyIfChoice?: string }
   | { type: 'build'; id?: string; team: Team; kind: string; primary?: boolean; text: string; onlyIfChoice?: string }
+  | { type: 'buildCount'; id?: string; team: Team; kind: string; count: number; primary?: boolean; text: string; onlyIfChoice?: string }
   | { type: 'reach'; id?: string; team: Team; region: Region; primary?: boolean; text: string; onlyIfChoice?: string };
 
 export type Failure =
   | { type: 'defend'; team: Team; kind?: string }   // fires if the matched entity (having existed) is gone
-  | { type: 'defeated'; team: Team };               // fires if team has no producers AND no combat units
+  | { type: 'defeated'; team: Team }                // fires if team has no producers AND no combat units
+  | { type: 'timeLimit'; seconds: number };         // challenge speedruns: out of time = failed
 
 export interface ObjectiveStatus { id?: string; text: string; primary: boolean; complete: boolean }
 export interface ObjectivesResult { objectives: ObjectiveStatus[]; won: boolean; lost: boolean }
@@ -139,6 +141,17 @@ export function makeObjectivesSystem(
         return teamCredits(state, o.team) >= o.credits;
       case 'build':
         return anyLiving(state, o.team, o.kind);
+      case 'buildCount': {
+        // Challenge constraint (e.g. "own 3 refineries at once").
+        let n = 0;
+        for (const e of state.store.all()) {
+          const f = e.components.faction;
+          if (f?.team !== o.team || f.faction !== o.kind) continue;
+          if ((e.components.health?.hp ?? 1) <= 0) continue;
+          n += 1;
+        }
+        return n >= o.count;
+      }
       case 'reach': {
         if (teamUnitInRegion(state, o.team, o.region)) everReached.set(i, true);
         return everReached.get(i) ?? false;
@@ -167,6 +180,8 @@ export function makeObjectivesSystem(
       }
       case 'defeated':
         return teamIsFinished(state, f.team);
+      case 'timeLimit':
+        return state.tick >= Math.round(f.seconds * SIM_TICK_RATE);
     }
   }
 

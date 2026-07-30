@@ -51,7 +51,7 @@ function alive(state: SimState, team: 'player' | 'enemy'): boolean {
 /** Play one match on a given map seed; returns 'P' | 'E' | 'none' (deadlock/draw). */
 function playMatch(pf: FactionId, ef: FactionId, seed: number, maxTicks = 24000): 'P' | 'E' | 'none' {
   const mission = loadMission(skirmishData);
-  const state = makeSimState({ seed, mapWidth: 32, mapHeight: 32 });
+  const state = makeSimState({ seed, terrainSeed: mission.map.seed, mapWidth: mission.map.width, mapHeight: mission.map.height });
   const tf = makeTeamFactions(pf, ef);
   const meta = seedFromMission(state, mission, { units, structures, economy }, tf);
   const systems = orderSystems([

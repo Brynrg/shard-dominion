@@ -3,6 +3,22 @@
 > Paste into a fresh Claude Code session, or read cold. Orientation + current state + how to work.
 > Deep per-slice history lives in `PROGRESS.md`; read it too. (Old bake-off-era handoff → `HANDOFF.bakeoff-era.md`.)
 
+## ⭐ v0.56 GAMEPLAY OVERHAUL (2026-07-30, branch `feat/gameplay-overhaul` — READ FIRST)
+The full review + plan is `docs/GAMEPLAY_OVERHAUL_PLAN.md`; the executed result is the
+v0.56 block at the top of `STATUS.md`. Headlines: the 20×-too-fast economy fixed
+(harvestRate was applied per tick), matches went 5:48 → 15-25 min, difficulty is three
+real AI personalities (`src/sim/aiPersonality.ts`) with an asserting win-rate gate,
+the AI plays behind fog (`src/sim/systems/aiKnowledge.ts`), follows a build order,
+pays the player's construction clock, and can't be pinned by a ◈100 decoy; the RA
+win condition (`src/sim/defeat.ts`) ended the endgame map-sweep; the sidebar is
+GENERATED from data (`src/view/buildMenu.ts` + `units[].producedBy`,
+`structures[].prerequisites/menu/hotkey`) which un-stranded ~18 authored
+units/structures incl. both superweapons (now firing); the tech tree enforces its
+prerequisites and stacks additively; default skirmish is 48×48. New always-on gates:
+`content_reachable.test.ts`, `phase_c_tech.test.ts`; env-gated:
+`BALANCE_DIFFICULTY=1` difficulty curve, `PACING=1` probes. Suite: 311 unit + 43
+Playwright. NOT yet deployed (operator-gated).
+
 ## What this is
 **Shard Dominion** — an IP-clean, late-1990s Westwood-style (C&C / Red Alert / Dune 2000) web RTS.
 - **Repo:** `~/Code/games/shard-dominion` (TypeScript + Canvas2D + Vite + Vitest + zod + ESLint, single pnpm pkg).

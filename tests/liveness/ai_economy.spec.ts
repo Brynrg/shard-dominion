@@ -30,10 +30,13 @@ test.describe('AI economy gate', () => {
     // Give it real time to harvest → BUILD ITS OWN BARRACKS (it starts without one
     // now — both sides open ConYard+Refinery+Power) → train → escalate past the 45s
     // hard grace. Poll for an aggressive plan.
-    test.setTimeout(240_000);
+    test.setTimeout(480_000);
     await expect.poll(
       () => page.evaluate(() => (window as { __debugAiState?: () => string }).__debugAiState?.() ?? ''),
-      { timeout: 180_000, intervals: [1000] },
+      // Hard now masses a DECISIVE wave before turning aggressive (big-map tuning:
+      // trickled squads died crossing 48 tiles) — the headless trace puts its first
+      // aggressive plan at ~3-4.5 sim minutes.
+      { timeout: 330_000, intervals: [2000] },
     ).toMatch(/Assault|Pressure|Raid/);
 
     // Economy is alive (harvester kept/rebuilt) and production was funded (army value climbed).

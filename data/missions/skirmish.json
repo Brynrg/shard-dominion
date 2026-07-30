@@ -3,8 +3,8 @@
   "name": "Skirmish",
   "order": 0,
   "map": {
-    "width": 32,
-    "height": 32,
+    "width": 48,
+    "height": 48,
     "seed": 42
   },
   "briefing": {
@@ -28,25 +28,39 @@
   "naturalShardDensity": 300,
   "fields": [
     {
-      "tx": 18,
-      "ty": 15,
+      "tx": 27,
+      "ty": 22,
       "w": 3,
       "h": 3,
       "density": 600
     },
     {
-      "tx": 7,
-      "ty": 24,
+      "tx": 10,
+      "ty": 36,
       "w": 3,
       "h": 2,
       "density": 650
     },
     {
-      "tx": 21,
-      "ty": 10,
+      "tx": 32,
+      "ty": 15,
       "w": 3,
       "h": 3,
       "density": 800
+    },
+    {
+      "tx": 22,
+      "ty": 22,
+      "w": 3,
+      "h": 3,
+      "density": 900
+    },
+    {
+      "tx": 12,
+      "ty": 10,
+      "w": 2,
+      "h": 2,
+      "density": 750
     }
   ],
   "player": {
@@ -54,35 +68,35 @@
     "buildings": [
       {
         "type": "construction_yard",
-        "tx": 14,
-        "ty": 16
+        "tx": 21,
+        "ty": 24
       },
       {
         "type": "refinery",
-        "tx": 16,
-        "ty": 16
+        "tx": 24,
+        "ty": 24
       },
       {
         "type": "power_node",
-        "tx": 13,
-        "ty": 14
+        "tx": 20,
+        "ty": 21
       }
     ],
     "units": [
       {
         "type": "harvester",
-        "tx": 17,
-        "ty": 16
+        "tx": 26,
+        "ty": 24
       },
       {
         "type": "infantry",
-        "tx": 13,
-        "ty": 20
+        "tx": 20,
+        "ty": 30
       },
       {
         "type": "infantry",
-        "tx": 14,
-        "ty": 20
+        "tx": 21,
+        "ty": 30
       }
     ]
   },
@@ -93,38 +107,38 @@
       "buildings": [
         {
           "type": "refinery",
-          "tx": 26,
-          "ty": 8
+          "tx": 39,
+          "ty": 12
         },
         {
           "type": "construction_yard",
-          "tx": 25,
-          "ty": 10
+          "tx": 37,
+          "ty": 14
         },
         {
           "type": "power_node",
-          "tx": 25,
-          "ty": 6
+          "tx": 38,
+          "ty": 9
         }
       ],
       "units": [
         {
           "type": "harvester",
-          "tx": 27,
-          "ty": 8
+          "tx": 40,
+          "ty": 12
         }
       ],
       "fields": [
         {
-          "tx": 28,
-          "ty": 7,
+          "tx": 42,
+          "ty": 10,
           "w": 3,
           "h": 3,
           "density": 600
         },
         {
-          "tx": 24,
-          "ty": 2,
+          "tx": 36,
+          "ty": 3,
           "w": 3,
           "h": 2,
           "density": 650
@@ -151,13 +165,13 @@
   "neutrals": [
     {
       "type": "derrick",
-      "tx": 13,
-      "ty": 12
+      "tx": 20,
+      "ty": 18
     },
     {
       "type": "relay",
-      "tx": 20,
-      "ty": 13
+      "tx": 30,
+      "ty": 20
     }
   ]
 }

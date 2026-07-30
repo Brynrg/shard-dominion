@@ -9,9 +9,7 @@
       "map": "skirmish",
       "rules": {
         "type": "survive",
-        "durationSeconds": 600,
-        "playerCanAttack": false,
-        "playerCanBuild": true
+        "durationSeconds": 600
       },
       "reward": {
         "cosmetic": "chevron_gold",
@@ -63,7 +61,10 @@
         "type": "destroy",
         "playerStartCredits": 500,
         "playerStartUnits": [
-          { "type": "harvester", "count": 2 }
+          {
+            "type": "harvester",
+            "count": 2
+          }
         ]
       },
       "reward": {

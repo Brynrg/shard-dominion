@@ -77,10 +77,6 @@ import skirmishTwinPeaksData from '../data/missions/skirmish_twin_peaks.json' wi
 import skirmishFourCornersData from '../data/missions/skirmish_four_corners.json' with { type: 'json' };
 import challengesData from '../data/challenges.json' with { type: 'json' };
 
-// Map configuration
-const MAP_WIDTH = 32;
-const MAP_HEIGHT = 32;
-
 // Expose debug hooks for liveness test
 declare global {
   interface Window {
@@ -101,6 +97,7 @@ declare global {
     __debugObjectives?: () => { text: string; primary: boolean; complete: boolean }[];
     __debugAudio?: () => { state: string; played: number; muted: boolean };
     __debugTimeScale?: () => number;
+    __debugSetSpeed?: (sp: number) => void;
     __debugTick?: () => number;
     __debugTier?: () => { player: number; enemy: number };
     __debugButtonRect?: (action: string) => { x: number; y: number; w: number; h: number } | null;
@@ -171,14 +168,43 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
           lose: ['Challenge failed.'],
         };
       }
-      // Apply mission modifier rules (credits, units, etc.)
+      // Apply mission modifier rules (credits, units, timers, constraints). All of
+      // these were PARSED and silently ignored before — a "5-minute" challenge had
+      // no clock and "no harvester loss" tracked nothing.
+      const applyConstraint = (constraint: string | undefined, param: number | undefined): void => {
+        if (constraint === 'noHarvesterLoss') {
+          mission.failure.push({ type: 'defend', team: 'player', kind: 'harvester' });
+          mission.objectives.push({ type: 'eliminate', id: 'c_constraint_note', team: 'enemy', primary: false, text: 'Lose no Harvester' });
+        } else if (constraint === 'noPowerLoss') {
+          mission.failure.push({ type: 'defend', team: 'player', kind: 'power_node' });
+          mission.objectives.push({ type: 'eliminate', id: 'c_constraint_note', team: 'enemy', primary: false, text: 'Lose no Power Node' });
+        } else if (constraint === 'buildRefineries') {
+          const count = param ?? 3;
+          mission.objectives.push({ type: 'buildCount', id: 'c_refineries', team: 'player', kind: 'refinery', count, primary: true, text: `Operate ${count} Refineries at once` });
+        }
+      };
       if (rules.type === 'destroy') {
-        if (rules.playerStartCredits !== undefined) {
-          mission.player.credits = rules.playerStartCredits;
+        if (rules.playerStartCredits !== undefined) mission.player.credits = rules.playerStartCredits;
+        if (rules.enemyStartCredits !== undefined) mission.enemies[0]!.credits = rules.enemyStartCredits;
+        if (rules.maxDurationSeconds !== undefined) {
+          mission.failure.push({ type: 'timeLimit', seconds: rules.maxDurationSeconds });
+          mission.objectives.push({ type: 'eliminate', id: 'c_clock', team: 'enemy', primary: false, text: `Beat the ${Math.round(rules.maxDurationSeconds / 60)}-minute clock` });
         }
-        if (rules.enemyStartCredits !== undefined) {
-          mission.enemies[0]!.credits = rules.enemyStartCredits;
+        if (rules.playerStartUnits) {
+          // Extra starting units unfold beside the ConYard.
+          const anchor = mission.player.buildings.find(b => b.type === 'construction_yard') ?? mission.player.buildings[0];
+          let slot = 0;
+          for (const su of rules.playerStartUnits) {
+            for (let i = 0; i < su.count; i++) {
+              mission.player.units.push({ type: su.type, tx: (anchor?.tx ?? 4) + 2 + (slot % 3), ty: (anchor?.ty ?? 4) + 2 + Math.floor(slot / 3) });
+              slot += 1;
+            }
+          }
         }
+        applyConstraint(rules.constraint, rules.constraintParam);
+      }
+      if (rules.type === 'destroyWithConstraint') {
+        applyConstraint(rules.constraint, rules.constraintParam);
       }
     }
   }
@@ -328,8 +354,11 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     canvas,
     simState: state,
     systems,
-    mapWidth: MAP_WIDTH,
-    mapHeight: MAP_HEIGHT,
+    // The MISSION's map size, not a constant: the camera clamp and minimap were
+    // hardcoded to 32x32, which mis-framed every larger map (m15+ are 36-46, the
+    // 4P skirmish is 48, and the default valley is 48 now too).
+    mapWidth: mission.map.width,
+    mapHeight: mission.map.height,
     confirmationMarkers: commandSystem.markers,
     getSelectionBox: () => input.getSelectionBox(),
     getPlacementMode: () => input.getPlacementMode(),
@@ -856,6 +885,10 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // Audio + time-scale + tick hooks (FG-1 gates).
   window.__debugAudio = () => audio.debug();
   window.__debugTimeScale = () => (paused ? 0 : speed);
+  // Test-only: gates run long AI matches (the first hard-difficulty assault lands
+  // ~5-6 sim minutes in on the 48x48 map) — 2x speed halves the wall-clock without
+  // touching determinism (speed only multiplies ticks per rAF).
+  window.__debugSetSpeed = (sp: number) => { speed = Math.max(0.5, Math.min(4, sp)); };
   window.__debugTick = () => state.tick;
 
   // Test-only: force the mission to end so the debrief/flow can be exercised in a gate.

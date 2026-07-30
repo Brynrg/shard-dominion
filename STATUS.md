@@ -1,10 +1,38 @@
-# Shard Dominion — Product Truth Table (v0.42.0, 2026-07-09)
+# Shard Dominion — Product Truth Table (v0.56, 2026-07-30)
 
 > The single current-state document. Three columns: what was promised, what is
 > implemented, what is machine-verified. The RFCs in `docs/` are HISTORICAL design
 > documents — this file supersedes their status lines.
-> Verification = 250+ unit tests + 31 Playwright browser gates + the AI-vs-AI
-> balance harness (`BALANCE=1 npx vitest run tests/balance/sweep.test.ts`).
+> Verification = 311 unit tests + 43 Playwright browser gates + the AI-vs-AI
+> balance harness (`BALANCE=1 npx vitest run tests/balance/sweep.test.ts`) + the
+> difficulty gate (`BALANCE_DIFFICULTY=1 npx vitest run tests/balance/difficulty.test.ts`).
+
+## v0.56 — THE GAMEPLAY OVERHAUL (docs/GAMEPLAY_OVERHAUL_PLAN.md, all phases A-C landed)
+
+A measured review found the match was decided in under 4 minutes, roughly half the
+authored content was unreachable, one ◈100 decoy neutralised the AI, and fog was a
+screen effect. All fixed and gate-tested:
+
+| Fix | Measured before → after |
+|---|---|
+| Economy pacing | `harvestRate` was applied per-TICK (20× documented); whole tech tree affordable by 0:16 → Tier 2 ≈ 0:48, Tier 3 ≈ 2:16, harvester count is the real lever |
+| Match length | AI-vs-AI decided at 5:48 → 7-25 min, avg ~15 |
+| Difficulty | Easy-to-Hard span was 54 seconds; passive player died 3:22-4:10 → behaviour personalities (build order, army cap, expansions, retreat, air); passive player survives ~12 min on Easy; gate asserts Easy never beats a competent baseline, Hard does |
+| AI exploit | one parked ◈100 infantry cut AI aggression 91%→2% for the whole match → threat floor + hysteresis + proportionate home guard; decoy has no effect |
+| AI build | built ZERO structures in 15 min → follows a build order, reserves credits, tiers up its HQ, raises turrets/War Factory/Tech Lab/Processing Plant, expands, pays the player's construction clock (real sites, one at a time) |
+| AI knowledge | read `store.all()` (omniscient) → fog-limited knowledge model with memory (`aiKnowledge.ts`); scouting/stealth/radar mean something vs the AI |
+| Win condition | "kill every unit" forced a map-sweep for the last rifleman → RA rule: ConYard + production gone = surrender, field clears (`defeat.ts`, shared with objectives) |
+| Content reachability | sidebar was 3 hardcoded arrays reaching 11/24 units, 14/25 structures (no Tech Lab, no superweapons, 1 of 3 heroes) → generated from data with page arrows; `content_reachable.test.ts` makes the drift impossible |
+| Tech tree | prerequisites/tier parsed but unenforced; tier-2 refinements SHADOWED by tier 1 (first-match); `range`/`firepower`/`buildTime` applied nowhere → prereq spine enforced via shared `buildRules.ts`, effects stack additively, all 7 effects live |
+| Superweapons | ion_cannon/resonance_device were unbuildable scenery → build → charge bar → FIRE → targeted area strike; charge in stateHash (MP/replay-safe) |
+| Producer binding | any producer could build any unit (view-side convention only) → `units[].producedBy` is sim-authoritative; losing the War Factory stops tanks |
+| Map | default skirmish 32×32 (fits one screen) → 48×48 with contested mid-map fields; camera/minimap now use the MISSION's size (was hardcoded 32) |
+| Missions | m18-m20 + 3 skirmish maps authored but unregistered → all reachable; campaign runs m1-m20 |
+| Challenges | `maxDurationSeconds`/`playerStartUnits`/constraints parsed but ignored → wired (time-limit failure, buildCount objective, defend-harvester/power failures) |
+
+> **Historical note:** the v0.55 table below reported the Phase 1a-1d content
+> expansion as shipped. It was on disk but NOT reachable in-game until v0.56 (see
+> Content reachability above) — the older rows are kept for history, not as claims.
 
 | Area | Promised | Implemented | Verified |
 |---|---|---|---|

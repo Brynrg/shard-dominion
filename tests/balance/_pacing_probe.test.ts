@@ -61,7 +61,7 @@ interface Snap {
 
 function build(passivePlayer: boolean, difficulty: 'easy' | 'normal' | 'hard') {
   const mission = loadMission(skirmishData);
-  const state = makeSimState({ seed: mission.map.seed, mapWidth: 32, mapHeight: 32 });
+  const state = makeSimState({ seed: mission.map.seed, mapWidth: mission.map.width, mapHeight: mission.map.height });
   const tf = makeTeamFactions('concord' as FactionId, 'emberhand' as FactionId);
   const meta = seedFromMission(state, mission, { units, structures, economy }, tf);
   const enemyAi = makeAiSystem(units, {

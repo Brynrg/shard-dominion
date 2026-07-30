@@ -36,7 +36,7 @@ const BRIEF_STORY: readonly string[] = [
 ];
 const BRIEF_HOWTO: readonly string[] = [
   '1.  Your Harvester auto-mines Shard into credits (the ◈ counter, top-right).',
-  '2.  Press  B  and click near your base to build a Barracks (300).',
+  '2.  Press  B  to build a Barracks (300) — click near your base when READY flashes.',
   '3.  Press  T  or  R  to train Infantry / Rocket troopers.',
   '4.  Drag a box to select troops, then RIGHT-CLICK the enemy to attack.',
   '5.  Push north-east and destroy their base to win.',
