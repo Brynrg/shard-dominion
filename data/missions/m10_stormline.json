@@ -10,7 +10,7 @@
   "briefing": {
     "title": "STORMLINE",
     "story": [
-      "VANE: \"The deep vein sits past the Concord picket line. We don't go through them \u2014",
+      "VANE: \"The deep vein sits past the Concord picket line. We don't go through them —",
       "we go PAST them. Ghostwalkers, cloaks up. The ground has been... restless. If it",
       "wakes, you run. You do not shoot the planet.\"",
       "",
@@ -50,18 +50,18 @@
       },
       {
         "type": "refinery",
-        "tx": 6,
-        "ty": 28
+        "tx": 7,
+        "ty": 27
       },
       {
         "type": "power_node",
-        "tx": 3,
-        "ty": 26
+        "tx": 2,
+        "ty": 25
       },
       {
         "type": "barracks",
-        "tx": 5,
-        "ty": 30
+        "tx": 1,
+        "ty": 28
       }
     ],
     "units": [
@@ -105,8 +105,8 @@
         },
         {
           "type": "power_node",
-          "tx": 17,
-          "ty": 15
+          "tx": 16,
+          "ty": 13
         },
         {
           "type": "refinery",
@@ -115,8 +115,8 @@
         },
         {
           "type": "construction_yard",
-          "tx": 27,
-          "ty": 6
+          "tx": 29,
+          "ty": 4
         }
       ],
       "units": [
@@ -167,7 +167,7 @@
         "r": 2
       },
       "primary": true,
-      "text": "Reach the deep-vein survey site (SE corner) \u2014 cloaked units slip pickets"
+      "text": "Reach the deep-vein survey site (SE corner) — cloaked units slip pickets"
     },
     {
       "type": "destroy",

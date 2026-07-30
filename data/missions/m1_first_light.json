@@ -10,19 +10,24 @@
   "briefing": {
     "title": "FIRST LIGHT",
     "story": [
-      "Marshal Corr: \"Warden \u2014 your dropships are down. The Reach is counting on the",
-      "Shard under this sand. An Emberhand watch-post overlooks our landing zone; take",
-      "it before they call in the desert.\"",
+      "Marshal Corr: \"Warden — your dropships are down and the crawlers are unpacking",
+      "the Construction Yard now. Nothing else survived the descent. You'll raise the",
+      "landing-zone base yourself: power, a refinery, a barracks — I'll walk you through it.\"",
       "",
-      "Intercepted transmission \u2014 Sera Vane: \"You call it a landing. We call it the first cut.\""
+      "\"One more thing. An Emberhand watch-post overlooks this valley from the north-east",
+      "ridge. When your base stands, take it out before they call in the desert.\"",
+      "",
+      "Intercepted transmission — Sera Vane: \"You call it a landing. We call it the first cut.\""
     ],
     "objectives": [
-      "Destroy the Emberhand watch-post overlooking the landing zone"
+      "Raise the landing-zone base: Power, Refinery, Harvester, Barracks",
+      "Destroy the Emberhand watch-post on the north-east ridge"
     ]
   },
   "debrief": {
     "win": [
-      "The watch-post is ash. The landing zone holds \u2014 but the sand is already whispering."
+      "The watch-post is ash and the landing zone hums with industry.",
+      "You built this from a single Yard — but the sand is already whispering."
     ],
     "lose": [
       "The landing zone is overrun. The Reach will not forgive this."
@@ -39,49 +44,34 @@
     }
   ],
   "player": {
-    "credits": 600,
+    "credits": 2600,
     "buildings": [
       {
         "type": "construction_yard",
         "tx": 14,
         "ty": 16
-      },
-      {
-        "type": "refinery",
-        "tx": 16,
-        "ty": 16
-      },
-      {
-        "type": "power_node",
-        "tx": 13,
-        "ty": 14
       }
     ],
     "units": [
       {
-        "type": "harvester",
-        "tx": 17,
-        "ty": 16
-      },
-      {
         "type": "infantry",
-        "tx": 13,
-        "ty": 17
+        "tx": 12,
+        "ty": 19
       },
       {
         "type": "infantry",
         "tx": 14,
-        "ty": 17
+        "ty": 19
       },
       {
         "type": "infantry",
-        "tx": 13,
-        "ty": 18
+        "tx": 12,
+        "ty": 21
       },
       {
         "type": "infantry",
         "tx": 14,
-        "ty": 18
+        "ty": 21
       }
     ]
   },
@@ -121,12 +111,162 @@
   ],
   "objectives": [
     {
+      "type": "build",
+      "id": "obj_power",
+      "team": "player",
+      "kind": "power_node",
+      "primary": true,
+      "text": "Build a Power Node (N)"
+    },
+    {
+      "type": "build",
+      "id": "obj_refinery",
+      "team": "player",
+      "kind": "refinery",
+      "primary": true,
+      "text": "Build a Refinery (F)"
+    },
+    {
+      "type": "build",
+      "id": "obj_harvester",
+      "team": "player",
+      "kind": "harvester",
+      "primary": true,
+      "text": "Train a Harvester (H) at the Refinery"
+    },
+    {
+      "type": "build",
+      "id": "obj_barracks",
+      "team": "player",
+      "kind": "barracks",
+      "primary": true,
+      "text": "Build a Barracks (B)"
+    },
+    {
       "type": "destroy",
       "id": "destroy_watchpost",
       "team": "enemy",
       "kind": "barracks",
       "primary": true,
       "text": "Destroy the Emberhand watch-post"
+    }
+  ],
+  "triggers": [
+    {
+      "id": "t_guide_power",
+      "when": {
+        "timeSeconds": 3
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "Marshal Corr",
+          "text": "Power first, Warden. Press N — the node builds in your SIDEBAR. When it flashes READY, click open ground near the Yard to place it."
+        }
+      ]
+    },
+    {
+      "id": "t_guide_refinery",
+      "when": {
+        "objectiveComplete": "obj_power"
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "Marshal Corr",
+          "text": "Node's humming. Now a Refinery (F) — it banks Shard and trains Harvesters. Give your buildings breathing room; crowded bases burn together."
+        }
+      ]
+    },
+    {
+      "id": "t_guide_harvester",
+      "when": {
+        "objectiveComplete": "obj_refinery"
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "Marshal Corr",
+          "text": "Train a Harvester (H) at the Refinery. It works the Shard field to your east on its own — just keep it alive."
+        }
+      ]
+    },
+    {
+      "id": "t_guide_barracks",
+      "when": {
+        "objectiveComplete": "obj_harvester"
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "Marshal Corr",
+          "text": "Income's flowing. Raise a Barracks (B) — that unlocks Infantry. Hover any sidebar button to see what it does and what it needs."
+        }
+      ]
+    },
+    {
+      "id": "t_guide_attack",
+      "when": {
+        "objectiveComplete": "obj_barracks"
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "Marshal Corr",
+          "text": "Base is standing — well done. Train Infantry (T), six or more, then push north-east. Box-select your squad and RIGHT-CLICK the watch-post."
+        },
+        {
+          "type": "grantCredits",
+          "team": "player",
+          "amount": 300
+        }
+      ]
+    },
+    {
+      "id": "t_vane_probe",
+      "when": {
+        "timeSeconds": 330
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "Sera Vane",
+          "text": "Little lights in the sand. Snuff them out."
+        },
+        {
+          "type": "spawn",
+          "team": "enemy",
+          "units": [
+            {
+              "type": "infantry",
+              "tx": 26,
+              "ty": 14
+            },
+            {
+              "type": "infantry",
+              "tx": 27,
+              "ty": 15
+            }
+          ],
+          "attackMoveTo": {
+            "tx": 15,
+            "ty": 17
+          }
+        }
+      ]
+    },
+    {
+      "id": "t_probe_warning",
+      "when": {
+        "timeSeconds": 320
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "Marshal Corr",
+          "text": "Movement on the ridge — a probe is coming. Keep a couple of Infantry home to meet it."
+        }
+      ]
     }
   ],
   "failure": [

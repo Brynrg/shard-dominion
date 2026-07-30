@@ -22,7 +22,7 @@
   },
   "debrief": {
     "win": [
-      "The relay hums for the Emberhand. Yssel sends a bill \u2014 and a warning."
+      "The relay hums for the Emberhand. Yssel sends a bill — and a warning."
     ],
     "lose": [
       "The Syndicate leases to the other side."
@@ -50,17 +50,17 @@
       },
       {
         "type": "refinery",
-        "tx": 7,
-        "ty": 27
+        "tx": 8,
+        "ty": 26
       },
       {
         "type": "power_node",
-        "tx": 4,
-        "ty": 25
+        "tx": 3,
+        "ty": 24
       },
       {
         "type": "barracks",
-        "tx": 6,
+        "tx": 8,
         "ty": 29
       }
     ],
@@ -95,18 +95,18 @@
         },
         {
           "type": "barracks",
-          "tx": 28,
-          "ty": 6
+          "tx": 26,
+          "ty": 8
         },
         {
           "type": "construction_yard",
-          "tx": 26,
-          "ty": 7
+          "tx": 24,
+          "ty": 5
         },
         {
           "type": "power_node",
-          "tx": 26,
-          "ty": 3
+          "tx": 25,
+          "ty": 2
         }
       ],
       "units": [
@@ -200,7 +200,7 @@
         {
           "type": "message",
           "speaker": "YSSEL",
-          "text": "Terribly sorry \u2014 the Concord counter-bid. Coordinates: yours."
+          "text": "Terribly sorry — the Concord counter-bid. Coordinates: yours."
         },
         {
           "type": "spawn",

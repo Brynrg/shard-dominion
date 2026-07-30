@@ -10,11 +10,11 @@
   "briefing": {
     "title": "ASHFALL",
     "story": [
-      "SERA VANE: \"They burned our strongholds and called it peace. Look around you \u2014",
+      "SERA VANE: \"They burned our strongholds and called it peace. Look around you —",
       "this graveyard of machines is what peace looks like. Strip it. Every wreck they",
-      "left is a gift; the Emberhand rebuilds from ash. All of us \u2014 every hand salvages.\"",
+      "left is a gift; the Emberhand rebuilds from ash. All of us — every hand salvages.\"",
       "",
-      "Intercepted \u2014 DIRECTOR HALEX: \"Initiate Project Cauterize survey flights.\""
+      "Intercepted — DIRECTOR HALEX: \"Initiate Project Cauterize survey flights.\""
     ],
     "objectives": [
       "Bank 900 credits from the wreck fields and Shard"
@@ -49,13 +49,13 @@
       },
       {
         "type": "refinery",
-        "tx": 8,
-        "ty": 24
+        "tx": 9,
+        "ty": 23
       },
       {
         "type": "power_node",
-        "tx": 5,
-        "ty": 22
+        "tx": 4,
+        "ty": 21
       }
     ],
     "units": [
@@ -84,18 +84,18 @@
       "buildings": [
         {
           "type": "refinery",
-          "tx": 26,
-          "ty": 6
+          "tx": 27,
+          "ty": 5
         },
         {
           "type": "barracks",
-          "tx": 27,
-          "ty": 7
+          "tx": 26,
+          "ty": 8
         },
         {
           "type": "power_node",
-          "tx": 25,
-          "ty": 4
+          "tx": 24,
+          "ty": 3
         }
       ],
       "units": [
@@ -159,7 +159,7 @@
       "team": "player",
       "credits": 900,
       "primary": true,
-      "text": "Bank 900 credits \u2014 salvage the graveyard (any Emberhand unit can)"
+      "text": "Bank 900 credits — salvage the graveyard (any Emberhand unit can)"
     },
     {
       "type": "destroy",
@@ -186,7 +186,7 @@
         {
           "type": "message",
           "speaker": "VANE",
-          "text": "Walk ANY unit onto a wreck \u2014 we waste nothing."
+          "text": "Walk ANY unit onto a wreck — we waste nothing."
         }
       ]
     },
@@ -202,7 +202,7 @@
         {
           "type": "message",
           "speaker": "VANE",
-          "text": "Concord survey team inbound \u2014 they want our graveyard."
+          "text": "Concord survey team inbound — they want our graveyard."
         },
         {
           "type": "spawn",

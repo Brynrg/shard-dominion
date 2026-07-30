@@ -14,7 +14,7 @@
       "wound. Seal it, and the Reach starves but Aether lives. Harness it, and we hold",
       "a god by the tail. Choose, Warden. I'll load the charges either way.\"",
       "",
-      "CORR: \"Whatever you choose \u2014 the Directorate fleet arrives in one hour.\""
+      "CORR: \"Whatever you choose — the Directorate fleet arrives in one hour.\""
     ],
     "objectives": [
       "Decide the fate of the First Vein"
@@ -33,13 +33,13 @@
     "options": [
       {
         "id": "seal",
-        "label": "\u26cf SEAL THE DEEP",
-        "blurb": "Collapse the Vein forever. The Reach starves; the planet sleeps. Hold the site while the charges set \u2014 everything will try to stop you."
+        "label": "⛏ SEAL THE DEEP",
+        "blurb": "Collapse the Vein forever. The Reach starves; the planet sleeps. Hold the site while the charges set — everything will try to stop you."
       },
       {
         "id": "harness",
-        "label": "\u2b21 HARNESS THE CHORUS",
-        "blurb": "Bond the planet to human hands. Overdrive economy \u2014 but the corruption spreads, and the Directorate must fall before it consumes you."
+        "label": "⬡ HARNESS THE CHORUS",
+        "blurb": "Bond the planet to human hands. Overdrive economy — but the corruption spreads, and the Directorate must fall before it consumes you."
       }
     ]
   },
@@ -72,28 +72,28 @@
       },
       {
         "type": "refinery",
-        "tx": 6,
-        "ty": 28
+        "tx": 7,
+        "ty": 27
       },
       {
         "type": "power_node",
-        "tx": 3,
-        "ty": 26
+        "tx": 2,
+        "ty": 25
       },
       {
         "type": "barracks",
-        "tx": 5,
-        "ty": 30
+        "tx": 1,
+        "ty": 28
       },
       {
         "type": "war_factory",
-        "tx": 7,
-        "ty": 30
+        "tx": 10,
+        "ty": 27
       },
       {
         "type": "skypad",
-        "tx": 9,
-        "ty": 30
+        "tx": 13,
+        "ty": 26
       },
       {
         "type": "defense_turret",
@@ -147,38 +147,38 @@
         },
         {
           "type": "refinery",
-          "tx": 24,
-          "ty": 5
+          "tx": 23,
+          "ty": 4
         },
         {
           "type": "barracks",
-          "tx": 27,
-          "ty": 7
-        },
-        {
-          "type": "war_factory",
-          "tx": 25,
-          "ty": 7
-        },
-        {
-          "type": "skypad",
-          "tx": 28,
-          "ty": 6
-        },
-        {
-          "type": "defense_turret",
-          "tx": 24,
-          "ty": 8
-        },
-        {
-          "type": "aa_turret",
           "tx": 26,
           "ty": 8
         },
         {
-          "type": "power_node",
+          "type": "war_factory",
+          "tx": 23,
+          "ty": 7
+        },
+        {
+          "type": "skypad",
+          "tx": 29,
+          "ty": 5
+        },
+        {
+          "type": "defense_turret",
           "tx": 25,
-          "ty": 4
+          "ty": 7
+        },
+        {
+          "type": "aa_turret",
+          "tx": 26,
+          "ty": 7
+        },
+        {
+          "type": "power_node",
+          "tx": 26,
+          "ty": 2
         }
       ],
       "units": [

@@ -13,7 +13,7 @@
       "THE CHORUS: \"WE HAVE WORN YOUR DEAD. WE HAVE TASTED YOUR ENGINES. THE VEIN IS",
       "NOT YOURS. THE VEIN IS NOT OURS. THE VEIN IS US.\"",
       "",
-      "VANE: \"The lattice grows a spire an hour. Burn the growth, spare the deep root \u2014",
+      "VANE: \"The lattice grows a spire an hour. Burn the growth, spare the deep root —",
       "we need it ANGRY, not awake.\""
     ],
     "objectives": [
@@ -50,23 +50,23 @@
       },
       {
         "type": "refinery",
-        "tx": 6,
-        "ty": 28
+        "tx": 7,
+        "ty": 27
       },
       {
         "type": "power_node",
-        "tx": 3,
-        "ty": 26
+        "tx": 2,
+        "ty": 25
       },
       {
         "type": "barracks",
-        "tx": 5,
-        "ty": 30
+        "tx": 1,
+        "ty": 28
       },
       {
         "type": "war_factory",
-        "tx": 7,
-        "ty": 30
+        "tx": 10,
+        "ty": 27
       }
     ],
     "units": [
@@ -115,13 +115,13 @@
         },
         {
           "type": "barracks",
-          "tx": 18,
-          "ty": 14
+          "tx": 17,
+          "ty": 15
         },
         {
           "type": "refinery",
-          "tx": 16,
-          "ty": 14
+          "tx": 14,
+          "ty": 12
         }
       ],
       "units": [

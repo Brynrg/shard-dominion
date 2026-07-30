@@ -11,14 +11,14 @@
     "title": "CAUTERIZE",
     "story": [
       "DIRECTOR HALEX: \"Survey complete. The continent is a tumor. Cauterize begins at",
-      "dawn \u2014 flights Alpha through Theta. Commander Corr's objections are noted and",
+      "dawn — flights Alpha through Theta. Commander Corr's objections are noted and",
       "irrelevant.\"",
       "",
       "VANE: \"They're going to burn the veins. OUR veins. Get AA steel into the sky's",
-      "way \u2014 whatever the Directorate throws, it lands here first.\""
+      "way — whatever the Directorate throws, it lands here first.\""
     ],
     "objectives": [
-      "Survive the bombing runs for 5 minutes \u2014 keep the Refinery standing"
+      "Survive the bombing runs for 5 minutes — keep the Refinery standing"
     ]
   },
   "debrief": {
@@ -51,23 +51,23 @@
       },
       {
         "type": "refinery",
-        "tx": 8,
-        "ty": 26
+        "tx": 9,
+        "ty": 25
       },
       {
         "type": "power_node",
-        "tx": 5,
-        "ty": 24
+        "tx": 4,
+        "ty": 23
       },
       {
         "type": "barracks",
-        "tx": 7,
-        "ty": 28
+        "tx": 6,
+        "ty": 29
       },
       {
         "type": "aa_turret",
-        "tx": 9,
-        "ty": 25
+        "tx": 8,
+        "ty": 24
       }
     ],
     "units": [
@@ -101,23 +101,23 @@
         },
         {
           "type": "skypad",
-          "tx": 28,
-          "ty": 5
-        },
-        {
-          "type": "power_node",
-          "tx": 27,
+          "tx": 29,
           "ty": 4
         },
         {
-          "type": "refinery",
+          "type": "power_node",
           "tx": 25,
-          "ty": 7
+          "ty": 2
+        },
+        {
+          "type": "refinery",
+          "tx": 24,
+          "ty": 8
         },
         {
           "type": "construction_yard",
           "tx": 27,
-          "ty": 7
+          "ty": 8
         }
       ],
       "units": [
@@ -194,7 +194,7 @@
         {
           "type": "message",
           "speaker": "CORR (intercepted)",
-          "text": "Alpha flight, weapons free. \u2026May whatever's down there forgive us."
+          "text": "Alpha flight, weapons free. …May whatever's down there forgive us."
         },
         {
           "type": "spawn",

@@ -133,6 +133,17 @@ describe('content reachability (Phase C1)', () => {
     }
   });
 
+  it('every menu item has a purpose description for its tooltip (WC3 convention)', () => {
+    for (const f of FACTIONS) {
+      for (const tab of ['base', 'def', 'units'] as const) {
+        for (const item of itemsForTab(tab, units, structures, f)) {
+          expect(item.desc.length, `${item.id} has no desc — its tooltip would be empty`).toBeGreaterThan(10);
+          expect(item.buildTimeSeconds, `${item.id} build time`).toBeGreaterThan(0);
+        }
+      }
+    }
+  });
+
   it('every faction can build a hero and reach tier 3', () => {
     for (const f of FACTIONS) {
       const roster = itemsForTab('units', units, structures, f).map(i => i.id);

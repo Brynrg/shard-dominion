@@ -34,12 +34,15 @@ const BRIEF_STORY: readonly string[] = [
   'army. You start with a base and one Harvester; a rival warband is dug in to',
   'the north-east. Last commander standing holds the planet.',
 ];
+// Teaches the FLOW, not one build order (the old step 2 said "press B" while M1's
+// guided objectives say power first — the two contradicted each other on screen).
 const BRIEF_HOWTO: readonly string[] = [
-  '1.  Your Harvester auto-mines Shard into credits (the ◈ counter, top-right).',
-  '2.  Press  B  to build a Barracks (300) — click near your base when READY flashes.',
-  '3.  Press  T  or  R  to train Infantry / Rocket troopers.',
-  '4.  Drag a box to select troops, then RIGHT-CLICK the enemy to attack.',
-  '5.  Push north-east and destroy their base to win.',
+  '1.  Build from the SIDEBAR: click a button (or its hotkey) — it builds there.',
+  '2.  When the button flashes READY, click open ground near your base to place.',
+  '3.  HOVER any sidebar button to see its cost and what it does.',
+  '4.  Harvesters mine Shard into credits (◈ top-right) on their own.',
+  '5.  Drag a box to select troops · RIGHT-CLICK to move or attack.',
+  '6.  Follow the OBJECTIVES banner up top — it ticks off as you go.',
 ];
 // Two lines — the single long line clipped off the briefing frame (playtest v0.53).
 const BRIEF_HINT = 'SCROLL: screen edge · wheel = zoom · radar click = jump';

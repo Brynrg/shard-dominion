@@ -64,6 +64,23 @@ function seedSide(state: SimState, team: Team, credits: number, buildings: reado
   for (const u of units) {
     state.store.create({ position: tileToWorldCenter({ tx: u.tx, ty: u.ty }), ...makeUnit(u.type, team, deps, fm) });
   }
+  // A side seeded WITHOUT a refinery still gets its bank: fall back to the
+  // Construction Yard's command-reserve economy. Before this, the credits of any
+  // refinery-less start (M1's WC3-style lone-ConYard opening) were silently
+  // discarded — the mission said 2200, the player booted with 0.
+  if (!creditsAssigned && credits > 0) {
+    for (const e of state.store.all()) {
+      const f = e.components.faction;
+      if (f?.team !== team || f.faction !== 'construction_yard' || !e.components.economy) continue;
+      e.components.economy.credits = credits;
+      e.components.economy.refineryStorage = credits;
+      // Headroom ABOVE the boot bank, or the mission opens on a red "STORAGE FULL"
+      // banner before the player has done anything.
+      e.components.economy.maxStorage = Math.max(e.components.economy.maxStorage, credits + deps.economy.refineryStorageCapacity);
+      creditsAssigned = true;
+      break;
+    }
+  }
 }
 
 export function seedFromMission(state: SimState, mission: Mission, deps: SeedDeps, factions?: TeamFactions): SeededMeta {

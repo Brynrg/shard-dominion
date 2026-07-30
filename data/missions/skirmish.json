@@ -112,8 +112,8 @@
         },
         {
           "type": "construction_yard",
-          "tx": 37,
-          "ty": 14
+          "tx": 36,
+          "ty": 13
         },
         {
           "type": "power_node",

@@ -11,11 +11,11 @@
     "title": "LIFEBLOOD",
     "story": [
       "Marshal Corr: \"The fleet in orbit burns fuel it does not have. Command's",
-      "quota is 1,500 credits of refined Shard \u2014 impossible numbers, Warden, so",
+      "quota is 1,500 credits of refined Shard — impossible numbers, Warden, so",
       "make them possible. Emberhand raiders are moving in the northern flats;",
       "they will come for your harvesters first. Assign escorts.\"",
       "",
-      "Intercepted \u2014 Sera Vane: \"Squeeze the sand hard enough and it bites.\""
+      "Intercepted — Sera Vane: \"Squeeze the sand hard enough and it bites.\""
     ],
     "objectives": [
       "Bank 1,500 credits",
@@ -24,11 +24,11 @@
   },
   "debrief": {
     "win": [
-      "Quota met. The fleet lives another week \u2014 and the sand keeps bleeding.",
+      "Quota met. The fleet lives another week — and the sand keeps bleeding.",
       "Corr: \"Adequate. The Reach will not thank you, but I notice.\""
     ],
     "lose": [
-      "The refinery burns. The quota dies with it \u2014 and so does the fleet's patience."
+      "The refinery burns. The quota dies with it — and so does the fleet's patience."
     ]
   },
   "naturalShardDensity": 250,
@@ -58,13 +58,13 @@
       },
       {
         "type": "refinery",
-        "tx": 11,
-        "ty": 20
+        "tx": 12,
+        "ty": 19
       },
       {
         "type": "power_node",
-        "tx": 8,
-        "ty": 18
+        "tx": 7,
+        "ty": 17
       }
     ],
     "units": [
@@ -97,13 +97,13 @@
         },
         {
           "type": "barracks",
-          "tx": 25,
-          "ty": 7
+          "tx": 27,
+          "ty": 5
         },
         {
           "type": "power_node",
-          "tx": 23,
-          "ty": 4
+          "tx": 22,
+          "ty": 3
         }
       ],
       "units": [
@@ -184,7 +184,7 @@
         {
           "type": "message",
           "speaker": "CORR",
-          "text": "Raiders inbound from the north \u2014 protect the harvesters."
+          "text": "Raiders inbound from the north — protect the harvesters."
         },
         {
           "type": "spawn",
@@ -225,7 +225,7 @@
         {
           "type": "message",
           "speaker": "CORR",
-          "text": "Second wave \u2014 they mean to end the quota, Warden."
+          "text": "Second wave — they mean to end the quota, Warden."
         },
         {
           "type": "spawn",

@@ -14,7 +14,7 @@
       "fund the whole front. The Emberhand knows. Take the centre, hold it for",
       "two minutes of continuous extraction, and the Reach owes you a fleet.\"",
       "",
-      "Intercepted \u2014 Sera Vane: \"That vein is the planet's artery. Cut it and see what wakes.\""
+      "Intercepted — Sera Vane: \"That vein is the planet's artery. Cut it and see what wakes.\""
     ],
     "objectives": [
       "Hold the central vein for 2:00 (continuous)"
@@ -22,11 +22,11 @@
   },
   "debrief": {
     "win": [
-      "The vein is yours \u2014 and under the drills, something shifted. Survey blames the depth.",
+      "The vein is yours — and under the drills, something shifted. Survey blames the depth.",
       "Corr: \"Extraction begins tonight. Vane's superstitions are not our problem.\""
     ],
     "lose": [
-      "The centre is lost. The Emberhand hold the artery \u2014 and the front starves."
+      "The centre is lost. The Emberhand hold the artery — and the front starves."
     ]
   },
   "naturalShardDensity": 250,
@@ -56,18 +56,18 @@
       },
       {
         "type": "refinery",
-        "tx": 10,
-        "ty": 25
+        "tx": 11,
+        "ty": 24
       },
       {
         "type": "barracks",
-        "tx": 6,
-        "ty": 25
+        "tx": 5,
+        "ty": 24
       },
       {
         "type": "power_node",
-        "tx": 7,
-        "ty": 22
+        "tx": 6,
+        "ty": 21
       }
     ],
     "units": [
@@ -105,13 +105,13 @@
         },
         {
           "type": "barracks",
-          "tx": 25,
-          "ty": 7
+          "tx": 27,
+          "ty": 5
         },
         {
           "type": "power_node",
-          "tx": 23,
-          "ty": 4
+          "tx": 22,
+          "ty": 3
         }
       ],
       "units": [
@@ -212,7 +212,7 @@
         {
           "type": "message",
           "speaker": "SCOUTS",
-          "text": "Emberhand column moving on the vein \u2014 they want it back."
+          "text": "Emberhand column moving on the vein — they want it back."
         },
         {
           "type": "spawn",

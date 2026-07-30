@@ -2,7 +2,11 @@
   "id": "m7_the_turn",
   "name": "The Turn",
   "order": 7,
-  "map": { "width": 32, "height": 32, "seed": 7077 },
+  "map": {
+    "width": 32,
+    "height": 32,
+    "seed": 7077
+  },
   "briefing": {
     "title": "THE TURN",
     "story": [
@@ -36,31 +40,103 @@
   },
   "naturalShardDensity": 200,
   "fields": [
-    { "tx": 11, "ty": 26, "w": 2, "h": 2, "density": 620 },
-    { "tx": 3, "ty": 18, "w": 2, "h": 2, "density": 500 }
+    {
+      "tx": 11,
+      "ty": 26,
+      "w": 2,
+      "h": 2,
+      "density": 620
+    },
+    {
+      "tx": 3,
+      "ty": 18,
+      "w": 2,
+      "h": 2,
+      "density": 500
+    }
   ],
   "player": {
     "credits": 2200,
     "factionId": "concord",
     "techTier": 2,
     "buildings": [
-      { "type": "construction_yard", "tx": 5, "ty": 24 },
-      { "type": "refinery", "tx": 7, "ty": 25 },
-      { "type": "barracks", "tx": 4, "ty": 26 },
-      { "type": "war_factory", "tx": 6, "ty": 21 },
-      { "type": "power_node", "tx": 3, "ty": 23 },
-      { "type": "power_node", "tx": 8, "ty": 22 },
-      { "type": "defense_turret", "tx": 9, "ty": 24 },
-      { "type": "defense_turret", "tx": 6, "ty": 27 }
+      {
+        "type": "construction_yard",
+        "tx": 5,
+        "ty": 24
+      },
+      {
+        "type": "refinery",
+        "tx": 8,
+        "ty": 24
+      },
+      {
+        "type": "barracks",
+        "tx": 3,
+        "ty": 27
+      },
+      {
+        "type": "war_factory",
+        "tx": 6,
+        "ty": 21
+      },
+      {
+        "type": "power_node",
+        "tx": 2,
+        "ty": 22
+      },
+      {
+        "type": "power_node",
+        "tx": 9,
+        "ty": 21
+      },
+      {
+        "type": "defense_turret",
+        "tx": 8,
+        "ty": 23
+      },
+      {
+        "type": "defense_turret",
+        "tx": 6,
+        "ty": 27
+      }
     ],
     "units": [
-      { "type": "harvester", "tx": 9, "ty": 26 },
-      { "type": "infantry", "tx": 5, "ty": 28 },
-      { "type": "infantry", "tx": 6, "ty": 28 },
-      { "type": "rocket_trooper", "tx": 7, "ty": 28 },
-      { "type": "rocket_trooper", "tx": 8, "ty": 28 },
-      { "type": "vehicle", "tx": 4, "ty": 22 },
-      { "type": "vehicle", "tx": 9, "ty": 21 }
+      {
+        "type": "harvester",
+        "tx": 9,
+        "ty": 26
+      },
+      {
+        "type": "infantry",
+        "tx": 5,
+        "ty": 28
+      },
+      {
+        "type": "infantry",
+        "tx": 6,
+        "ty": 28
+      },
+      {
+        "type": "rocket_trooper",
+        "tx": 7,
+        "ty": 28
+      },
+      {
+        "type": "rocket_trooper",
+        "tx": 8,
+        "ty": 28
+      },
+      {
+        "type": "vehicle",
+        "tx": 4,
+        "ty": 22
+      },
+      {
+        "type": "vehicle",
+        "tx": 9,
+        "ty": 21
+      }
     ]
   },
   "enemies": [
@@ -70,29 +146,98 @@
       "factionId": "concord",
       "techTier": 3,
       "buildings": [
-        { "type": "construction_yard", "tx": 26, "ty": 5 },
-        { "type": "refinery", "tx": 24, "ty": 6 },
-        { "type": "barracks", "tx": 23, "ty": 8 },
-        { "type": "barracks", "tx": 28, "ty": 7 },
-        { "type": "war_factory", "tx": 27, "ty": 4 },
-        { "type": "defense_turret", "tx": 22, "ty": 10 },
-        { "type": "defense_turret", "tx": 25, "ty": 10 },
-        { "type": "power_node", "tx": 29, "ty": 5 },
-        { "type": "power_node", "tx": 24, "ty": 3 }
+        {
+          "type": "construction_yard",
+          "tx": 26,
+          "ty": 5
+        },
+        {
+          "type": "refinery",
+          "tx": 23,
+          "ty": 5
+        },
+        {
+          "type": "barracks",
+          "tx": 23,
+          "ty": 8
+        },
+        {
+          "type": "barracks",
+          "tx": 29,
+          "ty": 6
+        },
+        {
+          "type": "war_factory",
+          "tx": 25,
+          "ty": 2
+        },
+        {
+          "type": "defense_turret",
+          "tx": 22,
+          "ty": 10
+        },
+        {
+          "type": "defense_turret",
+          "tx": 25,
+          "ty": 10
+        },
+        {
+          "type": "power_node",
+          "tx": 29,
+          "ty": 3
+        },
+        {
+          "type": "power_node",
+          "tx": 22,
+          "ty": 1
+        }
       ],
       "units": [
-        { "type": "harvester", "tx": 26, "ty": 8 },
-        { "type": "infantry", "tx": 23, "ty": 11 },
-        { "type": "infantry", "tx": 24, "ty": 11 },
-        { "type": "rocket_trooper", "tx": 25, "ty": 11 },
-        { "type": "vehicle", "tx": 26, "ty": 11 },
-        { "type": "assault_tank", "tx": 27, "ty": 11 }
+        {
+          "type": "harvester",
+          "tx": 26,
+          "ty": 8
+        },
+        {
+          "type": "infantry",
+          "tx": 23,
+          "ty": 11
+        },
+        {
+          "type": "infantry",
+          "tx": 24,
+          "ty": 11
+        },
+        {
+          "type": "rocket_trooper",
+          "tx": 25,
+          "ty": 11
+        },
+        {
+          "type": "vehicle",
+          "tx": 26,
+          "ty": 11
+        },
+        {
+          "type": "assault_tank",
+          "tx": 27,
+          "ty": 11
+        }
       ],
       "fields": [
-        { "tx": 28, "ty": 9, "w": 3, "h": 2, "density": 720 }
+        {
+          "tx": 28,
+          "ty": 9,
+          "w": 3,
+          "h": 2,
+          "density": 720
+        }
       ],
       "ai": {
-        "attackTile": { "tx": 6, "ty": 24 },
+        "attackTile": {
+          "tx": 6,
+          "ty": 24
+        },
         "assaultValue": 650,
         "assaultEscalationPerMin": 130,
         "pressureValue": 380,
@@ -112,90 +257,198 @@
       "type": "reach",
       "id": "link_up",
       "team": "player",
-      "region": { "tx": 28, "ty": 28, "r": 3 },
+      "region": {
+        "tx": 28,
+        "ty": 28,
+        "r": 3
+      },
       "primary": false,
       "text": "Link up with Vane's raiders at the eastern ravine (SE)"
     }
   ],
   "failure": [
-    { "type": "defeated", "team": "player" }
+    {
+      "type": "defeated",
+      "team": "player"
+    }
   ],
   "triggers": [
     {
       "id": "t_purge",
-      "when": { "timeSeconds": 8 },
+      "when": {
+        "timeSeconds": 8
+      },
       "actions": [
-        { "type": "message", "speaker": "DIRECTOR HALEX", "text": "Your silence is an answer, Warden. Loyalists — the asset is compromised. Purge the column." },
+        {
+          "type": "message",
+          "speaker": "DIRECTOR HALEX",
+          "text": "Your silence is an answer, Warden. Loyalists — the asset is compromised. Purge the column."
+        },
         {
           "type": "spawn",
           "team": "enemy",
           "units": [
-            { "type": "infantry", "tx": 18, "ty": 14 },
-            { "type": "infantry", "tx": 19, "ty": 14 },
-            { "type": "rocket_trooper", "tx": 20, "ty": 14 },
-            { "type": "vehicle", "tx": 21, "ty": 14 }
+            {
+              "type": "infantry",
+              "tx": 18,
+              "ty": 14
+            },
+            {
+              "type": "infantry",
+              "tx": 19,
+              "ty": 14
+            },
+            {
+              "type": "rocket_trooper",
+              "tx": 20,
+              "ty": 14
+            },
+            {
+              "type": "vehicle",
+              "tx": 21,
+              "ty": 14
+            }
           ],
-          "attackMoveTo": { "tx": 6, "ty": 24 }
+          "attackMoveTo": {
+            "tx": 6,
+            "ty": 24
+          }
         }
       ]
     },
     {
       "id": "t_corr_screen",
-      "when": { "timeSeconds": 45 },
+      "when": {
+        "timeSeconds": 45
+      },
       "actions": [
-        { "type": "message", "speaker": "MARSHAL CORR", "text": "I'll jam their flights as long as this channel holds. The eastern ravine, Warden — Vane's people are dug in there. Get your survivors moving." },
-        { "type": "reveal", "region": { "tx": 28, "ty": 28, "r": 5 } }
+        {
+          "type": "message",
+          "speaker": "MARSHAL CORR",
+          "text": "I'll jam their flights as long as this channel holds. The eastern ravine, Warden — Vane's people are dug in there. Get your survivors moving."
+        },
+        {
+          "type": "reveal",
+          "region": {
+            "tx": 28,
+            "ty": 28,
+            "r": 5
+          }
+        }
       ]
     },
     {
       "id": "t_halex_press",
-      "when": { "timeSeconds": 120 },
+      "when": {
+        "timeSeconds": 120
+      },
       "actions": [
-        { "type": "message", "speaker": "DIRECTOR HALEX", "text": "Renegade confirmed. Reprioritise Cauterize: the traitor burns first." },
+        {
+          "type": "message",
+          "speaker": "DIRECTOR HALEX",
+          "text": "Renegade confirmed. Reprioritise Cauterize: the traitor burns first."
+        },
         {
           "type": "spawn",
           "team": "enemy",
           "units": [
-            { "type": "assault_tank", "tx": 18, "ty": 15 },
-            { "type": "vehicle", "tx": 19, "ty": 15 },
-            { "type": "rocket_trooper", "tx": 20, "ty": 15 },
-            { "type": "rocket_trooper", "tx": 21, "ty": 15 },
-            { "type": "infantry", "tx": 22, "ty": 15 }
+            {
+              "type": "assault_tank",
+              "tx": 18,
+              "ty": 15
+            },
+            {
+              "type": "vehicle",
+              "tx": 19,
+              "ty": 15
+            },
+            {
+              "type": "rocket_trooper",
+              "tx": 20,
+              "ty": 15
+            },
+            {
+              "type": "rocket_trooper",
+              "tx": 21,
+              "ty": 15
+            },
+            {
+              "type": "infantry",
+              "tx": 22,
+              "ty": 15
+            }
           ],
-          "attackMoveTo": { "tx": 6, "ty": 24 }
+          "attackMoveTo": {
+            "tx": 6,
+            "ty": 24
+          }
         }
       ]
     },
     {
       "id": "t_vane_joins",
-      "when": { "timeSeconds": 185 },
+      "when": {
+        "timeSeconds": 185
+      },
       "actions": [
-        { "type": "message", "speaker": "SERA VANE", "text": "Concord dog — you spend Directorate blood like it's cheap. I can respect that. Take my raiders. Don't make me regret the loan." },
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "Concord dog — you spend Directorate blood like it's cheap. I can respect that. Take my raiders. Don't make me regret the loan."
+        },
         {
           "type": "spawn",
           "team": "player",
           "units": [
-            { "type": "infantry", "tx": 27, "ty": 27 },
-            { "type": "infantry", "tx": 28, "ty": 27 },
-            { "type": "rocket_trooper", "tx": 29, "ty": 27 },
-            { "type": "assault_tank", "tx": 28, "ty": 29 }
+            {
+              "type": "infantry",
+              "tx": 27,
+              "ty": 27
+            },
+            {
+              "type": "infantry",
+              "tx": 28,
+              "ty": 27
+            },
+            {
+              "type": "rocket_trooper",
+              "tx": 29,
+              "ty": 27
+            },
+            {
+              "type": "assault_tank",
+              "tx": 28,
+              "ty": 29
+            }
           ]
         },
-        { "type": "grantCredits", "team": "player", "amount": 800 }
+        {
+          "type": "grantCredits",
+          "team": "player",
+          "amount": 800
+        }
       ]
     },
     {
       "id": "t_corr_last",
-      "when": { "timeSeconds": 255 },
+      "when": {
+        "timeSeconds": 255
+      },
       "actions": [
-        { "type": "message", "speaker": "MARSHAL CORR", "text": "Cordon's thinning — they're pulling flights back to the ridge. Hold, Warden. You're almost out from under them." }
+        {
+          "type": "message",
+          "speaker": "MARSHAL CORR",
+          "text": "Cordon's thinning — they're pulling flights back to the ridge. Hold, Warden. You're almost out from under them."
+        }
       ]
     }
   ],
   "rewards": [
     {
       "ifObjectiveComplete": "link_up",
-      "grant": { "nextMissionCredits": 600 }
+      "grant": {
+        "nextMissionCredits": 600
+      }
     }
   ],
   "next": "m8_ashfall"

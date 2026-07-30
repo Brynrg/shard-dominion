@@ -11,10 +11,10 @@
     "title": "HOLD THE LINE",
     "story": [
       "Marshal Corr: \"Canyon Reach is a corridor the Emberhand needs and you",
-      "hold. Relief is four minutes out. Dig in \u2014 turrets (G), walls of rifles,",
+      "hold. Relief is four minutes out. Dig in — turrets (G), walls of rifles,",
       "whatever the sand gives you. Nothing gets through. Nothing.\"",
       "",
-      "Intercepted \u2014 Sera Vane: \"Four minutes is a long time to bleed, Warden.\""
+      "Intercepted — Sera Vane: \"Four minutes is a long time to bleed, Warden.\""
     ],
     "objectives": [
       "Survive until relief arrives (4:00)",
@@ -23,11 +23,11 @@
   },
   "debrief": {
     "win": [
-      "The relief column crests the dunes to find the line \u2014 battered, burning, unbroken.",
+      "The relief column crests the dunes to find the line — battered, burning, unbroken.",
       "Corr: \"Canyon Reach holds. I'll pretend I never doubted it.\""
     ],
     "lose": [
-      "The line breaks. Canyon Reach belongs to the Emberhand \u2014 and the corridor to everything else."
+      "The line breaks. Canyon Reach belongs to the Emberhand — and the corridor to everything else."
     ]
   },
   "naturalShardDensity": 250,
@@ -50,18 +50,18 @@
       },
       {
         "type": "refinery",
-        "tx": 10,
-        "ty": 24
+        "tx": 11,
+        "ty": 23
       },
       {
         "type": "barracks",
-        "tx": 8,
-        "ty": 26
+        "tx": 7,
+        "ty": 27
       },
       {
         "type": "power_node",
-        "tx": 7,
-        "ty": 22
+        "tx": 6,
+        "ty": 21
       }
     ],
     "units": [
@@ -104,13 +104,13 @@
         },
         {
           "type": "barracks",
-          "tx": 27,
-          "ty": 5
+          "tx": 29,
+          "ty": 3
         },
         {
           "type": "power_node",
-          "tx": 25,
-          "ty": 2
+          "tx": 24,
+          "ty": 1
         }
       ],
       "units": [
@@ -175,7 +175,7 @@
         {
           "type": "message",
           "speaker": "CORR",
-          "text": "Dig in. First contact imminent \u2014 turrets pay for themselves (G)."
+          "text": "Dig in. First contact imminent — turrets pay for themselves (G)."
         }
       ]
     },
@@ -188,7 +188,7 @@
         {
           "type": "message",
           "speaker": "SCOUTS",
-          "text": "Contact north \u2014 infantry probe."
+          "text": "Contact north — infantry probe."
         },
         {
           "type": "spawn",
@@ -226,7 +226,7 @@
         {
           "type": "message",
           "speaker": "SCOUTS",
-          "text": "Second wave \u2014 mixed arms, coming harder."
+          "text": "Second wave — mixed arms, coming harder."
         },
         {
           "type": "spawn",
@@ -312,7 +312,7 @@
         {
           "type": "message",
           "speaker": "CORR",
-          "text": "Final push \u2014 HOLD, Warden. Relief is on the horizon."
+          "text": "Final push — HOLD, Warden. Relief is on the horizon."
         },
         {
           "type": "spawn",

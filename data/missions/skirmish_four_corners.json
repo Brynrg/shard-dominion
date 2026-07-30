@@ -2,7 +2,11 @@
   "id": "skirmish_four_corners",
   "name": "Four Corners (4P Skirmish)",
   "order": 102,
-  "map": { "width": 48, "height": 48, "seed": 4003 },
+  "map": {
+    "width": 48,
+    "height": 48,
+    "seed": 4003
+  },
   "briefing": {
     "title": "FOUR CORNERS",
     "story": [
@@ -13,30 +17,86 @@
     ]
   },
   "debrief": {
-    "win": [ "Only you remain." ],
-    "lose": [ "Surrounded. Defeated." ]
+    "win": [
+      "Only you remain."
+    ],
+    "lose": [
+      "Surrounded. Defeated."
+    ]
   },
   "naturalShardDensity": 220,
   "fields": [
-    { "tx": 6, "ty": 6, "w": 2, "h": 2, "density": 600 },
-    { "tx": 40, "ty": 6, "w": 2, "h": 2, "density": 600 },
-    { "tx": 6, "ty": 40, "w": 2, "h": 2, "density": 600 },
-    { "tx": 40, "ty": 40, "w": 2, "h": 2, "density": 600 }
+    {
+      "tx": 6,
+      "ty": 6,
+      "w": 2,
+      "h": 2,
+      "density": 600
+    },
+    {
+      "tx": 40,
+      "ty": 6,
+      "w": 2,
+      "h": 2,
+      "density": 600
+    },
+    {
+      "tx": 6,
+      "ty": 40,
+      "w": 2,
+      "h": 2,
+      "density": 600
+    },
+    {
+      "tx": 40,
+      "ty": 40,
+      "w": 2,
+      "h": 2,
+      "density": 600
+    }
   ],
   "player": {
     "credits": 3000,
     "factionId": "concord",
     "techTier": 1,
     "buildings": [
-      { "type": "construction_yard", "tx": 5, "ty": 5 },
-      { "type": "refinery", "tx": 7, "ty": 5 },
-      { "type": "barracks", "tx": 5, "ty": 7 },
-      { "type": "power_node", "tx": 4, "ty": 6 }
+      {
+        "type": "construction_yard",
+        "tx": 5,
+        "ty": 5
+      },
+      {
+        "type": "refinery",
+        "tx": 8,
+        "ty": 4
+      },
+      {
+        "type": "barracks",
+        "tx": 4,
+        "ty": 8
+      },
+      {
+        "type": "power_node",
+        "tx": 2,
+        "ty": 4
+      }
     ],
     "units": [
-      { "type": "harvester", "tx": 8, "ty": 6 },
-      { "type": "infantry", "tx": 6, "ty": 8 },
-      { "type": "infantry", "tx": 7, "ty": 8 }
+      {
+        "type": "harvester",
+        "tx": 8,
+        "ty": 6
+      },
+      {
+        "type": "infantry",
+        "tx": 6,
+        "ty": 8
+      },
+      {
+        "type": "infantry",
+        "tx": 7,
+        "ty": 8
+      }
     ]
   },
   "enemies": [
@@ -46,17 +106,51 @@
       "factionId": "emberhand",
       "techTier": 1,
       "buildings": [
-        { "type": "construction_yard", "tx": 42, "ty": 5 },
-        { "type": "refinery", "tx": 40, "ty": 5 },
-        { "type": "barracks", "tx": 42, "ty": 7 },
-        { "type": "power_node", "tx": 43, "ty": 6 }
+        {
+          "type": "construction_yard",
+          "tx": 42,
+          "ty": 5
+        },
+        {
+          "type": "refinery",
+          "tx": 39,
+          "ty": 4
+        },
+        {
+          "type": "barracks",
+          "tx": 41,
+          "ty": 8
+        },
+        {
+          "type": "power_node",
+          "tx": 45,
+          "ty": 4
+        }
       ],
       "units": [
-        { "type": "harvester", "tx": 39, "ty": 6 },
-        { "type": "infantry", "tx": 41, "ty": 8 },
-        { "type": "infantry", "tx": 40, "ty": 8 }
+        {
+          "type": "harvester",
+          "tx": 39,
+          "ty": 6
+        },
+        {
+          "type": "infantry",
+          "tx": 41,
+          "ty": 8
+        },
+        {
+          "type": "infantry",
+          "tx": 40,
+          "ty": 8
+        }
       ],
-      "ai": { "attackTile": { "tx": 5, "ty": 5 }, "assaultValue": 350 }
+      "ai": {
+        "attackTile": {
+          "tx": 5,
+          "ty": 5
+        },
+        "assaultValue": 350
+      }
     },
     {
       "team": "enemy",
@@ -64,22 +158,66 @@
       "factionId": "shardborn",
       "techTier": 1,
       "buildings": [
-        { "type": "construction_yard", "tx": 5, "ty": 42 },
-        { "type": "refinery", "tx": 7, "ty": 42 },
-        { "type": "barracks", "tx": 5, "ty": 40 },
-        { "type": "power_node", "tx": 4, "ty": 41 }
+        {
+          "type": "construction_yard",
+          "tx": 5,
+          "ty": 42
+        },
+        {
+          "type": "refinery",
+          "tx": 8,
+          "ty": 41
+        },
+        {
+          "type": "barracks",
+          "tx": 4,
+          "ty": 39
+        },
+        {
+          "type": "power_node",
+          "tx": 2,
+          "ty": 42
+        }
       ],
       "units": [
-        { "type": "harvester", "tx": 8, "ty": 41 },
-        { "type": "infantry", "tx": 6, "ty": 39 },
-        { "type": "infantry", "tx": 7, "ty": 39 }
+        {
+          "type": "harvester",
+          "tx": 8,
+          "ty": 41
+        },
+        {
+          "type": "infantry",
+          "tx": 6,
+          "ty": 39
+        },
+        {
+          "type": "infantry",
+          "tx": 7,
+          "ty": 39
+        }
       ],
-      "ai": { "attackTile": { "tx": 5, "ty": 5 }, "assaultValue": 350 }
+      "ai": {
+        "attackTile": {
+          "tx": 5,
+          "ty": 5
+        },
+        "assaultValue": 350
+      }
     }
   ],
   "objectives": [
-    { "type": "eliminate", "team": "enemy", "primary": true, "text": "Eliminate all enemies" }
+    {
+      "type": "eliminate",
+      "team": "enemy",
+      "primary": true,
+      "text": "Eliminate all enemies"
+    }
   ],
-  "failure": [ { "type": "defeated", "team": "player" } ],
+  "failure": [
+    {
+      "type": "defeated",
+      "team": "player"
+    }
+  ],
   "next": null
 }

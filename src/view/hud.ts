@@ -566,6 +566,7 @@ export function makeHUD(cfg: HUDConfig): {
       if (tabPage[activeTab] >= totalPages) tabPage[activeTab] = 0;
       const menu = activeTab === 'tech' ? [] : pageOf(allItems, tabPage[activeTab]);
       const standing = (id: string): boolean => cfg.hasStructure?.(id) ?? false;
+      let tooltipFor: { item: MenuItem; y: number; missing: string[]; tierOk: boolean; shownCost: number } | null = null;
       for (const item of menu) {
         // Producer comes from DATA (`units[].producedBy`) — the same field the sim
         // uses to accept or refuse the queue entry, so the button can never promise
@@ -586,6 +587,7 @@ export function makeHUD(cfg: HUDConfig): {
         const busyOther = item.kind === 'build' && !!job && !jobMine;
         const enabled = jobReady || (credits >= shownCost && prereqMet && tierOk && cellsOk && !busyOther && !jobMine);
         const hovered = !!hover && hover.sx >= px + 8 && hover.sx <= px + 8 + bw && hover.sy >= by && hover.sy <= by + 30;
+        if (hovered) tooltipFor = { item, y: by, missing, tierOk: (item.tier <= tech.tier), shownCost: item.kind === 'train' ? (cfg.unitCost?.(item.cost) ?? item.cost) : item.cost };
         const progress = jobMine && !jobReady && job ? Math.round((1 - job.ticksLeft / job.totalTicks) * 100)
           : producer?.current === item.id ? (producer?.progress ?? 0) : 0;
         const queued = producer ? producer.queue.filter(q => q === item.id).length : 0;
@@ -618,6 +620,52 @@ export function makeHUD(cfg: HUDConfig): {
         by += 34;
       }
       if (activeTab !== 'tech') by = drawPager(px, by, bw, activeTab, tabPage[activeTab], totalPages);
+
+      // ── Hover tooltip (WC3 convention, Phase D2) ────────────────────────────
+      // Every build button explains itself on hover: name, cost + build time, a
+      // grey "Requires: …" line when gated, and a one-line purpose. This is how
+      // WC3 answers "what does this building do?" without a manual — and it is
+      // drawn LAST so it sits above every other panel element.
+      if (tooltipFor) {
+        const it = tooltipFor.item;
+        const lines: { text: string; color: string; bold?: boolean }[] = [];
+        lines.push({ text: it.name, color: '#ffd34d', bold: true });
+        const time = `${Math.round(it.buildTimeSeconds)}s`;
+        lines.push({ text: `◈${tooltipFor.shownCost}${it.cellCost ? `  ⬡${it.cellCost}` : ''}  ·  ${time}`, color: '#e6edf3' });
+        if (!tooltipFor.tierOk) lines.push({ text: `Requires: HQ Tier ${it.tier}`, color: '#c9a24a' });
+        for (const m of tooltipFor.missing) lines.push({ text: `Requires: ${shortLabel(m)}`, color: '#c9a24a' });
+        if (it.kind === 'train' && it.producedBy) lines.push({ text: `Trains at: ${shortLabel(it.producedBy)}`, color: '#8fa3b8' });
+        // Word-wrap the purpose line to the tooltip width.
+        const TIP_W = 210;
+        context.font = '11px monospace';
+        if (it.desc) {
+          let line = '';
+          for (const w of it.desc.split(' ')) {
+            const probe = line ? `${line} ${w}` : w;
+            if (context.measureText(probe).width > TIP_W - 20 && line) {
+              lines.push({ text: line, color: '#cfe0ee' });
+              line = w;
+            } else line = probe;
+          }
+          if (line) lines.push({ text: line, color: '#cfe0ee' });
+        }
+        const lineH = 15;
+        const tipH = 12 + lines.length * lineH;
+        const tx0 = px - TIP_W - 6;                       // left of the sidebar
+        const ty0 = Math.max(8, Math.min(tooltipFor.y, canvas.height - tipH - 8));
+        context.fillStyle = 'rgba(8,10,16,0.96)';
+        context.fillRect(tx0, ty0, TIP_W, tipH);
+        context.strokeStyle = '#4a6a8a';
+        context.strokeRect(tx0 + 0.5, ty0 + 0.5, TIP_W - 1, tipH - 1);
+        let ly = ty0 + 7;
+        for (const l of lines) {
+          context.font = `${l.bold ? 'bold ' : ''}11px monospace`;
+          context.fillStyle = l.color;
+          context.textBaseline = 'top';
+          context.fillText(l.text, tx0 + 10, ly);
+          ly += lineH;
+        }
+      }
 
       // ── Superweapon charge rows (Phase C3) ──────────────────────────────────
       // One row per standing superweapon: a charge bar while it recharges, a pulsing

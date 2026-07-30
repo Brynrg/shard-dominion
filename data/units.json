@@ -24,7 +24,8 @@
         }
       },
       "producedBy": "barracks",
-      "hotkey": "T"
+      "hotkey": "T",
+      "desc": "Cheap rifle trooper. Strong vs infantry, weak vs armour."
     },
     {
       "id": "vehicle",
@@ -51,7 +52,8 @@
       },
       "leavesWreck": true,
       "producedBy": "war_factory",
-      "hotkey": ""
+      "hotkey": "",
+      "desc": "Light gun platform."
     },
     {
       "id": "harvester",
@@ -78,7 +80,8 @@
       },
       "leavesWreck": true,
       "producedBy": "refinery",
-      "hotkey": "H"
+      "hotkey": "H",
+      "desc": "Mines Shard and hauls it home. Your economy."
     },
     {
       "id": "rocket_trooper",
@@ -105,7 +108,8 @@
       },
       "producedBy": "barracks",
       "hotkey": "R",
-      "shortName": "Rocket"
+      "shortName": "Rocket",
+      "desc": "Anti-armour and anti-air rockets. Fragile."
     },
     {
       "id": "scout_vehicle",
@@ -134,7 +138,8 @@
       "leavesWreck": true,
       "producedBy": "war_factory",
       "hotkey": "V",
-      "shortName": "Scout"
+      "shortName": "Scout",
+      "desc": "Fast recon. Good vs massed infantry."
     },
     {
       "id": "assault_tank",
@@ -163,7 +168,8 @@
       "leavesWreck": true,
       "producedBy": "war_factory",
       "hotkey": "C",
-      "shortName": "Tank"
+      "shortName": "Tank",
+      "desc": "Heavy tank. Anchors any push."
     },
     {
       "id": "riftmaw",
@@ -189,7 +195,8 @@
         }
       },
       "producedBy": null,
-      "hotkey": ""
+      "hotkey": "",
+      "desc": "The planet’s answer. Do not dig too greedily."
     },
     {
       "id": "warden",
@@ -219,7 +226,8 @@
       "producedBy": "barracks",
       "hotkey": "E",
       "shortName": "Warden ★",
-      "factionLock": "concord"
+      "factionLock": "concord",
+      "desc": "Concord hero. Aura empowers nearby troops; grows with kills."
     },
     {
       "id": "ghostwalker",
@@ -249,7 +257,8 @@
       },
       "producedBy": "barracks",
       "hotkey": "",
-      "shortName": "Ghostwalkr"
+      "shortName": "Ghostwalkr",
+      "desc": "Emberhand stealth scout. Invisible until it fires."
     },
     {
       "id": "vane",
@@ -280,7 +289,8 @@
       },
       "producedBy": "barracks",
       "hotkey": "E",
-      "shortName": "Vane ★"
+      "shortName": "Vane ★",
+      "desc": "Emberhand hero. Stealthed duelist with a kill aura."
     },
     {
       "id": "longbow",
@@ -308,7 +318,8 @@
         }
       },
       "producedBy": "war_factory",
-      "hotkey": ""
+      "hotkey": "",
+      "desc": "Long-range artillery. Outranges turrets — keep it screened."
     },
     {
       "id": "skimmer_apc",
@@ -338,7 +349,8 @@
       },
       "producedBy": "war_factory",
       "hotkey": "",
-      "shortName": "Skimmer"
+      "shortName": "Skimmer",
+      "desc": "Fast transport with a light gun."
     },
     {
       "id": "gunship",
@@ -367,7 +379,8 @@
         }
       },
       "producedBy": "skypad",
-      "hotkey": ""
+      "hotkey": "",
+      "desc": "Strike aircraft. Rearms at a Skypad."
     },
     {
       "id": "howitzer",
@@ -395,7 +408,8 @@
         }
       },
       "producedBy": "war_factory",
-      "hotkey": ""
+      "hotkey": "",
+      "desc": "Siege artillery. Huge splash, huge minimum range."
     },
     {
       "id": "engineer",
@@ -422,7 +436,8 @@
         }
       },
       "producedBy": "barracks",
-      "hotkey": ""
+      "hotkey": "",
+      "desc": "Support specialist. No real weapon — keep it escorted."
     },
     {
       "id": "transport_apc",
@@ -452,7 +467,8 @@
       },
       "producedBy": "war_factory",
       "hotkey": "",
-      "shortName": "Transport"
+      "shortName": "Transport",
+      "desc": "Armoured transport — carries a squad."
     },
     {
       "id": "defense_drone",
@@ -482,7 +498,8 @@
       },
       "producedBy": "skypad",
       "hotkey": "",
-      "shortName": "Drone"
+      "shortName": "Drone",
+      "desc": "Air-to-air interceptor drone."
     },
     {
       "id": "repair_truck",
@@ -511,7 +528,8 @@
       },
       "producedBy": "war_factory",
       "hotkey": "",
-      "shortName": "Repair Trk"
+      "shortName": "Repair Trk",
+      "desc": "Repairs friendly vehicles in the field."
     },
     {
       "id": "medium_tank",
@@ -540,7 +558,8 @@
       },
       "producedBy": "war_factory",
       "hotkey": "Z",
-      "shortName": "Med Tank"
+      "shortName": "Med Tank",
+      "desc": "Workhorse battle tank."
     },
     {
       "id": "super_heavy_tank",
@@ -569,7 +588,8 @@
       },
       "producedBy": "war_factory",
       "hotkey": "",
-      "shortName": "Behemoth"
+      "shortName": "Behemoth",
+      "desc": "Tier-3 behemoth. Slow, nearly unstoppable."
     },
     {
       "id": "commando",
@@ -597,7 +617,8 @@
         }
       },
       "producedBy": "barracks_elite",
-      "hotkey": ""
+      "hotkey": "",
+      "desc": "Stealthed demolition expert. Devastates buildings."
     },
     {
       "id": "laser_trooper",
@@ -625,7 +646,8 @@
       },
       "producedBy": "barracks_elite",
       "hotkey": "Y",
-      "shortName": "Laser Inf"
+      "shortName": "Laser Inf",
+      "desc": "Rapid laser fire — shreds light targets."
     },
     {
       "id": "razor",
@@ -656,7 +678,8 @@
       "producedBy": "barracks",
       "hotkey": "",
       "shortName": "Razor ★",
-      "factionLock": "emberhand"
+      "factionLock": "emberhand",
+      "desc": "Emberhand hero. Twin-laser skirmisher."
     },
     {
       "id": "tempest",
@@ -687,7 +710,8 @@
       },
       "producedBy": "barracks",
       "hotkey": "E",
-      "shortName": "Tempest ★"
+      "shortName": "Tempest ★",
+      "desc": "Shardborn hero. Missile juggernaut."
     }
   ]
 }

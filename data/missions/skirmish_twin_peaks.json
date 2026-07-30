@@ -2,7 +2,11 @@
   "id": "skirmish_twin_peaks",
   "name": "Twin Peaks (2P Skirmish)",
   "order": 101,
-  "map": { "width": 42, "height": 42, "seed": 4002 },
+  "map": {
+    "width": 42,
+    "height": 42,
+    "seed": 4002
+  },
   "briefing": {
     "title": "TWIN PEAKS",
     "story": [
@@ -13,30 +17,82 @@
     ]
   },
   "debrief": {
-    "win": [ "The peaks bow to you." ],
-    "lose": [ "Defeat on the twin crags." ]
+    "win": [
+      "The peaks bow to you."
+    ],
+    "lose": [
+      "Defeat on the twin crags."
+    ]
   },
   "naturalShardDensity": 180,
   "fields": [
-    { "tx": 8, "ty": 21, "w": 2, "h": 2, "density": 550 },
-    { "tx": 32, "ty": 21, "w": 2, "h": 2, "density": 550 }
+    {
+      "tx": 8,
+      "ty": 21,
+      "w": 2,
+      "h": 2,
+      "density": 550
+    },
+    {
+      "tx": 32,
+      "ty": 21,
+      "w": 2,
+      "h": 2,
+      "density": 550
+    }
   ],
   "player": {
     "credits": 2500,
     "factionId": "shardborn",
     "techTier": 1,
     "buildings": [
-      { "type": "construction_yard", "tx": 6, "ty": 6 },
-      { "type": "refinery", "tx": 8, "ty": 6 },
-      { "type": "barracks", "tx": 6, "ty": 8 },
-      { "type": "power_node", "tx": 5, "ty": 7 },
-      { "type": "defense_turret", "tx": 10, "ty": 7 }
+      {
+        "type": "construction_yard",
+        "tx": 6,
+        "ty": 6
+      },
+      {
+        "type": "refinery",
+        "tx": 9,
+        "ty": 5
+      },
+      {
+        "type": "barracks",
+        "tx": 5,
+        "ty": 9
+      },
+      {
+        "type": "power_node",
+        "tx": 3,
+        "ty": 5
+      },
+      {
+        "type": "defense_turret",
+        "tx": 10,
+        "ty": 7
+      }
     ],
     "units": [
-      { "type": "harvester", "tx": 9, "ty": 7 },
-      { "type": "infantry", "tx": 7, "ty": 9 },
-      { "type": "infantry", "tx": 8, "ty": 9 },
-      { "type": "rocket_trooper", "tx": 9, "ty": 9 }
+      {
+        "type": "harvester",
+        "tx": 9,
+        "ty": 7
+      },
+      {
+        "type": "infantry",
+        "tx": 7,
+        "ty": 9
+      },
+      {
+        "type": "infantry",
+        "tx": 8,
+        "ty": 9
+      },
+      {
+        "type": "rocket_trooper",
+        "tx": 9,
+        "ty": 9
+      }
     ]
   },
   "enemies": [
@@ -46,24 +102,75 @@
       "factionId": "concord",
       "techTier": 1,
       "buildings": [
-        { "type": "construction_yard", "tx": 34, "ty": 34 },
-        { "type": "refinery", "tx": 32, "ty": 34 },
-        { "type": "barracks", "tx": 34, "ty": 32 },
-        { "type": "power_node", "tx": 35, "ty": 33 },
-        { "type": "defense_turret", "tx": 30, "ty": 33 }
+        {
+          "type": "construction_yard",
+          "tx": 34,
+          "ty": 34
+        },
+        {
+          "type": "refinery",
+          "tx": 31,
+          "ty": 33
+        },
+        {
+          "type": "barracks",
+          "tx": 32,
+          "ty": 30
+        },
+        {
+          "type": "power_node",
+          "tx": 37,
+          "ty": 33
+        },
+        {
+          "type": "defense_turret",
+          "tx": 30,
+          "ty": 33
+        }
       ],
       "units": [
-        { "type": "harvester", "tx": 31, "ty": 33 },
-        { "type": "infantry", "tx": 33, "ty": 31 },
-        { "type": "infantry", "tx": 32, "ty": 31 },
-        { "type": "rocket_trooper", "tx": 31, "ty": 31 }
+        {
+          "type": "harvester",
+          "tx": 31,
+          "ty": 33
+        },
+        {
+          "type": "infantry",
+          "tx": 33,
+          "ty": 31
+        },
+        {
+          "type": "infantry",
+          "tx": 32,
+          "ty": 31
+        },
+        {
+          "type": "rocket_trooper",
+          "tx": 31,
+          "ty": 31
+        }
       ],
-      "ai": { "attackTile": { "tx": 6, "ty": 6 } }
+      "ai": {
+        "attackTile": {
+          "tx": 6,
+          "ty": 6
+        }
+      }
     }
   ],
   "objectives": [
-    { "type": "eliminate", "team": "enemy", "primary": true, "text": "Destroy all enemy forces" }
+    {
+      "type": "eliminate",
+      "team": "enemy",
+      "primary": true,
+      "text": "Destroy all enemy forces"
+    }
   ],
-  "failure": [ { "type": "defeated", "team": "player" } ],
+  "failure": [
+    {
+      "type": "defeated",
+      "team": "player"
+    }
+  ],
   "next": null
 }

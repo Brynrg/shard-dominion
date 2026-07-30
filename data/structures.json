@@ -45,7 +45,8 @@
       "menu": "internal",
       "hotkey": "",
       "shortName": "Con Yard",
-      "prerequisites": []
+      "prerequisites": [],
+      "desc": "Your base heart — builds structures, grants build radius."
     },
     {
       "id": "barracks",
@@ -79,7 +80,8 @@
       "menu": "base",
       "hotkey": "B",
       "prerequisites": [],
-      "producesUnits": true
+      "producesUnits": true,
+      "desc": "Trains Infantry, Rockets, Engineers and heroes."
     },
     {
       "id": "power_node",
@@ -113,7 +115,8 @@
       "menu": "base",
       "hotkey": "N",
       "shortName": "Power",
-      "prerequisites": []
+      "prerequisites": [],
+      "desc": "Powers your base. Low power slows everything."
     },
     {
       "id": "generic_structure",
@@ -146,7 +149,8 @@
       },
       "menu": "internal",
       "hotkey": "",
-      "prerequisites": []
+      "prerequisites": [],
+      "desc": "Structure."
     },
     {
       "id": "concrete_slab",
@@ -180,7 +184,8 @@
       },
       "menu": "internal",
       "hotkey": "",
-      "prerequisites": []
+      "prerequisites": [],
+      "desc": "Foundation slab."
     },
     {
       "id": "refinery",
@@ -216,7 +221,8 @@
       "prerequisites": [
         "power_node"
       ],
-      "producesUnits": true
+      "producesUnits": true,
+      "desc": "Banks Shard. Trains and docks Harvesters."
     },
     {
       "id": "defense_turret",
@@ -252,7 +258,8 @@
       "shortName": "Turret",
       "prerequisites": [
         "power_node"
-      ]
+      ],
+      "desc": "Anti-ground base defence. Shoots on its own."
     },
     {
       "id": "war_factory",
@@ -290,7 +297,8 @@
       "prerequisites": [
         "refinery"
       ],
-      "producesUnits": true
+      "producesUnits": true,
+      "desc": "Builds all ground vehicles, tanks and artillery."
     },
     {
       "id": "radar",
@@ -326,7 +334,8 @@
       "hotkey": "J",
       "prerequisites": [
         "power_node"
-      ]
+      ],
+      "desc": "Lights up the minimap. Needs power."
     },
     {
       "id": "wall",
@@ -361,7 +370,8 @@
       },
       "menu": "def",
       "hotkey": "L",
-      "prerequisites": []
+      "prerequisites": [],
+      "desc": "Blocks ground movement. Cheap, tough."
     },
     {
       "id": "processing_plant",
@@ -398,7 +408,8 @@
       "shortName": "Proc Plant",
       "prerequisites": [
         "refinery"
-      ]
+      ],
+      "desc": "Converts credits into Cells; researches Refinements."
     },
     {
       "id": "bunker",
@@ -433,7 +444,8 @@
       "isDeployable": false,
       "menu": "def",
       "hotkey": "",
-      "prerequisites": []
+      "prerequisites": [],
+      "desc": "Garrison Infantry inside to fight protected."
     },
     {
       "id": "infirmary",
@@ -472,7 +484,8 @@
       "isDeployable": false,
       "menu": "def",
       "hotkey": "",
-      "prerequisites": []
+      "prerequisites": [],
+      "desc": "Slowly heals nearby Infantry."
     },
     {
       "id": "machine_shop",
@@ -514,7 +527,8 @@
       "shortName": "Mach Shop",
       "prerequisites": [
         "war_factory"
-      ]
+      ],
+      "desc": "Slowly repairs nearby vehicles."
     },
     {
       "id": "gate",
@@ -550,7 +564,8 @@
       "isDeployable": false,
       "menu": "def",
       "hotkey": "",
-      "prerequisites": []
+      "prerequisites": [],
+      "desc": "A wall your own units can pass through."
     },
     {
       "id": "skypad",
@@ -587,7 +602,8 @@
       "prerequisites": [
         "tech_lab"
       ],
-      "producesUnits": true
+      "producesUnits": true,
+      "desc": "Builds and rearms aircraft."
     },
     {
       "id": "aa_turret",
@@ -624,7 +640,8 @@
       "shortName": "AA Turret",
       "prerequisites": [
         "power_node"
-      ]
+      ],
+      "desc": "Anti-air base defence. Ignores ground targets."
     },
     {
       "id": "tech_lab",
@@ -661,7 +678,8 @@
       "shortName": "Tech Lab",
       "prerequisites": [
         "war_factory"
-      ]
+      ],
+      "desc": "Unlocks tier-2 research and elite structures."
     },
     {
       "id": "heavy_gate",
@@ -700,7 +718,8 @@
       "shortName": "Hvy Gate",
       "prerequisites": [
         "gate"
-      ]
+      ],
+      "desc": "Reinforced gate — twice the hit points."
     },
     {
       "id": "barracks_elite",
@@ -739,7 +758,8 @@
         "barracks",
         "tech_lab"
       ],
-      "producesUnits": true
+      "producesUnits": true,
+      "desc": "Trains Commandos and Laser Infantry."
     },
     {
       "id": "armor_upgrade_center",
@@ -776,7 +796,8 @@
       "shortName": "Armor Ctr",
       "prerequisites": [
         "war_factory"
-      ]
+      ],
+      "desc": "Supports vehicle upgrades and repairs."
     },
     {
       "id": "ion_cannon",
@@ -821,7 +842,8 @@
         "cooldownSeconds": 180,
         "label": "ION CANNON"
       },
-      "cellCost": 5
+      "cellCost": 5,
+      "desc": "SUPERWEAPON: charges, then fires a devastating orbital strike."
     },
     {
       "id": "resonance_device",
@@ -867,7 +889,8 @@
         "cooldownSeconds": 150,
         "label": "RESONANCE"
       },
-      "cellCost": 4
+      "cellCost": 4,
+      "desc": "SUPERWEAPON: Shardborn resonance cascade over a wide area."
     }
   ]
 }

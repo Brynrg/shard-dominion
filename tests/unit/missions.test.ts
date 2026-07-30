@@ -131,3 +131,33 @@ describe('missions — schema + integrity', () => {
     expect(m.next).toBe('m2_lifeblood');
   });
 });
+
+// ── Base-spacing gate (playtest: "spacing seems bad") ─────────────────────────
+// Seeded bases shipped with touching and even OVERLAPPING footprints (8 missions
+// had sprites stacked on each other). Rule: 2x2 buildings keep >=1 tile of
+// clearance from each other; 1x1 defences (walls/turrets/gates) may touch.
+describe('missions — seeded base spacing', () => {
+  const FP1 = new Set(['wall', 'gate', 'heavy_gate', 'defense_turret', 'aa_turret', 'concrete_slab']);
+  const w = (t: string): number => (FP1.has(t) ? 1 : 2);
+  it('no seeded building overlaps another; big buildings keep a 1-tile gap', () => {
+    for (const [id, raw] of Object.entries(rawMissions)) {
+      const m = loadMission(raw);
+      for (const [side, list] of [['player', m.player.buildings] as const,
+        ...m.enemies.map((e, i) => [`enemy${i}`, e.buildings] as const)]) {
+        for (let i = 0; i < list.length; i++) {
+          for (let j = i + 1; j < list.length; j++) {
+            const a = list[i]!, b = list[j]!;
+            const fa = w(a.type), fb = w(b.type);
+            const gx = Math.max(a.tx - (b.tx + fb), b.tx - (a.tx + fa));
+            const gy = Math.max(a.ty - (b.ty + fb), b.ty - (a.ty + fa));
+            const gap = Math.max(gx, gy);
+            expect(gap, `${id} ${side}: ${a.type}@${a.tx},${a.ty} vs ${b.type}@${b.tx},${b.ty} overlap`).toBeGreaterThanOrEqual(0);
+            if (fa === 2 && fb === 2) {
+              expect(gap, `${id} ${side}: ${a.type}@${a.tx},${a.ty} touches ${b.type}@${b.tx},${b.ty}`).toBeGreaterThanOrEqual(1);
+            }
+          }
+        }
+      }
+    }
+  });
+});

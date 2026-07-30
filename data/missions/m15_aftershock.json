@@ -3,7 +3,11 @@
   "name": "Act III · Aftershock",
   "order": 15,
   "inheritsChoice": true,
-  "map": { "width": 40, "height": 40, "seed": 15015 },
+  "map": {
+    "width": 40,
+    "height": 40,
+    "seed": 15015
+  },
   "briefing": {
     "title": "AFTERSHOCK",
     "story": [
@@ -33,36 +37,128 @@
   },
   "naturalShardDensity": 220,
   "fields": [
-    { "tx": 8, "ty": 30, "w": 3, "h": 2, "density": 640 },
-    { "tx": 19, "ty": 20, "w": 3, "h": 3, "density": 900 }
+    {
+      "tx": 8,
+      "ty": 30,
+      "w": 3,
+      "h": 2,
+      "density": 640
+    },
+    {
+      "tx": 19,
+      "ty": 20,
+      "w": 3,
+      "h": 3,
+      "density": 900
+    }
   ],
   "player": {
     "credits": 3200,
     "factionId": "emberhand",
     "techTier": 3,
     "buildings": [
-      { "type": "construction_yard", "tx": 5, "ty": 32 },
-      { "type": "refinery", "tx": 7, "ty": 33 },
-      { "type": "refinery", "tx": 3, "ty": 33 },
-      { "type": "barracks", "tx": 8, "ty": 31 },
-      { "type": "war_factory", "tx": 5, "ty": 29 },
-      { "type": "radar", "tx": 3, "ty": 30 },
-      { "type": "power_node", "tx": 2, "ty": 31 },
-      { "type": "power_node", "tx": 9, "ty": 33 },
-      { "type": "defense_turret", "tx": 10, "ty": 30 },
-      { "type": "defense_turret", "tx": 7, "ty": 28 },
-      { "type": "aa_turret", "tx": 4, "ty": 28 }
+      {
+        "type": "construction_yard",
+        "tx": 5,
+        "ty": 32
+      },
+      {
+        "type": "refinery",
+        "tx": 8,
+        "ty": 32
+      },
+      {
+        "type": "refinery",
+        "tx": 2,
+        "ty": 32
+      },
+      {
+        "type": "barracks",
+        "tx": 6,
+        "ty": 29
+      },
+      {
+        "type": "war_factory",
+        "tx": 3,
+        "ty": 27
+      },
+      {
+        "type": "radar",
+        "tx": 6,
+        "ty": 26
+      },
+      {
+        "type": "power_node",
+        "tx": 1,
+        "ty": 35
+      },
+      {
+        "type": "power_node",
+        "tx": 11,
+        "ty": 31
+      },
+      {
+        "type": "defense_turret",
+        "tx": 10,
+        "ty": 30
+      },
+      {
+        "type": "defense_turret",
+        "tx": 7,
+        "ty": 28
+      },
+      {
+        "type": "aa_turret",
+        "tx": 5,
+        "ty": 27
+      }
     ],
     "units": [
-      { "type": "harvester", "tx": 8, "ty": 33 },
-      { "type": "harvester", "tx": 4, "ty": 34 },
-      { "type": "infantry", "tx": 6, "ty": 35 },
-      { "type": "infantry", "tx": 7, "ty": 35 },
-      { "type": "rocket_trooper", "tx": 8, "ty": 35 },
-      { "type": "rocket_trooper", "tx": 9, "ty": 35 },
-      { "type": "assault_tank", "tx": 5, "ty": 36 },
-      { "type": "assault_tank", "tx": 7, "ty": 36 },
-      { "type": "longbow", "tx": 4, "ty": 37 }
+      {
+        "type": "harvester",
+        "tx": 8,
+        "ty": 33
+      },
+      {
+        "type": "harvester",
+        "tx": 4,
+        "ty": 34
+      },
+      {
+        "type": "infantry",
+        "tx": 6,
+        "ty": 35
+      },
+      {
+        "type": "infantry",
+        "tx": 7,
+        "ty": 35
+      },
+      {
+        "type": "rocket_trooper",
+        "tx": 8,
+        "ty": 35
+      },
+      {
+        "type": "rocket_trooper",
+        "tx": 9,
+        "ty": 35
+      },
+      {
+        "type": "assault_tank",
+        "tx": 5,
+        "ty": 36
+      },
+      {
+        "type": "assault_tank",
+        "tx": 7,
+        "ty": 36
+      },
+      {
+        "type": "longbow",
+        "tx": 4,
+        "ty": 37
+      }
     ]
   },
   "enemies": [
@@ -72,31 +168,108 @@
       "factionId": "concord",
       "techTier": 3,
       "buildings": [
-        { "type": "construction_yard", "tx": 34, "ty": 5 },
-        { "type": "refinery", "tx": 32, "ty": 6 },
-        { "type": "barracks", "tx": 31, "ty": 8 },
-        { "type": "barracks", "tx": 36, "ty": 7 },
-        { "type": "war_factory", "tx": 35, "ty": 4 },
-        { "type": "radar", "tx": 33, "ty": 3 },
-        { "type": "defense_turret", "tx": 30, "ty": 10 },
-        { "type": "defense_turret", "tx": 33, "ty": 10 },
-        { "type": "power_node", "tx": 37, "ty": 5 },
-        { "type": "power_node", "tx": 32, "ty": 2 }
+        {
+          "type": "construction_yard",
+          "tx": 34,
+          "ty": 5
+        },
+        {
+          "type": "refinery",
+          "tx": 31,
+          "ty": 5
+        },
+        {
+          "type": "barracks",
+          "tx": 31,
+          "ty": 8
+        },
+        {
+          "type": "barracks",
+          "tx": 37,
+          "ty": 6
+        },
+        {
+          "type": "war_factory",
+          "tx": 33,
+          "ty": 2
+        },
+        {
+          "type": "radar",
+          "tx": 30,
+          "ty": 1
+        },
+        {
+          "type": "defense_turret",
+          "tx": 30,
+          "ty": 10
+        },
+        {
+          "type": "defense_turret",
+          "tx": 33,
+          "ty": 10
+        },
+        {
+          "type": "power_node",
+          "tx": 37,
+          "ty": 3
+        },
+        {
+          "type": "power_node",
+          "tx": 28,
+          "ty": 4
+        }
       ],
       "units": [
-        { "type": "harvester", "tx": 34, "ty": 8 },
-        { "type": "infantry", "tx": 31, "ty": 11 },
-        { "type": "infantry", "tx": 32, "ty": 11 },
-        { "type": "rocket_trooper", "tx": 33, "ty": 11 },
-        { "type": "assault_tank", "tx": 34, "ty": 11 },
-        { "type": "assault_tank", "tx": 35, "ty": 11 },
-        { "type": "gunship", "tx": 36, "ty": 10 }
+        {
+          "type": "harvester",
+          "tx": 34,
+          "ty": 8
+        },
+        {
+          "type": "infantry",
+          "tx": 31,
+          "ty": 11
+        },
+        {
+          "type": "infantry",
+          "tx": 32,
+          "ty": 11
+        },
+        {
+          "type": "rocket_trooper",
+          "tx": 33,
+          "ty": 11
+        },
+        {
+          "type": "assault_tank",
+          "tx": 34,
+          "ty": 11
+        },
+        {
+          "type": "assault_tank",
+          "tx": 35,
+          "ty": 11
+        },
+        {
+          "type": "gunship",
+          "tx": 36,
+          "ty": 10
+        }
       ],
       "fields": [
-        { "tx": 36, "ty": 9, "w": 3, "h": 2, "density": 760 }
+        {
+          "tx": 36,
+          "ty": 9,
+          "w": 3,
+          "h": 2,
+          "density": 760
+        }
       ],
       "ai": {
-        "attackTile": { "tx": 6, "ty": 32 },
+        "attackTile": {
+          "tx": 6,
+          "ty": 32
+        },
         "assaultValue": 800,
         "assaultEscalationPerMin": 150,
         "pressureValue": 450,
@@ -125,7 +298,11 @@
       "type": "hold",
       "id": "bind",
       "team": "player",
-      "region": { "tx": 20, "ty": 20, "r": 4 },
+      "region": {
+        "tx": 20,
+        "ty": 20,
+        "r": 4
+      },
       "seconds": 90,
       "primary": false,
       "onlyIfChoice": "harness",
@@ -133,102 +310,233 @@
     }
   ],
   "failure": [
-    { "type": "defeated", "team": "player" }
+    {
+      "type": "defeated",
+      "team": "player"
+    }
   ],
   "triggers": [
     {
       "id": "t_open",
-      "when": { "timeSeconds": 6 },
+      "when": {
+        "timeSeconds": 6
+      },
       "actions": [
-        { "type": "message", "speaker": "SERA VANE", "text": "Here they come. Hold the wound, Warden — everything we bled for is under this sand." }
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "Here they come. Hold the wound, Warden — everything we bled for is under this sand."
+        }
       ]
     },
     {
       "id": "t_seal_branch",
-      "when": { "choice": "seal" },
+      "when": {
+        "choice": "seal"
+      },
       "actions": [
-        { "type": "message", "speaker": "MARSHAL CORR", "text": "The Vein's sealed and the planet's going quiet — but Halex wants it cracked back open. His siege line is inbound. Do not let them reach the charges." },
+        {
+          "type": "message",
+          "speaker": "MARSHAL CORR",
+          "text": "The Vein's sealed and the planet's going quiet — but Halex wants it cracked back open. His siege line is inbound. Do not let them reach the charges."
+        },
         {
           "type": "spawn",
           "team": "enemy",
           "units": [
-            { "type": "longbow", "tx": 22, "ty": 8 },
-            { "type": "assault_tank", "tx": 23, "ty": 8 },
-            { "type": "assault_tank", "tx": 24, "ty": 8 },
-            { "type": "rocket_trooper", "tx": 25, "ty": 8 }
+            {
+              "type": "longbow",
+              "tx": 22,
+              "ty": 8
+            },
+            {
+              "type": "assault_tank",
+              "tx": 23,
+              "ty": 8
+            },
+            {
+              "type": "assault_tank",
+              "tx": 24,
+              "ty": 8
+            },
+            {
+              "type": "rocket_trooper",
+              "tx": 25,
+              "ty": 8
+            }
           ],
-          "attackMoveTo": { "tx": 6, "ty": 32 }
+          "attackMoveTo": {
+            "tx": 6,
+            "ty": 32
+          }
         }
       ]
     },
     {
       "id": "t_harness_branch",
-      "when": { "choice": "harness" },
+      "when": {
+        "choice": "harness"
+      },
       "actions": [
-        { "type": "message", "speaker": "THE CHORUS", "text": "YOU HOLD US. WE DO NOT CONSENT. EVERY VEIN YOU DRINK, WE WEAR ANOTHER OF YOUR DEAD. WE ARE COMING UP." },
+        {
+          "type": "message",
+          "speaker": "THE CHORUS",
+          "text": "YOU HOLD US. WE DO NOT CONSENT. EVERY VEIN YOU DRINK, WE WEAR ANOTHER OF YOUR DEAD. WE ARE COMING UP."
+        },
         {
           "type": "spawn",
           "team": "enemy",
           "units": [
-            { "type": "riftmaw", "tx": 20, "ty": 24 },
-            { "type": "riftmaw", "tx": 22, "ty": 22 },
-            { "type": "riftmaw", "tx": 18, "ty": 22 }
+            {
+              "type": "riftmaw",
+              "tx": 20,
+              "ty": 24
+            },
+            {
+              "type": "riftmaw",
+              "tx": 22,
+              "ty": 22
+            },
+            {
+              "type": "riftmaw",
+              "tx": 18,
+              "ty": 22
+            }
           ],
-          "attackMoveTo": { "tx": 6, "ty": 32 }
+          "attackMoveTo": {
+            "tx": 6,
+            "ty": 32
+          }
         }
       ]
     },
     {
       "id": "t_wave1",
-      "when": { "timeSeconds": 130 },
+      "when": {
+        "timeSeconds": 130
+      },
       "actions": [
-        { "type": "message", "speaker": "DIRECTOR HALEX", "text": "The renegade nest is located. Commit the second flight. Leave nothing that can testify." },
+        {
+          "type": "message",
+          "speaker": "DIRECTOR HALEX",
+          "text": "The renegade nest is located. Commit the second flight. Leave nothing that can testify."
+        },
         {
           "type": "spawn",
           "team": "enemy",
           "units": [
-            { "type": "assault_tank", "tx": 24, "ty": 14 },
-            { "type": "vehicle", "tx": 25, "ty": 14 },
-            { "type": "rocket_trooper", "tx": 26, "ty": 14 },
-            { "type": "gunship", "tx": 27, "ty": 13 }
+            {
+              "type": "assault_tank",
+              "tx": 24,
+              "ty": 14
+            },
+            {
+              "type": "vehicle",
+              "tx": 25,
+              "ty": 14
+            },
+            {
+              "type": "rocket_trooper",
+              "tx": 26,
+              "ty": 14
+            },
+            {
+              "type": "gunship",
+              "tx": 27,
+              "ty": 13
+            }
           ],
-          "attackMoveTo": { "tx": 6, "ty": 32 }
+          "attackMoveTo": {
+            "tx": 6,
+            "ty": 32
+          }
         }
       ]
     },
     {
       "id": "t_reinforce",
-      "when": { "timeSeconds": 200 },
+      "when": {
+        "timeSeconds": 200
+      },
       "actions": [
-        { "type": "message", "speaker": "MARSHAL CORR", "text": "North gate's holding. I'm peeling armour off it and sending it your way — spend it well, Warden." },
+        {
+          "type": "message",
+          "speaker": "MARSHAL CORR",
+          "text": "North gate's holding. I'm peeling armour off it and sending it your way — spend it well, Warden."
+        },
         {
           "type": "spawn",
           "team": "player",
           "units": [
-            { "type": "assault_tank", "tx": 6, "ty": 30 },
-            { "type": "assault_tank", "tx": 8, "ty": 30 },
-            { "type": "rocket_trooper", "tx": 7, "ty": 30 }
+            {
+              "type": "assault_tank",
+              "tx": 6,
+              "ty": 30
+            },
+            {
+              "type": "assault_tank",
+              "tx": 8,
+              "ty": 30
+            },
+            {
+              "type": "rocket_trooper",
+              "tx": 7,
+              "ty": 30
+            }
           ]
         },
-        { "type": "grantCredits", "team": "player", "amount": 1000 }
+        {
+          "type": "grantCredits",
+          "team": "player",
+          "amount": 1000
+        }
       ]
     },
     {
       "id": "t_wave2",
-      "when": { "timeSeconds": 260 },
+      "when": {
+        "timeSeconds": 260
+      },
       "actions": [
-        { "type": "message", "speaker": "SERA VANE", "text": "Last push — I can hear it in the guns. Break this wave and the ridge is ours." },
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "Last push — I can hear it in the guns. Break this wave and the ridge is ours."
+        },
         {
           "type": "spawn",
           "team": "enemy",
           "units": [
-            { "type": "assault_tank", "tx": 23, "ty": 15 },
-            { "type": "assault_tank", "tx": 24, "ty": 15 },
-            { "type": "longbow", "tx": 25, "ty": 15 },
-            { "type": "rocket_trooper", "tx": 26, "ty": 15 },
-            { "type": "infantry", "tx": 27, "ty": 15 }
+            {
+              "type": "assault_tank",
+              "tx": 23,
+              "ty": 15
+            },
+            {
+              "type": "assault_tank",
+              "tx": 24,
+              "ty": 15
+            },
+            {
+              "type": "longbow",
+              "tx": 25,
+              "ty": 15
+            },
+            {
+              "type": "rocket_trooper",
+              "tx": 26,
+              "ty": 15
+            },
+            {
+              "type": "infantry",
+              "tx": 27,
+              "ty": 15
+            }
           ],
-          "attackMoveTo": { "tx": 6, "ty": 32 }
+          "attackMoveTo": {
+            "tx": 6,
+            "ty": 32
+          }
         }
       ]
     }

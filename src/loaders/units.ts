@@ -22,6 +22,8 @@ export const UnitSchema = z.object({
   hotkey: z.string().max(1).default(''),
   /** Short sidebar label (the panel is 184px — `name` can be too long). */
   shortName: z.string().min(1).optional(),
+  /** One-line purpose for the hover tooltip. */
+  desc: z.string().optional(),
   /** XP-2: dies into a salvageable wreck worth ~30% of cost. */
   leavesWreck: z.boolean().optional(),
   /** XP-2: Refined Cells charged at production start (elite systems only). */

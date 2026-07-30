@@ -15,6 +15,9 @@ export const StructureSchema = z.object({
   hotkey: z.string().max(1).default(''),
   /** Short sidebar label. */
   shortName: z.string().min(1).optional(),
+  /** One-line purpose for the hover tooltip (WC3 convention: every build button
+   *  says what the thing DOES — "Trains Footmen and Riflemen"). */
+  desc: z.string().optional(),
   /** Structure ids that must be standing before this can be built (Phase C2 tech spine). */
   prerequisites: z.array(z.string()).default([]),
   /** XP-2: Refined Cells charged when the build starts. */

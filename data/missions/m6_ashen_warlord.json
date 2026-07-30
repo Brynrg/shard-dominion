@@ -12,23 +12,23 @@
     "story": [
       "Marshal Corr: \"Sera Vane's stronghold. The last ember. Burn it out and",
       "the Reach drinks for a generation. A storm front is building over the",
-      "deep sand \u2014 finish this before it breaks, Warden.\"",
+      "deep sand — finish this before it breaks, Warden.\"",
       "",
       "Sera Vane, open channel: \"No interception this time. Hear me plainly:",
       "the ground under your quota is not asleep. It is counting. Come, then.\""
     ],
     "objectives": [
-      "Destroy Sera Vane's stronghold \u2014 leave nothing standing"
+      "Destroy Sera Vane's stronghold — leave nothing standing"
     ]
   },
   "debrief": {
     "win": [
-      "The stronghold falls. And in the silence after the guns \u2014 the ground SHUDDERS.",
+      "The stronghold falls. And in the silence after the guns — the ground SHUDDERS.",
       "Something old turns beneath the Shard. Vane's voice, faint on every channel: \"Now you'll see.\"",
-      "\u2014 TO BE CONTINUED \u2014"
+      "— TO BE CONTINUED —"
     ],
     "lose": [
-      "The assault breaks on the stronghold walls. Vane holds \u2014 and the storm arrives anyway."
+      "The assault breaks on the stronghold walls. Vane holds — and the storm arrives anyway."
     ]
   },
   "naturalShardDensity": 250,
@@ -58,18 +58,18 @@
       },
       {
         "type": "refinery",
-        "tx": 9,
-        "ty": 24
+        "tx": 10,
+        "ty": 23
       },
       {
         "type": "barracks",
-        "tx": 5,
-        "ty": 24
+        "tx": 4,
+        "ty": 23
       },
       {
         "type": "power_node",
-        "tx": 6,
-        "ty": 21
+        "tx": 5,
+        "ty": 20
       }
     ],
     "units": [
@@ -113,18 +113,18 @@
         },
         {
           "type": "barracks",
-          "tx": 23,
-          "ty": 9
+          "tx": 22,
+          "ty": 10
         },
         {
           "type": "barracks",
-          "tx": 26,
-          "ty": 9
+          "tx": 27,
+          "ty": 8
         },
         {
           "type": "war_factory",
-          "tx": 25,
-          "ty": 5
+          "tx": 24,
+          "ty": 4
         },
         {
           "type": "defense_turret",
@@ -133,13 +133,13 @@
         },
         {
           "type": "defense_turret",
-          "tx": 22,
-          "ty": 11
+          "tx": 21,
+          "ty": 10
         },
         {
           "type": "power_node",
-          "tx": 23,
-          "ty": 5
+          "tx": 21,
+          "ty": 3
         }
       ],
       "units": [
@@ -194,7 +194,7 @@
       "id": "break_vane",
       "team": "enemy",
       "primary": true,
-      "text": "Destroy Sera Vane's stronghold \u2014 leave nothing standing"
+      "text": "Destroy Sera Vane's stronghold — leave nothing standing"
     }
   ],
   "failure": [
@@ -269,7 +269,7 @@
         {
           "type": "message",
           "speaker": "SERA VANE",
-          "text": "Every wreck feeds the sand. Listen \u2014 it is counting."
+          "text": "Every wreck feeds the sand. Listen — it is counting."
         },
         {
           "type": "spawn",
@@ -317,7 +317,7 @@
         {
           "type": "message",
           "speaker": "CORR",
-          "text": "Storm front closing. Finish it, Warden \u2014 NOW."
+          "text": "Storm front closing. Finish it, Warden — NOW."
         }
       ]
     }

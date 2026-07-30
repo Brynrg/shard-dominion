@@ -10,11 +10,11 @@
   "briefing": {
     "title": "IRON & ASH",
     "story": [
-      "Marshal Corr: \"The Emberhand dug a fortress into the eastern ridge \u2014",
+      "Marshal Corr: \"The Emberhand dug a fortress into the eastern ridge —",
       "turrets, walls, fanatics. Rifles will not crack it. Build a War Factory",
       "(W), field armor, and grind that base to ash. This is what iron is for.\"",
       "",
-      "Intercepted \u2014 Sera Vane: \"Bring your iron, Warden. The sand eats iron too.\""
+      "Intercepted — Sera Vane: \"Bring your iron, Warden. The sand eats iron too.\""
     ],
     "objectives": [
       "Build a War Factory",
@@ -23,7 +23,7 @@
   },
   "debrief": {
     "win": [
-      "The ridge burns. Armor wins wars \u2014 and draws deeper things to the heat.",
+      "The ridge burns. Armor wins wars — and draws deeper things to the heat.",
       "Corr: \"Vane has one stronghold left. End this.\""
     ],
     "lose": [
@@ -57,18 +57,18 @@
       },
       {
         "type": "refinery",
-        "tx": 8,
-        "ty": 17
+        "tx": 9,
+        "ty": 16
       },
       {
         "type": "barracks",
-        "tx": 6,
-        "ty": 18
+        "tx": 5,
+        "ty": 19
       },
       {
         "type": "power_node",
-        "tx": 5,
-        "ty": 14
+        "tx": 4,
+        "ty": 13
       }
     ],
     "units": [
@@ -107,8 +107,8 @@
         },
         {
           "type": "barracks",
-          "tx": 24,
-          "ty": 15
+          "tx": 23,
+          "ty": 16
         },
         {
           "type": "defense_turret",
@@ -122,8 +122,8 @@
         },
         {
           "type": "power_node",
-          "tx": 24,
-          "ty": 11
+          "tx": 23,
+          "ty": 10
         }
       ],
       "units": [
@@ -228,7 +228,7 @@
         {
           "type": "message",
           "speaker": "SCOUTS",
-          "text": "Enemy armor sortie \u2014 they're coming off the ridge."
+          "text": "Enemy armor sortie — they're coming off the ridge."
         },
         {
           "type": "spawn",

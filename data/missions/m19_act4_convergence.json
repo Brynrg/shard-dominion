@@ -3,7 +3,11 @@
   "name": "Act IV · Convergence",
   "order": 19,
   "inheritsChoice": true,
-  "map": { "width": 44, "height": 44, "seed": 19019 },
+  "map": {
+    "width": 44,
+    "height": 44,
+    "seed": 19019
+  },
   "briefing": {
     "title": "CONVERGENCE",
     "story": [
@@ -37,37 +41,135 @@
   },
   "naturalShardDensity": 280,
   "fields": [
-    { "tx": 8, "ty": 8, "w": 2, "h": 2, "density": 650 },
-    { "tx": 36, "ty": 8, "w": 2, "h": 2, "density": 650 },
-    { "tx": 22, "ty": 36, "w": 2, "h": 2, "density": 650 }
+    {
+      "tx": 8,
+      "ty": 8,
+      "w": 2,
+      "h": 2,
+      "density": 650
+    },
+    {
+      "tx": 36,
+      "ty": 8,
+      "w": 2,
+      "h": 2,
+      "density": 650
+    },
+    {
+      "tx": 22,
+      "ty": 36,
+      "w": 2,
+      "h": 2,
+      "density": 650
+    }
   ],
   "player": {
     "credits": 4500,
     "factionId": "emberhand",
     "techTier": 3,
     "buildings": [
-      { "type": "construction_yard", "tx": 10, "ty": 10 },
-      { "type": "refinery", "tx": 12, "ty": 10 },
-      { "type": "refinery", "tx": 8, "ty": 10 },
-      { "type": "barracks", "tx": 13, "ty": 12 },
-      { "type": "war_factory", "tx": 10, "ty": 8 },
-      { "type": "radar", "tx": 22, "ty": 22 },
-      { "type": "power_node", "tx": 7, "ty": 9 },
-      { "type": "power_node", "tx": 13, "ty": 9 },
-      { "type": "defense_turret", "tx": 14, "ty": 11 },
-      { "type": "defense_turret", "tx": 6, "ty": 11 },
-      { "type": "aa_turret", "tx": 10, "ty": 6 }
+      {
+        "type": "construction_yard",
+        "tx": 10,
+        "ty": 10
+      },
+      {
+        "type": "refinery",
+        "tx": 13,
+        "ty": 9
+      },
+      {
+        "type": "refinery",
+        "tx": 7,
+        "ty": 9
+      },
+      {
+        "type": "barracks",
+        "tx": 13,
+        "ty": 12
+      },
+      {
+        "type": "war_factory",
+        "tx": 10,
+        "ty": 7
+      },
+      {
+        "type": "radar",
+        "tx": 22,
+        "ty": 22
+      },
+      {
+        "type": "power_node",
+        "tx": 4,
+        "ty": 6
+      },
+      {
+        "type": "power_node",
+        "tx": 13,
+        "ty": 6
+      },
+      {
+        "type": "defense_turret",
+        "tx": 14,
+        "ty": 11
+      },
+      {
+        "type": "defense_turret",
+        "tx": 6,
+        "ty": 11
+      },
+      {
+        "type": "aa_turret",
+        "tx": 10,
+        "ty": 6
+      }
     ],
     "units": [
-      { "type": "harvester", "tx": 12, "ty": 13 },
-      { "type": "harvester", "tx": 8, "ty": 13 },
-      { "type": "infantry", "tx": 10, "ty": 14 },
-      { "type": "infantry", "tx": 11, "ty": 14 },
-      { "type": "rocket_trooper", "tx": 12, "ty": 14 },
-      { "type": "rocket_trooper", "tx": 13, "ty": 14 },
-      { "type": "assault_tank", "tx": 10, "ty": 15 },
-      { "type": "assault_tank", "tx": 12, "ty": 15 },
-      { "type": "longbow", "tx": 11, "ty": 16 }
+      {
+        "type": "harvester",
+        "tx": 12,
+        "ty": 13
+      },
+      {
+        "type": "harvester",
+        "tx": 8,
+        "ty": 13
+      },
+      {
+        "type": "infantry",
+        "tx": 10,
+        "ty": 14
+      },
+      {
+        "type": "infantry",
+        "tx": 11,
+        "ty": 14
+      },
+      {
+        "type": "rocket_trooper",
+        "tx": 12,
+        "ty": 14
+      },
+      {
+        "type": "rocket_trooper",
+        "tx": 13,
+        "ty": 14
+      },
+      {
+        "type": "assault_tank",
+        "tx": 10,
+        "ty": 15
+      },
+      {
+        "type": "assault_tank",
+        "tx": 12,
+        "ty": 15
+      },
+      {
+        "type": "longbow",
+        "tx": 11,
+        "ty": 16
+      }
     ]
   },
   "enemies": [
@@ -77,28 +179,108 @@
       "factionId": "concord",
       "techTier": 2,
       "buildings": [
-        { "type": "construction_yard", "tx": 36, "ty": 36 },
-        { "type": "refinery", "tx": 34, "ty": 36 },
-        { "type": "refinery", "tx": 38, "ty": 36 },
-        { "type": "barracks", "tx": 35, "ty": 34 },
-        { "type": "barracks", "tx": 37, "ty": 34 },
-        { "type": "war_factory", "tx": 36, "ty": 38 },
-        { "type": "radar", "tx": 34, "ty": 34 },
-        { "type": "defense_turret", "tx": 32, "ty": 37 },
-        { "type": "defense_turret", "tx": 40, "ty": 37 },
-        { "type": "defense_turret", "tx": 36, "ty": 40 },
-        { "type": "power_node", "tx": 33, "ty": 37 },
-        { "type": "power_node", "tx": 39, "ty": 37 }
+        {
+          "type": "construction_yard",
+          "tx": 36,
+          "ty": 36
+        },
+        {
+          "type": "refinery",
+          "tx": 33,
+          "ty": 35
+        },
+        {
+          "type": "refinery",
+          "tx": 39,
+          "ty": 35
+        },
+        {
+          "type": "barracks",
+          "tx": 36,
+          "ty": 33
+        },
+        {
+          "type": "barracks",
+          "tx": 39,
+          "ty": 32
+        },
+        {
+          "type": "war_factory",
+          "tx": 35,
+          "ty": 39
+        },
+        {
+          "type": "radar",
+          "tx": 32,
+          "ty": 32
+        },
+        {
+          "type": "defense_turret",
+          "tx": 32,
+          "ty": 37
+        },
+        {
+          "type": "defense_turret",
+          "tx": 40,
+          "ty": 37
+        },
+        {
+          "type": "defense_turret",
+          "tx": 37,
+          "ty": 39
+        },
+        {
+          "type": "power_node",
+          "tx": 32,
+          "ty": 38
+        },
+        {
+          "type": "power_node",
+          "tx": 39,
+          "ty": 38
+        }
       ],
       "units": [
-        { "type": "harvester", "tx": 36, "ty": 38 },
-        { "type": "harvester", "tx": 34, "ty": 38 },
-        { "type": "infantry", "tx": 35, "ty": 40 },
-        { "type": "infantry", "tx": 36, "ty": 40 },
-        { "type": "infantry", "tx": 37, "ty": 40 },
-        { "type": "rocket_trooper", "tx": 38, "ty": 40 },
-        { "type": "assault_tank", "tx": 36, "ty": 41 },
-        { "type": "assault_tank", "tx": 38, "ty": 41 }
+        {
+          "type": "harvester",
+          "tx": 36,
+          "ty": 38
+        },
+        {
+          "type": "harvester",
+          "tx": 34,
+          "ty": 38
+        },
+        {
+          "type": "infantry",
+          "tx": 35,
+          "ty": 40
+        },
+        {
+          "type": "infantry",
+          "tx": 36,
+          "ty": 40
+        },
+        {
+          "type": "infantry",
+          "tx": 37,
+          "ty": 40
+        },
+        {
+          "type": "rocket_trooper",
+          "tx": 38,
+          "ty": 40
+        },
+        {
+          "type": "assault_tank",
+          "tx": 36,
+          "ty": 41
+        },
+        {
+          "type": "assault_tank",
+          "tx": 38,
+          "ty": 41
+        }
       ],
       "ai": {
         "assaultValue": 400,
@@ -107,19 +289,62 @@
     }
   ],
   "neutrals": [
-    { "type": "spore_tower", "tx": 8, "ty": 8 },
-    { "type": "spore_tower", "tx": 36, "ty": 8 },
-    { "type": "spore_tower", "tx": 22, "ty": 36 }
+    {
+      "type": "spore_tower",
+      "tx": 8,
+      "ty": 8
+    },
+    {
+      "type": "spore_tower",
+      "tx": 36,
+      "ty": 8
+    },
+    {
+      "type": "spore_tower",
+      "tx": 22,
+      "ty": 36
+    }
   ],
   "objectives": [
-    { "type": "destroy", "team": "enemy", "kind": "barracks", "primary": true, "text": "Destroy the north defense installation" },
-    { "type": "destroy", "team": "enemy", "kind": "barracks", "primary": true, "text": "Destroy the east defense installation" },
-    { "type": "destroy", "team": "enemy", "kind": "war_factory", "primary": true, "text": "Destroy the south defense installation" },
-    { "type": "survive", "team": "player", "seconds": 420, "primary": true, "text": "Protect the convergence node" }
+    {
+      "type": "destroy",
+      "team": "enemy",
+      "kind": "barracks",
+      "primary": true,
+      "text": "Destroy the north defense installation"
+    },
+    {
+      "type": "destroy",
+      "team": "enemy",
+      "kind": "barracks",
+      "primary": true,
+      "text": "Destroy the east defense installation"
+    },
+    {
+      "type": "destroy",
+      "team": "enemy",
+      "kind": "war_factory",
+      "primary": true,
+      "text": "Destroy the south defense installation"
+    },
+    {
+      "type": "survive",
+      "team": "player",
+      "seconds": 420,
+      "primary": true,
+      "text": "Protect the convergence node"
+    }
   ],
   "failure": [
-    { "type": "defeated", "team": "player" },
-    { "type": "defend", "team": "player", "kind": "radar" }
+    {
+      "type": "defeated",
+      "team": "player"
+    },
+    {
+      "type": "defend",
+      "team": "player",
+      "kind": "radar"
+    }
   ],
   "next": "m20_act4_genesis"
 }

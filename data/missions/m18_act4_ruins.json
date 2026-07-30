@@ -3,7 +3,11 @@
   "name": "Act IV · The Ruins",
   "order": 18,
   "inheritsChoice": true,
-  "map": { "width": 42, "height": 42, "seed": 18018 },
+  "map": {
+    "width": 42,
+    "height": 42,
+    "seed": 18018
+  },
   "briefing": {
     "title": "THE RUINS",
     "story": [
@@ -36,34 +40,120 @@
   },
   "naturalShardDensity": 250,
   "fields": [
-    { "tx": 5, "ty": 5, "w": 2, "h": 2, "density": 600 },
-    { "tx": 35, "ty": 5, "w": 2, "h": 2, "density": 600 },
-    { "tx": 20, "ty": 35, "w": 2, "h": 2, "density": 600 }
+    {
+      "tx": 5,
+      "ty": 5,
+      "w": 2,
+      "h": 2,
+      "density": 600
+    },
+    {
+      "tx": 35,
+      "ty": 5,
+      "w": 2,
+      "h": 2,
+      "density": 600
+    },
+    {
+      "tx": 20,
+      "ty": 35,
+      "w": 2,
+      "h": 2,
+      "density": 600
+    }
   ],
   "player": {
     "credits": 3500,
     "factionId": "emberhand",
     "techTier": 3,
     "buildings": [
-      { "type": "construction_yard", "tx": 8, "ty": 8 },
-      { "type": "refinery", "tx": 10, "ty": 8 },
-      { "type": "refinery", "tx": 6, "ty": 8 },
-      { "type": "barracks", "tx": 11, "ty": 10 },
-      { "type": "war_factory", "tx": 8, "ty": 6 },
-      { "type": "radar", "tx": 6, "ty": 6 },
-      { "type": "power_node", "tx": 5, "ty": 7 },
-      { "type": "power_node", "tx": 11, "ty": 7 },
-      { "type": "defense_turret", "tx": 12, "ty": 9 },
-      { "type": "defense_turret", "tx": 4, "ty": 9 }
+      {
+        "type": "construction_yard",
+        "tx": 8,
+        "ty": 8
+      },
+      {
+        "type": "refinery",
+        "tx": 11,
+        "ty": 7
+      },
+      {
+        "type": "refinery",
+        "tx": 5,
+        "ty": 7
+      },
+      {
+        "type": "barracks",
+        "tx": 11,
+        "ty": 10
+      },
+      {
+        "type": "war_factory",
+        "tx": 8,
+        "ty": 5
+      },
+      {
+        "type": "radar",
+        "tx": 4,
+        "ty": 4
+      },
+      {
+        "type": "power_node",
+        "tx": 2,
+        "ty": 7
+      },
+      {
+        "type": "power_node",
+        "tx": 11,
+        "ty": 4
+      },
+      {
+        "type": "defense_turret",
+        "tx": 12,
+        "ty": 9
+      },
+      {
+        "type": "defense_turret",
+        "tx": 4,
+        "ty": 9
+      }
     ],
     "units": [
-      { "type": "harvester", "tx": 10, "ty": 11 },
-      { "type": "harvester", "tx": 7, "ty": 11 },
-      { "type": "infantry", "tx": 8, "ty": 12 },
-      { "type": "rocket_trooper", "tx": 9, "ty": 12 },
-      { "type": "rocket_trooper", "tx": 10, "ty": 12 },
-      { "type": "assault_tank", "tx": 8, "ty": 13 },
-      { "type": "assault_tank", "tx": 10, "ty": 13 }
+      {
+        "type": "harvester",
+        "tx": 10,
+        "ty": 11
+      },
+      {
+        "type": "harvester",
+        "tx": 7,
+        "ty": 11
+      },
+      {
+        "type": "infantry",
+        "tx": 8,
+        "ty": 12
+      },
+      {
+        "type": "rocket_trooper",
+        "tx": 9,
+        "ty": 12
+      },
+      {
+        "type": "rocket_trooper",
+        "tx": 10,
+        "ty": 12
+      },
+      {
+        "type": "assault_tank",
+        "tx": 8,
+        "ty": 13
+      },
+      {
+        "type": "assault_tank",
+        "tx": 10,
+        "ty": 13
+      }
     ]
   },
   "enemies": [
@@ -73,22 +163,78 @@
       "factionId": "concord",
       "techTier": 2,
       "buildings": [
-        { "type": "construction_yard", "tx": 35, "ty": 35 },
-        { "type": "refinery", "tx": 33, "ty": 35 },
-        { "type": "barracks", "tx": 35, "ty": 33 },
-        { "type": "war_factory", "tx": 37, "ty": 35 },
-        { "type": "radar", "tx": 33, "ty": 33 },
-        { "type": "defense_turret", "tx": 32, "ty": 36 },
-        { "type": "defense_turret", "tx": 38, "ty": 36 },
-        { "type": "power_node", "tx": 34, "ty": 36 },
-        { "type": "power_node", "tx": 36, "ty": 36 }
+        {
+          "type": "construction_yard",
+          "tx": 35,
+          "ty": 35
+        },
+        {
+          "type": "refinery",
+          "tx": 32,
+          "ty": 34
+        },
+        {
+          "type": "barracks",
+          "tx": 35,
+          "ty": 32
+        },
+        {
+          "type": "war_factory",
+          "tx": 38,
+          "ty": 34
+        },
+        {
+          "type": "radar",
+          "tx": 31,
+          "ty": 31
+        },
+        {
+          "type": "defense_turret",
+          "tx": 32,
+          "ty": 36
+        },
+        {
+          "type": "defense_turret",
+          "tx": 38,
+          "ty": 36
+        },
+        {
+          "type": "power_node",
+          "tx": 32,
+          "ty": 37
+        },
+        {
+          "type": "power_node",
+          "tx": 38,
+          "ty": 37
+        }
       ],
       "units": [
-        { "type": "harvester", "tx": 34, "ty": 37 },
-        { "type": "infantry", "tx": 35, "ty": 38 },
-        { "type": "infantry", "tx": 36, "ty": 38 },
-        { "type": "rocket_trooper", "tx": 37, "ty": 38 },
-        { "type": "scout_vehicle", "tx": 36, "ty": 39 }
+        {
+          "type": "harvester",
+          "tx": 34,
+          "ty": 37
+        },
+        {
+          "type": "infantry",
+          "tx": 35,
+          "ty": 38
+        },
+        {
+          "type": "infantry",
+          "tx": 36,
+          "ty": 38
+        },
+        {
+          "type": "rocket_trooper",
+          "tx": 37,
+          "ty": 38
+        },
+        {
+          "type": "scout_vehicle",
+          "tx": 36,
+          "ty": 39
+        }
       ],
       "ai": {
         "assaultValue": 450,
@@ -97,19 +243,77 @@
     }
   ],
   "neutrals": [
-    { "type": "spore_tower", "tx": 5, "ty": 5 },
-    { "type": "spore_tower", "tx": 35, "ty": 5 },
-    { "type": "spore_tower", "tx": 20, "ty": 35 }
+    {
+      "type": "spore_tower",
+      "tx": 5,
+      "ty": 5
+    },
+    {
+      "type": "spore_tower",
+      "tx": 35,
+      "ty": 5
+    },
+    {
+      "type": "spore_tower",
+      "tx": 20,
+      "ty": 35
+    }
   ],
   "objectives": [
-    { "type": "hold", "team": "player", "region": { "tx": 5, "ty": 5, "r": 3 }, "seconds": 45, "primary": true, "text": "Hold the north spore tower" },
-    { "type": "hold", "team": "player", "region": { "tx": 35, "ty": 5, "r": 3 }, "seconds": 45, "primary": true, "text": "Hold the east spore tower" },
-    { "type": "hold", "team": "player", "region": { "tx": 20, "ty": 35, "r": 3 }, "seconds": 45, "primary": true, "text": "Hold the south spore tower" },
-    { "type": "survive", "team": "player", "seconds": 300, "primary": true, "text": "Keep the binding site secure" }
+    {
+      "type": "hold",
+      "team": "player",
+      "region": {
+        "tx": 5,
+        "ty": 5,
+        "r": 3
+      },
+      "seconds": 45,
+      "primary": true,
+      "text": "Hold the north spore tower"
+    },
+    {
+      "type": "hold",
+      "team": "player",
+      "region": {
+        "tx": 35,
+        "ty": 5,
+        "r": 3
+      },
+      "seconds": 45,
+      "primary": true,
+      "text": "Hold the east spore tower"
+    },
+    {
+      "type": "hold",
+      "team": "player",
+      "region": {
+        "tx": 20,
+        "ty": 35,
+        "r": 3
+      },
+      "seconds": 45,
+      "primary": true,
+      "text": "Hold the south spore tower"
+    },
+    {
+      "type": "survive",
+      "team": "player",
+      "seconds": 300,
+      "primary": true,
+      "text": "Keep the binding site secure"
+    }
   ],
   "failure": [
-    { "type": "defeated", "team": "player" },
-    { "type": "defend", "team": "player", "kind": "construction_yard" }
+    {
+      "type": "defeated",
+      "team": "player"
+    },
+    {
+      "type": "defend",
+      "team": "player",
+      "kind": "construction_yard"
+    }
   ],
   "next": "m19_act4_convergence"
 }

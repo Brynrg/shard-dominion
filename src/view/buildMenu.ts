@@ -29,6 +29,9 @@ export interface MenuItem {
   requires: readonly string[];
   /** Units only: `producedBy`, for the "needs a War Factory" hint. */
   producedBy?: string;
+  /** One-line purpose (WC3 tooltip convention). */
+  desc: string;
+  buildTimeSeconds: number;
 }
 
 /** How many build rows fit on one sidebar page. */
@@ -47,6 +50,8 @@ function unitItem(u: UnitDef): MenuItem {
     factionLock: u.factionLock,
     requires: u.producedBy ? [u.producedBy] : [],
     producedBy: u.producedBy ?? undefined,
+    desc: u.desc ?? '',
+    buildTimeSeconds: u.buildTimeSeconds,
   };
 }
 
@@ -62,6 +67,8 @@ function structureItem(s: StructureDef): MenuItem {
     cellCost: s.cellCost ?? 0,
     factionLock: s.factionLock,
     requires: s.prerequisites ?? [],
+    desc: s.desc ?? '',
+    buildTimeSeconds: s.buildTimeSeconds,
   };
 }
 

@@ -12,12 +12,12 @@
     "story": [
       "MARSHAL CORR (open channel): \"Warden column, this is Corr. I have refused a",
       "lawful order. The Directorate calls it treason; I call it the first sane thing",
-      "I've done on this planet. Vane \u2014 my guns are yours, if you'll have them.\"",
+      "I've done on this planet. Vane — my guns are yours, if you'll have them.\"",
       "",
-      "VANE: \"\u2026Park them where I can see them, Marshal.\""
+      "VANE: \"…Park them where I can see them, Marshal.\""
     ],
     "objectives": [
-      "Destroy the Directorate forward base \u2014 and keep Corr's armor alive"
+      "Destroy the Directorate forward base — and keep Corr's armor alive"
     ]
   },
   "debrief": {
@@ -50,23 +50,23 @@
       },
       {
         "type": "refinery",
-        "tx": 7,
-        "ty": 27
+        "tx": 8,
+        "ty": 26
       },
       {
         "type": "power_node",
-        "tx": 4,
-        "ty": 25
+        "tx": 3,
+        "ty": 24
       },
       {
         "type": "barracks",
-        "tx": 6,
+        "tx": 8,
         "ty": 29
       },
       {
         "type": "war_factory",
-        "tx": 8,
-        "ty": 29
+        "tx": 11,
+        "ty": 26
       }
     ],
     "units": [
@@ -100,33 +100,33 @@
         },
         {
           "type": "refinery",
-          "tx": 24,
-          "ty": 6
+          "tx": 23,
+          "ty": 5
         },
         {
           "type": "barracks",
-          "tx": 27,
-          "ty": 8
-        },
-        {
-          "type": "war_factory",
-          "tx": 25,
-          "ty": 8
-        },
-        {
-          "type": "defense_turret",
-          "tx": 24,
+          "tx": 26,
           "ty": 9
         },
         {
+          "type": "war_factory",
+          "tx": 23,
+          "ty": 8
+        },
+        {
           "type": "defense_turret",
-          "tx": 27,
-          "ty": 10
+          "tx": 25,
+          "ty": 8
+        },
+        {
+          "type": "defense_turret",
+          "tx": 28,
+          "ty": 9
         },
         {
           "type": "power_node",
-          "tx": 25,
-          "ty": 5
+          "tx": 26,
+          "ty": 3
         }
       ],
       "units": [
@@ -188,7 +188,7 @@
         {
           "type": "message",
           "speaker": "CORR",
-          "text": "Renegade column, fall in. Two Bulwarks and my best rifles \u2014 treat them kindly."
+          "text": "Renegade column, fall in. Two Bulwarks and my best rifles — treat them kindly."
         },
         {
           "type": "spawn",
