@@ -12,6 +12,9 @@ import economyConstantsData from '../../data/economyConstants.json' with { type:
 
 // Load economy constants
 const economy = loadEconomyConstants(economyConstantsData);
+// Ticks needed to drain a full 700-cargo load at the configured dock rate,
+// plus travel margin. Derived so retuning dockRate never breaks these tests.
+const DRAIN_TICKS = Math.ceil(700 / (economy.dockRate / 20)) + 80;
 
 describe('economy FSM', () => {
   let state: SimState;
@@ -86,7 +89,7 @@ describe('economy FSM', () => {
 
     // Run ticks until harvester reaches refinery
     // 100 cr/s drip → 700 credits takes ~140 deposit ticks; allow travel + drip.
-    for (let i = 0; i < 200; i++) {
+    for (let i = 0; i < DRAIN_TICKS; i++) {
       runTick(state, systems);
     }
 
@@ -117,7 +120,7 @@ describe('economy FSM', () => {
 
     // Run ticks until harvester reaches refinery
     // 100 cr/s drip → 700 credits takes ~140 deposit ticks; allow travel + drip.
-    for (let i = 0; i < 200; i++) {
+    for (let i = 0; i < DRAIN_TICKS; i++) {
       runTick(state, systems);
     }
 

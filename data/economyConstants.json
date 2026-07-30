@@ -1,8 +1,8 @@
 {
-  "harvestRate": 6,
+  "harvestRate": 20,
   "cargoCapacity": 600,
-  "dockRate": 80,
+  "dockRate": 40,
   "refineryStorageCapacity": 2000,
   "salvageRatePerSec": 10,
-  "salvageTrickleCap": 500
+  "salvageTrickleCap": 1500
 }

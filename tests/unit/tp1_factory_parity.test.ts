@@ -126,6 +126,9 @@ describe('TP-1 — structure parity across creation paths', () => {
     // Placement path:
     const state = makeSimState({ seed: 3, mapWidth: 32, mapHeight: 32 });
     state.store.create({ position: tileToWorldCenter({ tx: 8, ty: 8 }), ...structureComponents('construction_yard', 'player', structures) });
+    // Tech spine (Phase C2): refinery/turrets now require a standing Power Node,
+    // so the fixture base has the one a real base always builds first.
+    state.store.create({ position: tileToWorldCenter({ tx: 6, ty: 8 }), ...structureComponents('power_node', 'player', structures) });
     state.store.create({ position: tileToWorldCenter({ tx: 9, ty: 8 }), ...structureComponents('refinery', 'player', structures, { credits: 5000, refineryMaxStorage: 5000 }) });
     const queue = makeCommandQueue();
     const sys = orderSystems([makeCommandSystem(queue, structures)]);

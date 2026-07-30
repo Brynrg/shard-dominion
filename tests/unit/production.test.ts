@@ -10,6 +10,11 @@ import { loadUnits } from '../../src/loaders/units.js';
 import unitsData from '../../data/units.json' with { type: 'json' };
 
 const units = loadUnits(unitsData);
+// Build length comes from DATA, not a hardcoded 60: these tests assert the
+// SEQUENCING of a job (pay once, spawn only at completion, queue in order), and
+// must survive any retune of infantry's buildTimeSeconds.
+const INFANTRY_TICKS = Math.max(1, Math.round(
+  units.find(u => u.id === 'infantry')!.buildTimeSeconds * 20));
 
 describe('production system', () => {
   let state: SimState;
@@ -25,7 +30,7 @@ describe('production system', () => {
     const producerId = state.store.create({
       position: producerPos,
       building: { onSlab: true, buildProgress: 100, powered: true },
-      faction: { team: 'player', faction: 'production_yard' },
+      faction: { team: 'player', faction: 'barracks' },
       production: { queue: ['infantry'], progress: 0 },
       economy: { credits, refineryStorage: 0, maxStorage: 2000 },
     });
@@ -59,13 +64,13 @@ describe('production system', () => {
     expect(afterStartCredits).toBe(400);
   });
 
-  it('no unit spawns before build time elapses (infantry@3s = 60 ticks)', () => {
+  it('no unit spawns before build time elapses (derived from data)', () => {
     const producerId = addProducer(5, 5, 500);
     addBank(producerId, 500);
 
-    // The start tick counts as a build tick, so a 60-tick build completes ON the
-    // 60th runTick. Run 59: still building.
-    for (let i = 0; i < 59; i++) {
+    // The start tick counts as a build tick, so an N-tick build completes ON the
+    // Nth runTick. Run N-1: still building.
+    for (let i = 0; i < INFANTRY_TICKS - 1; i++) {
       runTick(state, systems);
     }
 
@@ -73,7 +78,7 @@ describe('production system', () => {
     const allEntities = state.store.all();
     expect(allEntities.length).toBe(2);
 
-    // The 60th tick completes the build
+    // The final tick completes the build
     runTick(state, systems);
 
     // Now exactly ONE infantry should exist - producer + bank + infantry = 3
@@ -127,8 +132,8 @@ describe('production system', () => {
       bank.components.economy.credits = 500;
     }
 
-    // Run 60 ticks to complete the build
-    for (let i = 0; i < 60; i++) {
+    // Run the full build
+    for (let i = 0; i < INFANTRY_TICKS; i++) {
       runTick(state, systems);
     }
 
@@ -150,8 +155,8 @@ describe('production system', () => {
       producer.components.production = { queue: ['infantry', 'infantry'], progress: 0 };
     }
 
-    // Run 60 ticks (first infantry should complete)
-    for (let i = 0; i < 60; i++) {
+    // First infantry should complete
+    for (let i = 0; i < INFANTRY_TICKS; i++) {
       runTick(state, systems);
     }
 
@@ -164,8 +169,8 @@ describe('production system', () => {
     const infantryCount = state.store.all().filter(e => e.components.faction?.faction === 'infantry').length;
     expect(infantryCount).toBe(1);
 
-    // Run 60 more ticks (second infantry should complete)
-    for (let i = 0; i < 60; i++) {
+    // Second infantry should complete
+    for (let i = 0; i < INFANTRY_TICKS; i++) {
       runTick(state, systems);
     }
 
@@ -188,8 +193,8 @@ describe('production system', () => {
       producer.components.production = { queue: ['infantry', 'infantry'], progress: 0 };
     }
 
-    // Run 60 ticks
-    for (let i = 0; i < 60; i++) {
+    // Run the full build
+    for (let i = 0; i < INFANTRY_TICKS; i++) {
       runTick(state, systems);
     }
 

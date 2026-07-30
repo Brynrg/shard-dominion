@@ -48,7 +48,7 @@ function makeRig(): Rig {
   const meta = seedFromMission(state, mission, { units, structures, economy });
   const queue = makeCommandQueue();
   const systems = orderSystems([
-    makeCommandSystem(queue, structures),
+    makeCommandSystem(queue, structures, ['warden', 'vane'], [], units),
     makeMovementSystem(),
     makeHarvestSystem(economy),
     makeConstructionSystem(structures, queue),

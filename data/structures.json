@@ -41,7 +41,11 @@
           "seconds": 45,
           "cells": 3
         }
-      ]
+      ],
+      "menu": "internal",
+      "hotkey": "",
+      "shortName": "Con Yard",
+      "prerequisites": []
     },
     {
       "id": "barracks",
@@ -71,7 +75,10 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "menu": "base",
+      "hotkey": "B",
+      "prerequisites": []
     },
     {
       "id": "power_node",
@@ -101,7 +108,11 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "menu": "base",
+      "hotkey": "N",
+      "shortName": "Power",
+      "prerequisites": []
     },
     {
       "id": "generic_structure",
@@ -131,7 +142,10 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "menu": "internal",
+      "hotkey": "",
+      "prerequisites": []
     },
     {
       "id": "concrete_slab",
@@ -162,7 +176,10 @@
           "hazard": "NONE",
           "factionStripe": "slab"
         }
-      }
+      },
+      "menu": "internal",
+      "hotkey": "",
+      "prerequisites": []
     },
     {
       "id": "refinery",
@@ -192,7 +209,12 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "menu": "base",
+      "hotkey": "F",
+      "prerequisites": [
+        "power_node"
+      ]
     },
     {
       "id": "defense_turret",
@@ -222,7 +244,13 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "menu": "def",
+      "hotkey": "G",
+      "shortName": "Turret",
+      "prerequisites": [
+        "power_node"
+      ]
     },
     {
       "id": "war_factory",
@@ -253,7 +281,13 @@
           "factionStripe": "player"
         }
       },
-      "tier": 2
+      "tier": 2,
+      "menu": "base",
+      "hotkey": "W",
+      "shortName": "War Fctry",
+      "prerequisites": [
+        "refinery"
+      ]
     },
     {
       "id": "radar",
@@ -284,7 +318,12 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "menu": "base",
+      "hotkey": "J",
+      "prerequisites": [
+        "power_node"
+      ]
     },
     {
       "id": "wall",
@@ -316,7 +355,10 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "menu": "def",
+      "hotkey": "L",
+      "prerequisites": []
     },
     {
       "id": "processing_plant",
@@ -347,7 +389,13 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "menu": "base",
+      "hotkey": "K",
+      "shortName": "Proc Plant",
+      "prerequisites": [
+        "refinery"
+      ]
     },
     {
       "id": "bunker",
@@ -379,7 +427,10 @@
       "onSlabHpFraction": 1.0,
       "offSlabHpFraction": 0.7,
       "providesBuildRadius": false,
-      "isDeployable": false
+      "isDeployable": false,
+      "menu": "def",
+      "hotkey": "",
+      "prerequisites": []
     },
     {
       "id": "infirmary",
@@ -415,7 +466,10 @@
       "onSlabHpFraction": 1.0,
       "offSlabHpFraction": 0.7,
       "providesBuildRadius": false,
-      "isDeployable": false
+      "isDeployable": false,
+      "menu": "def",
+      "hotkey": "",
+      "prerequisites": []
     },
     {
       "id": "machine_shop",
@@ -451,7 +505,13 @@
       "onSlabHpFraction": 1.0,
       "offSlabHpFraction": 0.7,
       "providesBuildRadius": false,
-      "isDeployable": false
+      "isDeployable": false,
+      "menu": "def",
+      "hotkey": "",
+      "shortName": "Mach Shop",
+      "prerequisites": [
+        "war_factory"
+      ]
     },
     {
       "id": "gate",
@@ -484,7 +544,10 @@
       "onSlabHpFraction": 1.0,
       "offSlabHpFraction": 0.7,
       "providesBuildRadius": false,
-      "isDeployable": false
+      "isDeployable": false,
+      "menu": "def",
+      "hotkey": "",
+      "prerequisites": []
     },
     {
       "id": "skypad",
@@ -515,7 +578,12 @@
       "onSlabHpFraction": 1.0,
       "offSlabHpFraction": 0.7,
       "providesBuildRadius": false,
-      "isDeployable": false
+      "isDeployable": false,
+      "menu": "base",
+      "hotkey": "P",
+      "prerequisites": [
+        "tech_lab"
+      ]
     },
     {
       "id": "aa_turret",
@@ -546,7 +614,13 @@
       "onSlabHpFraction": 1.0,
       "offSlabHpFraction": 0.7,
       "providesBuildRadius": false,
-      "isDeployable": false
+      "isDeployable": false,
+      "menu": "def",
+      "hotkey": "A",
+      "shortName": "AA Turret",
+      "prerequisites": [
+        "power_node"
+      ]
     },
     {
       "id": "tech_lab",
@@ -577,7 +651,13 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "menu": "base",
+      "hotkey": "X",
+      "shortName": "Tech Lab",
+      "prerequisites": [
+        "war_factory"
+      ]
     },
     {
       "id": "heavy_gate",
@@ -610,7 +690,13 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "menu": "def",
+      "hotkey": "",
+      "shortName": "Hvy Gate",
+      "prerequisites": [
+        "gate"
+      ]
     },
     {
       "id": "barracks_elite",
@@ -641,7 +727,14 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "menu": "base",
+      "hotkey": "D",
+      "shortName": "Elite Brks",
+      "prerequisites": [
+        "barracks",
+        "tech_lab"
+      ]
     },
     {
       "id": "armor_upgrade_center",
@@ -672,69 +765,13 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
-    },
-    {
-      "id": "air_pad",
-      "name": "Air Pad",
-      "cost": 500,
-      "buildTimeSeconds": 14,
-      "hp": 600,
-      "footprint": {
-        "w": 1,
-        "h": 1
       },
-      "powerSupply": 0,
-      "powerDemand": 12,
-      "onSlabHpFraction": 1.0,
-      "offSlabHpFraction": 0.7,
-      "providesBuildRadius": false,
-      "isDeployable": false,
-      "tier": 2,
-      "graphics": {
-        "sprite_id": "air_pad",
-        "fallback_geometry": {
-          "chassis": "BUILDING",
-          "chassisMod": "NONE",
-          "weaponGlyph": "NONE",
-          "barrelClass": "NONE",
-          "roleBadge": "SUPPORT",
-          "rangeMarks": 0,
-          "hazard": "NONE",
-          "factionStripe": "player"
-        }
-      }
-    },
-    {
-      "id": "radar_addon",
-      "name": "Radar Upgrade",
-      "cost": 300,
-      "buildTimeSeconds": 10,
-      "hp": 400,
-      "footprint": {
-        "w": 1,
-        "h": 1
-      },
-      "powerSupply": 0,
-      "powerDemand": 10,
-      "onSlabHpFraction": 1.0,
-      "offSlabHpFraction": 0.7,
-      "providesBuildRadius": false,
-      "isDeployable": false,
-      "tier": 2,
-      "graphics": {
-        "sprite_id": "radar_addon",
-        "fallback_geometry": {
-          "chassis": "BUILDING",
-          "chassisMod": "NONE",
-          "weaponGlyph": "NONE",
-          "barrelClass": "NONE",
-          "roleBadge": "SUPPORT",
-          "rangeMarks": 0,
-          "hazard": "NONE",
-          "factionStripe": "player"
-        }
-      }
+      "menu": "base",
+      "hotkey": "",
+      "shortName": "Armor Ctr",
+      "prerequisites": [
+        "war_factory"
+      ]
     },
     {
       "id": "ion_cannon",
@@ -765,7 +802,21 @@
           "hazard": "SPLASH",
           "factionStripe": "player"
         }
-      }
+      },
+      "menu": "def",
+      "hotkey": "",
+      "shortName": "☢ Ion Cannon",
+      "prerequisites": [
+        "tech_lab",
+        "processing_plant"
+      ],
+      "superweapon": {
+        "damage": 900,
+        "radiusTiles": 2.5,
+        "cooldownSeconds": 180,
+        "label": "ION CANNON"
+      },
+      "cellCost": 5
     },
     {
       "id": "resonance_device",
@@ -797,7 +848,21 @@
           "hazard": "SPLASH",
           "factionStripe": "player"
         }
-      }
+      },
+      "menu": "def",
+      "hotkey": "",
+      "shortName": "☢ Resonance",
+      "prerequisites": [
+        "tech_lab",
+        "processing_plant"
+      ],
+      "superweapon": {
+        "damage": 700,
+        "radiusTiles": 3.5,
+        "cooldownSeconds": 150,
+        "label": "RESONANCE"
+      },
+      "cellCost": 4
     }
   ]
 }

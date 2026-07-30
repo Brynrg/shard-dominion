@@ -17,13 +17,22 @@ const DOCK_SLOTS_PER_REFINERY = 1;
 export function makeHarvestSystem(economy: EconomyConstants, factions?: { player?: { salvageAll?: boolean }; enemy?: { salvageAll?: boolean } }, refinements: readonly Refinement[] = []): { name: 'harvest'; run(state: SimState): void } {
   // Cells (XP-2): per-team conversion tick counters (deterministic closure state).
   const cellTicks = new Map<string, number>();
+  /** Total emergency trickle granted per team this match (deterministic closure state). */
+  const trickled = new Map<string, number>();
+  /** Enough to re-found ONE refinery and a little float — then you are on your own. */
+  const TRICKLE_LIFETIME_CAP = 2600;
   const CELL_COST = 100;        // Shard credits per Cell
   const CELL_SECONDS = 8;       // conversion time per Cell
   const CELL_CAP = 12;          // low cap — charges, not a currency
   const CREDIT_FLOOR = 200;     // never drain the bank below this
   const SALVAGE_RADIUS_SQ = (0.8 * 256) * (0.8 * 256);
-  // Derived constants from economy config
-  const DOCK_RATE_PER_TICK = economy.dockRate / SIM_TICK_RATE; // 80/s ÷ 20Hz = 4 credits/tick
+  // Derived constants from economy config. BOTH rates are per-SECOND in the data and
+  // must be divided by the tick rate here. `harvestRate` used to be applied RAW per
+  // tick — i.e. 20× its documented value — which made a 600-cargo load fill in 5s and
+  // put the entire tech tree inside the first 16 seconds of a match. See
+  // docs/GAMEPLAY_OVERHAUL_PLAN.md Finding 2.
+  const DOCK_RATE_PER_TICK = economy.dockRate / SIM_TICK_RATE;
+  const HARVEST_RATE_PER_TICK = economy.harvestRate / SIM_TICK_RATE;
 
   // Last-seen hp per harvester, for flee detection (E6). Closure-scoped (one per sim),
   // deterministic. Id reuse is safe: we read prev then overwrite, and a fresh harvester's
@@ -39,15 +48,33 @@ export function makeHarvestSystem(economy: EconomyConstants, factions?: { player
       // Applies to both teams (symmetric); stops at the cap so it is a comeback
       // mechanic, not free AFK income. Deterministic (pure state read + tick math).
       for (const team of ['player', 'enemy'] as const) {
-        let hasHarvester = false; let bank: { credits: number } | null = null;
+        let hasHarvester = false; let hasRefinery = false; let bank: { credits: number } | null = null;
         for (const e of state.store.all()) {
           const f = e.components.faction;
           if (!f || f.team !== team) continue;
-          if (f.faction === 'harvester' && (e.components.health?.hp ?? 1) > 0) { hasHarvester = true; break; }
+          if ((e.components.health?.hp ?? 1) <= 0) continue;
+          if (f.faction === 'harvester') hasHarvester = true;
+          if (f.faction === 'refinery' && isOperational(e)) hasRefinery = true;
           if (!bank && e.components.building && e.components.economy) bank = e.components.economy;
         }
-        if (!hasHarvester && bank && bank.credits < economy.salvageTrickleCap) {
-          bank.credits = Math.min(economy.salvageTrickleCap, bank.credits + economy.salvageRatePerSec / SIM_TICK_RATE);
+        // A side with no harvester OR no refinery has NO WAY TO EARN — a harvester
+        // with nowhere to dock is as broke as no harvester at all, and the original
+        // condition only covered the first case. The cap must also clear the price of
+        // the thing you need to recover: at ◈500 against a ◈1200 refinery, losing your
+        // last refinery was an unrecoverable dead end for both the player and the AI
+        // (the difficulty harness measured both sides stuck wanting a refinery they
+        // could never afford, farming a dead economy to the 25-minute cap).
+        const canEarn = hasHarvester && hasRefinery;
+        // LIFETIME cap as well as a level cap: the trickle is a comeback mechanic, not
+        // an immortality lifeline. Without the lifetime cap a side reduced to a lone
+        // Construction Yard can re-buy a refinery forever and never lose — which
+        // turned 2 of 5 harness matches into 25-minute stalemates.
+        const spent = trickled.get(team) ?? 0;
+        if (!canEarn && bank && bank.credits < economy.salvageTrickleCap && spent < TRICKLE_LIFETIME_CAP) {
+          const step = economy.salvageRatePerSec / SIM_TICK_RATE;
+          const grant = Math.min(step, economy.salvageTrickleCap - bank.credits, TRICKLE_LIFETIME_CAP - spent);
+          bank.credits += grant;
+          trickled.set(team, spent + grant);
         }
       }
 
@@ -138,7 +165,7 @@ export function makeHarvestSystem(economy: EconomyConstants, factions?: { player
             runSeek(state, e, pos, movement, harvest);
             break;
           case 'HARVEST':
-            runHarvest(state, e, pos, movement, harvest, economy, refinements);
+            runHarvest(state, e, pos, movement, harvest, economy, refinements, HARVEST_RATE_PER_TICK);
             break;
           case 'RETURN':
             runReturn(state, e, pos, movement, harvest, dockUsage);
@@ -181,6 +208,7 @@ function runHarvest(
   harvest: HarvestComponent,
   economy: EconomyConstants,
   refinements: readonly Refinement[] = [],
+  harvestRatePerTick: number = economy.harvestRate / SIM_TICK_RATE,
 ): void {
   // Check if we've reached the target tile
   if (harvest.targetTile) {
@@ -196,7 +224,7 @@ function runHarvest(
         // Refinement (economy depth): Deep Extraction lifts this team's yield.
         const team = entity.components.faction?.team;
         const deep = 1 + refinementValue(team ? state.refinements.get(team)?.done : undefined, refinements, 'harvest');
-        const rate = economy.harvestRate * (isStormActive(state.tick) ? 2 : 1) * deep;
+        const rate = harvestRatePerTick * (isStormActive(state.tick) ? 2 : 1) * deep;
         const amount = Math.min(rate, density, economy.cargoCapacity - harvest.cargo);
         state.shardDensity.set(densityKey, density - amount);
         harvest.cargo += amount;

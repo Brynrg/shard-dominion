@@ -31,6 +31,9 @@ describe('TP-2 — split banks are ONE wallet', () => {
   it('a 550 build succeeds when 300+300 sits across two refineries (the HUD-said-yes bug)', () => {
     const state = makeSimState({ seed: 2, mapWidth: 32, mapHeight: 32 });
     state.store.create({ position: tileToWorldCenter({ tx: 8, ty: 8 }), ...structureComponents('construction_yard', 'player', structures) });
+    // Tech spine (Phase C2): refinery/turrets now require a standing Power Node,
+    // so the fixture base has the one a real base always builds first.
+    state.store.create({ position: tileToWorldCenter({ tx: 6, ty: 8 }), ...structureComponents('power_node', 'player', structures) });
     refinery(state, 'player', 10, 8, 300);
     refinery(state, 'player', 12, 8, 300);
     expect(teamCredits(state, 'player')).toBe(600);
@@ -121,6 +124,9 @@ describe('TP-2 — the softlock trio', () => {
   it('after losing every refinery, the ConYard reserve banks the trickle (rebuild path)', () => {
     const state = makeSimState({ seed: 2, mapWidth: 32, mapHeight: 32 });
     state.store.create({ position: tileToWorldCenter({ tx: 8, ty: 8 }), ...structureComponents('construction_yard', 'player', structures) });
+    // Tech spine (Phase C2): refinery/turrets now require a standing Power Node,
+    // so the fixture base has the one a real base always builds first.
+    state.store.create({ position: tileToWorldCenter({ tx: 6, ty: 8 }), ...structureComponents('power_node', 'player', structures) });
     // No refinery, no harvester → the emergency trickle must land in the reserve.
     const sys = orderSystems([makeHarvestSystem(economy)]);
     for (let i = 0; i < 200; i++) runTick(state, sys);

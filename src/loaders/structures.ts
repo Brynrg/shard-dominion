@@ -8,6 +8,26 @@ export const StructureSchema = z.object({
   cost: z.number().nonnegative(),
   buildTimeSeconds: z.number().positive(),
   tier: z.number().int().min(1).max(3).default(1),
+  /** Sidebar tab this structure lives on. `internal` = never player-buildable
+   *  (pre-placed or engine-owned) and therefore exempt from the reachability gate. */
+  menu: z.enum(['base', 'def', 'internal']).default('base'),
+  /** Sidebar hotkey (single char, '' = none). */
+  hotkey: z.string().max(1).default(''),
+  /** Short sidebar label. */
+  shortName: z.string().min(1).optional(),
+  /** Structure ids that must be standing before this can be built (Phase C2 tech spine). */
+  prerequisites: z.array(z.string()).default([]),
+  /** XP-2: Refined Cells charged when the build starts. */
+  cellCost: z.number().int().nonnegative().optional(),
+  /** Only this faction may build it. */
+  factionLock: z.enum(['concord', 'emberhand', 'shardborn']).optional(),
+  /** Superweapon (Phase C3): area strike this structure arms, and its cooldown. */
+  superweapon: z.object({
+    damage: z.number().positive(),
+    radiusTiles: z.number().positive(),
+    cooldownSeconds: z.number().positive(),
+    label: z.string().min(1),
+  }).optional(),
   /** Walls (XP-1): this structure blocks unit pathing while alive. */
   blocksPath: z.boolean().optional(),
   /** XP-4 gates: own-team units path THROUGH this blocker. */

@@ -152,7 +152,7 @@ describe('FG-5 — veterancy + hero', () => {
   it('the Warden is capped at one (train intent rejected while one lives)', () => {
     const state = makeSimState({ seed: 26, mapWidth: 32, mapHeight: 32 });
     const queue = makeCommandQueue();
-    const systems = orderSystems([makeCommandSystem(queue, structures)]);
+    const systems = orderSystems([makeCommandSystem(queue, structures, ['warden', 'vane'], [], units)]);
     state.store.create({ // living hero
       position: tileToWorldCenter({ tx: 10, ty: 10 }),
       health: { hp: 150, maxHp: 150 },

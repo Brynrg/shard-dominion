@@ -17,6 +17,10 @@ import structuresData from '../../data/structures.json' with { type: 'json' };
 import weaponsData from '../../data/weapons.json' with { type: 'json' };
 
 const units = loadUnits(unitsData);
+// Wait long enough for the SLOWEST basic unit these tests train, derived from
+// data — a hardcoded 65 broke the moment infantry's buildTimeSeconds was retuned.
+const BUILD_TICKS = Math.max(...['infantry', 'rocket_trooper', 'harvester']
+  .map(id => Math.round((units.find(u => u.id === id)?.buildTimeSeconds ?? 5) * 20))) + 10;
 const structures = loadStructures(structuresData);
 const weapons = loadWeapons(weaponsData);
 
@@ -29,7 +33,7 @@ describe('FG-1 commands', () => {
     state = makeSimState({ seed: 1, mapWidth: 32, mapHeight: 32 });
     queue = makeCommandQueue();
     systems = orderSystems([
-      makeCommandSystem(queue, structures),
+      makeCommandSystem(queue, structures, ['warden', 'vane'], [], units),
       makeMovementSystem(),
       makeCombatTargetingSystem(weapons),
       makeDamageSystem(weapons),
@@ -131,7 +135,7 @@ describe('FG-1 commands', () => {
     expect(state.store.get(barracks)!.components.movement).toBeUndefined();
 
     queue.push({ type: 'train', unitId: 'infantry' });
-    for (let t = 0; t < 80; t++) runTick(state, systems); // 3s build + travel
+    for (let t = 0; t < BUILD_TICKS + 40; t++) runTick(state, systems); // build + travel
     const fresh = state.store.all().find(e =>
       e.components.faction?.faction === 'infantry' && e.components.faction?.team === 'player');
     expect(fresh).toBeDefined();

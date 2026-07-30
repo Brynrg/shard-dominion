@@ -27,6 +27,9 @@ describe('RA build flow', () => {
     systems = orderSystems([makeCommandSystem(queue, structures), makeConstructionSystem(structures, queue)]);
     // A ConYard (build radius) + a funded bank.
     state.store.create({ position: tileToWorldCenter({ tx: 8, ty: 8 }), ...structureComponents('construction_yard', 'player', structures) });
+    // Tech spine (Phase C2): refinery/turrets now require a standing Power Node,
+    // so the fixture base has the one a real base always builds first.
+    state.store.create({ position: tileToWorldCenter({ tx: 6, ty: 8 }), ...structureComponents('power_node', 'player', structures) });
     state.store.create({ position: tileToWorldCenter({ tx: 10, ty: 8 }), ...structureComponents('refinery', 'player', structures, { credits: 2000, refineryMaxStorage: 5000 }) });
   });
 

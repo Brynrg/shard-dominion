@@ -104,7 +104,11 @@ describe('BUG-5 — AI difficulty grace period', () => {
 
   it('after the grace window the same board goes aggressive', () => {
     const ai = fundedWarband(10);
-    for (let i = 0; i < 50; i++) { ai.run(state); state.tick = (state.tick + 1) as typeof state.tick; }
-    expect(['Assault', 'Pressure', 'Raid']).toContain(ai.debugState());
+    // The AI now attacks in WAVES with a lull between them, so sampling one arbitrary
+    // tick can legitimately land in the rest phase. Assert it went aggressive at all.
+    const seen = new Set<string>();
+    for (let i = 0; i < 50; i++) { ai.run(state); seen.add(ai.debugState()); state.tick = (state.tick + 1) as typeof state.tick; }
+    const wentAggressive = ['Assault', 'Pressure', 'Raid'].some(p => seen.has(p));
+    expect(wentAggressive, `plans seen after grace: ${[...seen].join(',')}`).toBe(true);
   });
 });

@@ -9,6 +9,7 @@ import { makeDamageSystem } from '../../src/sim/systems/damage.js';
 import { makeProjectileSystem } from '../../src/sim/systems/projectile.js';
 import { makeProductionSystem } from '../../src/sim/systems/production.js';
 import { makeAiSystem } from '../../src/sim/systems/ai.js';
+import { makeConstructionSystem } from '../../src/sim/systems/construction.js';
 import { orderSystems, runTick, type SimSystem } from '../../src/sim/loop.js';
 import { tileToWorldCenter } from '../../src/sim/coords.js';
 import { loadUnits } from '../../src/loaders/units.js';
@@ -28,7 +29,7 @@ describe('FG-3 — projectiles + splash', () => {
     state = makeSimState({ seed: 9, mapWidth: 32, mapHeight: 32 });
     queue = makeCommandQueue();
     systems = orderSystems([
-      makeCommandSystem(queue, structures),
+      makeCommandSystem(queue, structures, ['warden', 'vane'], [], units),
       makeMovementSystem(),
       makeCombatTargetingSystem(weapons),
       makeProjectileSystem(weapons),
@@ -90,14 +91,16 @@ describe('FG-3 — vehicle production routing', () => {
     const state = makeSimState({ seed: 10, mapWidth: 32, mapHeight: 32 });
     const queue = makeCommandQueue();
     const systems = orderSystems([
-      makeCommandSystem(queue, structures),
+      makeCommandSystem(queue, structures, ['warden', 'vane'], [], units),
       makeProductionSystem(units),
     ]);
     state.store.create({
       position: tileToWorldCenter({ tx: 6, ty: 8 }),
       building: { onSlab: true, buildProgress: 100, powered: true },
       faction: { team: 'player', faction: 'refinery' },
-      economy: { credits: 2000, refineryStorage: 2000, maxStorage: 2000 },
+      // A genuinely RICH bank: the AI now funds its economy (3 harvesters) before
+      // military, so 2000 bought the factory and left nothing for a tank.
+      economy: { credits: 5000, refineryStorage: 5000, maxStorage: 6000 },
       production: { queue: [], progress: 0 },
       health: { hp: 1500, maxHp: 1500 },
     });
@@ -145,7 +148,9 @@ describe('FG-3 — AI combined arms', () => {
       position: tileToWorldCenter({ tx: 26, ty: 8 }),
       building: { onSlab: true, buildProgress: 100, powered: true },
       faction: { team: 'enemy', faction: 'refinery' },
-      economy: { credits: 2000, refineryStorage: 2000, maxStorage: 2000 },
+      // A genuinely RICH bank: the AI now funds its economy (3 harvesters) before
+      // military, so 2000 bought the factory and left nothing for a tank.
+      economy: { credits: 5000, refineryStorage: 5000, maxStorage: 6000 },
       production: { queue: [], progress: 0 },
       health: { hp: 1500, maxHp: 1500 },
     });
@@ -165,16 +170,35 @@ describe('FG-3 — AI combined arms', () => {
       tech: { tier: 2, upgradingTo: null, ticksLeft: 0 },
       health: { hp: 2000, maxHp: 2000 },
     });
-    // NO rich fields anywhere → expansion unavailable → factory threshold 1300.
-    const ai = makeAiSystem(units, { team: 'enemy', attackTile: { tx: 5, ty: 5 } });
-    const systems = orderSystems([ai]);
-    for (let t = 0; t < 40; t++) runTick(state, systems);
+    // A real base has a power node, and the build order reaches it before the
+    // factory — without one the AI correctly builds that first.
+    state.store.create({
+      position: tileToWorldCenter({ tx: 24, ty: 6 }),
+      building: { onSlab: true, buildProgress: 100, powered: true },
+      faction: { team: 'enemy', faction: 'power_node' },
+      power: { powerSupply: 100, powerDemand: 0, powered: true },
+      health: { hp: 500, maxHp: 500 },
+    });
+    // NO rich fields anywhere → expansion unavailable.
+    // The AI must be given the structure DEFS (it looks up cost/build time/prereqs),
+    // and Phase B3 makes it pay the player's construction cost — so allow the War
+    // Factory's real build time plus the unfold instead of a flat 40 ticks.
+    const ai = makeAiSystem(units, { team: 'enemy', attackTile: { tx: 5, ty: 5 } }, structures);
+    const systems = orderSystems([ai, makeConstructionSystem(structures, { drain: () => [] }), makeProductionSystem(units)]);
+    const factoryTicks = structures.find(st => st.id === 'war_factory')!.buildTimeSeconds * 20 + 200;
+    for (let t = 0; t < factoryTicks; t++) runTick(state, systems);
     const factory = state.store.all().find(e => e.components.faction?.team === 'enemy' && e.components.faction?.faction === 'war_factory');
     expect(factory).toBeDefined();
-    expect(factory!.components.production!.queue.length).toBeGreaterThan(0); // vehicles queued
-    // It PAID for the factory.
+    // Producer binding (Phase A5): whatever the AI queues here must be a unit whose
+    // `producedBy` is the War Factory. Snapshotting queue.length alone is flaky — the
+    // production system drains the queue into `current` the moment it can pay.
+    const q = [...factory!.components.production!.queue];
+    if (factory!.components.production!.current) q.push(factory!.components.production!.current);
+    expect(q.length, 'a vehicle queued or in production').toBeGreaterThan(0);
+    for (const id of q) expect(units.find(u => u.id === id)?.producedBy).toBe('war_factory');
+    // It PAID for the factory (it also buys units now, so assert the floor).
     const total = state.store.all().filter(e => e.components.faction?.team === 'enemy' && e.components.economy)
       .reduce((s, e) => s + e.components.economy!.credits, 0);
-    expect(total).toBe(1000); // 2000 − 1000
+    expect(total).toBeLessThanOrEqual(1000); // spent at least the factory's 1000
   });
 });

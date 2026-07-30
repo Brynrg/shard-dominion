@@ -34,6 +34,14 @@ export function makeProductionSystem(units: readonly UnitDef[], factions?: TeamF
           const unitId = prod.queue[0]!;
           const def = units.find(u => u.id === unitId);
           if (!def) { producer.components.production = { ...prod, queue: prod.queue.slice(1) }; continue; }
+          // Producer binding (Phase A5, SIM-AUTHORITATIVE): a unit may only be built
+          // by the structure named in `producedBy`. Before this, any producer could
+          // build anything — the Barracks-vs-War-Factory split was a view-side
+          // convention only, so losing a War Factory never stopped tanks.
+          const producerKind = producer.components.faction?.faction;
+          if (def.producedBy && def.producedBy !== producerKind) {
+            producer.components.production = { ...prod, queue: prod.queue.slice(1) }; continue;
+          }
           // Tech gate (XP-1): drop queued units above the team's HQ tier (sim-authoritative).
           if ((def.tier ?? 1) > teamTier(state, team as 'player' | 'enemy')) {
             producer.components.production = { ...prod, queue: prod.queue.slice(1) }; continue;

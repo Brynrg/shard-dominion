@@ -27,6 +27,12 @@ import m14 from '../../data/missions/m14_first_vein.json' with { type: 'json' };
 import m15 from '../../data/missions/m15_aftershock.json' with { type: 'json' };
 import m16 from '../../data/missions/m16_ash_court.json' with { type: 'json' };
 import m17 from '../../data/missions/m17_aethers_verdict.json' with { type: 'json' };
+import m18 from '../../data/missions/m18_act4_ruins.json' with { type: 'json' };
+import m19 from '../../data/missions/m19_act4_convergence.json' with { type: 'json' };
+import m20 from '../../data/missions/m20_act4_genesis.json' with { type: 'json' };
+import desertClash from '../../data/missions/skirmish_desert_clash.json' with { type: 'json' };
+import twinPeaks from '../../data/missions/skirmish_twin_peaks.json' with { type: 'json' };
+import fourCorners from '../../data/missions/skirmish_four_corners.json' with { type: 'json' };
 
 const rawMissions: Record<string, unknown> = {
   skirmish, skirmish_badlands: badlands, m1_first_light: m1, m2_lifeblood: m2, m3_hold_the_line: m3,
@@ -34,6 +40,9 @@ const rawMissions: Record<string, unknown> = {
   m8_ashfall: m8, m9_the_exchange: m9, m10_stormline: m10,
   m11_cauterize: m11, m12_renegade: m12, m13_choir_of_glass: m13, m14_first_vein: m14,
   m15_aftershock: m15, m16_ash_court: m16, m17_aethers_verdict: m17,
+  m18_act4_ruins: m18, m19_act4_convergence: m19, m20_act4_genesis: m20,
+  skirmish_desert_clash: desertClash, skirmish_twin_peaks: twinPeaks,
+  skirmish_four_corners: fourCorners,
 };
 
 const units = loadUnits(unitsData);

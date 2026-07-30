@@ -12,6 +12,7 @@
 // confusingly named, so the mission schema uses `kind`. Every objective may carry a
 // stable authoring `id` (for the UI/triggers/rewards later).
 import type { SimState } from '../state.js';
+import { makeDefeatTracker } from '../defeat.js';
 import { SIM_TICK_RATE } from '../loop.js';
 import { tileToWorldCenter, TILE_SUBUNITS } from '../coords.js';
 import { makeTriggerRunner, type MissionTrigger, type MissionMessage } from './missionTriggers.js';
@@ -82,13 +83,14 @@ function teamCredits(state: SimState, team: Team): number {
   return c;
 }
 
-function teamHasProducerOrArmy(state: SimState, team: Team): boolean {
-  for (const e of state.store.all()) {
-    if (e.components.faction?.team !== team) continue;
-    if (e.components.production) return true;
-    if (e.components.combat && (e.components.health?.hp ?? 0) > 0) return true;
-  }
-  return false;
+// Phase A4: `eliminate` and `defeated` both mean "this side is finished", and that
+// is defined in exactly one place — src/sim/defeat.ts. Previously this file carried
+// its own copy of the rule ("no producers AND no living combat units"), which is what
+// forced the endgame map-sweep for the last stray unit.
+const defeatTracker = makeDefeatTracker();
+function teamIsFinished(state: SimState, team: Team): boolean {
+  defeatTracker.observe(state);
+  return defeatTracker.isDefeated(state, team);
 }
 
 // A living team UNIT (has movement or combat) inside the region (world distance ≤ r tiles).
@@ -130,7 +132,7 @@ export function makeObjectivesSystem(
         return (everSeen.get(i) ?? false) && !anyLiving(state, o.team, o.kind);
       }
       case 'eliminate':
-        return !teamHasProducerOrArmy(state, o.team);
+        return teamIsFinished(state, o.team);
       case 'survive':
         return state.tick >= Math.round(o.seconds * SIM_TICK_RATE);
       case 'accumulate':
@@ -164,7 +166,7 @@ export function makeObjectivesSystem(
         return everSeen.get(-1 - i) ?? false;
       }
       case 'defeated':
-        return !teamHasProducerOrArmy(state, f.team);
+        return teamIsFinished(state, f.team);
     }
   }
 

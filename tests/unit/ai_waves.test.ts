@@ -8,13 +8,21 @@ import { orderSystems, runTick, type SimSystem } from '../../src/sim/loop.js';
 import { tileToWorldCenter } from '../../src/sim/coords.js';
 import { loadUnits } from '../../src/loaders/units.js';
 import { loadStructures } from '../../src/loaders/structures.js';
+import { AI_PERSONALITIES } from '../../src/sim/aiPersonality.js';
 import unitsData from '../../data/units.json' with { type: 'json' };
 import structuresData from '../../data/structures.json' with { type: 'json' };
 
 const units = loadUnits(unitsData);
 const structures = loadStructures(structuresData);
 // Low assault threshold so 2 infantry (value 200) trigger a commit; disable Pressure.
-const cfg = { team: 'enemy' as const, attackTile: { tx: 5, ty: 5 }, evalInterval: 1, assaultValue: 200, pressureValue: 100000 };
+// This suite tests DISPATCH mechanics (commit / prune / never re-order a committed
+// unit), not wave pacing — so no post-assault lull and no learning grace, otherwise
+// the AI legitimately falls quiet after its first wave and the assertions sample a lull.
+const cfg = {
+  team: 'enemy' as const, attackTile: { tx: 5, ty: 5 }, evalInterval: 1,
+  assaultValue: 200, pressureValue: 100000,
+  personality: { ...AI_PERSONALITIES.normal, waveLullTicks: 0, graceTicks: 0, raidHarvesters: false },
+};
 const TARGET = tileToWorldCenter(cfg.attackTile);
 
 function addSoldier(state: SimState, tx: number) {

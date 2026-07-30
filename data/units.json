@@ -8,7 +8,7 @@
       "armorClass": "LIGHT",
       "weaponId": "rifle",
       "speed": 12,
-      "buildTimeSeconds": 3,
+      "buildTimeSeconds": 5,
       "team": "player",
       "graphics": {
         "sprite_id": "infantry",
@@ -22,7 +22,9 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "producedBy": "barracks",
+      "hotkey": "T"
     },
     {
       "id": "vehicle",
@@ -47,7 +49,9 @@
           "factionStripe": "enemy"
         }
       },
-      "leavesWreck": true
+      "leavesWreck": true,
+      "producedBy": "war_factory",
+      "hotkey": ""
     },
     {
       "id": "harvester",
@@ -72,7 +76,9 @@
           "factionStripe": "player"
         }
       },
-      "leavesWreck": true
+      "leavesWreck": true,
+      "producedBy": "refinery",
+      "hotkey": "H"
     },
     {
       "id": "rocket_trooper",
@@ -82,7 +88,7 @@
       "armorClass": "LIGHT",
       "weaponId": "inf_rocket",
       "speed": 12,
-      "buildTimeSeconds": 4,
+      "buildTimeSeconds": 6,
       "team": "player",
       "graphics": {
         "sprite_id": "rocket_trooper",
@@ -96,7 +102,10 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "producedBy": "barracks",
+      "hotkey": "R",
+      "shortName": "Rocket"
     },
     {
       "id": "scout_vehicle",
@@ -122,7 +131,10 @@
         }
       },
       "tier": 2,
-      "leavesWreck": true
+      "leavesWreck": true,
+      "producedBy": "war_factory",
+      "hotkey": "V",
+      "shortName": "Scout"
     },
     {
       "id": "assault_tank",
@@ -148,7 +160,10 @@
         }
       },
       "tier": 2,
-      "leavesWreck": true
+      "leavesWreck": true,
+      "producedBy": "war_factory",
+      "hotkey": "C",
+      "shortName": "Tank"
     },
     {
       "id": "riftmaw",
@@ -172,7 +187,9 @@
           "hazard": "SPLASH",
           "factionStripe": "neutral"
         }
-      }
+      },
+      "producedBy": null,
+      "hotkey": ""
     },
     {
       "id": "warden",
@@ -198,7 +215,10 @@
         }
       },
       "cellCost": 2,
-      "hero": true
+      "hero": true,
+      "producedBy": "barracks",
+      "hotkey": "E",
+      "shortName": "Warden ★"
     },
     {
       "id": "ghostwalker",
@@ -225,7 +245,10 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "producedBy": "barracks",
+      "hotkey": "",
+      "shortName": "Ghostwalkr"
     },
     {
       "id": "vane",
@@ -253,7 +276,10 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "producedBy": "barracks",
+      "hotkey": "E",
+      "shortName": "Vane ★"
     },
     {
       "id": "longbow",
@@ -279,7 +305,9 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "producedBy": "war_factory",
+      "hotkey": ""
     },
     {
       "id": "skimmer_apc",
@@ -306,7 +334,10 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "producedBy": "war_factory",
+      "hotkey": "",
+      "shortName": "Skimmer"
     },
     {
       "id": "gunship",
@@ -333,7 +364,9 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "producedBy": "skypad",
+      "hotkey": ""
     },
     {
       "id": "howitzer",
@@ -359,7 +392,9 @@
           "hazard": "SPLASH",
           "factionStripe": "player"
         }
-      }
+      },
+      "producedBy": "war_factory",
+      "hotkey": ""
     },
     {
       "id": "engineer",
@@ -369,7 +404,7 @@
       "armorClass": "LIGHT",
       "weaponId": "rifle",
       "speed": 12,
-      "buildTimeSeconds": 5,
+      "buildTimeSeconds": 6,
       "team": "player",
       "tier": 2,
       "graphics": {
@@ -384,7 +419,9 @@
           "hazard": "CONTROL",
           "factionStripe": "player"
         }
-      }
+      },
+      "producedBy": "barracks",
+      "hotkey": "G"
     },
     {
       "id": "transport_apc",
@@ -411,7 +448,10 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "producedBy": "war_factory",
+      "hotkey": "",
+      "shortName": "Transport"
     },
     {
       "id": "defense_drone",
@@ -438,7 +478,10 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "producedBy": "skypad",
+      "hotkey": "",
+      "shortName": "Drone"
     },
     {
       "id": "repair_truck",
@@ -464,7 +507,10 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "producedBy": "war_factory",
+      "hotkey": "",
+      "shortName": "Repair Trk"
     },
     {
       "id": "medium_tank",
@@ -490,7 +536,10 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "producedBy": "war_factory",
+      "hotkey": "Z",
+      "shortName": "Med Tank"
     },
     {
       "id": "super_heavy_tank",
@@ -516,7 +565,10 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "producedBy": "war_factory",
+      "hotkey": "",
+      "shortName": "Behemoth"
     },
     {
       "id": "commando",
@@ -542,7 +594,9 @@
           "hazard": "SPLASH",
           "factionStripe": "player"
         }
-      }
+      },
+      "producedBy": "barracks_elite",
+      "hotkey": "M"
     },
     {
       "id": "laser_trooper",
@@ -552,7 +606,7 @@
       "armorClass": "LIGHT",
       "weaponId": "laser_rifle",
       "speed": 11,
-      "buildTimeSeconds": 4,
+      "buildTimeSeconds": 5,
       "team": "player",
       "tier": 2,
       "graphics": {
@@ -567,7 +621,10 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "producedBy": "barracks_elite",
+      "hotkey": "Y",
+      "shortName": "Laser Inf"
     },
     {
       "id": "razor",
@@ -594,7 +651,10 @@
           "hazard": "NONE",
           "factionStripe": "player"
         }
-      }
+      },
+      "producedBy": "barracks",
+      "hotkey": "",
+      "shortName": "Razor ★"
     },
     {
       "id": "tempest",
@@ -622,7 +682,10 @@
           "hazard": "SPLASH",
           "factionStripe": "player"
         }
-      }
+      },
+      "producedBy": "barracks",
+      "hotkey": "",
+      "shortName": "Tempest ★"
     }
   ]
 }

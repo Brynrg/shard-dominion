@@ -67,6 +67,12 @@ import m14Data from '../data/missions/m14_first_vein.json' with { type: 'json' }
 import m15Data from '../data/missions/m15_aftershock.json' with { type: 'json' };
 import m16Data from '../data/missions/m16_ash_court.json' with { type: 'json' };
 import m17Data from '../data/missions/m17_aethers_verdict.json' with { type: 'json' };
+import m18Data from '../data/missions/m18_act4_ruins.json' with { type: 'json' };
+import m19Data from '../data/missions/m19_act4_convergence.json' with { type: 'json' };
+import m20Data from '../data/missions/m20_act4_genesis.json' with { type: 'json' };
+import skirmishDesertClashData from '../data/missions/skirmish_desert_clash.json' with { type: 'json' };
+import skirmishTwinPeaksData from '../data/missions/skirmish_twin_peaks.json' with { type: 'json' };
+import skirmishFourCornersData from '../data/missions/skirmish_four_corners.json' with { type: 'json' };
 import challengesData from '../data/challenges.json' with { type: 'json' };
 
 // Map configuration
@@ -177,9 +183,8 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
 
   // ── Difficulty (FG-6): scales the AI's tempo + thresholds, never its economy. ──
   const difficulty = params.get('difficulty') ?? 'normal';
-  const D = difficulty === 'easy' ? { int: 2, av: 1.5, esc: 0.5, raid: -1, grace: 3600 }
-    : difficulty === 'hard' ? { int: 0.5, av: 0.7, esc: 1.5, raid: 1, grace: 480 }
-    : { int: 1, av: 1, esc: 1, raid: 0, grace: 1500 };
+  // (The old numeric D-multipliers are gone: difficulty now selects an AI personality
+  // — build order, expansion, defence, retreat, air/artillery — see aiPersonality.ts.)
 
   // Create sim state from the mission map.
   const state = makeSimState({
@@ -252,17 +257,16 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     : (mission.inheritsChoice ? localStorage.getItem('shardDominion.choice.campaign') : null);
   const liveObjectives = mission.objectives.filter(o => !o.onlyIfChoice || o.onlyIfChoice === bootChoice);
   const objectivesSystem = makeObjectivesSystem(liveObjectives, mission.failure, mission.triggers, units, teamFactions, bootChoice);
-  const aiSystems = mp ? [] : mission.enemies.map(e => {
-    const base = { team: 'enemy' as const, attackTile: meta.playerStartTile, ...(e.ai ?? {}) };
-    return makeAiSystem(units, {
-      ...base,
-      evalInterval: Math.max(2, Math.round((base.evalInterval ?? 10) * D.int)),
-      assaultValue: Math.round((base.assaultValue ?? 500) * D.av),
-      assaultEscalationPerMin: Math.round((base.assaultEscalationPerMin ?? 60) * D.esc),
-      raidUnitCap: Math.max(1, (base.raidUnitCap ?? 2) + D.raid),
-      graceTicks: base.graceTicks ?? D.grace,
-    }, structures, refinements);
-  });
+  // Difficulty is now a BEHAVIOUR profile (aiPersonality.ts), not three numbers that
+  // moved the attack clock by 54 seconds. A mission's own `ai` block still overrides
+  // any individual field, so authored missions keep their hand-tuned pacing.
+  const aiSystems = mp ? [] : mission.enemies.map(e => makeAiSystem(units, {
+    team: 'enemy' as const,
+    attackTile: meta.playerStartTile,
+    difficulty,
+    factionId: e.factionId ?? teamFactions.enemy.id,
+    ...(e.ai ?? {}),
+  }, structures, refinements));
   const planetSystem = makePlanetEventSystem(units, refinements, teamFactions);
   const systems = orderSystems([
     commandSystem,
@@ -861,6 +865,9 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
 const MISSIONS: Record<string, unknown> = {
   skirmish: skirmishData,
   skirmish_badlands: skirmishBadlandsData,
+  skirmish_desert_clash: skirmishDesertClashData,
+  skirmish_twin_peaks: skirmishTwinPeaksData,
+  skirmish_four_corners: skirmishFourCornersData,
   m1_first_light: m1FirstLightData,
   m2_lifeblood: m2Data,
   m3_hold_the_line: m3Data,
@@ -878,6 +885,9 @@ const MISSIONS: Record<string, unknown> = {
   m15_aftershock: m15Data,
   m16_ash_court: m16Data,
   m17_aethers_verdict: m17Data,
+  m18_act4_ruins: m18Data,
+  m19_act4_convergence: m19Data,
+  m20_act4_genesis: m20Data,
 };
 /** Campaign order (linear unlock: each mission unlocks the next). */
 const CAMPAIGN: { id: string; name: string; order: number }[] = [
@@ -897,7 +907,10 @@ const CAMPAIGN: { id: string; name: string; order: number }[] = [
   { id: 'm14_first_vein', name: 'Act II · The First Vein', order: 14 },
   { id: 'm15_aftershock', name: 'Act III · Aftershock', order: 15 },
   { id: 'm16_ash_court', name: 'Act III · The Ash Court', order: 16 },
-  { id: 'm17_aethers_verdict', name: 'FINALE · Aether\'s Verdict', order: 17 },
+  { id: 'm17_aethers_verdict', name: 'Act III · Aether\'s Verdict', order: 17 },
+  { id: 'm18_act4_ruins', name: 'Act IV · Ruins of the Vein', order: 18 },
+  { id: 'm19_act4_convergence', name: 'Act IV · Convergence', order: 19 },
+  { id: 'm20_act4_genesis', name: 'FINALE · Genesis', order: 20 },
 ];
 
 function openMissionSelect(): void {
@@ -916,6 +929,9 @@ function openMissionSelect(): void {
 const SKIRMISH_MAPS = [
   { id: 'skirmish', name: 'The Valley' },
   { id: 'skirmish_badlands', name: 'Badlands' },
+  { id: 'skirmish_desert_clash', name: 'Desert Clash' },
+  { id: 'skirmish_twin_peaks', name: 'Twin Peaks' },
+  { id: 'skirmish_four_corners', name: 'Four Corners (4P)' },
 ];
 function openTitle(): void {
   showTitleMenu(id => {

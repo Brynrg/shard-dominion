@@ -8,6 +8,7 @@ import { teamTier } from '../tech.js';
 import { structureComponents } from '../factory.js';
 import { teamCredits, teamCells, spendCredits, spendCells, grantCredits } from '../ledger.js';
 import { teamLedger } from './research.js';
+import { refuseStructure } from '../buildRules.js';
 import { SIM_TICK_RATE } from '../loop.js';
 import type { Refinement } from '../../loaders/refinements.js';
 import type { CommandIntent } from '../../view/input.js';
@@ -81,7 +82,7 @@ export interface CommandSystem {
 
 const MARKER_LIFETIME = 10 as const; // ~0.5s at 20Hz
 
-export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structures: StructureDef[], heroIds: readonly string[] = ['warden', 'vane'], refinements: readonly Refinement[] = [], units: readonly { id: string; cost: number }[] = [], teamFactions?: { player: { id?: string; costMult: number }; enemy: { id?: string; costMult: number } }): CommandSystem {
+export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structures: StructureDef[], heroIds: readonly string[] = ['warden', 'vane'], refinements: readonly Refinement[] = [], units: readonly { id: string; cost: number; producedBy?: string | null }[] = [], teamFactions?: { player: { id?: string; costMult: number }; enemy: { id?: string; costMult: number } }): CommandSystem {
   const markers: ConfirmationMarker[] = [];
   const groups = new Map<string, EntityId[]>();
   // Idle-harvester cycling cursor per seat (like the groups map, this closure
@@ -412,9 +413,16 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             if (state.structureBuild.get(actor)) break; // one at a time (RA rule)
             const def = structures.find((s) => s.id === intent.structureId);
             if (!def) break;
-            if ((def.tier ?? 1) > teamTier(state, actor)) break;
+            // Tech spine (Phase C2): tier + PREREQUISITE structures + faction lock +
+            // Cells, all checked through the shared build rules so the sidebar can
+            // never offer something the sim refuses.
+            const actorFactionId = teamFactions
+              ? (actor === 'player' ? teamFactions.player.id : teamFactions.enemy.id)
+              : undefined;
+            if (refuseStructure(state, actor, def, actorFactionId)) break;
             const cost = def.cost ?? 0;
             if (cost > 0 && !spendCredits(state, actor, cost)) break;
+            if (def.cellCost) spendCells(state, actor, def.cellCost);
             const totalTicks = Math.max(1, Math.round((def.buildTimeSeconds ?? 10) * 20));
             state.structureBuild.set(actor, { structureId: intent.structureId, ticksLeft: totalTicks, totalTicks });
             break;
@@ -735,13 +743,12 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
                   (e.components.production.queue.includes(heroId) || e.components.production.current === heroId)));
               if (heroExists) break;
             }
-            // Route by unit type (FG-3): Harvesters → Refinery, vehicles → War
-            // Factory, foot troops → Barracks. Find the matching player producer.
-            const producerFaction =
-              intent.unitId === 'harvester' ? 'refinery' :
-              intent.unitId === 'gunship' ? 'skypad' :
-              (intent.unitId === 'scout_vehicle' || intent.unitId === 'assault_tank' || intent.unitId === 'longbow' || intent.unitId === 'skimmer_apc') ? 'war_factory' :
-              'barracks';
+            // Route by DATA (Phase A5): `units[].producedBy` is the single source of
+            // truth, replacing the hardcoded list that used to live here, in hud.ts
+            // and in ai.ts — three copies that drifted apart.
+            const unitDef = units.find(uu => uu.id === intent.unitId);
+            const producerFaction = unitDef?.producedBy ?? null;
+            if (!producerFaction) break; // not player-producible (creeps)
             const producer = state.store.all().find(e =>
               e.components.faction?.team === actor &&
               e.components.faction?.faction === producerFaction &&

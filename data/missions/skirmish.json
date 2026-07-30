@@ -66,6 +66,11 @@
         "type": "power_node",
         "tx": 13,
         "ty": 14
+      },
+      {
+        "type": "barracks",
+        "tx": 13,
+        "ty": 18
       }
     ],
     "units": [
@@ -77,12 +82,12 @@
       {
         "type": "infantry",
         "tx": 13,
-        "ty": 18
+        "ty": 20
       },
       {
         "type": "infantry",
         "tx": 14,
-        "ty": 18
+        "ty": 20
       }
     ]
   },

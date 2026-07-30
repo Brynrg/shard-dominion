@@ -12,7 +12,7 @@ import { makeCommandQueue } from '../../src/view/input.js';
 import { loadStructures } from '../../src/loaders/structures.js';
 import { loadUnits } from '../../src/loaders/units.js';
 import { loadWeapons } from '../../src/loaders/loader.js';
-import { tileToWorldCenter } from '../../src/sim/coords.js';
+import { tileToWorldCenter, worldToTile } from '../../src/sim/coords.js';
 import structuresData from '../../data/structures.json' with { type: 'json' };
 import unitsData from '../../data/units.json' with { type: 'json' };
 import weaponsData from '../../data/weapons.json' with { type: 'json' };
@@ -23,6 +23,9 @@ const weapons = loadWeapons(weaponsData);
 
 function base(state: SimState, credits = 5000) {
   state.store.create({ position: tileToWorldCenter({ tx: 8, ty: 8 }), ...structureComponents('construction_yard', 'player', structures) });
+    // Tech spine (Phase C2): refinery/turrets now require a standing Power Node,
+    // so the fixture base has the one a real base always builds first.
+    state.store.create({ position: tileToWorldCenter({ tx: 6, ty: 8 }), ...structureComponents('power_node', 'player', structures) });
   state.store.create({ position: tileToWorldCenter({ tx: 10, ty: 8 }), ...structureComponents('refinery', 'player', structures, { credits, refineryMaxStorage: 9000 }) });
 }
 
@@ -93,8 +96,12 @@ describe('TP-3 — sites build up over buildTimeSeconds', () => {
     barracks.components.production = { queue: ['infantry'], progress: 0 };
     for (let i = 0; i < 20; i++) runTick(state, sys);
     expect(state.store.all().some(e => e.components.faction?.faction === 'infantry')).toBe(false);
-    // Sites neither supply nor demand power while building.
-    const powerSite = state.store.all().find(e => e.components.faction?.faction === 'power_node')!;
+    // Sites neither supply nor demand power while building. Find the SITE, not the
+    // completed base power node the fixture seeds — match on the placement tile.
+    const powerSite = state.store.all().find(e =>
+      e.components.faction?.faction === 'power_node' &&
+      worldToTile(e.components.position!).tx === 6 && worldToTile(e.components.position!).ty === 12)!;
+    expect(powerSite, 'the placed power node site').toBeDefined();
     expect(isOperational(powerSite)).toBe(false);
     // Finish both (def-driven tick counts + margin).
     const maxSeconds = Math.max(

@@ -12,6 +12,16 @@ export const UnitSchema = z.object({
   speed: z.number().positive(),
   buildTimeSeconds: z.number().positive(),
   tier: z.number().int().min(1).max(3).default(1),
+  /** Which structure produces this unit (Phase A5). SIM-AUTHORITATIVE: production
+   *  refuses a queue entry at any other producer, so destroying a War Factory
+   *  really does stop tanks. `null` = not player-producible (creeps). This also
+   *  replaces the three hardcoded routing lists that used to live in hud.ts,
+   *  command.ts and ai.ts. */
+  producedBy: z.string().min(1).nullable().default(null),
+  /** Sidebar hotkey (single char, '' = none). Data-driven so the menu isn't hardcoded. */
+  hotkey: z.string().max(1).default(''),
+  /** Short sidebar label (the panel is 184px — `name` can be too long). */
+  shortName: z.string().min(1).optional(),
   /** XP-2: dies into a salvageable wreck worth ~30% of cost. */
   leavesWreck: z.boolean().optional(),
   /** XP-2: Refined Cells charged at production start (elite systems only). */

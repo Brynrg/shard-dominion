@@ -75,6 +75,16 @@ const HQ_UPGRADES = [{ toTier: 2, cost: 1000, seconds: 30 }, { toTier: 3, cost: 
 /** A build-menu button hit-test result: `"train:infantry"`, `"build:barracks"`, … */
 export type BuildAction = string;
 
+// Sidebar geometry — ONE source of truth. `panelRect()` used to report h:380 while
+// draw() rendered 574, so the bottom third of the sidebar was outside the renderer's
+// edge-scroll dead zone and browsing those buttons dragged the camera.
+const PANEL_W = 184;
+const PANEL_PAD = 8;
+const PANEL_Y = 8;
+const PANEL_H = 574;
+/** Extra height claimed below the panel for the STORAGE FULL banner. */
+const PANEL_FOOTER_H = 26;
+
 /** Why a disabled build button refused the click (v0.52 EVA feedback). */
 export type DenyReason = 'funds' | 'tier' | 'prereq' | 'cells' | 'busy';
 
@@ -307,7 +317,10 @@ export function makeHUD(cfg: HUDConfig): {
     // The sidebar panel's bounds — the renderer treats it as an edge-scroll dead
     // zone (QA: browsing build buttons dragged the camera right).
     panelRect(): { x: number; y: number; w: number; h: number } {
-      return { x: canvas.width - 184 - 8, y: 8, w: 184 + 8, h: 380 };
+      return {
+        x: canvas.width - PANEL_W - PANEL_PAD, y: PANEL_Y,
+        w: PANEL_W + PANEL_PAD, h: PANEL_H + PANEL_FOOTER_H,
+      };
     },
     setTab(tab: 'base' | 'def' | 'units' | 'tech'): void { activeTab = tab; },
     rectOf(action: BuildAction): { x: number; y: number; w: number; h: number } | null {
@@ -340,10 +353,10 @@ export function makeHUD(cfg: HUDConfig): {
       const credits = refinery ? Math.floor(refinery.credits) : 0;
 
       // ── Right-edge command panel ────────────────────────────────────────────
-      const pw = 184;
-      const px = canvas.width - pw - 8;
-      const py = 8;
-      const ph = 574; // fits 10 build rows + repair row + footer
+      const pw = PANEL_W;
+      const px = canvas.width - pw - PANEL_PAD;
+      const py = PANEL_Y;
+      const ph = PANEL_H; // fits 10 build rows + repair row + footer
       drawPanel(px, py, pw, ph);
 
       // Title bar.

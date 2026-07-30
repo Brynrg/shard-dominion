@@ -45,7 +45,7 @@ function makeSeat(seatNo: number, transport: Transport): Seat {
   seedFromMission(state, mission, { units, structures, economy });
   const raw = makeCommandQueue();
   const systems = orderSystems([
-    makeCommandSystem(raw, structures), makeMovementSystem(), makeHarvestSystem(economy),
+    makeCommandSystem(raw, structures, ['warden', 'vane'], [], units), makeMovementSystem(), makeHarvestSystem(economy),
     makeCombatTargetingSystem(weapons), makeDamageSystem(weapons), makeProductionSystem(units),
   ]);
   return { state, systems, raw, ls: makeLockstep(seatNo, transport) };

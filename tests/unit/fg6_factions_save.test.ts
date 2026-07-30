@@ -44,7 +44,7 @@ describe('FG-6 — faction modifiers', () => {
     const state = makeSimState({ seed: 31, mapWidth: 32, mapHeight: 32 });
     const queue = makeCommandQueue();
     const factions = makeTeamFactions('emberhand', 'concord');
-    const systems = orderSystems([makeCommandSystem(queue, structures), makeProductionSystem(units, factions)]);
+    const systems = orderSystems([makeCommandSystem(queue, structures, ['warden', 'vane'], [], units), makeProductionSystem(units, factions)]);
     const bank = state.store.create({
       position: tileToWorldCenter({ tx: 6, ty: 8 }),
       building: { onSlab: true, buildProgress: 100, powered: true },
@@ -74,7 +74,7 @@ describe('FG-6 — save = command log (replay equivalence)', () => {
       seedFromMission(state, mission, { units, structures, economy });
       const queue = makeCommandQueue();
       const systems: SimSystem[] = orderSystems([
-        makeCommandSystem(queue, structures), makeMovementSystem(), makeHarvestSystem(economy), makeProductionSystem(units),
+        makeCommandSystem(queue, structures, ['warden', 'vane'], [], units), makeMovementSystem(), makeHarvestSystem(economy), makeProductionSystem(units),
       ]);
       return { state, queue, systems };
     };

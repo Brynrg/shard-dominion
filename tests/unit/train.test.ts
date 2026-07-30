@@ -10,6 +10,12 @@ import { loadUnits } from '../../src/loaders/units.js';
 import unitsData from '../../data/units.json' with { type: 'json' };
 
 const units = loadUnits(unitsData);
+// Wait long enough for the SLOWEST basic unit these tests train, derived from
+// data — a hardcoded 65 broke the moment infantry's buildTimeSeconds was retuned.
+const BUILD_TICKS = Math.max(...['infantry', 'rocket_trooper', 'harvester']
+  .map(id => Math.round((units.find(u => u.id === id)?.buildTimeSeconds ?? 5) * 20))) + 10;
+/** Exactly one infantry build, for tests that assert WHICH unit finished when. */
+const INFANTRY_TICKS = Math.round(units.find(u => u.id === 'infantry')!.buildTimeSeconds * 20) + 5;
 
 describe('train intent', () => {
   let state: SimState;
@@ -20,7 +26,7 @@ describe('train intent', () => {
   beforeEach(() => {
     state = makeSimState({ seed: 42, mapWidth: 32, mapHeight: 32 });
     queue = makeCommandQueue();
-    commandSystem = makeCommandSystem(queue, []);
+    commandSystem = makeCommandSystem(queue, [], ['warden', 'vane'], [], units);
     systems = orderSystems([commandSystem, makeProductionSystem(units)]);
   });
 
@@ -100,7 +106,7 @@ describe('train intent', () => {
     expect(refinery?.components.economy?.credits).toBe(400);
 
     // Run ~65 ticks for the build to complete
-    for (let i = 0; i < 65; i++) {
+    for (let i = 0; i < BUILD_TICKS; i++) {
       runTick(state, systems);
     }
 
@@ -127,8 +133,9 @@ describe('train intent', () => {
     const refinery = state.store.all().find(e => e.components.economy);
     expect(refinery?.components.economy?.credits).toBe(900);
 
-    // Run ~65 ticks for first infantry to complete
-    for (let i = 0; i < 65; i++) {
+    // Exactly one infantry build — a generous wait would finish BOTH and defeat
+    // the point of this test (that the second only starts after the first).
+    for (let i = 0; i < INFANTRY_TICKS; i++) {
       runTick(state, systems);
     }
 
@@ -142,8 +149,8 @@ describe('train intent', () => {
       e.components.faction?.faction === 'infantry' && e.components.faction?.team === 'player').length;
     expect(infantryCount).toBe(1);
 
-    // Run another ~65 ticks for second infantry to complete
-    for (let i = 0; i < 65; i++) {
+    // One more infantry build for the second copy.
+    for (let i = 0; i < INFANTRY_TICKS; i++) {
       runTick(state, systems);
     }
 
@@ -184,7 +191,7 @@ describe('train intent', () => {
     expect(refinery?.components.economy?.credits).toBe(300);
 
     // Rocket trooper builds in 4s = 80 ticks — run 90 for margin.
-    for (let i = 0; i < 90; i++) {
+    for (let i = 0; i < BUILD_TICKS; i++) {
       runTick(state, systems);
     }
 

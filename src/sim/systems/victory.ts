@@ -2,8 +2,14 @@
 // Runs LAST in SYSTEM_ORDER (after audio). Pure sim: no DOM, no wall-clock.
 import type { SimState } from '../state.js';
 import type { UnitDef } from '../../loaders/units.js';
+import { makeDefeatTracker, surrender } from '../defeat.js';
 
-export interface VictoryResult { over: boolean; winner: 'player' | 'enemy' | null }
+export interface VictoryResult {
+  over: boolean;
+  winner: 'player' | 'enemy' | null;
+  /** Units cleared by the loser's surrender (Phase A4) — 0 until the match ends. */
+  surrendered?: number;
+}
 export interface VictorySystem { name: 'victory'; run(state: SimState): void; result: VictoryResult }
 
 // The 'victory' system: (1) remove any unit at 0 HP (death); (2) once combat has
@@ -14,6 +20,7 @@ export function makeVictorySystem(units: readonly UnitDef[] = []): VictorySystem
   const wreckValue = new Map<string, number>();
   for (const u of units) if (u.leavesWreck) wreckValue.set(u.id, Math.round(u.cost * 0.3));
   const result: VictoryResult = { over: false, winner: null };
+  const defeat = makeDefeatTracker();
   let playerSeen = false;
   let enemySeen = false;
 
@@ -53,34 +60,23 @@ export function makeVictorySystem(units: readonly UnitDef[] = []): VictorySystem
       }
       if (result.over) return; // decision is sticky
 
-      // 3) census: LIVING combat units per side, and whether each side still owns a
-      //    producer. Producers are usually buildings with NO combat component, so
-      //    this check must NOT be gated behind the combat check.
-      let player = 0, enemy = 0;
-      let playerHasProducer = false;
-      let enemyHasProducer = false;
-      for (const e of state.store.all()) {
-        const team = e.components.faction?.team;
-        if (team !== 'player' && team !== 'enemy') continue;
-
-        if (e.components.production) {
-          if (team === 'player') playerHasProducer = true;
-          else enemyHasProducer = true;
-        }
-
-        if (!e.components.combat) continue;
-        const h = e.components.health;
-        if (!h || h.hp <= 0) continue; // living only
-        if (team === 'player') player += 1;
-        else enemy += 1;
-      }
-
-      // 3) decide ONLY once both sides have existed in the match (avoid a false win
-      //    when only one side was ever seeded). Track "both seen" across ticks.
+      // 3) DEFEAT: the shared RA-convention rule (src/sim/defeat.ts) — a side whose
+      //    command structure and production are both gone surrenders. This replaced
+      //    "no producers AND no living combat units", which forced the winner to sweep
+      //    the map for the last stray rifleman before the match would end.
+      defeat.observe(state);
       const bothSidesSeen = playerSeen && enemySeen;
-      // A side is defeated when it has NO living combat units AND NO producers
-      if (bothSidesSeen && player === 0 && !playerHasProducer) { result.over = true; result.winner = 'enemy'; }
-      else if (bothSidesSeen && enemy === 0 && !enemyHasProducer) { result.over = true; result.winner = 'player'; }
+      if (!bothSidesSeen) return; // never decide before both sides existed
+      const playerOut = defeat.isDefeated(state, 'player');
+      const enemyOut = defeat.isDefeated(state, 'enemy');
+      if (playerOut && enemyOut) { result.over = true; result.winner = null; return; }
+      if (playerOut) {
+        result.over = true; result.winner = 'enemy';
+        result.surrendered = surrender(state, 'player'); // clear the field
+      } else if (enemyOut) {
+        result.over = true; result.winner = 'player';
+        result.surrendered = surrender(state, 'enemy');
+      }
     },
   };
 }
