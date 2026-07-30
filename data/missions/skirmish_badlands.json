@@ -1,6 +1,6 @@
 {
   "id": "skirmish_badlands",
-  "name": "Skirmish \u2014 Badlands",
+  "name": "Skirmish — Badlands",
   "order": 0,
   "map": {
     "width": 32,
@@ -10,7 +10,7 @@
   "briefing": {
     "title": "BADLANDS",
     "story": [
-      "Broken mesa country \u2014 tight corridors, rich veins, nowhere to hide.",
+      "Broken mesa country — tight corridors, rich veins, nowhere to hide.",
       "The Emberhand hold the north-east. Take the badlands or die in them."
     ],
     "objectives": [
@@ -95,11 +95,6 @@
           "type": "refinery",
           "tx": 26,
           "ty": 8
-        },
-        {
-          "type": "barracks",
-          "tx": 27,
-          "ty": 9
         },
         {
           "type": "construction_yard",

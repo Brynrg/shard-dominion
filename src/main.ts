@@ -7,7 +7,7 @@ import { makeHarvestSystem } from './sim/systems/harvest.js';
 import { makeResearchSystem } from './sim/systems/research.js';
 import { makeHeroSystem } from './sim/systems/hero.js';
 import { makeRegenSystem } from './sim/systems/regen.js';
-import { loadRefinements } from './loaders/refinements.js';
+import { loadRefinements, type Refinement } from './loaders/refinements.js';
 import refinementsData from '../data/refinements.json' with { type: 'json' };
 import { makeCommandSystem, validatePlacement } from './sim/systems/command.js';
 import { makeConstructionSystem } from './sim/systems/construction.js';
@@ -15,6 +15,8 @@ import { makePowerSystem } from './sim/systems/power.js';
 import { makeView } from './view/index.js';
 import { makeInputHandlers, makeCommandQueue } from './view/input.js';
 import { makeOnboarding } from './view/onboarding.js';
+import { itemForHotkey } from './view/buildMenu.js';
+import { hasStructure } from './sim/buildRules.js';
 import { makeAnnouncer, makeA11ySettings } from './view/a11y.js';
 import { makeEva } from './view/eva.js';
 import { tileToWorldCenter, worldToScreen } from './sim/coords.js';
@@ -130,6 +132,10 @@ const structures = loadStructures(structuresData);
 const weapons = loadWeapons(weaponsData);
 // Load units
 const units = loadUnits(unitsData);
+/** Every hero id, from DATA. The one-living-hero cap used to be a hardcoded
+ *  ['warden','vane'], so razor and tempest slipped past it. */
+const HERO_IDS: readonly string[] = loadUnits(unitsData).filter(u => u.hero).map(u => u.id);
+
 // Load refinements (economy depth: team-wide researched upgrades)
 const refinements = loadRefinements(refinementsData);
 
@@ -230,7 +236,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     push: (i) => { intentLog.push({ t: state.tick, i }); rawQueue.push(i); },
     drain: () => rawQueue.drain(),
   };
-  const commandSystem = makeCommandSystem(commandQueue, structures, ['warden', 'vane'], refinements, units, teamFactions);
+  const commandSystem = makeCommandSystem(commandQueue, structures, HERO_IDS, refinements, units, teamFactions);
 
   // Create construction system
   const constructionSystem = makeConstructionSystem(structures, commandQueue);
@@ -275,12 +281,12 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     makeResearchSystem(),
     constructionSystem,
     powerSystem,
-    makeCombatTargetingSystem(weapons),
+    makeCombatTargetingSystem(weapons, refinements),
     makeProjectileSystem(weapons),
     makeDamageSystem(weapons, refinements),
     makeHeroSystem(units),
     makeRegenSystem(teamFactions),
-    makeProductionSystem(units, teamFactions, mission.id.startsWith('m') ? (loadProgress().heroKills ?? 0) : 0),
+    makeProductionSystem(units, teamFactions, mission.id.startsWith('m') ? (loadProgress().heroKills ?? 0) : 0, refinements),
     makeStealthSystem(),
     ...aiSystems,
     planetSystem,
@@ -360,6 +366,22 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     getTeamShapes: () => a11y.getTeamShapes(),                       // a11y shape markers
     unitCost: (base) => modCost(base, teamFactions.player),          // faction pricing on labels (QA BUG-2)
     powerDemandOf: (id) => structures.find(st => st.id === id)?.powerDemand ?? 0, // ⚡ warning (QA BUG-4)
+    // Phase C1: the sidebar is GENERATED from these (was three hardcoded arrays that
+    // reached only ~half the authored roster).
+    hudUnits: units,
+    hudStructures: structures,
+    hasStructure: (id: string) => hasStructure(state, viewerTeam, id),
+    // Phase C2: reflect the refinement gates command.ts already enforces, so a
+    // blocked button says WHY instead of silently swallowing the click.
+    refinementBlocked: (r: Refinement) => {
+      const led = state.refinements.get(viewerTeam);
+      const done = led?.done ?? [];
+      if (r.faction && r.faction !== teamFactions.player.id) return 'faction';
+      if ((r.prerequisites ?? []).some((pr: string) => !done.includes(pr))) return 'prereq';
+      if ((r.tier ?? 1) >= 2 && !(hasStructure(state, viewerTeam, 'war_factory')
+        && hasStructure(state, viewerTeam, 'tech_lab'))) return 'tier';
+      return null;
+    },
     canRunTick: mp ? (t) => mp.lockstep.canRun(t) : undefined,
     onBeforeTick: mp ? (t) => { for (const i of mp.lockstep.takeDue(t)) rawQueue.push(i); } : undefined,
     onAfterTick: mp ? (t) => mp.lockstep.afterTick(t, stateHash(state)) : undefined,
@@ -396,7 +418,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
         : reason === 'placement' ? 'Cannot deploy there'
         : 'Production structure required', 1500);
     },
-  }, teamFactions.player.id === 'emberhand' ? 'vane' : 'warden', viewerTeam,
+  }, viewerTeam,
   (structureId, tile) => {
     const def = structures.find(st => st.id === structureId);
     return def ? validatePlacement(state, def, tile, viewerTeam).valid : false;
@@ -404,6 +426,12 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   () => {
     const job = state.structureBuild.get(viewerTeam);
     return job ? { structureId: job.structureId, ready: job.ticksLeft <= 0 } : null;
+  },
+  // Phase C1: resolve a keypress against the DATA-driven menu, honouring the faction
+  // lock (heroes deliberately share `E`). Replaces a switch case per hotkey.
+  (key: string) => {
+    const item = itemForHotkey(key, units, structures, teamFactions.player.id);
+    return item ? { kind: item.kind, id: item.id } : null;
   });
   // ── Continue (FG-6): replay the saved command log tick-for-tick, then go live.
   // Determinism makes the fast-forward EXACT (same mission + same log → same state).

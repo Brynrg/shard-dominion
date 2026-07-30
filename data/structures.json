@@ -78,7 +78,8 @@
       },
       "menu": "base",
       "hotkey": "B",
-      "prerequisites": []
+      "prerequisites": [],
+      "producesUnits": true
     },
     {
       "id": "power_node",
@@ -214,7 +215,8 @@
       "hotkey": "F",
       "prerequisites": [
         "power_node"
-      ]
+      ],
+      "producesUnits": true
     },
     {
       "id": "defense_turret",
@@ -287,7 +289,8 @@
       "shortName": "War Fctry",
       "prerequisites": [
         "refinery"
-      ]
+      ],
+      "producesUnits": true
     },
     {
       "id": "radar",
@@ -580,10 +583,11 @@
       "providesBuildRadius": false,
       "isDeployable": false,
       "menu": "base",
-      "hotkey": "P",
+      "hotkey": "",
       "prerequisites": [
         "tech_lab"
-      ]
+      ],
+      "producesUnits": true
     },
     {
       "id": "aa_turret",
@@ -616,7 +620,7 @@
       "providesBuildRadius": false,
       "isDeployable": false,
       "menu": "def",
-      "hotkey": "A",
+      "hotkey": "",
       "shortName": "AA Turret",
       "prerequisites": [
         "power_node"
@@ -653,7 +657,7 @@
         }
       },
       "menu": "base",
-      "hotkey": "X",
+      "hotkey": "",
       "shortName": "Tech Lab",
       "prerequisites": [
         "war_factory"
@@ -729,12 +733,13 @@
         }
       },
       "menu": "base",
-      "hotkey": "D",
+      "hotkey": "",
       "shortName": "Elite Brks",
       "prerequisites": [
         "barracks",
         "tech_lab"
-      ]
+      ],
+      "producesUnits": true
     },
     {
       "id": "armor_upgrade_center",

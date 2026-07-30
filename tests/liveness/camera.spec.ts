@@ -15,13 +15,15 @@ test.describe('Camera navigation gate', () => {
 
     const cam = () => page.evaluate(() => (window as { __debugCamera?: () => Cam }).__debugCamera?.() ?? { x: 0, y: 0, zoom: 1 });
 
-    // Park the cursor on the RIGHT edge BELOW the COMMAND panel (the panel is an
-    // edge-scroll dead zone since the QA polish) → the view should scroll right.
+    // Park the cursor on the LEFT edge → the view should scroll left. (The right
+    // edge is no longer usable in the 640px test viewport: panelRect now reports the
+    // REAL 608px panel height — it used to claim 380 — so the whole right edge is
+    // correctly a dead zone at this window size, exactly like RA's sidebar.)
     const start = await cam();
-    await page.mouse.move(box.x + box.width - 6, box.y + box.height * 0.78);
+    await page.mouse.move(box.x + 6, box.y + box.height * 0.5);
     await page.waitForTimeout(800); // dwell (180ms) + several frames of edge-scroll
     const scrolled = await cam();
-    expect(scrolled.x).toBeGreaterThan(start.x + 100);
+    expect(scrolled.x).toBeLessThan(start.x - 100);
 
     // Move off the edge (centre) → scrolling stops.
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);

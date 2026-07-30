@@ -4,6 +4,7 @@
 import type { SimState } from '../state.js';
 import { isOperational } from '../factory.js';
 import type { WeaponsFile } from '../../loaders/schemas.js';
+import { refinementValue, type Refinement } from '../../loaders/refinements.js';
 import { TILE_SUBUNITS } from '../coords.js';
 import type { WorldPos } from '../coords.js';
 import type { EntityId } from '../ids.js';
@@ -12,7 +13,7 @@ function distance(a: WorldPos, b: WorldPos): number { return Math.hypot(a.wx - b
 
 // The 'combatTargeting' system: each armed unit keeps a valid target, or picks the
 // NEAREST living enemy within weapon range. Sim-pure (state only).
-export function makeCombatTargetingSystem(weapons: WeaponsFile): { name: 'combatTargeting'; run(state: SimState): void } {
+export function makeCombatTargetingSystem(weapons: WeaponsFile, refinements: readonly Refinement[] = []): { name: 'combatTargeting'; run(state: SimState): void } {
   return {
     name: 'combatTargeting' as const,
     run(state: SimState): void {
@@ -28,7 +29,10 @@ export function makeCombatTargetingSystem(weapons: WeaponsFile): { name: 'combat
         const weapon = weapons.weapons[combat.weaponId];
         if (!weapon) continue;
         // Defensive stance (XP-4): only engage well inside range (no edge-chasing).
-        const rangeWorld = weapon.range * TILE_SUBUNITS * (combat.stance === 'defensive' ? 0.7 : 1);
+        // Refinement `range` (Extended Range) widens acquisition — the effect was
+        // parsed and applied NOWHERE before Phase C2, making that refinement a no-op.
+        const rangeBonus = 1 + refinementValue(state.refinements.get(faction.team)?.done, refinements, 'range');
+        const rangeWorld = weapon.range * TILE_SUBUNITS * rangeBonus * (combat.stance === 'defensive' ? 0.7 : 1);
         const minRangeWorld = (weapon.minRange ?? 0) * TILE_SUBUNITS;
 
         // 1) If the current target is still valid (exists, alive, in range), keep it.

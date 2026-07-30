@@ -42,6 +42,9 @@ export type CommandIntent = { team?: 'player' | 'enemy' } & (
   | { type: 'unload' }
   // XP-7: the faction strike (T3 + 5 Cells) — a delayed orbital splash at a point.
   | { type: 'strike'; target: WorldPos }
+  // Phase C3: fire a CHARGED superweapon structure (Ion Cannon / Resonance Device)
+  // at a point. The structures shipped as data but had no command to fire them.
+  | { type: 'superweapon'; structureId: string; target: WorldPos }
   | { type: 'deploy' }
   // RA build flow (v0.55): structures build in the SIDEBAR — start a job, cancel
   // it (full refund), then place the READY structure (a short on-field unfold).
@@ -116,11 +119,15 @@ export function makeInputHandlers(
   minimap?: { jump(sx: number, sy: number): boolean },
   /** Optional sidebar build menu: a left-click on a build button queues a unit /
    *  enters structure placement (C&C-style), instead of selecting on the field. */
-  hud?: { buttonAt(sx: number, sy: number): string | null; anyButtonAt?(sx: number, sy: number): string | null; deniedAt?(sx: number, sy: number): 'funds' | 'tier' | 'prereq' | 'cells' | 'busy' | null; setTab?(tab: 'base' | 'def' | 'units' | 'tech'): void },
+  hud?: {
+    buttonAt(sx: number, sy: number): string | null;
+    anyButtonAt?(sx: number, sy: number): string | null;
+    deniedAt?(sx: number, sy: number): 'funds' | 'tier' | 'prereq' | 'cells' | 'busy' | null;
+    setTab?(tab: 'base' | 'def' | 'units' | 'tech'): void;
+    turnPage?(tab: 'base' | 'def' | 'units' | 'tech', dir: 'prev' | 'next'): void;
+  },
   /** Optional UI sounds: button click / selection blip / order acknowledgment. */
   sfx?: { click(): void; select(): void; ack(): void; place(): void; denied?(reason: 'funds' | 'tier' | 'prereq' | 'cells' | 'busy' | 'placement'): void },
-  /** XP-3: which hero the E hotkey trains (faction-dependent; default warden). */
-  heroUnitId = 'warden',
   /** FG-7: which side this viewer commands (MP seat) — used only for the
    *  view-side camera-centre on double-tapped recall keys. */
   viewerTeam: 'player' | 'enemy' = 'player',
@@ -130,6 +137,9 @@ export function makeInputHandlers(
   /** RA build flow (v0.55): the viewer team's live sidebar job, for routing build
    *  clicks/hotkeys (start job → wait → READY → arm placement). */
   structureJob?: () => { structureId: string; ready: boolean } | null,
+  /** Phase C1: build/train hotkeys come from DATA (`hotkey` on units/structures), so
+   *  new content is keyboard-reachable without anyone editing this file. */
+  hotkeyAction?: (key: string) => { kind: 'build' | 'train'; id: string } | null,
 ): InputHandlers {
   let selectStart: ScreenPos | null = null;
   let selectCurrent: ScreenPos | null = null;
@@ -139,6 +149,7 @@ export function makeInputHandlers(
   let lastCursor: ScreenPos | null = null;             // for HUD hover + context cursor
   let attackMoveMode = false;                          // 'A' pressed → next click = attack-move
   let strikeArmed = false;                             // XP-7: STRIKE armed → next click targets it
+  let superweaponArmed: string | null = null;          // Phase C3: armed superweapon id
   let lastClick: { at: number; sx: number; sy: number } | null = null; // dblclick detect
   let lastKeyTap: { key: string; at: number } | null = null;           // double-tap recall → centre camera
 
@@ -187,8 +198,17 @@ export function makeInputHandlers(
   function doBuildAction(action: string): void {
     const [kind, id] = action.split(':');
     if (kind === 'strike') { strikeArmed = true; return; }
+    // Phase C3: arm a superweapon; the next left-click on the field is the target.
+    if (kind === 'superweapon' && id) { superweaponArmed = id; return; }
     if (kind === 'train' && id) queue.push({ type: 'train', unitId: id });
     else if (kind === 'tab' && (id === 'base' || id === 'def' || id === 'units' || id === 'tech')) hud?.setTab?.(id);
+    else if (kind === 'page') {
+      // `page:<tab>:<prev|next>` — RA's sidebar scroll arrows (Phase C1). The roster
+      // no longer fits one panel, so paging is part of the interface.
+      const [, tab, dir] = action.split(':');
+      if ((tab === 'base' || tab === 'def' || tab === 'units' || tab === 'tech') &&
+          (dir === 'prev' || dir === 'next')) hud?.turnPage?.(tab, dir);
+    }
     else if (kind === 'upgrade') queue.push({ type: 'upgrade-hq' });
     else if (kind === 'research' && id) queue.push({ type: 'research', refinementId: id });
     else if (kind === 'build' && id) requestStructure(id);
@@ -355,6 +375,11 @@ export function makeInputHandlers(
           sfx?.place();
           setPlacementMode(null); // Exit placement mode after placing
         }
+      } else if (superweaponArmed) {
+        // Phase C3: the armed superweapon fires at the clicked point.
+        queue.push({ type: 'superweapon', structureId: superweaponArmed, target: screenToWorld(start, camera) });
+        sfx?.ack();
+        superweaponArmed = null;
       } else if (strikeArmed) {
         // XP-7: the armed STRIKE fires at the clicked point.
         queue.push({ type: 'strike', target: screenToWorld(start, camera) });
@@ -447,21 +472,6 @@ export function makeInputHandlers(
         e.preventDefault();
         queue.push({ type: 'deploy' });
         return;
-      case 'b': // Build a Barracks (needs a Construction Yard for build radius)
-      case 'B':
-        e.preventDefault();
-        requestStructure('barracks');
-        return;
-      case 'n': // Build a Power Node
-      case 'N':
-        e.preventDefault();
-        requestStructure('power_node');
-        return;
-      case 'f': // Build a Refinery (FG-2: expand the economy)
-      case 'F':
-        e.preventDefault();
-        requestStructure('refinery');
-        return;
       case 'x': // Cycle stance (XP-4)
       case 'X':
         e.preventDefault();
@@ -472,45 +482,11 @@ export function makeInputHandlers(
         e.preventDefault();
         queue.push({ type: 'unload' });
         break;
-      case 'l': // Build a Wall segment (XP-1)
-      case 'L':
-        e.preventDefault();
-        requestStructure('wall');
-        break;
-      case 'j': // Build a Radar (XP-1, T2)
-      case 'J':
-        e.preventDefault();
-        requestStructure('radar');
-        break;
-      case 'g': // Build a Defense Turret (FG-2)
-      case 'G':
-        e.preventDefault();
-        requestStructure('defense_turret');
-        return;
-      case 'w': // Build a War Factory (FG-3)
-      case 'W':
-        e.preventDefault();
-        requestStructure('war_factory');
-        return;
-      case 'v': // Train a Scout Vehicle (FG-3)
-      case 'V':
-        e.preventDefault();
-        queue.push({ type: 'train', unitId: 'scout_vehicle' });
-        return;
-      case 'c': // Train an Assault Tank (FG-3)
-      case 'C':
-        e.preventDefault();
-        queue.push({ type: 'train', unitId: 'assault_tank' });
-        return;
-      case 'e': // Train the Warden — the hero, one at a time (FG-5)
-      case 'E':
-        e.preventDefault();
-        queue.push({ type: 'train', unitId: heroUnitId });
-        return;
       case 'Escape': // Cancel placement / attack-move mode
         e.preventDefault();
         setPlacementMode(null);
         attackMoveMode = false;
+        superweaponArmed = null;
         return;
       case 'a': // Attack-move: next left-click = advance-and-engage (C&C/WC3 'A')
       case 'A':
@@ -522,21 +498,6 @@ export function makeInputHandlers(
         e.preventDefault();
         queue.push({ type: 'stop' });
         sfx?.ack();
-        return;
-      case 't': // Train infantry
-      case 'T': // Train infantry (case-insensitive)
-        e.preventDefault();
-        queue.push({ type: 'train', unitId: 'infantry' });
-        return;
-      case 'r': // Train rocket trooper
-      case 'R': // Train rocket trooper (case-insensitive)
-        e.preventDefault();
-        queue.push({ type: 'train', unitId: 'rocket_trooper' });
-        return;
-      case 'h': // Train a Harvester (grow the economy)
-      case 'H':
-        e.preventDefault();
-        queue.push({ type: 'train', unitId: 'harvester' });
         return;
       case 'q': // Select the whole army (every combat unit) — double-tap centres
       case 'Q':
@@ -566,7 +527,18 @@ export function makeInputHandlers(
         }
         return;
       }
-      default: return;
+      default: {
+        // Phase C1: build/train hotkeys are DATA. Each key used to need its own
+        // hardcoded case here, so a new unit stayed unreachable from the keyboard
+        // until someone edited this switch — 13 of 24 units never got one.
+        const hit = hotkeyAction?.(e.key);
+        if (hit) {
+          e.preventDefault();
+          if (hit.kind === 'build') requestStructure(hit.id);
+          else queue.push({ type: 'train', unitId: hit.id });
+        }
+        return;
+      }
     }
     e.preventDefault();
     panCamera(dx, dy); // pure view action — never enters the sim

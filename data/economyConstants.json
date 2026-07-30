@@ -1,6 +1,6 @@
 {
   "harvestRate": 20,
-  "cargoCapacity": 600,
+  "cargoCapacity": 240,
   "dockRate": 40,
   "refineryStorageCapacity": 2000,
   "salvageRatePerSec": 10,

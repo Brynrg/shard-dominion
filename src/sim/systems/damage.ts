@@ -55,7 +55,11 @@ export function makeDamageSystem(weapons: WeaponsFile, refinements: readonly Ref
         if (!weapon) continue;
 
         const dist = distance(pos, tpos);
-        const rangeWorld = weapon.range * TILE_SUBUNITS;
+        // Refinement `range`: must match the acquisition range in combatTargeting, or
+        // a unit would lock a target it then refuses to shoot.
+        const shooterTeam = e.components.faction?.team;
+        const rangeWorld = weapon.range * TILE_SUBUNITS *
+          (1 + refinementValue(shooterTeam ? state.refinements.get(shooterTeam)?.done : undefined, refinements, 'range'));
         if (dist > rangeWorld) continue;
 
         // 4) resolve the hit. SHELL/SIEGE weapons launch a PROJECTILE (FG-3) at the
@@ -119,7 +123,12 @@ export function makeDamageSystem(weapons: WeaponsFile, refinements: readonly Ref
         // (turrets) fire 50% slower while their team is power-starved (FG-2).
         const lowPowerTurret = e.components.building &&
           teamPowerShortage(state, e.components.faction?.team ?? '');
-        combat.cooldownRemaining = Math.round(weapon.cooldown * SIM_TICK_RATE * (lowPowerTurret ? 1.5 : 1));
+        // Refinement `firepower` (Rapid Fire) cuts the reload. Also previously a no-op.
+        // Clamped so a stack can never reach a zero-tick cooldown.
+        const rof = 1 / (1 + refinementValue(
+          shooterTeam ? state.refinements.get(shooterTeam)?.done : undefined, refinements, 'firepower'));
+        combat.cooldownRemaining = Math.max(1, Math.round(
+          weapon.cooldown * SIM_TICK_RATE * (lowPowerTurret ? 1.5 : 1) * rof));
         // XP-3: firing breaks stealth for 5s (the stealth system counts it down).
         if (e.components.stealth) e.components.stealth = { cloaked: false, decloakTicks: 100 };
         // XP-4 counter-battery: siege fire pings the radar through fog for 3s.

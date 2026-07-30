@@ -89,7 +89,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
   // state is rebuilt identically by replaying the same command log).
   const idleCursor = new Map<string, number>();
   // XP-7 Faction Strike: pending orbital splashes { at, ticksLeft } (deterministic).
-  const strikes: { wx: number; wy: number; ticksLeft: number }[] = [];
+  const strikes: { wx: number; wy: number; ticksLeft: number; radius: number; damage: number }[] = [];
   const STRIKE_COST_CELLS = 5;
   const ORDER_QUEUE_CAP = 8; // shift-queued waypoints per unit (v0.51)
   const STRIKE_DELAY = 60;      // 3s of warning
@@ -110,6 +110,25 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
         if (m.remaining <= 0) markers.splice(i, 1);
       }
 
+      // ── Superweapons (Phase C3): charge every standing superweapon structure and
+      //    let it fire an area strike once ready. The structures existed in the data
+      //    and were listed as the top Phase 3 priority, but there was no command to
+      //    fire them — so they were buildable scenery.
+      for (const team of ['player', 'enemy'] as const) {
+        for (const def of structures) {
+          if (!def.superweapon) continue;
+          const key = `${team}:${def.id}`;
+          const standing = state.store.all().some(e =>
+            e.components.faction?.team === team && e.components.faction.faction === def.id &&
+            (e.components.health?.hp ?? 0) > 0 && (e.components.building?.buildProgress ?? 100) >= 100);
+          if (!standing) { state.superweapons.delete(key); continue; }
+          const total = Math.max(1, Math.round(def.superweapon.cooldownSeconds * SIM_TICK_RATE));
+          const cur = state.superweapons.get(key);
+          if (!cur) { state.superweapons.set(key, { ticksLeft: total, totalTicks: total }); continue; }
+          if (cur.ticksLeft > 0) cur.ticksLeft -= 1;
+        }
+      }
+
       // Resolve pending strikes (before new intents — deterministic order).
       for (let i = strikes.length - 1; i >= 0; i--) {
         const st = strikes[i]!;
@@ -119,7 +138,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
           const p = e.components.position; const h = e.components.health;
           if (!p || !h) continue;
           const d = Math.hypot(p.wx - st.wx, p.wy - st.wy);
-          if (d <= STRIKE_RADIUS) h.hp -= STRIKE_DAMAGE * (1 - 0.5 * (d / STRIKE_RADIUS));
+          if (d <= st.radius) h.hp -= st.damage * (1 - 0.5 * (d / st.radius));
         }
         strikes.splice(i, 1);
       }
@@ -624,7 +643,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             // marker doubles as the warning reticle for BOTH players.
             if (teamTier(state, actor) < 3) break;
             if (!spendCells(state, actor, STRIKE_COST_CELLS)) break; // TP-2 ledger
-            strikes.push({ wx: intent.target.wx, wy: intent.target.wy, ticksLeft: STRIKE_DELAY });
+            strikes.push({ wx: intent.target.wx, wy: intent.target.wy, ticksLeft: STRIKE_DELAY, radius: STRIKE_RADIUS, damage: STRIKE_DAMAGE });
             markers.push({ target: intent.target, remaining: STRIKE_DELAY });
             break;
           }
@@ -733,6 +752,25 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             led.ticksLeft = Math.max(1, Math.round(ref.timeSeconds * SIM_TICK_RATE));
             break;
           }
+          case 'superweapon': {
+            // Fire a charged superweapon at a tile. Requires the structure standing
+            // and its charge at 0; firing resets the full cooldown.
+            const def = structures.find(sd => sd.id === intent.structureId);
+            if (!def?.superweapon) break;
+            const key = `${actor}:${def.id}`;
+            const charge = state.superweapons.get(key);
+            if (!charge || charge.ticksLeft > 0) break;
+            const total = Math.max(1, Math.round(def.superweapon.cooldownSeconds * SIM_TICK_RATE));
+            state.superweapons.set(key, { ticksLeft: total, totalTicks: total });
+            strikes.push({
+              wx: intent.target.wx, wy: intent.target.wy, ticksLeft: STRIKE_DELAY,
+              radius: def.superweapon.radiusTiles * TILE_SUBUNITS,
+              damage: def.superweapon.damage,
+            });
+            markers.push({ target: intent.target, remaining: STRIKE_DELAY });
+            break;
+          }
+
           case 'train': {
             // Hero cap (FG-5): ONE living Warden at a time (also not while queued).
             if (heroIds.includes(intent.unitId)) { // XP-3: ONE living/queued hero per side

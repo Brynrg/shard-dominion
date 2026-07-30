@@ -108,6 +108,10 @@ export function structureComponents(
     components.power = { powerSupply: def.powerSupply, powerDemand: def.powerDemand, powered: true };
   }
   if (def?.container) components.container = { capacity: def.container, stored: [] };
+  // Producer flag from DATA (Phase C1): any structure some unit's `producedBy` names.
+  // Replaces a hardcoded case list here that had drifted — barracks_elite was absent,
+  // so the Elite Barracks stood but could never actually train its roster.
+  if (def?.producesUnits && kind !== 'refinery') components.production = { queue: [], progress: 0 };
 
   switch (kind) {
     case 'refinery':
@@ -118,11 +122,7 @@ export function structureComponents(
       };
       components.production = { queue: [], progress: 0, current: null };
       break;
-    case 'barracks':
-    case 'war_factory':
-    case 'skypad': // audit: seeded skypads weren't producers — now they are, everywhere
-      components.production = { queue: [], progress: 0 };
-      break;
+
     case 'defense_turret':
       components.combat = { weaponId: 'raider_cannon', cooldownRemaining: 0, targetId: null };
       break;

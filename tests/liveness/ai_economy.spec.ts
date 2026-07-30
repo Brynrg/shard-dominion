@@ -15,7 +15,7 @@ type Teams = Record<'player' | 'enemy', { credits: number; harvesters: number; a
 
 test.describe('AI economy gate', () => {
   test('the AI harvests, funds an army, and escalates to pressure — but does not instawin', async ({ page }) => {
-    await page.goto('/?mission=skirmish&difficulty=hard'); // hard = 24s grace — this gate tests AI aggression mechanics, not difficulty pacing
+    await page.goto('/?mission=skirmish&difficulty=hard'); // hard = the shortest grace (45s) — this gate tests AI aggression mechanics, not difficulty pacing
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
     await page.locator('#game-canvas').click({ position: { x: 400, y: 300 } }); // take command
     await page.waitForTimeout(400);
@@ -27,10 +27,13 @@ test.describe('AI economy gate', () => {
     expect(t0!.enemy.harvesters).toBe(1);
     expect(t0!.enemy.army).toBe(0);
 
-    // Give it real time to harvest → build → escalate. Poll for an aggressive plan.
+    // Give it real time to harvest → BUILD ITS OWN BARRACKS (it starts without one
+    // now — both sides open ConYard+Refinery+Power) → train → escalate past the 45s
+    // hard grace. Poll for an aggressive plan.
+    test.setTimeout(240_000);
     await expect.poll(
       () => page.evaluate(() => (window as { __debugAiState?: () => string }).__debugAiState?.() ?? ''),
-      { timeout: 25000, intervals: [500] },
+      { timeout: 180_000, intervals: [1000] },
     ).toMatch(/Assault|Pressure|Raid/);
 
     // Economy is alive (harvester kept/rebuilt) and production was funded (army value climbed).

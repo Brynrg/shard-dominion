@@ -11,8 +11,9 @@ import { teamCredits, teamCells, spendCredits, spendCells } from '../ledger.js';
 import { isOperational } from '../factory.js';
 import { teamPowerShortage } from './power.js';
 import { modCost, FACTIONS, type TeamFactions } from '../factions.js';
+import { refinementValue, type Refinement } from '../../loaders/refinements.js';
 
-export function makeProductionSystem(units: readonly UnitDef[], factions?: TeamFactions, heroCarryKills = 0): { name: 'production'; run(state: SimState): void } {
+export function makeProductionSystem(units: readonly UnitDef[], factions?: TeamFactions, heroCarryKills = 0, refinements: readonly Refinement[] = []): { name: 'production'; run(state: SimState): void } {
   const factionFor = (team: string) => (team === 'player' ? (factions?.player ?? FACTIONS.concord) : (factions?.enemy ?? FACTIONS.concord));
   // Progress state per producer entity id — MUST live in the factory closure (one
   // per sim), not at module scope, or jobs leak across sims/matches and break
@@ -57,7 +58,10 @@ export function makeProductionSystem(units: readonly UnitDef[], factions?: TeamF
           if (teamCredits(state, t2) < price || teamCells(state, t2) < cellPrice) continue; // PAUSED
           spendCredits(state, t2, price);               // pay ONCE, in full
           if (cellPrice > 0) spendCells(state, t2, cellPrice);
-          job = { unitId, ticksLeft: Math.max(1, Math.round(def.buildTimeSeconds * SIM_TICK_RATE)) };
+          // Refinement `buildTime` (Quantum Leap) shortens production. Third of the
+          // three effects that were parsed and applied nowhere before Phase C2.
+          const speed = 1 - Math.min(0.6, refinementValue(state.refinements.get(t2)?.done, refinements, 'buildTime'));
+          job = { unitId, ticksLeft: Math.max(1, Math.round(def.buildTimeSeconds * SIM_TICK_RATE * speed)) };
           active.set(producer.id, job);
           producer.components.production = { ...prod, queue: prod.queue.slice(1), progress: 0, current: unitId };
         }
@@ -70,7 +74,9 @@ export function makeProductionSystem(units: readonly UnitDef[], factions?: TeamF
         job.ticksLeft -= 1;
         const def = units.find(u => u.id === job.unitId);
         if (def) {
-          const total = Math.max(1, Math.round(def.buildTimeSeconds * SIM_TICK_RATE));
+          const speed = 1 - Math.min(0.6, refinementValue(
+            state.refinements.get(team as 'player' | 'enemy')?.done, refinements, 'buildTime'));
+          const total = Math.max(1, Math.round(def.buildTimeSeconds * SIM_TICK_RATE * speed));
           producer.components.production = { ...producer.components.production!, progress: Math.round(100 * (1 - job.ticksLeft / total)) };
         }
         if (job.ticksLeft <= 0 && def) {

@@ -30,17 +30,23 @@ export function loadRefinements(raw: unknown): Refinement[] {
   return r.data;
 }
 
-/** Whether a team has completed a refinement with the given effect, and its value.
- *  Pure helper over the sim's refinement ledger. Returns 0 if not researched. */
+/** The team's TOTAL bonus for an effect: every researched refinement with that effect,
+ *  summed. Pure helper over the sim's refinement ledger; 0 when nothing applies.
+ *
+ *  This used to return the FIRST match, which silently shadowed the whole tier-2 tier:
+ *  once `munitions_doctrine` (damage) was done, `advanced_munitions` (+25% damage) could
+ *  never apply, so the second half of the research tree was a no-op the player paid for.
+ *  Additive stacking is the standard RTS convention and keeps the maths legible. */
 export function refinementValue(
   done: readonly string[] | undefined,
   refinements: readonly Refinement[],
   effect: Refinement['effect'],
 ): number {
   if (!done || done.length === 0) return 0;
+  let total = 0;
   for (const id of done) {
     const r = refinements.find(x => x.id === id);
-    if (r && r.effect === effect) return r.value;
+    if (r && r.effect === effect) total += r.value;
   }
-  return 0;
+  return total;
 }

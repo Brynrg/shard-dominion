@@ -24,6 +24,11 @@ export interface RefinementLedger { done: string[]; researching: string | null; 
  *  upfront; cancel refunds in full. */
 export interface StructureJob { structureId: string; ticksLeft: number; totalTicks: number }
 
+/** Superweapon charge (Phase C3). Keyed `${team}:${structureId}`; `ticksLeft` counts
+ *  down to 0 = ready to fire. Authoritative sim state, so it is in `stateHash` and
+ *  therefore multiplayer- and replay-safe. */
+export interface SuperweaponCharge { ticksLeft: number; totalTicks: number }
+
 export interface SimState {
   /** Current tick (mutable; advanced by runTick). */
   tick: Tick;
@@ -39,6 +44,8 @@ export interface SimState {
   readonly refinements: Map<string, RefinementLedger>;
   /** RA build flow (v0.55): the per-team sidebar structure job. Keyed by team. */
   readonly structureBuild: Map<string, StructureJob>;
+  /** Phase C3: superweapon cooldowns, keyed `${team}:${structureId}`. */
+  readonly superweapons: Map<string, SuperweaponCharge>;
 }
 
 export function makeSimState(cfg: SimConfig): SimState {
@@ -53,6 +60,7 @@ export function makeSimState(cfg: SimConfig): SimState {
     shardDensity: new Map<string, number>(),
     refinements: new Map<string, RefinementLedger>(),
     structureBuild: new Map<string, StructureJob>(),
+    superweapons: new Map<string, SuperweaponCharge>(),
   };
 }
 
@@ -119,6 +127,13 @@ export function stateHash(state: SimState): number {
   for (const team of ['player', 'enemy']) {
     const job = state.structureBuild.get(team);
     ints.push(job ? strCode(job.structureId) : 0, job?.ticksLeft ?? -1, job?.totalTicks ?? -1);
+  }
+  // Phase C3: superweapon charges are authoritative state too — a desync here would
+  // let one seat fire an Ion Cannon the other seat thinks is still charging.
+  const swKeys = [...state.superweapons.keys()].sort();
+  for (const k of swKeys) {
+    const c = state.superweapons.get(k)!;
+    ints.push(strCode(k), c.ticksLeft, c.totalTicks);
   }
   // Shard density is gameplay-critical state (harvesting depletes it; regrowth/blooms
   // will write it) → fold it in, walked in sorted-key order so Map iteration order can't

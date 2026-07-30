@@ -16,8 +16,8 @@ type Match = { enemyUnits: number; playerUnits: number; enemyCredits: number };
 
 test.describe('S6A liveness gate', () => {
   test('the AI buys units, marches on the player, and a fight breaks out', async ({ page }) => {
-    test.setTimeout(150_000);
-    await page.goto('/?mission=skirmish&difficulty=hard'); // hard = 24s grace — this gate tests AI aggression mechanics, not difficulty pacing
+    test.setTimeout(480_000);
+    await page.goto('/?mission=skirmish&difficulty=hard'); // hard = the shortest grace (45s) — this gate tests AI aggression mechanics, not difficulty pacing
     await page.waitForSelector('#game-canvas', { timeout: 10000 });
     // Dismiss the mission briefing (the player's "click to take command") — this
     // unpauses the sim AND grabs focus. Every gate must do it before the match runs.
@@ -37,8 +37,11 @@ test.describe('S6A liveness gate', () => {
 
     // Phase 1 — production: the AI QUEUES and PAYS (credits drop) and units spawn.
     let m: Match = start;
+    // The AI now has to BUILD its barracks before it can train (both sides open
+    // ConYard+Refinery+Power, Phase B3 makes it pay the same construction clock the
+    // player does), so the first unit lands after ~barracks build + train time.
     await expect.poll(async () => { m = await match(); return m.enemyUnits; }, {
-      timeout: 30_000, message: 'AI should produce its first unit',
+      timeout: 90_000, message: 'AI should build a barracks, then produce its first unit',
     }).toBeGreaterThan(0);
     expect(m.enemyCredits).toBeLessThan(600); // paid real credits — no free units
 
@@ -51,7 +54,7 @@ test.describe('S6A liveness gate', () => {
       peakEnemy = Math.max(peakEnemy, m.enemyUnits);
       const casualties = m.playerUnits < 2 || m.enemyUnits < peakEnemy;
       return casualties;
-    }, { timeout: 100_000, message: 'the AI wave should reach the base and fight' }).toBe(true); // widened for the 24s hard-difficulty grace period (QA BUG-5)
+    }, { timeout: 300_000, message: 'the AI wave should reach the base and fight' }).toBe(true); // the headless probe puts hard's first decisive assault ~4-5 sim minutes in now that the AI builds its own barracks and pays the real construction clock
 
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, 's6a-match-capture.png'), fullPage: true });
   });

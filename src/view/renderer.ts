@@ -129,6 +129,11 @@ export interface ViewConfig {
   unitCost?: (base: number) => number;
   /** Structure power demand lookup (QA BUG-4): drives the ⚡ low-power warning on build buttons. */
   powerDemandOf?: (structureId: string) => number;
+  /** Phase C1: the sidebar is generated from these (see view/buildMenu.ts). */
+  hudUnits?: readonly import('../loaders/units.js').UnitDef[];
+  hudStructures?: readonly import('../loaders/structures.js').StructureDef[];
+  hasStructure?: (structureId: string) => boolean;
+  refinementBlocked?: (r: import('../loaders/refinements.js').Refinement) => 'prereq' | 'tier' | 'faction' | null;
   /** XP-3: viewer's faction id (asymmetric build menu). */
   playerFactionId?: string;
   refinements?: readonly Refinement[];
@@ -186,7 +191,7 @@ export function makeView(cfg: ViewConfig): View {
   const context = ctx as CanvasRenderingContext2D;
 
   // Create HUD (clickable C&C-style build sidebar; getHover drives button highlight)
-  const hud = makeHUD({ canvas, simState, camera, getHover, cargoCapacity, viewerTeam: cfg.viewerTeam, isMuted: cfg.isMuted, unitCost: cfg.unitCost, powerDemandOf: cfg.powerDemandOf, playerFactionId: cfg.playerFactionId, isStorm: cfg.isStorm, refinements: cfg.refinements });
+  const hud = makeHUD({ canvas, simState, camera, getHover, cargoCapacity, viewerTeam: cfg.viewerTeam, isMuted: cfg.isMuted, unitCost: cfg.unitCost, powerDemandOf: cfg.powerDemandOf, playerFactionId: cfg.playerFactionId, isStorm: cfg.isStorm, refinements: cfg.refinements, units: cfg.hudUnits, structures: cfg.hudStructures, hasStructure: cfg.hasStructure, refinementBlocked: cfg.refinementBlocked });
 
   // Pre-bake the directional sprite bank once (S7-2). Units get DIRS fixed-lit
   // facings; buildings get a lit body. Animated accents are drawn live on top.

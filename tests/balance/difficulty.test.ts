@@ -124,7 +124,6 @@ describe('difficulty is a real curve (Phase A3)', () => {
   it.skipIf(!process.env.BALANCE_DIFFICULTY)('matches resolve in a plausible RTS length, not 6 minutes', () => {
     const lengths = SEEDS.map(s => playMatch('normal', s).ticks / 20 / 60);
     const avg = lengths.reduce((a, b) => a + b, 0) / lengths.length;
-    // eslint-disable-next-line no-console
     console.log(`  normal match lengths (min): ${lengths.map(l => l.toFixed(1)).join(', ')} · avg ${avg.toFixed(1)}`);
     // Before the overhaul an AI-vs-AI match resolved in 5:48. RA/WC3/D2K run 15-30.
     expect(avg, 'average match length in minutes').toBeGreaterThanOrEqual(8);

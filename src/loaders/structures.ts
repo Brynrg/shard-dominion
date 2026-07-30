@@ -21,6 +21,10 @@ export const StructureSchema = z.object({
   cellCost: z.number().int().nonnegative().optional(),
   /** Only this faction may build it. */
   factionLock: z.enum(['concord', 'emberhand', 'shardborn']).optional(),
+  /** This structure trains units (matches some unit's `producedBy`). Data-driven so
+   *  the factory stops carrying a hardcoded producer switch — barracks_elite was
+   *  missing from it and its whole roster silently never built. */
+  producesUnits: z.boolean().default(false),
   /** Superweapon (Phase C3): area strike this structure arms, and its cooldown. */
   superweapon: z.object({
     damage: z.number().positive(),

@@ -218,7 +218,8 @@
       "hero": true,
       "producedBy": "barracks",
       "hotkey": "E",
-      "shortName": "Warden ★"
+      "shortName": "Warden ★",
+      "factionLock": "concord"
     },
     {
       "id": "ghostwalker",
@@ -421,7 +422,7 @@
         }
       },
       "producedBy": "barracks",
-      "hotkey": "G"
+      "hotkey": ""
     },
     {
       "id": "transport_apc",
@@ -596,7 +597,7 @@
         }
       },
       "producedBy": "barracks_elite",
-      "hotkey": "M"
+      "hotkey": ""
     },
     {
       "id": "laser_trooper",
@@ -654,7 +655,8 @@
       },
       "producedBy": "barracks",
       "hotkey": "",
-      "shortName": "Razor ★"
+      "shortName": "Razor ★",
+      "factionLock": "emberhand"
     },
     {
       "id": "tempest",
@@ -684,7 +686,7 @@
         }
       },
       "producedBy": "barracks",
-      "hotkey": "",
+      "hotkey": "E",
       "shortName": "Tempest ★"
     }
   ]
