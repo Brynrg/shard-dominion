@@ -5,6 +5,7 @@
 //      anything moves (and whose dismiss-click grabs keyboard focus), and
 //   2) a step-by-step objective tracker that teaches select → move → train → attack
 //      by watching for the player to actually do each thing.
+import { font } from './theme.js';
 import type { SimState } from '../sim/state.js';
 import type { ConfirmationMarker } from '../sim/systems/command.js';
 
@@ -156,7 +157,7 @@ export function makeOnboarding(
   // Trigger comm panel (FG-4): speaker-tagged lines, bottom-centre, above the HUD.
   function drawCommMessages(ctx: CanvasRenderingContext2D, W: number, H: number, msgs: readonly CommMessage[]): void {
     if (msgs.length === 0) return;
-    ctx.font = '13px monospace';
+    ctx.font = font(13);
     const shown = msgs.slice(-3); // newest 3
     const wMax = Math.max(...shown.map(m => ctx.measureText(`${m.speaker}: ${m.text}`).width)) + 24;
     const lineH = 20;
@@ -181,7 +182,7 @@ export function makeOnboarding(
     // TP-5: secondaries STAY visible (audit: they vanished after the briefing).
     // Primaries first, then ☆-prefixed optionals.
     const list = [...objs.filter(o => o.primary), ...objs.filter(o => !o.primary)];
-    ctx.font = '13px monospace';
+    ctx.font = font(13);
     const rows = list.map(o => `${o.complete ? '✔' : '☐'}${o.primary ? '' : ' ☆'} ${o.text}`);
     const boxW = Math.max(360, ...rows.map(r => ctx.measureText(r).width + 40));
     const h = 24 + list.length * 18;
@@ -193,9 +194,9 @@ export function makeOnboarding(
     ctx.lineWidth = 1.5;
     ctx.strokeRect(x + 0.5, y + 0.5, boxW - 1, h - 1);
     ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-    ctx.fillStyle = '#ffd34d'; ctx.font = 'bold 12px monospace';
+    ctx.fillStyle = '#ffd34d'; ctx.font = font(12, true);
     ctx.fillText('OBJECTIVES', x + 12, y + 6);
-    ctx.font = '13px monospace';
+    ctx.font = font(13);
     let yy = y + 24;
     for (const o of list) {
       ctx.fillStyle = o.complete ? '#4caf50' : o.primary ? '#e7e2d6' : '#9fb4cc';
@@ -221,10 +222,10 @@ export function makeOnboarding(
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = '#ffd34d';
-    ctx.font = 'bold 40px monospace';
+    ctx.font = font(40, true);
     ctx.fillText(brief?.title ?? BRIEF_TITLE, W / 2, pad + 62);
     ctx.fillStyle = '#8fb7c9';
-    ctx.font = '13px monospace';
+    ctx.font = font(13);
     ctx.fillText('MISSION BRIEFING', W / 2, pad + 84);
 
     // GOAL banner — the first thing you read, so the point is unmistakable.
@@ -233,30 +234,30 @@ export function makeOnboarding(
     ctx.strokeStyle = 'rgba(255,211,77,0.5)'; ctx.lineWidth = 1;
     ctx.strokeRect(pad + 20, pad + 100, W - pad * 2 - 40, 30);
     ctx.fillStyle = '#ffd34d';
-    ctx.font = 'bold 15px monospace';
+    ctx.font = font(15, true);
     const goal = brief?.objectives?.[0] ? `GOAL:  ${brief.objectives[0]}` : BRIEF_GOAL;
     ctx.fillText(goal, W / 2, pad + 120);
 
     // Story, left-aligned.
     ctx.textAlign = 'left';
     ctx.fillStyle = '#cfc9bd';
-    ctx.font = '13px monospace';
+    ctx.font = font(13);
     let y = pad + 158;
     for (const line of (brief?.story ?? BRIEF_STORY)) { ctx.fillText(line, pad + 34, y); y += 20; }
 
     // How to play — numbered steps (these ARE the controls).
     y += 8;
     ctx.fillStyle = '#00e5ff';
-    ctx.font = 'bold 13px monospace';
+    ctx.font = font(13, true);
     ctx.fillText('HOW TO PLAY', pad + 34, y); y += 24;
-    ctx.font = '13px monospace';
+    ctx.font = font(13);
     ctx.fillStyle = '#e7e2d6';
     for (const line of BRIEF_HOWTO) { ctx.fillText(line, pad + 40, y); y += 22; }
 
     // Camera hint.
     y += 6;
     ctx.fillStyle = '#8894a4';
-    ctx.font = '12px monospace';
+    ctx.font = font(12);
     ctx.fillText(BRIEF_HINT, pad + 34, y); y += 18;
     ctx.fillText(BRIEF_HINT2, pad + 34, y);
 
@@ -276,7 +277,7 @@ export function makeOnboarding(
     const a = 0.55 + 0.45 * Math.sin(p * 0.08);
     ctx.textAlign = 'center';
     ctx.fillStyle = `rgba(0,229,255,${a.toFixed(3)})`;
-    ctx.font = 'bold 20px monospace';
+    ctx.font = font(20, true);
     ctx.fillText('▶  CLICK TO TAKE COMMAND', W / 2, H - pad - 26);
   }
 
@@ -285,7 +286,7 @@ export function makeOnboarding(
     if (!s) return;
     const label = `OBJECTIVE ${idx + 1}/${STEPS.length}`;
     const text = s.text;
-    ctx.font = '13px monospace';
+    ctx.font = font(13);
     const tw = ctx.measureText(text).width;
     const boxW = Math.max(tw + 150, 360);
     const x = (W - boxW) / 2, y = 8, h = 30;

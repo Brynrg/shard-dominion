@@ -93,7 +93,7 @@ export function showSkirmishSetup(o: SkirmishSetup): void {
     const btns = document.createElement('div');
     btns.style.cssText = 'display:flex;gap:6px;justify-content:center;flex-wrap:wrap;';
     const style = (active: boolean): string =>
-      `font-family:monospace;font-size:12px;padding:6px 12px;cursor:pointer;border-radius:4px;border:1px solid ${active ? '#00e5ff' : '#3a4a5a'};background:${active ? 'rgba(0,229,255,0.14)' : 'rgba(20,26,34,0.9)'};color:${active ? '#00e5ff' : '#cfe0ee'};`;
+      `font-family:"Share Tech Mono",monospace;font-size:12px;padding:6px 12px;cursor:pointer;border-radius:4px;border:1px solid ${active ? '#00e5ff' : '#3a4a5a'};background:${active ? 'rgba(0,229,255,0.14)' : 'rgba(20,26,34,0.9)'};color:${active ? '#00e5ff' : '#cfe0ee'};`;
     for (const opt of opts) {
       const b = document.createElement('button');
       b.textContent = opt.name;
@@ -175,7 +175,7 @@ export function showChallengeSelect(challenges: readonly ChallengeEntry[], onPic
 function overlay(): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'sd-overlay';
-  el.style.cssText = 'position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;background:rgba(6,5,10,0.92);z-index:1000;font-family:monospace;color:#e7e2d6;overflow-y:auto;padding:24px 0;box-sizing:border-box;';
+  el.style.cssText = 'position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;background:rgba(5,5,16,0.93);z-index:1000;font-family:"Share Tech Mono",monospace;color:#e7e2d6;overflow-y:auto;padding:24px 0;box-sizing:border-box;';
   document.body.appendChild(el);
   return el;
 }
@@ -199,7 +199,7 @@ function actCard(name: string): HTMLImageElement {
 function button(label: string, primary = false): HTMLButtonElement {
   const b = document.createElement('button');
   b.textContent = label;
-  b.style.cssText = `display:block;width:280px;margin:8px auto;padding:13px;font-family:monospace;font-size:16px;font-weight:bold;cursor:pointer;border:2px solid ${primary ? '#00e5ff' : '#3a4a5a'};background:${primary ? 'rgba(0,229,255,0.14)' : 'rgba(20,26,34,0.9)'};color:${primary ? '#00e5ff' : '#cfe0ee'};border-radius:6px;`;
+  b.style.cssText = `display:block;width:280px;margin:8px auto;padding:13px;font-family:"Share Tech Mono",monospace;font-size:16px;font-weight:bold;cursor:pointer;border:2px solid ${primary ? '#00e5ff' : '#3a4a5a'};background:${primary ? 'rgba(0,229,255,0.14)' : 'rgba(20,26,34,0.9)'};color:${primary ? '#00e5ff' : '#cfe0ee'};border-radius:6px;`;
   return b;
 }
 
@@ -214,8 +214,8 @@ export function showTitleMenu(onSelect: (missionId: string | { _challenge: strin
   const panel = document.createElement('div');
   panel.style.textAlign = 'center';
   panel.innerHTML =
-    '<div style="font-size:46px;font-weight:bold;color:#ffd34d;letter-spacing:3px;">SHARD DOMINION</div>' +
-    '<div style="color:#8fb7c9;margin:6px 0 28px;">Aether Prime — the war for Shard</div>';
+    '<div style="font-size:46px;font-weight:bold;color:#00e5ff;letter-spacing:6px;text-shadow:0 0 18px rgba(0,229,255,0.55),0 0 46px rgba(0,229,255,0.25);">SHARD DOMINION</div>' +
+    '<div style="color:#9b7bff;margin:6px 0 28px;letter-spacing:2px;">AETHER PRIME — THE WAR FOR SHARD</div>';
   const campaign = button('▶  CAMPAIGN', true);
   const skirmish = button('SKIRMISH');
   const challenges = button('⭐  CHALLENGES');
@@ -309,7 +309,7 @@ export function showPauseMenu(o: PauseOpts): () => void {
   const mute = document.createElement('button');
   const muteLabel = (): string => (o.audio.isMuted() ? 'UNMUTE' : 'MUTE');
   mute.textContent = muteLabel();
-  mute.style.cssText = 'font-family:monospace;font-size:11px;padding:4px 10px;cursor:pointer;background:rgba(20,26,34,0.9);color:#cfe0ee;border:1px solid #3a4a5a;border-radius:4px;';
+  mute.style.cssText = 'font-family:"Share Tech Mono",monospace;font-size:11px;padding:4px 10px;cursor:pointer;background:rgba(20,26,34,0.9);color:#cfe0ee;border:1px solid #3a4a5a;border-radius:4px;';
   mute.onclick = () => { o.audio.setMuted(!o.audio.isMuted()); mute.textContent = muteLabel(); };
   volRow.appendChild(vol); volRow.appendChild(mute);
   panel.appendChild(volRow);
@@ -321,7 +321,7 @@ export function showPauseMenu(o: PauseOpts): () => void {
   for (const s of [0.5, 1, 1.5, 2]) {
     const b = document.createElement('button');
     const style = (active: boolean): string =>
-      `font-family:monospace;font-size:11px;padding:4px 10px;cursor:pointer;border-radius:4px;border:1px solid ${active ? '#00e5ff' : '#3a4a5a'};background:${active ? 'rgba(0,229,255,0.14)' : 'rgba(20,26,34,0.9)'};color:${active ? '#00e5ff' : '#cfe0ee'};`;
+      `font-family:"Share Tech Mono",monospace;font-size:11px;padding:4px 10px;cursor:pointer;border-radius:4px;border:1px solid ${active ? '#00e5ff' : '#3a4a5a'};background:${active ? 'rgba(0,229,255,0.14)' : 'rgba(20,26,34,0.9)'};color:${active ? '#00e5ff' : '#cfe0ee'};`;
     b.textContent = `${s}×`;
     b.style.cssText = style(o.getSpeed() === s);
     b.onclick = () => {
@@ -342,7 +342,7 @@ export function showPauseMenu(o: PauseOpts): () => void {
     const tog = document.createElement('button');
     tog.id = 'sd-a11y-shapes';
     const style = (on: boolean): string =>
-      `font-family:monospace;font-size:11px;padding:4px 10px;cursor:pointer;border-radius:4px;border:1px solid ${on ? '#00e5ff' : '#3a4a5a'};background:${on ? 'rgba(0,229,255,0.14)' : 'rgba(20,26,34,0.9)'};color:${on ? '#00e5ff' : '#cfe0ee'};`;
+      `font-family:"Share Tech Mono",monospace;font-size:11px;padding:4px 10px;cursor:pointer;border-radius:4px;border:1px solid ${on ? '#00e5ff' : '#3a4a5a'};background:${on ? 'rgba(0,229,255,0.14)' : 'rgba(20,26,34,0.9)'};color:${on ? '#00e5ff' : '#cfe0ee'};`;
     const label = (): string => (o.getTeamShapes!() ? 'ON  (○ own / ▲ enemy)' : 'OFF');
     tog.textContent = label();
     tog.style.cssText = style(o.getTeamShapes());
@@ -363,7 +363,7 @@ export function showPauseMenu(o: PauseOpts): () => void {
     const tog = document.createElement('button');
     tog.id = 'sd-eva-voice';
     const style = (on: boolean): string =>
-      `font-family:monospace;font-size:11px;padding:4px 10px;cursor:pointer;border-radius:4px;border:1px solid ${on ? '#00e5ff' : '#3a4a5a'};background:${on ? 'rgba(0,229,255,0.14)' : 'rgba(20,26,34,0.9)'};color:${on ? '#00e5ff' : '#cfe0ee'};`;
+      `font-family:"Share Tech Mono",monospace;font-size:11px;padding:4px 10px;cursor:pointer;border-radius:4px;border:1px solid ${on ? '#00e5ff' : '#3a4a5a'};background:${on ? 'rgba(0,229,255,0.14)' : 'rgba(20,26,34,0.9)'};color:${on ? '#00e5ff' : '#cfe0ee'};`;
     tog.textContent = o.getEvaVoice() ? 'ON' : 'OFF';
     tog.style.cssText = style(o.getEvaVoice());
     tog.onclick = () => {
@@ -440,17 +440,17 @@ export function showDevMenu(o: DevMenuOpts): void {
   for (const m of o.missions) {
     const b = document.createElement('button');
     b.textContent = m.name;
-    b.style.cssText = 'font-family:monospace;font-size:11px;padding:5px 10px;cursor:pointer;border:1px solid #3a4a5a;background:rgba(20,26,34,0.9);color:#cfe0ee;border-radius:4px;';
+    b.style.cssText = 'font-family:"Share Tech Mono",monospace;font-size:11px;padding:5px 10px;cursor:pointer;border:1px solid #3a4a5a;background:rgba(20,26,34,0.9);color:#cfe0ee;border-radius:4px;';
     b.onclick = () => o.onLaunch(m.id);
     list.appendChild(b);
   }
   panel.appendChild(list);
   const ta = document.createElement('textarea');
   ta.placeholder = '{ "id": "my_test", "name": "…", … }  — paste a mission JSON here';
-  ta.style.cssText = 'width:100%;height:220px;background:#0a0d12;color:#cfe0ee;border:1px solid #3a4a5a;border-radius:6px;font-family:monospace;font-size:11px;padding:8px;box-sizing:border-box;';
+  ta.style.cssText = 'width:100%;height:220px;background:#0a0d12;color:#cfe0ee;border:1px solid #3a4a5a;border-radius:6px;font-family:"Share Tech Mono",monospace;font-size:11px;padding:8px;box-sizing:border-box;';
   panel.appendChild(ta);
   const err = document.createElement('div');
-  err.style.cssText = 'color:#e24a4a;font-size:11px;min-height:16px;margin:6px 0;text-align:left;font-family:monospace;';
+  err.style.cssText = 'color:#e24a4a;font-size:11px;min-height:16px;margin:6px 0;text-align:left;font-family:"Share Tech Mono",monospace;';
   panel.appendChild(err);
   const launch = button('▶  VALIDATE + LAUNCH JSON', true);
   launch.onclick = () => {
@@ -533,7 +533,7 @@ export function showCredits(onDone: () => void): void {
   const panel = document.createElement('div');
   panel.style.cssText = 'text-align:center;max-width:560px;';
   panel.innerHTML = [
-    '<div style="font-size:34px;font-weight:bold;color:#ffd34d;letter-spacing:3px;margin-bottom:18px;">SHARD DOMINION</div>',
+    '<div style="font-size:34px;font-weight:bold;color:#00e5ff;letter-spacing:5px;margin-bottom:18px;text-shadow:0 0 16px rgba(0,229,255,0.5);">SHARD DOMINION</div>',
     '<div style="color:#8fb7c9;font-size:13px;margin-bottom:22px;">ACT I · OPERATION AETHER PRIME — ACT II · THE WAKING DEEP</div>',
     '<div style="color:#cfc9bd;font-size:13px;line-height:2;">',
     'A war for a planet that was never empty.<br><br>',
@@ -580,7 +580,7 @@ export function showMultiplayerSetup(o: MultiplayerOpts): void {
     span.textContent = label; span.style.cssText = 'width:70px;text-align:right;';
     const input = document.createElement('input');
     input.type = 'text'; input.value = value;
-    input.style.cssText = 'font-family:monospace;font-size:13px;padding:6px 10px;width:280px;background:rgba(10,14,20,0.9);color:#e7f3ff;border:1px solid #3a4a5a;border-radius:4px;';
+    input.style.cssText = 'font-family:"Share Tech Mono",monospace;font-size:13px;padding:6px 10px;width:280px;background:rgba(10,14,20,0.9);color:#e7f3ff;border:1px solid #3a4a5a;border-radius:4px;';
     row.appendChild(span); row.appendChild(input);
     return { row, input };
   };
@@ -602,7 +602,7 @@ export function showMultiplayerSetup(o: MultiplayerOpts): void {
   for (const m of ['1v1', '2v2'] as const) {
     const b = document.createElement('button');
     const style = (on: boolean): string =>
-      `font-family:monospace;font-size:11px;padding:4px 12px;cursor:pointer;border-radius:4px;border:1px solid ${on ? '#00e5ff' : '#3a4a5a'};background:${on ? 'rgba(0,229,255,0.14)' : 'rgba(20,26,34,0.9)'};color:${on ? '#00e5ff' : '#cfe0ee'};`;
+      `font-family:"Share Tech Mono",monospace;font-size:11px;padding:4px 12px;cursor:pointer;border-radius:4px;border:1px solid ${on ? '#00e5ff' : '#3a4a5a'};background:${on ? 'rgba(0,229,255,0.14)' : 'rgba(20,26,34,0.9)'};color:${on ? '#00e5ff' : '#cfe0ee'};`;
     b.textContent = m; b.style.cssText = style(m === mode);
     b.onclick = () => { mode = m; for (const [i, bb] of modeBtns.entries()) bb.style.cssText = style((['1v1', '2v2'] as const)[i] === mode); };
     modeBtns.push(b); modeRow.appendChild(b);
@@ -611,7 +611,7 @@ export function showMultiplayerSetup(o: MultiplayerOpts): void {
 
   // Live invite link + copy — the other player opens exactly this URL.
   const invite = document.createElement('div');
-  invite.style.cssText = 'margin:12px auto 4px;padding:8px 10px;max-width:520px;background:rgba(10,14,20,0.85);border:1px solid #2a3a4a;border-radius:4px;color:#9fd8a9;font-size:11px;font-family:monospace;word-break:break-all;';
+  invite.style.cssText = 'margin:12px auto 4px;padding:8px 10px;max-width:520px;background:rgba(10,14,20,0.85);border:1px solid #2a3a4a;border-radius:4px;color:#9fd8a9;font-size:11px;font-family:"Share Tech Mono",monospace;word-break:break-all;';
   const inviteUrl = (): string => {
     const q = new URLSearchParams({ mp: '1', room: roomF.input.value.trim() || 'duel', relay: relayF.input.value.trim() });
     if (mode === '2v2') q.set('mode', '2v2');
@@ -624,7 +624,7 @@ export function showMultiplayerSetup(o: MultiplayerOpts): void {
   panel.appendChild(invite);
   const copy = document.createElement('button');
   copy.textContent = '⧉ COPY INVITE LINK';
-  copy.style.cssText = 'font-family:monospace;font-size:11px;margin:2px 0 12px;padding:4px 12px;cursor:pointer;background:rgba(20,26,34,0.9);color:#cfe0ee;border:1px solid #3a4a5a;border-radius:4px;';
+  copy.style.cssText = 'font-family:"Share Tech Mono",monospace;font-size:11px;margin:2px 0 12px;padding:4px 12px;cursor:pointer;background:rgba(20,26,34,0.9);color:#cfe0ee;border:1px solid #3a4a5a;border-radius:4px;';
   copy.onclick = () => { void navigator.clipboard?.writeText(inviteUrl()).then(() => { copy.textContent = '⧉ COPIED ✓'; }); };
   panel.appendChild(copy);
 

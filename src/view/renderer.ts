@@ -1,5 +1,6 @@
 // ── View: canvas renderer, camera, rAF driver ─────────────────────────────────
 // Wall-clock + rAF live here; the sim itself never reads wall-clock.
+import { font } from './theme.js';
 import type { SimState } from '../sim/state.js';
 import type { Camera, WorldPos, TilePos } from '../sim/coords.js';
 import { worldToScreen, tileToWorldCenter, worldToTile } from '../sim/coords.js';
@@ -271,14 +272,14 @@ export function makeView(cfg: ViewConfig): View {
     if (!viewerHasRadar()) {
       // No radar → static-dark panel (classic C&C: the map is a reward for tech).
       drawRadarFrame(x, y, w, h);
-      context.fillStyle = '#8fb7c9'; context.font = '11px monospace'; context.textAlign = 'left';
+      context.fillStyle = '#8fb7c9'; context.font = font(11); context.textAlign = 'left';
       context.textBaseline = 'alphabetic';
       context.fillText('RADAR', x, y - 5);
       context.fillStyle = '#05070a';
       context.fillRect(x, y, w, h);
-      context.fillStyle = '#4a5a68'; context.font = 'bold 11px monospace';
+      context.fillStyle = '#4a5a68'; context.font = font(11, true);
       context.fillText('NO RADAR', x + w / 2 - 28, y + h / 2 - 2);
-      context.font = '10px monospace';
+      context.font = font(10);
       context.fillText('build one (J, T2)', x + w / 2 - 44, y + h / 2 + 12);
       return;
     }
@@ -286,7 +287,7 @@ export function makeView(cfg: ViewConfig): View {
 
     // Frame + backing.
     drawRadarFrame(x, y, w, h);
-    context.fillStyle = '#8fb7c9'; context.font = '11px monospace'; context.textAlign = 'left';
+    context.fillStyle = '#8fb7c9'; context.font = font(11); context.textAlign = 'left';
     context.textBaseline = 'alphabetic';
     context.fillText('RADAR', x, y - 5);
 
@@ -362,7 +363,7 @@ export function makeView(cfg: ViewConfig): View {
     context.beginPath(); context.moveTo(13, 0); context.lineTo(-9, -10); context.lineTo(-9, 10); context.closePath(); context.fill();
     context.strokeStyle = '#ffd34d'; context.lineWidth = 1.5; context.stroke();
     context.restore();
-    context.fillStyle = '#ffd34d'; context.font = 'bold 11px monospace'; context.textAlign = 'center'; context.textBaseline = 'top';
+    context.fillStyle = '#ffd34d'; context.font = font(11, true); context.textAlign = 'center'; context.textBaseline = 'top';
     context.fillText('ENEMY BASE', px, py + 12);
     context.textBaseline = 'alphabetic';
   }
@@ -797,7 +798,7 @@ export function makeView(cfg: ViewConfig): View {
     context.lineWidth = 1;
     context.stroke();
     context.fillStyle = '#e8ecf2';
-    context.font = 'bold 9px monospace';
+    context.font = font(9, true);
     context.textAlign = 'left';
     context.textBaseline = 'middle';
     context.fillText(code, ax + 2, ay - h / 2 + 1);
@@ -940,7 +941,7 @@ export function makeView(cfg: ViewConfig): View {
     // Draw reason text if invalid
     if (!valid && reason) {
       context.fillStyle = '#ffffff';
-      context.font = '12px monospace';
+      context.font = font(12);
       context.textBaseline = 'top';
       context.fillText(reason, screenPos.sx - size / 2, screenPos.sy - size / 2 - 15);
     }
@@ -959,7 +960,7 @@ export function makeView(cfg: ViewConfig): View {
     context.fillRect(0, 0, canvas.width, canvas.height);
 
     context.fillStyle = bannerColor;
-    context.font = 'bold 60px monospace';
+    context.font = font(60, true);
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     context.fillText(bannerText, canvas.width / 2, canvas.height / 2);

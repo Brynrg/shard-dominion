@@ -1,5 +1,6 @@
 // ── HUD: credits + cargo + storage + build queue + power readout ────────────────
 // Renders economy and build queue HUD on top of the game canvas.
+import { THEME, font } from './theme.js';
 import type { SimState } from '../sim/state.js';
 import type { Camera } from '../sim/coords.js';
 import type { ConstructionOutput } from '../sim/systems/construction.js';
@@ -98,9 +99,9 @@ export function makeHUD(cfg: HUDConfig): {
 
   // HUD colors
   const COLORS = {
-    background: 'rgba(0, 0, 0, 0.7)',
-    text: '#ffffff',
-    highlight: '#4a90e2',
+    background: THEME.panel,
+    text: THEME.text,
+    highlight: THEME.cyan,
     warning: '#e24a4a',
     success: '#4caf50',
     powerOk: '#4caf50',
@@ -173,7 +174,7 @@ export function makeHUD(cfg: HUDConfig): {
 
   function drawText(text: string, x: number, y: number, color: string = COLORS.text): void {
     context.fillStyle = color;
-    context.font = '14px monospace';
+    context.font = font(14);
     context.textBaseline = 'top';
     context.fillText(text, x, y);
   }
@@ -192,7 +193,7 @@ export function makeHUD(cfg: HUDConfig): {
 
     // Text
     context.fillStyle = '#ffffff';
-    context.font = '12px monospace';
+    context.font = font(12);
     context.textBaseline = 'top';
     context.fillText(`${Math.floor(value)} / ${max}`, x + 5, y + 1);
   }
@@ -255,10 +256,10 @@ export function makeHUD(cfg: HUDConfig): {
       context.strokeStyle = canGo ? '#00e5ff' : '#3a4a5a';
       context.strokeRect(x + 0.5, by + 0.5, half - 1, h - 1);
       context.fillStyle = canGo ? '#00e5ff' : '#5c636d';
-      context.font = 'bold 11px monospace'; context.textBaseline = 'top';
+      context.font = font(11, true); context.textBaseline = 'top';
       context.fillText(dir === 'prev' ? '▲ PREV' : 'NEXT ▼', x + 8, by + 5);
     }
-    context.fillStyle = '#8fa3b8'; context.font = '9px monospace';
+    context.fillStyle = '#8fa3b8'; context.font = font(9);
     context.fillText(`${page + 1}/${pages}`, px + 8 + bw - 22, by + 6);
     return by + h + 4;
   }
@@ -293,13 +294,13 @@ export function makeHUD(cfg: HUDConfig): {
     context.fillStyle = enabled ? COLORS.highlight : '#4a4a52';
     context.fillRect(x + 5, y + 6, 18, 18);
     context.fillStyle = enabled ? '#0e1014' : '#2a2a30';
-    context.font = 'bold 13px monospace'; context.textBaseline = 'top';
+    context.font = font(13, true); context.textBaseline = 'top';
     context.fillText(item.key, x + 10, y + 9);
     // name + cost
-    context.font = '13px monospace';
+    context.font = font(13);
     context.fillStyle = enabled ? COLORS.text : '#6d6d75';
     context.fillText(item.name, x + 30, y + 9);
-    context.font = '12px monospace';
+    context.font = font(12);
     context.fillStyle = enabled ? '#ffd34a' : '#6d6d75';
     if (powerWarn) {
       // Predictive low-power warning: this build would exceed supply → it will idle
@@ -310,8 +311,8 @@ export function makeHUD(cfg: HUDConfig): {
       context.fillText(`◈${item.cost}`, x + w - 44, y + 9);
     }
     // Building/queue badge on the right.
-    if (progress > 0) { context.fillStyle = COLORS.success; context.font = 'bold 11px monospace'; context.fillText(`${progress}%`, x + w - 30, y + 9); }
-    if (queued > 0) { context.fillStyle = COLORS.text; context.font = 'bold 12px monospace'; context.fillText(`×${queued}`, x + w - 16, y + 9); }
+    if (progress > 0) { context.fillStyle = COLORS.success; context.font = font(11, true); context.fillText(`${progress}%`, x + w - 30, y + 9); }
+    if (queued > 0) { context.fillStyle = COLORS.text; context.font = font(12, true); context.fillText(`×${queued}`, x + w - 16, y + 9); }
   }
 
   return {
@@ -366,13 +367,13 @@ export function makeHUD(cfg: HUDConfig): {
       // Title bar.
       drawBox(px + 1, py + 1, pw - 2, 20, 'rgba(74,144,226,0.35)');
       context.fillStyle = COLORS.text;
-      context.font = 'bold 13px monospace';
+      context.font = font(13, true);
       context.textBaseline = 'top';
       context.fillText('COMMAND', px + 10, py + 5);
 
       // Credits (large).
       context.fillStyle = '#ffd34a';
-      context.font = 'bold 20px monospace';
+      context.font = font(20, true);
       context.fillText(`◈ ${credits}`, px + 10, py + 28);
 
       // Sine-pulsed amber divider (Obsidian Bloom HUD chrome): a thin glowing rule
@@ -394,7 +395,7 @@ export function makeHUD(cfg: HUDConfig): {
       }
       // Cells (XP-2): the elite-systems charges.
       context.fillStyle = '#7dd3fc';
-      context.font = 'bold 13px monospace';
+      context.font = font(13, true);
       context.fillText(`⬡ ${refinery?.cells ?? 0}`, px + 128, py + 33);
       // Resonance (XP-2): how hard the planet is watching YOU (fills per 3000 mined).
       const resPct = Math.min(1, ((refinery?.mined ?? 0) % 3000) / 3000);
@@ -404,7 +405,7 @@ export function makeHUD(cfg: HUDConfig): {
       context.fillRect(px + 10, py + 50, Math.floor(106 * resPct), 3);
       // Shardstorm chip (XP-5).
       if (cfg.isStorm?.()) {
-        context.fillStyle = '#c9a6ff'; context.font = 'bold 11px monospace';
+        context.fillStyle = '#c9a6ff'; context.font = font(11, true);
         context.fillText('⛈ STORM', px + 122, py + 46);
       }
 
@@ -458,7 +459,7 @@ export function makeHUD(cfg: HUDConfig): {
         context.strokeStyle = active ? '#00e5ff' : '#3a4a5a';
         context.strokeRect(tx0 + 0.5, tabY + 0.5, tabW - 1, tabH - 1);
         context.fillStyle = active ? '#00e5ff' : '#8fa3b8';
-        context.font = 'bold 10px monospace'; context.textBaseline = 'top';
+        context.font = font(10, true); context.textBaseline = 'top';
         context.fillText(TAB_LABEL[tab]!, tx0 + 8, tabY + 6);
       }
       let by = py + 146;
@@ -481,9 +482,9 @@ export function makeHUD(cfg: HUDConfig): {
         context.strokeStyle = enabled ? '#ffd34d' : '#3a4a5a';
         context.strokeRect(px + 8.5, by + 0.5, bw - 1, 29);
         context.fillStyle = enabled ? '#ffd34d' : (upgrading ? '#00e5ff' : '#68727e');
-        context.font = 'bold 12px monospace'; context.textBaseline = 'top';
+        context.font = font(12, true); context.textBaseline = 'top';
         context.fillText(`${label}  T${tech.tier}`, px + 14, by + 4);
-        if (step && !upgrading) { context.font = '11px monospace'; context.fillText(`◈${cost}`, px + bw - 36, by + 4); }
+        if (step && !upgrading) { context.font = font(11); context.fillText(`◈${cost}`, px + bw - 36, by + 4); }
         by += 34;
       }
       const fid = cfg.playerFactionId ?? 'concord';
@@ -528,14 +529,14 @@ export function makeHUD(cfg: HUDConfig): {
           context.strokeStyle = isDone ? '#4fc27a' : isNow ? '#00e5ff' : enabled ? '#ffd34d' : '#3a4a5a';
           context.strokeRect(px + 8.5, by + 0.5, bw - 1, 33);
           context.fillStyle = isDone ? '#4fc27a' : isNow ? '#00e5ff' : enabled ? '#e6edf3' : '#68727e';
-          context.font = 'bold 11px monospace'; context.textBaseline = 'top';
+          context.font = font(11, true); context.textBaseline = 'top';
           context.fillText(`${isDone ? '✓ ' : ''}${r.name}`.slice(0, 22), px + 14, by + 5);
           const pct = `${Math.round(r.value * 100)}%`;
           const hint = r.effect === 'harvest' ? `+${pct} harvest` : r.effect === 'damage' ? `+${pct} damage`
             : r.effect === 'armor' ? `-${pct} dmg taken` : r.effect === 'range' ? `+${pct} range`
               : r.effect === 'firepower' ? `+${pct} rate of fire` : r.effect === 'buildTime' ? `-${pct} build time`
                 : `-${pct} planet aggro`;
-          context.font = '9px monospace';
+          context.font = font(9);
           if (isDone) { context.fillStyle = '#4fc27a'; context.fillText(`RESEARCHED · ${hint}`, px + 14, by + 20); }
           else if (isNow) { context.fillStyle = '#00e5ff'; context.fillText('RESEARCHING…', px + 14, by + 20); }
           else if (blocked) {
@@ -552,7 +553,7 @@ export function makeHUD(cfg: HUDConfig): {
           by += 38;
         }
         by = drawPager(px, by, bw, 'tech', tabPage.tech, totalPages);
-        context.font = '9px monospace'; context.fillStyle = '#68727e';
+        context.font = font(9); context.fillStyle = '#68727e';
         context.fillText(busy ? 'one refinement at a time' : hasPlant ? 'permanent, team-wide' : 'needs a Processing Plant', px + 14, by + 2);
       }
       // ── Build rows, GENERATED FROM DATA (Phase C1) ──────────────────────────
@@ -600,21 +601,21 @@ export function makeHUD(cfg: HUDConfig): {
         if (jobReady) {
           const pulse = 0.65 + 0.35 * Math.sin(Date.now() / 180);
           context.fillStyle = `rgba(255, 231, 122, ${pulse.toFixed(3)})`;
-          context.font = 'bold 13px monospace';
+          context.font = font(13, true);
           context.textBaseline = 'top';
           context.fillText('READY — click to place', px + 20, by + 8);
         } else if (!tierOk) {
-          context.fillStyle = '#c9a24a'; context.font = 'bold 10px monospace';
+          context.fillStyle = '#c9a24a'; context.font = font(10, true);
           context.fillText(`T${item.tier}`, px + 8 + bw - 70, by + 4);
         } else if (!prereqMet) {
           // Name the MISSING building instead of just greying out — this is the
           // difference between a discoverable tech tree and a wall of dead buttons.
           const need = item.kind === 'train' ? item.producedBy ?? '' : missing[0] ?? '';
-          context.fillStyle = '#c9a24a'; context.font = '9px monospace';
+          context.fillStyle = '#c9a24a'; context.font = font(9);
           context.fillText(`needs ${shortLabel(need)}`.slice(0, 20), px + 8 + bw - 96, by + 19);
         }
         if (item.cellCost) {
-          context.fillStyle = cellsOk ? '#7dd3fc' : '#e24a4a'; context.font = 'bold 10px monospace';
+          context.fillStyle = cellsOk ? '#7dd3fc' : '#e24a4a'; context.font = font(10, true);
           context.fillText(`⬡${item.cellCost}`, px + 8 + bw - 70, by + 16);
         }
         by += 34;
@@ -637,7 +638,7 @@ export function makeHUD(cfg: HUDConfig): {
         if (it.kind === 'train' && it.producedBy) lines.push({ text: `Trains at: ${shortLabel(it.producedBy)}`, color: '#8fa3b8' });
         // Word-wrap the purpose line to the tooltip width.
         const TIP_W = 210;
-        context.font = '11px monospace';
+        context.font = font(11);
         if (it.desc) {
           let line = '';
           for (const w of it.desc.split(' ')) {
@@ -681,7 +682,7 @@ export function makeHUD(cfg: HUDConfig): {
         context.fillRect(px + 8, by, Math.floor(bw * (ready ? 1 : pct)), 28);
         context.strokeStyle = ready ? '#ff8a5c' : '#3a4a5a';
         context.strokeRect(px + 8.5, by + 0.5, bw - 1, 27);
-        context.font = 'bold 11px monospace'; context.textBaseline = 'top';
+        context.font = font(11, true); context.textBaseline = 'top';
         if (ready) {
           const pulse = 0.6 + 0.4 * Math.sin(Date.now() / 200);
           context.fillStyle = `rgba(255,220,180,${pulse.toFixed(3)})`;
@@ -708,7 +709,7 @@ export function makeHUD(cfg: HUDConfig): {
         context.strokeStyle = canFire ? '#c9a6ff' : '#3a4a5a';
         context.strokeRect(px + 8.5, by + 0.5, bw - 1, 25);
         context.fillStyle = canFire ? '#e8dcff' : '#6d6d75';
-        context.font = 'bold 12px monospace'; context.textBaseline = 'top';
+        context.font = font(12, true); context.textBaseline = 'top';
         context.fillText(`☄ FACTION STRIKE  ⬡5`, px + 16, by + 6);
         by += 30;
       }
@@ -729,7 +730,7 @@ export function makeHUD(cfg: HUDConfig): {
         context.strokeStyle = active ? COLORS.success : '#c9a24a';
         context.strokeRect(px + 8.5, by + 0.5, bw - 1, 25);
         context.fillStyle = '#ffe9b0';
-        context.font = 'bold 12px monospace'; context.textBaseline = 'top';
+        context.font = font(12, true); context.textBaseline = 'top';
         context.fillText(active ? '🔧 REPAIRING…  (click to stop)' : '🔧 REPAIR  (drains credits)', px + 16, by + 7);
         by += 30;
       }
@@ -750,13 +751,13 @@ export function makeHUD(cfg: HUDConfig): {
         context.strokeStyle = '#e24a4a';
         context.strokeRect(px + 8.5, by + 0.5, bw - 1, 25);
         context.fillStyle = '#ffc9c9';
-        context.font = 'bold 12px monospace'; context.textBaseline = 'top';
+        context.font = font(12, true); context.textBaseline = 'top';
         context.fillText('$ SELL  (50% refund, demolishes)', px + 16, by + 7);
       }
 
       // Legend (footer).
       context.fillStyle = '#8894a4';
-      context.font = '10px monospace';
+      context.font = font(10);
       // Short lines only — longer ones clip at the panel edge (playtest v0.53).
       context.fillText('L select · R order · S stop', px + 10, py + ph - 66);
       context.fillText('A atkmove · Shift queue', px + 10, py + ph - 54);
