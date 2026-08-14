@@ -1,6 +1,6 @@
 {
   "id": "m20_act4_genesis",
-  "name": "Act IV · Genesis",
+  "name": "Act IV \u00b7 Genesis",
   "order": 20,
   "inheritsChoice": true,
   "map": {
@@ -12,7 +12,7 @@
     "title": "GENESIS",
     "story": [
       "The defenses fall. The towers sing in harmony. The binding holds firm, and Aether Prime",
-      "settles into a new equilibrium — not the sleep of ages, but the waking rest of a god",
+      "settles into a new equilibrium \u2014 not the sleep of ages, but the waking rest of a god",
       "that has learned consent, learned partnership with the fragile things that walk its crust.",
       "",
       "But there is one last threat. The Chorus itself has fragments, splinters of consciousness",
@@ -23,7 +23,7 @@
       "Take the field. Seal the cracks in the world. End this war. And let something new begin.\""
     ],
     "objectives": [
-      "Achieve total victory — destroy all enemy forces",
+      "Achieve total victory \u2014 destroy all enemy forces",
       "Secure the genesis point (control the center of the map for 60s)"
     ]
   },
@@ -31,10 +31,10 @@
     "win": [
       "The last fragments of Aether Prime's fractured consciousness are sealed away,",
       "integrated into the binding, made whole. The planet rests, truly rests, for the first time",
-      "in a thousand years. And on its surface, two factions — enemies for so long — stand",
+      "in a thousand years. And on its surface, two factions \u2014 enemies for so long \u2014 stand",
       "together in the ruins of the old world, looking toward something new.",
       "",
-      "MARSHAL CORR: \"We came to fight a god. We leave as something more — something that",
+      "MARSHAL CORR: \"We came to fight a god. We leave as something more \u2014 something that",
       "helped create the world that's coming next.\"",
       "",
       "SERA VANE: \"The war is over. The real work begins now. Aether Prime is listening.",
@@ -42,7 +42,7 @@
     ],
     "lose": [
       "The fragments break free. The binding shatters like glass. Aether Prime wakes",
-      "fully, and in that waking, the world ends. You fought with honor, fought with courage —",
+      "fully, and in that waking, the world ends. You fought with honor, fought with courage \u2014",
       "but some things are too powerful, too vast, to ever truly defeat.",
       "",
       "Your sacrifice will echo in the ruins, remembered by no one."
@@ -319,7 +319,8 @@
       "type": "eliminate",
       "team": "enemy",
       "primary": true,
-      "text": "Destroy all enemy forces"
+      "text": "Destroy all enemy forces",
+      "id": "obj_eliminate"
     },
     {
       "type": "hold",
@@ -331,7 +332,8 @@
       },
       "seconds": 60,
       "primary": true,
-      "text": "Secure the genesis point"
+      "text": "Secure the genesis point",
+      "id": "obj_genesis"
     }
   ],
   "failure": [
@@ -340,5 +342,90 @@
       "team": "player"
     }
   ],
-  "next": null
+  "next": null,
+  "triggers": [
+    {
+      "id": "t_open",
+      "when": {
+        "timeSeconds": 4
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "MARSHAL CORR",
+          "text": "Last field, Warden. Everything we buried on this rock \u2014 every name on my ledger \u2014 was spent to buy this morning. Spend it well."
+        }
+      ]
+    },
+    {
+      "id": "t_vane_open",
+      "when": {
+        "timeSeconds": 12
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "I burned half this world fighting you. Let the record show I ended it standing next to you."
+        }
+      ]
+    },
+    {
+      "id": "t_chorus_watch",
+      "when": {
+        "timeSeconds": 60
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "THE CHORUS",
+          "text": "WE   WATCH.   WE   DO   NOT   INTERVENE.   THIS   QUARREL   IS   YOURS   TO   END."
+        }
+      ]
+    },
+    {
+      "id": "t_genesis_held",
+      "when": {
+        "objectiveComplete": "obj_genesis"
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "Genesis point is ours. The ground under it is WARM, Warden \u2014 it's listening. Finish this."
+        }
+      ]
+    },
+    {
+      "id": "t_last_push",
+      "when": {
+        "timeSeconds": 270
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "MARSHAL CORR",
+          "text": "Their line is cracking. One more push and this war is history \u2014 the kind we get to write."
+        },
+        {
+          "type": "grantCredits",
+          "team": "player",
+          "amount": 500
+        }
+      ]
+    },
+    {
+      "id": "t_end_near",
+      "when": {
+        "objectiveComplete": "obj_eliminate"
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "THE CHORUS",
+          "text": "it is quiet... it is finally, mercifully quiet... rest now, small ones. we will keep the morning."
+        }
+      ]
+    }
+  ]
 }

@@ -1,6 +1,6 @@
 {
   "id": "m18_act4_ruins",
-  "name": "Act IV · The Ruins",
+  "name": "Act IV \u00b7 The Ruins",
   "order": 18,
   "inheritsChoice": true,
   "map": {
@@ -12,12 +12,12 @@
     "title": "THE RUINS",
     "story": [
       "Halex is gone. The Directorate falls like sand. But Aether Prime does not forgive,",
-      "and the planet is still awake — a god that walked, not slept. The Chorus stirs",
+      "and the planet is still awake \u2014 a god that walked, not slept. The Chorus stirs",
       "beneath the glass-flats, and the crust is fracturing.",
       "",
       "SERA VANE: \"The binding holds, but it's not perfect. We need to stabilize the",
       "convergence zones before the whole continent splits. That means we secure the",
-      "ruins and the remaining spore towers — they are anchors, and they're ours now.\"",
+      "ruins and the remaining spore towers \u2014 they are anchors, and they're ours now.\"",
       "",
       "MARSHAL CORR: \"One more campaign. One more, and we bring Aether Prime to heel.\""
     ],
@@ -270,7 +270,8 @@
       },
       "seconds": 45,
       "primary": true,
-      "text": "Hold the north spore tower"
+      "text": "Hold the north spore tower",
+      "id": "obj_north"
     },
     {
       "type": "hold",
@@ -282,7 +283,8 @@
       },
       "seconds": 45,
       "primary": true,
-      "text": "Hold the east spore tower"
+      "text": "Hold the east spore tower",
+      "id": "obj_east"
     },
     {
       "type": "hold",
@@ -294,14 +296,16 @@
       },
       "seconds": 45,
       "primary": true,
-      "text": "Hold the south spore tower"
+      "text": "Hold the south spore tower",
+      "id": "obj_south"
     },
     {
       "type": "survive",
       "team": "player",
       "seconds": 300,
       "primary": true,
-      "text": "Keep the binding site secure"
+      "text": "Keep the binding site secure",
+      "id": "obj_bind"
     }
   ],
   "failure": [
@@ -315,5 +319,90 @@
       "kind": "construction_yard"
     }
   ],
-  "next": "m19_act4_convergence"
+  "next": "m19_act4_convergence",
+  "triggers": [
+    {
+      "id": "t_open",
+      "when": {
+        "timeSeconds": 4
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "The binding is a stitched wound, Warden. Three spore towers hold the thread. Lose one and the planet tears itself open."
+        }
+      ]
+    },
+    {
+      "id": "t_chorus_stir",
+      "when": {
+        "timeSeconds": 75
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "THE CHORUS",
+          "text": "WE   DO   NOT   CONSENT   TO   SLEEP."
+        }
+      ]
+    },
+    {
+      "id": "t_north_held",
+      "when": {
+        "objectiveComplete": "obj_north"
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "North tower's singing steady. I never thought I'd fight FOR this rock. Two to go."
+        }
+      ]
+    },
+    {
+      "id": "t_east_held",
+      "when": {
+        "objectiveComplete": "obj_east"
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "East thread anchored. The fracture lines are slowing. Whatever you're doing \u2014 keep doing it."
+        }
+      ]
+    },
+    {
+      "id": "t_south_held",
+      "when": {
+        "objectiveComplete": "obj_south"
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "THE CHORUS",
+          "text": "the small ones... hold the wound closed... why do the small ones bleed for us"
+        }
+      ]
+    },
+    {
+      "id": "t_reserves",
+      "when": {
+        "timeSeconds": 300
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "Emberhand caches, west ridge. They're yours now \u2014 the dead don't bank."
+        },
+        {
+          "type": "grantCredits",
+          "team": "player",
+          "amount": 400
+        }
+      ]
+    }
+  ]
 }

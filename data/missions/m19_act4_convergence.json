@@ -1,6 +1,6 @@
 {
   "id": "m19_act4_convergence",
-  "name": "Act IV · Convergence",
+  "name": "Act IV \u00b7 Convergence",
   "order": 19,
   "inheritsChoice": true,
   "map": {
@@ -12,18 +12,18 @@
     "title": "CONVERGENCE",
     "story": [
       "The towers sing. The planet listens. But the Chorus is waking all the way now,",
-      "and Aether Prime's own defensive instinct is kicking in — the old, automated",
+      "and Aether Prime's own defensive instinct is kicking in \u2014 the old, automated",
       "systems that have slept for centuries are stirring in the deep places.",
       "",
       "SERA VANE: \"We're getting energy spikes across the continent. The Chorus is",
-      "calling up the old defenses — automated installations that want to shut down",
+      "calling up the old defenses \u2014 automated installations that want to shut down",
       "anything moving. We have to take them offline, or the whole binding collapses.\"",
       "",
       "MARSHAL CORR: \"Then we move. We end this. No more sitting on the defensive.\""
     ],
     "objectives": [
       "Destroy the three defense installations (orbital cannons)",
-      "Protect the convergence node (your task anchor — defend the radar)"
+      "Protect the convergence node (your task anchor \u2014 defend the radar)"
     ]
   },
   "debrief": {
@@ -311,28 +311,32 @@
       "team": "enemy",
       "kind": "barracks",
       "primary": true,
-      "text": "Destroy the north defense installation"
+      "text": "Destroy the north defense installation",
+      "id": "obj_inst_north"
     },
     {
       "type": "destroy",
       "team": "enemy",
       "kind": "barracks",
       "primary": true,
-      "text": "Destroy the east defense installation"
+      "text": "Destroy the east defense installation",
+      "id": "obj_inst_east"
     },
     {
       "type": "destroy",
       "team": "enemy",
       "kind": "war_factory",
       "primary": true,
-      "text": "Destroy the south defense installation"
+      "text": "Destroy the south defense installation",
+      "id": "obj_inst_south"
     },
     {
       "type": "survive",
       "team": "player",
       "seconds": 420,
       "primary": true,
-      "text": "Protect the convergence node"
+      "text": "Protect the convergence node",
+      "id": "obj_node"
     }
   ],
   "failure": [
@@ -346,5 +350,85 @@
       "kind": "radar"
     }
   ],
-  "next": "m20_act4_genesis"
+  "next": "m20_act4_genesis",
+  "triggers": [
+    {
+      "id": "t_open",
+      "when": {
+        "timeSeconds": 4
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "MARSHAL CORR",
+          "text": "Those installations predate every map we own. The planet built its own garrison. Burn them out, Warden \u2014 the convergence node cannot fall."
+        }
+      ]
+    },
+    {
+      "id": "t_deep_wake",
+      "when": {
+        "timeSeconds": 90
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "THE CHORUS",
+          "text": "OLD   HANDS   WAKE   IN   THE   DEEP   PLACES.   THEY   DO   NOT   KNOW   THE   WAR   IS   OVER."
+        }
+      ]
+    },
+    {
+      "id": "t_first_down",
+      "when": {
+        "objectiveComplete": "obj_inst_north"
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "MARSHAL CORR",
+          "text": "North installation is slag. Its guns were aimed at the towers \u2014 the planet's own reflexes are fighting the cure."
+        }
+      ]
+    },
+    {
+      "id": "t_second_down",
+      "when": {
+        "objectiveComplete": "obj_inst_east"
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "East battery dark. The Chorus isn't angry, Corr. It's afraid. I know the difference now."
+        }
+      ]
+    },
+    {
+      "id": "t_third_down",
+      "when": {
+        "objectiveComplete": "obj_inst_south"
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "THE CHORUS",
+          "text": "...the reflex dies... and we let it die... this is what trust costs"
+        }
+      ]
+    },
+    {
+      "id": "t_node_pressure",
+      "when": {
+        "timeSeconds": 240
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "MARSHAL CORR",
+          "text": "Movement converging on the node from the deep tunnels. Whatever you're holding back \u2014 stop holding it back."
+        }
+      ]
+    }
+  ]
 }
