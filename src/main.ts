@@ -235,7 +235,11 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // Secondary-objective reward (FG-4) + TP-4: on a CONTINUE boot, replay the saved
   // boot-state (the bonus was consumed on the original run) so the command-log
   // replays over identical starting conditions.
-  const isContinue = params.get('continue') === '1';
+  // watch=1: REPLAY PLAYBACK — boot exactly like continue (same boot-state, so
+  // the log replays over identical conditions) but feed the log live at tick
+  // pace, spectator-only, instead of fast-forwarding into a playable resume.
+  const isWatch = params.get('watch') === '1';
+  const isContinue = params.get('continue') === '1' || isWatch;
   let savedBoot: { bonus?: number; deployment?: { squads: number; credits: number }; choice?: string | null } = {};
   if (isContinue) {
     try { savedBoot = (JSON.parse(localStorage.getItem('shardDominion.save') ?? '{}') as { boot?: typeof savedBoot }).boot ?? {}; } catch { /* ignore */ }
@@ -262,9 +266,13 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     push: (i) => mp.lockstep.submit(i, state.tick),
     drain: () => rawQueue.drain(),
   } : {
-    push: (i) => { intentLog.push({ t: state.tick, i }); rawQueue.push(i); },
+    // Watch mode: the viewer is a spectator — live intents are dropped; the
+    // recorded log is fed straight into rawQueue by the replay driver below.
+    push: (i) => { if (isWatch) return; intentLog.push({ t: state.tick, i }); rawQueue.push(i); },
     drain: () => rawQueue.drain(),
   };
+  // Replay driver state (populated from the save at boot when watch=1).
+  let replay: { log: { t: number; i: Parameters<typeof rawQueue.push>[0] }[]; li: number; endTick: number; ended: boolean } | null = null;
   const commandSystem = makeCommandSystem(commandQueue, structures, HERO_IDS, refinements, units, teamFactions);
 
   // Create construction system
@@ -414,8 +422,27 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
         && hasStructure(state, viewerTeam, 'tech_lab'))) return 'tier';
       return null;
     },
-    canRunTick: mp ? (t) => mp.lockstep.canRun(t) : undefined,
-    onBeforeTick: mp ? (t) => { for (const i of mp.lockstep.takeDue(t)) rawQueue.push(i); } : undefined,
+    // Replay halts EXACTLY at the save point: the original match ran ticks
+    // 0..endTick-1, so tick endTick never runs (state.tick lands on endTick).
+    canRunTick: mp
+      ? (t) => mp.lockstep.canRun(t)
+      : (t) => {
+          if (!replay) return true;
+          if (t >= replay.endTick) {
+            if (!replay.ended) { replay.ended = true; onReplayEnd(); }
+            return false;
+          }
+          return true;
+        },
+    onBeforeTick: mp
+      ? (t) => { for (const i of mp.lockstep.takeDue(t)) rawQueue.push(i); }
+      : (t) => {
+          if (!replay) return;
+          while (replay.li < replay.log.length && replay.log[replay.li]!.t === t) {
+            rawQueue.push(replay.log[replay.li]!.i);
+            replay.li++;
+          }
+        },
     onAfterTick: mp ? (t) => mp.lockstep.afterTick(t, stateHash(state)) : undefined,
   });
 
@@ -467,21 +494,53 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   });
   // ── Continue (FG-6): replay the saved command log tick-for-tick, then go live.
   // Determinism makes the fast-forward EXACT (same mission + same log → same state).
-  if (params.get('continue') === '1') {
+  if (isContinue) {
     try {
       const raw = localStorage.getItem('shardDominion.save');
       if (raw) {
         const save = JSON.parse(raw) as { missionId: string; tick: number; log: { t: number; i: Parameters<typeof rawQueue.push>[0] }[] };
         if (save.missionId === mission.id) {
           onboarding.dismissBriefing(); // straight back into the fight
-          let li = 0;
-          for (let t = 0; t < save.tick; t++) {
-            while (li < save.log.length && save.log[li]!.t === t) { rawQueue.push(save.log[li]!.i); intentLog.push(save.log[li]!); li++; }
-            simRunTick(state, systems);
+          if (isWatch) {
+            // Playback: feed the log at live tick pace via onBeforeTick.
+            // Existing pause + speed controls work unchanged (they gate tick
+            // accumulation); canRunTick stops the sim at the save point.
+            replay = { log: save.log, li: 0, endTick: save.tick, ended: false };
+          } else {
+            let li = 0;
+            for (let t = 0; t < save.tick; t++) {
+              while (li < save.log.length && save.log[li]!.t === t) { rawQueue.push(save.log[li]!.i); intentLog.push(save.log[li]!); li++; }
+              simRunTick(state, systems);
+            }
           }
         }
       }
     } catch { /* corrupt save → fresh start */ }
+  }
+
+  // ── Replay HUD chrome (watch mode): badge + progress, and the end card. ──────
+  function onReplayEnd(): void {
+    const card = document.createElement('div');
+    card.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(5,5,16,0.75);z-index:900;font-family:monospace;';
+    card.innerHTML = '<div style="text-align:center;padding:28px 40px;background:#101823;border:1px solid #00e5ff;border-radius:8px;">'
+      + '<div style="font-size:26px;color:#00e5ff;letter-spacing:3px;">REPLAY ENDED</div>'
+      + `<div style="color:#8fa3b8;font-size:12px;margin:8px 0 18px;">reached the save point — tick ${replay?.endTick ?? 0}</div>`
+      + '<button id="rpAgain" style="font-family:monospace;font-size:13px;padding:8px 18px;margin:0 6px;cursor:pointer;background:rgba(0,229,255,0.14);color:#00e5ff;border:1px solid #00e5ff;border-radius:4px;">⟲ WATCH AGAIN</button>'
+      + '<button id="rpMenu" style="font-family:monospace;font-size:13px;padding:8px 18px;margin:0 6px;cursor:pointer;background:rgba(20,26,34,0.9);color:#cfe0ee;border:1px solid #3a4a5a;border-radius:4px;">MENU</button>'
+      + '</div>';
+    document.body.appendChild(card);
+    (document.getElementById('rpAgain') as HTMLButtonElement).onclick = () => location.reload();
+    (document.getElementById('rpMenu') as HTMLButtonElement).onclick = () => { location.search = ''; };
+  }
+  if (isWatch && replay) {
+    const badge = document.createElement('div');
+    badge.style.cssText = 'position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:850;font-family:monospace;font-size:11px;color:#00e5ff;background:rgba(5,8,20,0.82);border:1px solid #26374a;border-radius:4px;padding:4px 10px;letter-spacing:1px;';
+    document.body.appendChild(badge);
+    const endTick = replay.endTick;
+    window.setInterval(() => {
+      const pct = Math.min(100, Math.round((state.tick / Math.max(1, endTick)) * 100));
+      badge.textContent = `🎞 REPLAY ${pct}% · tick ${state.tick}/${endTick} · +/- speed · P pause`;
+    }, 250);
   }
 
   input.setSimState(state); // wire the sim-state ref used by the ConYard check (for 'B' placement)

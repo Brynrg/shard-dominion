@@ -244,7 +244,7 @@ export function showTitleMenu(onSelect: (missionId: string | { _challenge: strin
           const b = button(h.label);
           b.onclick = () => {
             localStorage.setItem('shardDominion.save', JSON.stringify(h.payload));
-            location.search = `?mission=${h.payload.missionId}&continue=1&faction=${h.payload.faction ?? 'concord'}&difficulty=${h.payload.difficulty ?? 'normal'}`;
+            location.search = `?mission=${h.payload.missionId}&watch=1&faction=${h.payload.faction ?? 'concord'}&difficulty=${h.payload.difficulty ?? 'normal'}`;
           };
           rp.appendChild(b);
         }
