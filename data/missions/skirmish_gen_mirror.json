@@ -1,0 +1,158 @@
+{
+  "id": "skirmish_gen_mirror",
+  "name": "Skirmish — Shard Meridian",
+  "order": 0,
+  "map": {
+    "width": 48,
+    "height": 48,
+    "seed": 60814
+  },
+  "briefing": {
+    "title": "SHARD MERIDIAN",
+    "story": [
+      "A perfect fault line splits the plateau.",
+      "Both warbands read the same map. Only one leaves with the center vein."
+    ],
+    "objectives": [
+      "Destroy the enemy base"
+    ]
+  },
+  "debrief": {
+    "win": [
+      "The field is yours. The vein flows home."
+    ],
+    "lose": [
+      "Your base has fallen. The vein flows the other way."
+    ]
+  },
+  "naturalShardDensity": 300,
+  "fields": [
+    {
+      "tx": 14,
+      "ty": 33,
+      "w": 2,
+      "h": 3,
+      "density": 650
+    },
+    {
+      "tx": 32,
+      "ty": 12,
+      "w": 2,
+      "h": 3,
+      "density": 650
+    },
+    {
+      "tx": 23,
+      "ty": 22,
+      "w": 3,
+      "h": 4,
+      "density": 1110
+    }
+  ],
+  "player": {
+    "credits": 600,
+    "buildings": [
+      {
+        "type": "construction_yard",
+        "tx": 10,
+        "ty": 38
+      },
+      {
+        "type": "refinery",
+        "tx": 13,
+        "ty": 37
+      },
+      {
+        "type": "power_node",
+        "tx": 8,
+        "ty": 35
+      }
+    ],
+    "units": [
+      {
+        "type": "harvester",
+        "tx": 13,
+        "ty": 38
+      },
+      {
+        "type": "infantry",
+        "tx": 9,
+        "ty": 40
+      },
+      {
+        "type": "infantry",
+        "tx": 10,
+        "ty": 40
+      }
+    ]
+  },
+  "enemies": [
+    {
+      "team": "enemy",
+      "credits": 600,
+      "buildings": [
+        {
+          "type": "construction_yard",
+          "tx": 37,
+          "ty": 9
+        },
+        {
+          "type": "refinery",
+          "tx": 40,
+          "ty": 8
+        },
+        {
+          "type": "power_node",
+          "tx": 35,
+          "ty": 6
+        }
+      ],
+      "units": [
+        {
+          "type": "harvester",
+          "tx": 40,
+          "ty": 9
+        },
+        {
+          "type": "infantry",
+          "tx": 36,
+          "ty": 11
+        },
+        {
+          "type": "infantry",
+          "tx": 37,
+          "ty": 11
+        }
+      ],
+      "fields": [],
+      "factionId": "concord"
+    }
+  ],
+  "objectives": [
+    {
+      "type": "eliminate",
+      "team": "enemy",
+      "primary": true,
+      "text": "Destroy the enemy forces"
+    }
+  ],
+  "failure": [
+    {
+      "type": "defeated",
+      "team": "player"
+    }
+  ],
+  "next": null,
+  "neutrals": [
+    {
+      "type": "derrick",
+      "tx": 20,
+      "ty": 29
+    },
+    {
+      "type": "relay",
+      "tx": 29,
+      "ty": 20
+    }
+  ]
+}

@@ -153,6 +153,8 @@ export interface View {
   stop(): void;
   getCamera(): Camera;
   setCamera(cam: Camera): void;
+  /** Center the camera on a world position (mission boot centers on the HQ). */
+  centerOn(wx: number, wy: number): void;
   /** The radar minimap rect in canvas pixels (for input hit-testing). */
   minimapRect(): { x: number; y: number; w: number; h: number };
   /** If (sx,sy) is inside the minimap, recentre the camera there and return true. */
@@ -1487,6 +1489,11 @@ export function makeView(cfg: ViewConfig): View {
     },
     setCamera(cam: Camera) {
       Object.assign(camera, cam);
+    },
+    /** Center the camera on a world position (mission boot: the player's HQ —
+     *  the default map-center start leaves corner-start maps staring at fog). */
+    centerOn(wx: number, wy: number) {
+      centerOn(wx, wy);
     },
     spriteBank: sprites,
     hudButtonAt: (sx, sy) => hud.buttonAt(sx, sy),

@@ -1,0 +1,186 @@
+{
+  "id": "skirmish_gen_scatter",
+  "name": "Skirmish — Broken Veins",
+  "order": 0,
+  "map": {
+    "width": 48,
+    "height": 48,
+    "seed": 24242
+  },
+  "briefing": {
+    "title": "BROKEN VEINS",
+    "story": [
+      "The shard here runs thin and everywhere.",
+      "Expand fast, hold wide — the hoarder wins."
+    ],
+    "objectives": [
+      "Destroy the enemy base"
+    ]
+  },
+  "debrief": {
+    "win": [
+      "The field is yours. The vein flows home."
+    ],
+    "lose": [
+      "Your base has fallen. The vein flows the other way."
+    ]
+  },
+  "naturalShardDensity": 300,
+  "fields": [
+    {
+      "tx": 12,
+      "ty": 34,
+      "w": 2,
+      "h": 2,
+      "density": 530
+    },
+    {
+      "tx": 34,
+      "ty": 12,
+      "w": 2,
+      "h": 2,
+      "density": 530
+    },
+    {
+      "tx": 13,
+      "ty": 4,
+      "w": 2,
+      "h": 2,
+      "density": 550
+    },
+    {
+      "tx": 33,
+      "ty": 42,
+      "w": 2,
+      "h": 2,
+      "density": 550
+    },
+    {
+      "tx": 18,
+      "ty": 39,
+      "w": 2,
+      "h": 2,
+      "density": 570
+    },
+    {
+      "tx": 28,
+      "ty": 7,
+      "w": 2,
+      "h": 2,
+      "density": 570
+    },
+    {
+      "tx": 23,
+      "ty": 23,
+      "w": 2,
+      "h": 2,
+      "density": 600
+    }
+  ],
+  "player": {
+    "credits": 600,
+    "buildings": [
+      {
+        "type": "construction_yard",
+        "tx": 8,
+        "ty": 39
+      },
+      {
+        "type": "refinery",
+        "tx": 11,
+        "ty": 38
+      },
+      {
+        "type": "power_node",
+        "tx": 6,
+        "ty": 36
+      }
+    ],
+    "units": [
+      {
+        "type": "harvester",
+        "tx": 11,
+        "ty": 39
+      },
+      {
+        "type": "infantry",
+        "tx": 7,
+        "ty": 41
+      },
+      {
+        "type": "infantry",
+        "tx": 8,
+        "ty": 41
+      }
+    ]
+  },
+  "enemies": [
+    {
+      "team": "enemy",
+      "credits": 600,
+      "buildings": [
+        {
+          "type": "construction_yard",
+          "tx": 39,
+          "ty": 8
+        },
+        {
+          "type": "refinery",
+          "tx": 42,
+          "ty": 7
+        },
+        {
+          "type": "power_node",
+          "tx": 37,
+          "ty": 5
+        }
+      ],
+      "units": [
+        {
+          "type": "harvester",
+          "tx": 42,
+          "ty": 8
+        },
+        {
+          "type": "infantry",
+          "tx": 38,
+          "ty": 10
+        },
+        {
+          "type": "infantry",
+          "tx": 39,
+          "ty": 10
+        }
+      ],
+      "fields": [],
+      "factionId": "emberhand"
+    }
+  ],
+  "objectives": [
+    {
+      "type": "eliminate",
+      "team": "enemy",
+      "primary": true,
+      "text": "Destroy the enemy forces"
+    }
+  ],
+  "failure": [
+    {
+      "type": "defeated",
+      "team": "player"
+    }
+  ],
+  "next": null,
+  "neutrals": [
+    {
+      "type": "derrick",
+      "tx": 20,
+      "ty": 27
+    },
+    {
+      "type": "relay",
+      "tx": 29,
+      "ty": 18
+    }
+  ]
+}

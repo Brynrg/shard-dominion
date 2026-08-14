@@ -1,0 +1,172 @@
+{
+  "id": "skirmish_gen_corridor",
+  "name": "Skirmish — The Narrows",
+  "order": 0,
+  "map": {
+    "width": 48,
+    "height": 48,
+    "seed": 71177
+  },
+  "briefing": {
+    "title": "THE NARROWS",
+    "story": [
+      "One pass. One vein worth taking.",
+      "Whoever holds the middle starves the other out."
+    ],
+    "objectives": [
+      "Destroy the enemy base"
+    ]
+  },
+  "debrief": {
+    "win": [
+      "The field is yours. The vein flows home."
+    ],
+    "lose": [
+      "Your base has fallen. The vein flows the other way."
+    ]
+  },
+  "naturalShardDensity": 300,
+  "fields": [
+    {
+      "tx": 6,
+      "ty": 37,
+      "w": 2,
+      "h": 2,
+      "density": 550
+    },
+    {
+      "tx": 40,
+      "ty": 9,
+      "w": 2,
+      "h": 2,
+      "density": 550
+    },
+    {
+      "tx": 22,
+      "ty": 23,
+      "w": 4,
+      "h": 2,
+      "density": 1290
+    },
+    {
+      "tx": 29,
+      "ty": 28,
+      "w": 2,
+      "h": 2,
+      "density": 800
+    },
+    {
+      "tx": 17,
+      "ty": 18,
+      "w": 2,
+      "h": 2,
+      "density": 800
+    }
+  ],
+  "player": {
+    "credits": 600,
+    "buildings": [
+      {
+        "type": "construction_yard",
+        "tx": 11,
+        "ty": 39
+      },
+      {
+        "type": "refinery",
+        "tx": 14,
+        "ty": 38
+      },
+      {
+        "type": "power_node",
+        "tx": 9,
+        "ty": 36
+      }
+    ],
+    "units": [
+      {
+        "type": "harvester",
+        "tx": 14,
+        "ty": 39
+      },
+      {
+        "type": "infantry",
+        "tx": 10,
+        "ty": 41
+      },
+      {
+        "type": "infantry",
+        "tx": 11,
+        "ty": 41
+      }
+    ]
+  },
+  "enemies": [
+    {
+      "team": "enemy",
+      "credits": 600,
+      "buildings": [
+        {
+          "type": "construction_yard",
+          "tx": 36,
+          "ty": 8
+        },
+        {
+          "type": "refinery",
+          "tx": 39,
+          "ty": 7
+        },
+        {
+          "type": "power_node",
+          "tx": 34,
+          "ty": 5
+        }
+      ],
+      "units": [
+        {
+          "type": "harvester",
+          "tx": 39,
+          "ty": 8
+        },
+        {
+          "type": "infantry",
+          "tx": 35,
+          "ty": 10
+        },
+        {
+          "type": "infantry",
+          "tx": 36,
+          "ty": 10
+        }
+      ],
+      "fields": [],
+      "factionId": "emberhand"
+    }
+  ],
+  "objectives": [
+    {
+      "type": "eliminate",
+      "team": "enemy",
+      "primary": true,
+      "text": "Destroy the enemy forces"
+    }
+  ],
+  "failure": [
+    {
+      "type": "defeated",
+      "team": "player"
+    }
+  ],
+  "next": null,
+  "neutrals": [
+    {
+      "type": "derrick",
+      "tx": 19,
+      "ty": 29
+    },
+    {
+      "type": "relay",
+      "tx": 29,
+      "ty": 21
+    }
+  ]
+}

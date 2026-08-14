@@ -52,6 +52,9 @@ import weaponsData from '../data/weapons.json' with { type: 'json' };
 import unitsData from '../data/units.json' with { type: 'json' };
 import skirmishData from '../data/missions/skirmish.json' with { type: 'json' };
 import skirmishBadlandsData from '../data/missions/skirmish_badlands.json' with { type: 'json' };
+import skirmishGenMirrorData from '../data/missions/skirmish_gen_mirror.json' with { type: 'json' };
+import skirmishGenCorridorData from '../data/missions/skirmish_gen_corridor.json' with { type: 'json' };
+import skirmishGenScatterData from '../data/missions/skirmish_gen_scatter.json' with { type: 'json' };
 import m1FirstLightData from '../data/missions/m1_first_light.json' with { type: 'json' };
 import m2Data from '../data/missions/m2_lifeblood.json' with { type: 'json' };
 import m3Data from '../data/missions/m3_hold_the_line.json' with { type: 'json' };
@@ -484,6 +487,16 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   input.setSimState(state); // wire the sim-state ref used by the ConYard check (for 'B' placement)
   input.start();
   view.start();
+
+  // Open on the player's base, not the map center — corner-start maps
+  // (e.g. the generated skirmish set) otherwise boot staring at empty fog.
+  for (const e of state.store.all()) {
+    if (e.components.faction?.team === 'player' && e.components.faction?.faction === 'construction_yard') {
+      const pos = e.components.position;
+      if (pos) view.centerOn(pos.wx, pos.wy);
+      break;
+    }
+  }
 
   // ── Pause menu + hotkeys (FG-1): P/Esc pause, −/+ game speed. View-level only —
   // the time scale gates tick accumulation; the sim itself never sees wall-clock.
@@ -926,6 +939,9 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
 const MISSIONS: Record<string, unknown> = {
   skirmish: skirmishData,
   skirmish_badlands: skirmishBadlandsData,
+  skirmish_gen_mirror: skirmishGenMirrorData,
+  skirmish_gen_corridor: skirmishGenCorridorData,
+  skirmish_gen_scatter: skirmishGenScatterData,
   skirmish_desert_clash: skirmishDesertClashData,
   skirmish_twin_peaks: skirmishTwinPeaksData,
   skirmish_four_corners: skirmishFourCornersData,
@@ -993,6 +1009,9 @@ const SKIRMISH_MAPS = [
   { id: 'skirmish_desert_clash', name: 'Desert Clash' },
   { id: 'skirmish_twin_peaks', name: 'Twin Peaks' },
   { id: 'skirmish_four_corners', name: 'Four Corners (4P)' },
+  { id: 'skirmish_gen_mirror', name: 'Shard Meridian' },
+  { id: 'skirmish_gen_corridor', name: 'The Narrows' },
+  { id: 'skirmish_gen_scatter', name: 'Broken Veins' },
 ];
 function openTitle(): void {
   showTitleMenu(id => {
