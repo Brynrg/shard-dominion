@@ -44,14 +44,17 @@ test.describe('S2 liveness gate', () => {
 
     // Get initial harvester screen position
     const pos1 = await page.evaluate(() => {
-      const pos = (window as any).__debugHarvesterScreenPos?.();
-      return pos || { x: -1, y: -1 };
+      const pos = (window as { __debugHarvesterScreenPos?: () => { x: number; y: number } | null }).__debugHarvesterScreenPos?.();
+      return pos ?? { x: -1, y: -1 };
     });
     expect(pos1.x).toBeGreaterThan(0);
     expect(pos1.y).toBeGreaterThan(0);
 
+    const field = await page.evaluate(() =>
+      (window as { __debugBattlefieldRect?: () => { x: number; y: number; w: number; h: number } }).__debugBattlefieldRect?.()
+      ?? { x: 0, y: 40, w: 600, h: 560 });
+
     // Click on the harvester to select it
-    // The harvester is at center-ish of map, which should be visible
     await page.mouse.click(canvasBox.x + pos1.x, canvasBox.y + pos1.y);
     await page.waitForTimeout(100); // Allow input to process
 
@@ -81,26 +84,25 @@ test.describe('S2 liveness gate', () => {
     });
     expect(hudPixels1).toBeGreaterThan(0.05);
 
-    // Issue a move order by right-clicking a destination
-    // Click right of the harvester but ON THE FIELD — since v0.55 the sidebar
-    // swallows right-clicks (RA: sidebar right-click = cancel, never a field order).
-    const destX = Math.min(pos1.x + 200, 590);
-    const destY = pos1.y;
+    // Issue a move order by right-clicking verified open ground (south of the
+    // harvester, away from the shard fields at ty≈22). Stay inside the battlefield
+    // so the command sidebar cannot swallow the order, and so the click cannot
+    // resolve as a Shard harvest.
+    const destX = Math.max(field.x + 16, Math.min(field.x + field.w - 16, pos1.x));
+    const destY = Math.max(field.y + 16, Math.min(field.y + field.h - 16, pos1.y + 72));
     await page.mouse.click(canvasBox.x + destX, canvasBox.y + destY, { button: 'right' });
     await page.waitForTimeout(100); // Allow command to process
 
     // Verify harvester starts moving toward destination
     await page.waitForTimeout(500);
     const pos2 = await page.evaluate(() => {
-      const pos = (window as any).__debugHarvesterScreenPos?.();
-      return pos || { x: -1, y: -1 };
+      const pos = (window as { __debugHarvesterScreenPos?: () => { x: number; y: number } | null }).__debugHarvesterScreenPos?.();
+      return pos ?? { x: -1, y: -1 };
     });
 
-    // Harvester should have moved toward the destination: right, and within ~half a
-    // tile of the same row (the ordered point shares pos1.y; small FSM/interpolation
-    // drift is fine — 32px tiles).
-    expect(pos2.x).toBeGreaterThanOrEqual(pos1.x); // Should move right
-    expect(Math.abs(pos2.y - pos1.y)).toBeLessThan(16); // roughly same row
+    // Ordered south: Y should increase; stay roughly the same column.
+    expect(pos2.y).toBeGreaterThanOrEqual(pos1.y);
+    expect(Math.abs(pos2.x - pos1.x)).toBeLessThan(24);
 
     // Take screenshot after move order (t≈1.8s)
     await page.waitForTimeout(200);
@@ -127,8 +129,8 @@ test.describe('S2 liveness gate', () => {
     // Wait longer for movement to be visible
     await page.waitForTimeout(1000);
     const pos3 = await page.evaluate(() => {
-      const pos = (window as any).__debugHarvesterScreenPos?.();
-      return pos || { x: -1, y: -1 };
+      const pos = (window as { __debugHarvesterScreenPos?: () => { x: number; y: number } | null }).__debugHarvesterScreenPos?.();
+      return pos ?? { x: -1, y: -1 };
     });
 
     // Verify harvester moved further

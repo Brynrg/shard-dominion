@@ -169,4 +169,51 @@ describe('FG-1 commands', () => {
     }
     expect(enemySelected).toBe(false);
   });
+
+  it('eight selected ground units receive eight distinct formation destinations', () => {
+    const dest = tileToWorldCenter({ tx: 20, ty: 16 });
+    const ids = [0, 1, 2, 3, 4, 5, 6, 7].map(i => addSoldier(6 + (i % 4), 6 + Math.floor(i / 4), 'player', 20, true));
+    queue.push({ type: 'order', target: dest, tile: { tx: 20, ty: 16 } });
+    runTick(state, systems);
+    const keys = new Set<string>();
+    for (const id of ids) {
+      const t = state.store.get(id)!.components.movement!.target;
+      expect(t).not.toBeNull();
+      keys.add(`${t!.wx},${t!.wy}`);
+    }
+    expect(keys.size).toBe(8);
+  });
+
+  it('a single selected unit still receives the exact clicked destination', () => {
+    const u = addSoldier(4, 10, 'player', 20, true);
+    const dest = tileToWorldCenter({ tx: 18, ty: 14 });
+    queue.push({ type: 'order', target: dest, tile: { tx: 18, ty: 14 } });
+    runTick(state, systems);
+    expect(state.store.get(u)!.components.movement!.target).toEqual(dest);
+  });
+
+  it('attack-move formation still pauses for combat and resumes afterward', () => {
+    const a = addSoldier(4, 10, 'player', 20, true);
+    const b = addSoldier(5, 10, 'player', 20, true);
+    const enemy = addSoldier(10, 10, 'enemy', 40);
+    state.store.get(enemy)!.components.movement = undefined as never;
+    const dest = tileToWorldCenter({ tx: 24, ty: 10 });
+    queue.push({ type: 'attack-move', target: dest, tile: { tx: 24, ty: 10 } });
+    runTick(state, systems);
+    const ta = state.store.get(a)!.components.movement!.target!;
+    const tb = state.store.get(b)!.components.movement!.target!;
+    expect(`${ta.wx},${ta.wy}`).not.toBe(`${tb.wx},${tb.wy}`);
+    let killedAt = -1, arrivedA = -1, arrivedB = -1;
+    for (let t = 0; t < 900; t++) {
+      runTick(state, systems);
+      const eh = state.store.get(enemy)?.components.health?.hp ?? 0;
+      if (killedAt < 0 && eh <= 0) killedAt = t;
+      if (arrivedA < 0 && state.store.get(a)!.components.movement!.target === null) arrivedA = t;
+      if (arrivedB < 0 && state.store.get(b)!.components.movement!.target === null) arrivedB = t;
+      if (killedAt >= 0 && arrivedA >= 0 && arrivedB >= 0) break;
+    }
+    expect(killedAt, 'enemy should die to the attack-movers').toBeGreaterThan(0);
+    expect(arrivedA, 'unit A should resume and arrive').toBeGreaterThan(killedAt);
+    expect(arrivedB, 'unit B should resume and arrive').toBeGreaterThan(killedAt);
+  });
 });

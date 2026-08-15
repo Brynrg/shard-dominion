@@ -157,3 +157,75 @@ describe('pathfind — mission map sanity (mesas must not break the shipped miss
     });
   }
 });
+
+describe('pathfind — unreachable orders stop safely', () => {
+  it('an enclosed unit receiving an unreachable order never enters an impassable or blocked tile', () => {
+    const state = makeSimState({ seed: 7, mapWidth: 32, mapHeight: 32 });
+    let hole: { tx: number; ty: number } | null = null;
+    for (let ty = 2; ty < 30 && !hole; ty++) {
+      for (let tx = 2; tx < 30 && !hole; tx++) {
+        let ok = true;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          if (!state.grid.isWalkable({ tx: tx + dx, ty: ty + dy })) ok = false;
+        }
+        if (ok) hole = { tx, ty };
+      }
+    }
+    expect(hole).not.toBeNull();
+    const walls = new Set<string>();
+    for (const [dx, dy] of [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]) {
+      const t = { tx: hole!.tx + dx!, ty: hole!.ty + dy! };
+      walls.add(`${t.tx},${t.ty}`);
+      state.store.create({
+        position: tileToWorldCenter(t),
+        building: { onSlab: true, buildProgress: 100, powered: true, blocksPath: true },
+        faction: { team: 'player', faction: 'wall' },
+        health: { hp: 300, maxHp: 300 },
+      });
+    }
+    const id = state.store.create({
+      position: tileToWorldCenter(hole!),
+      movement: { target: tileToWorldCenter({ tx: hole!.tx + 10, ty: hole!.ty }), path: [], speed: 20 },
+      faction: { team: 'player', faction: 'infantry' },
+      health: { hp: 20, maxHp: 20 },
+    });
+    const systems = orderSystems([makeMovementSystem()]);
+    for (let i = 0; i < 200; i++) {
+      runTick(state, systems);
+      const p = state.store.get(id)!.components.position!;
+      const t = worldToTile(p);
+      expect(state.grid.isWalkable(t), `tick ${i}: entered impassable (${t.tx},${t.ty})`).toBe(true);
+      expect(walls.has(`${t.tx},${t.ty}`), `tick ${i}: entered wall (${t.tx},${t.ty})`).toBe(false);
+    }
+    expect(state.store.get(id)!.components.movement!.target).toBeNull();
+    expect(worldToTile(state.store.get(id)!.components.position!)).toEqual(hole);
+  });
+
+  it('a blocked raw target is not used as the arrival point (unit stays on walkable ground)', () => {
+    const state = makeSimState({ seed: 42, mapWidth: 32, mapHeight: 32 });
+    const blocked = { tx: 16, ty: 10 };
+    state.store.create({
+      position: tileToWorldCenter(blocked),
+      building: { onSlab: true, buildProgress: 100, powered: true, blocksPath: true },
+      faction: { team: 'player', faction: 'wall' },
+      health: { hp: 300, maxHp: 300 },
+    });
+    const from = { tx: 10, ty: 10 };
+    const id = state.store.create({
+      position: tileToWorldCenter(from),
+      movement: { target: tileToWorldCenter(blocked), path: [], speed: 20 },
+      faction: { team: 'player', faction: 'infantry' },
+    });
+    const systems = orderSystems([makeMovementSystem()]);
+    for (let i = 0; i < 400; i++) {
+      runTick(state, systems);
+      const t = worldToTile(state.store.get(id)!.components.position!);
+      expect(`${t.tx},${t.ty}` === '16,10', `tick ${i}: standing on the wall`).toBe(false);
+      expect(state.grid.isWalkable(t), `tick ${i}: standing on impassable`).toBe(true);
+      if (!state.store.get(id)!.components.movement!.target) break;
+    }
+    const end = worldToTile(state.store.get(id)!.components.position!);
+    expect(end).not.toEqual(blocked);
+    expect(state.grid.isWalkable(end)).toBe(true);
+  });
+});

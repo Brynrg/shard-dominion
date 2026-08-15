@@ -13,6 +13,9 @@ test.describe('Command vocabulary gate', () => {
       (window as { __debugUnitScreenPos?: (k: string) => { x: number; y: number } | null }).__debugUnitScreenPos?.('infantry') ?? null);
     const selection = () => page.evaluate(() =>
       (window as { __debugSelection?: () => number }).__debugSelection?.() ?? -1);
+    const field = () => page.evaluate(() =>
+      (window as { __debugBattlefieldRect?: () => { x: number; y: number; w: number; h: number } }).__debugBattlefieldRect?.()
+      ?? { x: 0, y: 40, w: 600, h: 560 });
 
     // ── Double-click an infantry → select-all-of-type (both starting soldiers). ──
     const p0 = await infantryPos();
@@ -21,8 +24,11 @@ test.describe('Command vocabulary gate', () => {
     await expect.poll(selection, { timeout: 3000, intervals: [150] }).toBe(2);
 
     // ── A + click open ground → attack-move: the squad advances. ──
+    const bf = await field();
     await page.keyboard.press('a');
-    await page.mouse.click(box.x + p0!.x + 120, box.y + p0!.y - 120);
+    const clickX = Math.max(bf.x + 16, Math.min(bf.x + bf.w - 16, p0!.x + 120));
+    const clickY = Math.max(bf.y + 16, Math.min(bf.y + bf.h - 16, p0!.y - 120));
+    await page.mouse.click(box.x + clickX, box.y + clickY);
     const start = (await infantryPos())!;
     await expect.poll(async () => {
       const p = await infantryPos();

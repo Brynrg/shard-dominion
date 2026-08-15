@@ -121,4 +121,53 @@ describe('shift-queued orders + military-first box select', () => {
     expect(state.store.get(harv)?.components.selection?.selected).toBe(true);
     expect(state.store.get(s1)?.components.selection?.selected).toBe(false);
   });
+
+  it('queued formation legs preserve stable unit-to-slot assignment', () => {
+    const a = mkSoldier(5, 5);
+    const b = mkSoldier(6, 5);
+    const dest1 = tileToWorldCenter({ tx: 8, ty: 5 });
+    const dest2 = tileToWorldCenter({ tx: 8, ty: 8 });
+    orderTo(8, 5);
+    orderTo(8, 8, true);
+    runTick(state, systems);
+    const ma = state.store.get(a)!.components.movement!;
+    const mb = state.store.get(b)!.components.movement!;
+    expect(ma.target).not.toEqual(mb.target);
+    expect(ma.orderQueue?.length).toBe(1);
+    expect(mb.orderQueue?.length).toBe(1);
+    const qa = ma.orderQueue![0]!, qb = mb.orderQueue![0]!;
+    expect(`${qa.wx},${qa.wy}`).not.toBe(`${qb.wx},${qb.wy}`);
+    // Slot identity: the offset from dest1 equals the offset from dest2 (same travel-ish
+    // southward second leg vs eastward first — we check ID-stable distinctness and that
+    // repeating the command log yields the same slots).
+    const tA1 = { ...ma.target! }, tB1 = { ...mb.target! };
+    const tA2 = { wx: qa.wx, wy: qa.wy }, tB2 = { wx: qb.wx, wy: qb.wy };
+    // Replay from a fresh pair on the same tick-0 state shape.
+    const state2 = makeSimState({ seed: 42, mapWidth: 32, mapHeight: 32 });
+    const queue2 = makeCommandQueue();
+    const systems2 = orderSystems([makeCommandSystem(queue2, []), makeMovementSystem()]);
+    const a2 = state2.store.create({
+      position: tileToWorldCenter({ tx: 5, ty: 5 }),
+      movement: { target: null, path: [], speed: 40 },
+      combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
+      health: { hp: 20, maxHp: 20 },
+      faction: { team: 'player', faction: 'infantry' },
+      selection: { selected: true },
+    });
+    const b2 = state2.store.create({
+      position: tileToWorldCenter({ tx: 6, ty: 5 }),
+      movement: { target: null, path: [], speed: 40 },
+      combat: { weaponId: 'rifle', cooldownRemaining: 0, targetId: null },
+      health: { hp: 20, maxHp: 20 },
+      faction: { team: 'player', faction: 'infantry' },
+      selection: { selected: true },
+    });
+    queue2.push({ type: 'order', target: dest1, tile: { tx: 8, ty: 5 } });
+    queue2.push({ type: 'order', target: dest2, tile: { tx: 8, ty: 8 }, queued: true });
+    runTick(state2, systems2);
+    expect(state2.store.get(a2)!.components.movement!.target).toEqual(tA1);
+    expect(state2.store.get(b2)!.components.movement!.target).toEqual(tB1);
+    expect(state2.store.get(a2)!.components.movement!.orderQueue![0]).toEqual(tA2);
+    expect(state2.store.get(b2)!.components.movement!.orderQueue![0]).toEqual(tB2);
+  });
 });

@@ -32,24 +32,30 @@ test.describe('XP-5 air gate', () => {
     await page.locator('#game-canvas').click({ position: { x: 400, y: 300 } });
     await page.waitForTimeout(300);
     const box = (await page.locator('#game-canvas').boundingBox())!;
+    const field = await page.evaluate(() =>
+      (window as { __debugBattlefieldRect?: () => { x: number; y: number; w: number; h: number } }).__debugBattlefieldRect?.()
+      ?? { x: 0, y: 40, w: 600, h: 560 });
 
     // Storm hook exists and is a boolean.
     const storm = await page.evaluate(() => (window as { __debugStorm?: () => boolean }).__debugStorm?.());
     expect(typeof storm).toBe('boolean');
 
-    // Select the gunship (3 tiles E of conyard) and order it far east across the wall.
-    const cy = await page.evaluate(() => (window as { __debugConYardScreenPos?: () => { x: number; y: number } | null }).__debugConYardScreenPos?.() ?? null);
-    expect(cy).not.toBeNull();
-    await page.mouse.click(box.x + cy!.x + 96, box.y + cy!.y); // gunship (hitbox = sim position)
+    // Select the gunship explicitly and order it east across the wall, staying
+    // inside the playable battlefield (never the command sidebar).
+    const gs = await page.evaluate(() =>
+      (window as { __debugUnitScreenPos?: (k: string) => { x: number; y: number } | null }).__debugUnitScreenPos?.('gunship') ?? null);
+    expect(gs).not.toBeNull();
+    await page.mouse.click(box.x + gs!.x, box.y + gs!.y);
     await page.waitForTimeout(150);
-    await page.mouse.click(box.x + cy!.x + 400, box.y + cy!.y, { button: 'right' }); // order east
+    const destX = Math.min(gs!.x + 280, field.x + field.w - 24);
+    const destY = Math.max(field.y + 16, Math.min(field.y + field.h - 16, gs!.y));
+    await page.mouse.click(box.x + destX, box.y + destY, { button: 'right' });
 
-    // The flyer's screen X advances well past the wall line (~+192px) within seconds.
-    // (The harvester also has movement — the debug hook returns the FIRST mover, which
-    // is the gunship by creation order in this mission.)
+    // The flyer's screen X advances well past the wall line within seconds.
     await expect.poll(async () => {
-      const p = await page.evaluate(() => (window as { __debugHarvesterScreenPos?: () => { x: number; y: number } | null }).__debugHarvesterScreenPos?.() ?? null);
+      const p = await page.evaluate(() =>
+        (window as { __debugUnitScreenPos?: (k: string) => { x: number; y: number } | null }).__debugUnitScreenPos?.('gunship') ?? null);
       return p?.x ?? -1;
-    }, { timeout: 20_000, intervals: [400] }).toBeGreaterThan(cy!.x + 200);
+    }, { timeout: 20_000, intervals: [400] }).toBeGreaterThan(gs!.x + 160);
   });
 });

@@ -2,18 +2,21 @@
 // Reads state only; does NOT construct anything (lint will stop you).
 //
 // Path-following: when an entity has a movement target, a tile-level A* path is
-// computed ONCE (per order — recomputed only when the target changes) and followed
-// waypoint by waypoint; the final leg goes to the exact world target. Unreachable
-// targets fall back to the old straight-line step (previous behaviour), so nothing
-// deadlocks. Deterministic throughout (pathfind.ts is RNG-free, stable-tied).
+// computed ONCE (per order — recomputed when the target changes OR the next
+// waypoint is no longer walkable/unblocked) and followed waypoint by waypoint.
+// Unreachable ground targets STOP in place — they never fall back to a straight
+// line through walls. Exact-world arrival is used only when the requested tile
+// itself is valid and reachable. Flyers still fly as the crow does.
 //
 // Separation: after stepping, overlapping UNITS are pushed apart along their
-// centre line (half each) so armies stop collapsing into one perfectly-stacked
-// point. Deterministic: pairwise in store order, coincident pairs broken by id
-// order. Buildings never move; harvesters mid-HARVEST/DOCK are left alone so the
-// dock/mine radius checks can't be disturbed.
+// centre line (half each). Proposed positions must pass terrain walkability AND
+// the team-specific dynamic blocker set, so crowding beside a wall cannot shove
+// a unit into it. Deterministic: pairwise in store order, coincident pairs
+// broken by id order. Buildings never move; harvesters mid-HARVEST/DOCK are
+// left alone so the dock/mine radius checks can't be disturbed.
 import type { SimState } from '../state.js';
 import type { Entity } from '../components.js';
+import type { WorldPos } from '../coords.js';
 import { world, worldToTile, tileToWorldCenter, TILE_SUBUNITS } from '../coords.js';
 import { findPath } from '../pathfind.js';
 
@@ -53,8 +56,49 @@ function samePos(a: { wx: number; wy: number } | null | undefined, b: { wx: numb
   return !!a && !!b && a.wx === b.wx && a.wy === b.wy;
 }
 
+function tileKey(t: { tx: number; ty: number }): string {
+  return `${t.tx},${t.ty}`;
+}
+
 export function makeMovementSystem(): { name: 'movement'; run(state: SimState): void } {
   const wallTiles = makeWallCache(); // TP-4: per-system, never shared across sims
+
+  function blockedFor(state: SimState, t: { tx: number; ty: number }, team: string): boolean {
+    return !state.grid.isWalkable(t) || wallTiles(state, team).has(tileKey(t));
+  }
+
+  /** Build a waypoint list for `target`, or null if the ground unit cannot reach it. */
+  function planPath(state: SimState, e: Entity, pos: WorldPos, target: WorldPos): WorldPos[] | null {
+    const movement = e.components.movement!;
+    if (movement.flying) return [target];
+    const team = e.components.faction?.team ?? 'neutral';
+    const blocked = wallTiles(state, team);
+    const from = worldToTile(pos);
+    const to = worldToTile(target);
+    const tilePath = findPath(state.grid, from, to, blocked);
+    if (tilePath === null) return null;
+    const goalPassable = !blockedFor(state, to, team);
+    if (tilePath.length === 0) {
+      // Already on the (possibly adjusted) goal tile.
+      if (goalPassable && from.tx === to.tx && from.ty === to.ty) return [target];
+      return [];
+    }
+    const waypoints = tilePath.map(t => tileToWorldCenter(t));
+    const last = tilePath[tilePath.length - 1]!;
+    // Exact-world arrival ONLY when the requested tile itself is valid and is
+    // the A* endpoint. A blocked/adjusted goal keeps the walkable tile centre.
+    if (goalPassable && last.tx === to.tx && last.ty === to.ty) {
+      waypoints[waypoints.length - 1] = target;
+    }
+    return waypoints;
+  }
+
+  function stopMoving(e: Entity): void {
+    const m = e.components.movement;
+    if (!m) return;
+    e.components.movement = { ...m, target: null, path: [], pathGoal: null };
+  }
+
   return {
     name: 'movement' as const,
     run(state: SimState): void {
@@ -68,19 +112,37 @@ export function makeMovementSystem(): { name: 'movement'; run(state: SimState): 
         // clears targetId when it dies/leaves range → the advance resumes).
         if (movement.attackMove && e.components.combat?.targetId != null) continue;
 
-        // (Re)plan: no path for THIS target yet → run A* tile-to-tile. The final
-        // waypoint is replaced with the exact world target so arrival is precise.
-        if (!samePos(movement.pathGoal, movement.target)) {
-          // Air (XP-5): flyers travel as the crow does — no A*, no walls.
-          const tilePath = movement.flying
-            ? [worldToTile(movement.target)]
-            : findPath(state.grid, worldToTile(pos), worldToTile(movement.target), wallTiles(state, e.components.faction?.team ?? 'neutral'));
-          const waypoints = tilePath === null
-            ? [] // unreachable → empty path = straight-line fallback below
-            : tilePath.map(t => tileToWorldCenter(t));
-          if (waypoints.length > 0) waypoints[waypoints.length - 1] = movement.target;
-          else if (tilePath !== null) waypoints.push(movement.target); // same tile → direct leg
-          e.components.movement = { ...movement, path: waypoints, pathGoal: movement.target };
+        const team = e.components.faction?.team ?? 'neutral';
+        const flying = movement.flying === true;
+
+        // Next waypoint no longer standable → discard the cache and replan.
+        let needsPlan = !samePos(movement.pathGoal, movement.target);
+        if (!needsPlan && !flying && movement.path.length > 0) {
+          if (blockedFor(state, worldToTile(movement.path[0]!), team)) needsPlan = true;
+        }
+
+        if (needsPlan) {
+          const waypoints = planPath(state, e, pos, movement.target);
+          if (waypoints === null) {
+            // Unreachable: stop on the current (valid) tile. Never tunnel.
+            stopMoving(e);
+            continue;
+          }
+          if (waypoints.length === 0) {
+            // Already as close as A* can get (adjusted goal == here).
+            const m = e.components.movement!;
+            if (m.orderQueue && m.orderQueue.length > 0) {
+              const [next, ...rest] = m.orderQueue;
+              e.components.movement = {
+                ...m, target: world(next!.wx, next!.wy), path: [], pathGoal: null,
+                attackMove: next!.attackMove ?? false, orderQueue: rest,
+              };
+            } else {
+              stopMoving(e);
+            }
+            continue;
+          }
+          e.components.movement = { ...e.components.movement!, path: waypoints, pathGoal: movement.target };
         }
 
         const m = e.components.movement!;
@@ -105,8 +167,12 @@ export function makeMovementSystem(): { name: 'movement'; run(state: SimState): 
             m.boardTargetId = null; // full — stand down
           }
         }
-        // Current waypoint: head of the path, or the raw target (unreachable fallback).
-        const wp = m.path.length > 0 ? m.path[0]! : m.target!;
+
+        if (m.path.length === 0) {
+          stopMoving(e);
+          continue;
+        }
+        const wp = m.path[0]!;
         const dx = wp.wx - pos.wx;
         const dy = wp.wy - pos.wy;
         const distSq = dx * dx + dy * dy;
@@ -126,7 +192,7 @@ export function makeMovementSystem(): { name: 'movement'; run(state: SimState): 
               attackMove: next!.attackMove ?? false, orderQueue: rest,
             };
           } else {
-            // Final waypoint (or direct target) → arrive and clear the order.
+            // Final waypoint → arrive and clear the order.
             e.components.movement = { ...m, target: null, path: [], pathGoal: null };
             e.components.position = world(wp.wx, wp.wy);
           }
@@ -134,10 +200,21 @@ export function makeMovementSystem(): { name: 'movement'; run(state: SimState): 
         }
 
         const dist = Math.sqrt(distSq);
-        e.components.position = world(
+        const stepped = world(
           pos.wx + (dx / dist) * m.speed,
           pos.wy + (dy / dist) * m.speed,
         );
+        // Ground units must not step onto a newly-blocked tile mid-leg.
+        if (!flying && blockedFor(state, worldToTile(stepped), team)) {
+          const replanned = planPath(state, e, pos, m.target!);
+          if (replanned === null || replanned.length === 0) {
+            stopMoving(e);
+          } else {
+            e.components.movement = { ...m, path: replanned, pathGoal: m.target };
+          }
+          continue;
+        }
+        e.components.position = stepped;
       }
 
       // ── 2) Separation: push overlapping units apart (deterministic) ────────
@@ -161,11 +238,14 @@ export function makeMovementSystem(): { name: 'movement'; run(state: SimState): 
           }
           const push = (SEPARATION_DIST - dist) / 2;
           const ux = dx / dist, uy = dy / dist;
-          // Each side moves half the overlap — but never INTO an unwalkable tile.
           const na = world(pa.wx - ux * push, pa.wy - uy * push);
           const nb = world(pb.wx + ux * push, pb.wy + uy * push);
-          if (state.grid.isWalkable(worldToTile(na))) a.components.position = na;
-          if (state.grid.isWalkable(worldToTile(nb))) b.components.position = nb;
+          const aFly = a.components.movement?.flying === true;
+          const bFly = b.components.movement?.flying === true;
+          const aTeam = a.components.faction?.team ?? 'neutral';
+          const bTeam = b.components.faction?.team ?? 'neutral';
+          if (aFly || !blockedFor(state, worldToTile(na), aTeam)) a.components.position = na;
+          if (bFly || !blockedFor(state, worldToTile(nb), bTeam)) b.components.position = nb;
         }
       }
     },

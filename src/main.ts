@@ -84,6 +84,10 @@ import challengesData from '../data/challenges.json' with { type: 'json' };
 declare global {
   interface Window {
     __debugHarvesterScreenPos?: () => { x: number; y: number } | null;
+    __debugSelectedUnits?: () => { x: number; y: number; wx: number; wy: number; kind: string; hp: number; hasTarget: boolean; attackMove: boolean }[];
+    __debugEnemyCombatScreenPos?: () => { x: number; y: number; hp: number } | null;
+    __debugBattlefieldRect?: () => { x: number; y: number; w: number; h: number };
+    __debugTeamHp?: () => { player: number; enemy: number };
     __debugEconomy?: () => { credits: number };
     __debugSelection?: () => number;
     __debugPower?: () => { supply: number; demand: number; powered: boolean };
@@ -762,10 +766,65 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // Expose debug hook — a locator that reads post-render state through the SAME
   // contract transform the renderer uses (not a re-derived one).
   window.__debugHarvesterScreenPos = () => {
-    const harvester = state.store.all().find(e => e.components.movement);
+    const harvester = state.store.all().find(e =>
+      e.components.faction?.faction === 'harvester' &&
+      e.components.faction?.team === viewerTeam &&
+      (e.components.health?.hp ?? 1) > 0 &&
+      e.components.position);
     if (!harvester || !harvester.components.position) return null;
     const { sx, sy } = worldToScreen(harvester.components.position, view.getCamera());
     return { x: sx, y: sy };
+  };
+
+  window.__debugSelectedUnits = () => {
+    const cam = view.getCamera();
+    const out: { x: number; y: number; wx: number; wy: number; kind: string; hp: number; hasTarget: boolean; attackMove: boolean }[] = [];
+    for (const e of state.store.all()) {
+      if (!e.components.selection?.selected) continue;
+      const pos = e.components.position;
+      if (!pos) continue;
+      const { sx, sy } = worldToScreen(pos, cam);
+      const mv = e.components.movement;
+      out.push({
+        x: sx, y: sy, wx: pos.wx, wy: pos.wy,
+        kind: e.components.faction?.faction ?? '',
+        hp: e.components.health?.hp ?? 0,
+        hasTarget: mv?.target != null,
+        attackMove: mv?.attackMove === true,
+      });
+    }
+    return out;
+  };
+
+  window.__debugEnemyCombatScreenPos = () => {
+    const cam = view.getCamera();
+    let fallback: { x: number; y: number; hp: number } | null = null;
+    for (const e of state.store.all()) {
+      if (e.components.faction?.team !== 'enemy') continue;
+      if ((e.components.health?.hp ?? 0) <= 0) continue;
+      const pos = e.components.position;
+      if (!pos) continue;
+      const { sx, sy } = worldToScreen(pos, cam);
+      const loc = { x: sx, y: sy, hp: e.components.health?.hp ?? 0 };
+      const combatant = !!e.components.combat && !e.components.building;
+      if (combatant) return loc;
+      if (!fallback) fallback = loc;
+    }
+    return fallback;
+  };
+
+  window.__debugBattlefieldRect = () => view.battlefieldRect();
+
+  window.__debugTeamHp = () => {
+    let player = 0, enemy = 0;
+    for (const e of state.store.all()) {
+      const hp = e.components.health?.hp ?? 0;
+      if (hp <= 0) continue;
+      const t = e.components.faction?.team;
+      if (t === 'player') player += hp;
+      else if (t === 'enemy') enemy += hp;
+    }
+    return { player, enemy };
   };
 
   // Expose economy debug hook for liveness test

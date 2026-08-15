@@ -169,6 +169,8 @@ export interface View {
   hudButtonRect(action: string): { x: number; y: number; w: number; h: number } | null;
   /** The sprite bank (exposed for the real-asset loader + tests). */
   readonly spriteBank: SpriteBank;
+  /** Playable battlefield in canvas pixels (excludes the command sidebar + objective banner). */
+  battlefieldRect(): { x: number; y: number; w: number; h: number };
 }
 
 export function makeView(cfg: ViewConfig): View {
@@ -187,7 +189,11 @@ export function makeView(cfg: ViewConfig): View {
   let running = false;
   let accMs = 0;
   let lastTime = performance.now();
-  let frame = 0; // monotonic render-frame counter, drives idle building animation
+  /** 60 Hz-equivalent animation tick derived from elapsed view wall-clock (not rAF count). */
+  let animTick = 0;
+  let frameDtMs = 1000 / 60;
+  /** View-owned last heading per entity — never written to SimState. */
+  const headingById = new Map<EntityId, number>();
 
   // Use ctx as non-null after the check
   const context = ctx as CanvasRenderingContext2D;
@@ -378,9 +384,11 @@ export function makeView(cfg: ViewConfig): View {
 
   // ── Camera navigation (C&C/RA): edge-scroll + clamp to the map ──────────────
   // Move the cursor to a screen edge → the view scrolls that way (works on any
-  // device, unlike middle-drag). Runs each frame from the cursor position.
+  // device, unlike middle-drag). Speed is elapsed-time based so 30/60/120 Hz
+  // displays pan at the same world units per second.
   let edgeSince = 0; // wall-clock when the cursor entered the edge band (0 = not in it)
-  function edgeScroll(): void {
+  const EDGE_SCROLL_WU_PER_SEC = 11 * (TILE_SUBUNITS / TILE_SIZE_PX) * 60; // matches prior 60 Hz feel
+  function edgeScroll(dtMs: number): void {
     if (onboarding?.briefingActive()) return;
     const cur = getHover?.();
     if (!cur) { edgeSince = 0; return; }
@@ -390,7 +398,6 @@ export function makeView(cfg: ViewConfig): View {
     if (cur.sx >= p.x && cur.sx <= p.x + p.w && cur.sy >= p.y && cur.sy <= p.y + p.h) { edgeSince = 0; return; }
     const mm = minimapRect();
     if (cur.sx >= mm.x && cur.sx <= mm.x + mm.w && cur.sy >= mm.y && cur.sy <= mm.y + mm.h) { edgeSince = 0; return; }
-    const WPP = TILE_SUBUNITS / TILE_SIZE_PX;
     const M = 16;                       // edge band (px) — was 28; too grabby (QA)
     const W = canvas.width, H = canvas.height;
     const inBand = cur.sx <= M || cur.sx >= W - M || cur.sy <= M || cur.sy >= H - M;
@@ -400,22 +407,35 @@ export function makeView(cfg: ViewConfig): View {
     const now = performance.now();
     if (edgeSince === 0) { edgeSince = now; return; }
     if (now - edgeSince < 180) return;
-    const spd = (11 * WPP) / camera.zoom; // world units / frame
+    // Depth into the band (0 at the inner edge, 1 at the screen edge) tames overshoot.
+    const depthX = cur.sx <= M ? (M - cur.sx) / M : cur.sx >= W - M ? (cur.sx - (W - M)) / M : 0;
+    const depthY = cur.sy <= M ? (M - cur.sy) / M : cur.sy >= H - M ? (cur.sy - (H - M)) / M : 0;
+    const spd = (EDGE_SCROLL_WU_PER_SEC / camera.zoom) * (dtMs / 1000);
     let dx = 0, dy = 0;
-    if (cur.sx <= M) dx = -spd; else if (cur.sx >= W - M) dx = spd;
-    if (cur.sy <= M) dy = -spd; else if (cur.sy >= H - M) dy = spd;
+    if (cur.sx <= M) dx = -spd * (0.45 + 0.55 * depthX);
+    else if (cur.sx >= W - M) dx = spd * (0.45 + 0.55 * depthX);
+    if (cur.sy <= M) dy = -spd * (0.45 + 0.55 * depthY);
+    else if (cur.sy >= H - M) dy = spd * (0.45 + 0.55 * depthY);
     if (dx || dy) Object.assign(camera, { x: camera.x + dx, y: camera.y + dy, zoom: camera.zoom });
   }
-  // Keep the view on (or just past) the map so you can't scroll into the void.
+  // Keep the view on the map. A viewport larger than the map centres that axis
+  // instead of sliding into a black void; ordinary pan may peek a quarter-tile.
   function clampCamera(): void {
     const WPP = TILE_SUBUNITS / TILE_SIZE_PX;
     const visW = (canvas.width * WPP) / camera.zoom, visH = (canvas.height * WPP) / camera.zoom;
-    const padX = visW * 0.35, padY = visH * 0.35;
-    const loX = -padX, hiX = Math.max(loX, worldW - visW + padX);
-    const loY = -padY, hiY = Math.max(loY, worldH - visH + padY);
-    const x = Math.max(loX, Math.min(hiX, camera.x));
-    const y = Math.max(loY, Math.min(hiY, camera.y));
+    const pad = TILE_SUBUNITS * 0.25;
+    let x = camera.x, y = camera.y;
+    if (visW >= worldW) x = (worldW - visW) / 2;
+    else x = Math.max(-pad, Math.min(worldW - visW + pad, camera.x));
+    if (visH >= worldH) y = (worldH - visH) / 2;
+    else y = Math.max(-pad, Math.min(worldH - visH + pad, camera.y));
     if (x !== camera.x || y !== camera.y) Object.assign(camera, { x, y, zoom: camera.zoom });
+  }
+
+  function battlefieldRect(): { x: number; y: number; w: number; h: number } {
+    const p = hud.panelRect();
+    const top = 40; // objective banner strip
+    return { x: 0, y: top, w: Math.max(0, p.x), h: Math.max(0, canvas.height - top) };
   }
 
   // ── Combat FX (view-only juice) ─────────────────────────────────────────────
@@ -500,7 +520,7 @@ export function makeView(cfg: ViewConfig): View {
         const muzWx = pos.wx + Math.cos(ang) * TILE_SUBUNITS * 0.35;
         const muzWy = pos.wy + Math.sin(ang) * TILE_SUBUNITS * 0.35;
         spawnMuzzle(muzWx, muzWy, ang, rocket);
-        firingUntil.set(e.id, frame + 24); // ~0.4s window for the fire-strip pose
+        firingUntil.set(e.id, animTick + 24); // ~0.4s window for the fire-strip pose
         audio?.shot(rocket);
         // Tracer to the target so a shot reads clearly.
         const tgtId = e.components.combat.targetId;
@@ -565,10 +585,10 @@ export function makeView(cfg: ViewConfig): View {
     decals.push({ wx, wy, big, life: max, max, chunks });
     if (decals.length > 60) decals.shift(); // cap
   }
-  function stepDecals(): void {
+  function stepDecals(tickAmt: number): void {
     for (let i = decals.length - 1; i >= 0; i--) {
       const d = decals[i]!;
-      d.life -= 1;
+      d.life -= tickAmt;
       if (d.life <= 0) decals.splice(i, 1);
     }
   }
@@ -599,14 +619,16 @@ export function makeView(cfg: ViewConfig): View {
     }
   }
 
-  function stepParticles(): void {
+  function stepParticles(tickAmt: number): void {
+    const WPP = TILE_SUBUNITS / TILE_SIZE_PX;
+    const damp = Math.pow(0.9, tickAmt);
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
       if (!p) continue;
-      p.wx += p.vx * (TILE_SUBUNITS / TILE_SIZE_PX);
-      p.wy += p.vy * (TILE_SUBUNITS / TILE_SIZE_PX);
-      p.vx *= 0.9; p.vy *= 0.9;
-      p.life -= 1;
+      p.wx += p.vx * WPP * tickAmt;
+      p.wy += p.vy * WPP * tickAmt;
+      p.vx *= damp; p.vy *= damp;
+      p.life -= tickAmt;
       if (p.life <= 0) particles.splice(i, 1);
     }
   }
@@ -705,13 +727,68 @@ export function makeView(cfg: ViewConfig): View {
   }
 
   function drawSelectionRings() {
+    const selected: Array<ReturnType<typeof simState.store.all>[number]> = [];
     for (const e of simState.store.all()) {
-      if (!e.components.selection?.selected) continue;
-      const pos = e.components.position;
-      if (!pos) continue;
+      if (e.components.selection?.selected && e.components.position) selected.push(e);
+    }
+    const nSel = selected.length;
+    const showTags = nSel > 0 && nSel <= 4;
+    const zRing = Math.min(camera.zoom, 1.25);
+    const lineW = Math.min(2.25, 1.2 + 0.4 * zRing);
 
+    // Deduplicate queued routes: one path from the selected-group centroid.
+    const queued = selected.filter(e => {
+      const mv = e.components.movement;
+      return !!mv?.target && (mv.orderQueue?.length ?? 0) > 0;
+    });
+    const bf = battlefieldRect();
+    if (queued.length > 0) {
+      context.save();
+      context.beginPath();
+      context.rect(bf.x, bf.y, bf.w, bf.h);
+      context.clip();
+      const attack = queued.some(e => e.components.movement?.attackMove ||
+        (e.components.movement?.orderQueue ?? []).some(w => w.attackMove));
+      let sx = 0, sy = 0;
+      for (const e of queued) {
+        const p = worldToScreen(e.components.position!, camera);
+        sx += p.sx; sy += p.sy;
+      }
+      sx /= queued.length; sy /= queued.length;
+      const maxLegs = queued.reduce((m, e) => Math.max(m, 1 + (e.components.movement?.orderQueue?.length ?? 0)), 0);
+      const stops: { sx: number; sy: number }[] = [];
+      for (let i = 0; i < maxLegs; i++) {
+        let wx = 0, wy = 0, c = 0;
+        for (const e of queued) {
+          const mv = e.components.movement!;
+          const w = i === 0 ? mv.target : mv.orderQueue?.[i - 1];
+          if (!w) continue;
+          wx += w.wx; wy += w.wy; c += 1;
+        }
+        if (c === 0) break;
+        stops.push(worldToScreen({ wx: wx / c, wy: wy / c }, camera));
+      }
+      context.strokeStyle = attack ? 'rgba(255,140,60,0.75)' : 'rgba(255,255,0,0.55)';
+      context.fillStyle = attack ? 'rgba(255,140,60,0.85)' : 'rgba(255,255,0,0.75)';
+      context.lineWidth = lineW;
+      context.setLineDash([5, 5]);
+      context.beginPath();
+      context.moveTo(sx, sy);
+      for (const s of stops) context.lineTo(s.sx, s.sy);
+      context.stroke();
+      context.setLineDash([]);
+      for (const s of stops) {
+        context.beginPath();
+        context.arc(s.sx, s.sy, Math.min(3.5, 2.5 * zRing), 0, Math.PI * 2);
+        context.fill();
+      }
+      context.restore();
+    }
+
+    for (const e of selected) {
+      const pos = e.components.position!;
       const screenPos = worldToScreen(pos, camera);
-      const size = TILE_SIZE_PX * 0.8 * camera.zoom;
+      const size = TILE_SIZE_PX * 0.8 * zRing;
 
       // Rally flag (FG-1): a selected producer shows where its units will gather —
       // dashed line from the building to a small pennant at the rally point.
@@ -719,8 +796,11 @@ export function makeView(cfg: ViewConfig): View {
       if (rally) {
         const r = worldToScreen(rally, camera);
         context.save();
+        context.beginPath();
+        context.rect(bf.x, bf.y, bf.w, bf.h);
+        context.clip();
         context.strokeStyle = 'rgba(120,255,160,0.75)';
-        context.lineWidth = 1.5;
+        context.lineWidth = lineW;
         context.setLineDash([4, 4]);
         context.beginPath();
         context.moveTo(screenPos.sx, screenPos.sy);
@@ -730,60 +810,28 @@ export function makeView(cfg: ViewConfig): View {
         // Pennant: pole + triangular flag.
         context.beginPath();
         context.moveTo(r.sx, r.sy);
-        context.lineTo(r.sx, r.sy - 14 * camera.zoom);
+        context.lineTo(r.sx, r.sy - 14 * zRing);
         context.stroke();
         context.fillStyle = 'rgba(120,255,160,0.9)';
         context.beginPath();
-        context.moveTo(r.sx, r.sy - 14 * camera.zoom);
-        context.lineTo(r.sx + 9 * camera.zoom, r.sy - 11 * camera.zoom);
-        context.lineTo(r.sx, r.sy - 8 * camera.zoom);
+        context.moveTo(r.sx, r.sy - 14 * zRing);
+        context.lineTo(r.sx + 9 * zRing, r.sy - 11 * zRing);
+        context.lineTo(r.sx, r.sy - 8 * zRing);
         context.closePath();
         context.fill();
         context.restore();
       }
 
-      // Shift-queued waypoints (v0.51): dashed route through the live target and
-      // every queued leg, a dot at each stop — so the plotted path is legible.
-      const mv = e.components.movement;
-      if (mv?.target && (mv.orderQueue?.length ?? 0) > 0) {
-        context.save();
-        context.strokeStyle = 'rgba(255,255,0,0.55)';
-        context.fillStyle = 'rgba(255,255,0,0.75)';
-        context.lineWidth = 1.5;
-        context.setLineDash([5, 5]);
-        context.beginPath();
-        context.moveTo(screenPos.sx, screenPos.sy);
-        const stops = [mv.target, ...(mv.orderQueue ?? [])];
-        for (const w of stops) {
-          const p = worldToScreen({ wx: w.wx, wy: w.wy }, camera);
-          context.lineTo(p.sx, p.sy);
-        }
-        context.stroke();
-        context.setLineDash([]);
-        for (const w of stops) {
-          const p = worldToScreen({ wx: w.wx, wy: w.wy }, camera);
-          context.beginPath();
-          context.arc(p.sx, p.sy, 3 * camera.zoom, 0, Math.PI * 2);
-          context.fill();
-        }
-        context.restore();
-      }
-
-      // Draw selection ring
+      // Draw selection ring (capped so zoom cannot dominate the sprite).
       context.strokeStyle = SELECTION_COLOR;
-      context.lineWidth = 3;
-      const ringR = size / 2 + 4;
+      context.lineWidth = lineW;
+      const ringR = Math.min(size / 2 + 3, TILE_SIZE_PX * 0.55);
       context.beginPath();
       context.arc(screenPos.sx, screenPos.sy, ringR, 0, Math.PI * 2);
       context.stroke();
 
-      // Grafted designator tag (War Room Dossier): a stenciled 2-letter unit/
-      // building code, shown ONLY in the selection state, anchored at the ring's
-      // chamfered corner — solves unit-TYPE id at 20-40px zoom that faction
-      // silhouette alone doesn't cover. Near-free: this module already draws canvas
-      // text for the HUD.
       const kind = e.components.faction?.faction;
-      if (kind) drawDesignatorTag(designatorFor(kind), screenPos.sx, screenPos.sy, ringR);
+      if (showTags && kind) drawDesignatorTag(designatorFor(kind), screenPos.sx, screenPos.sy, ringR);
     }
   }
 
@@ -1225,9 +1273,15 @@ export function makeView(cfg: ViewConfig): View {
     return `#${toHex(ar + (br - ar) * t)}${toHex(ag + (bg - ag) * t)}${toHex(ab + (bb - ab) * t)}`;
   }
 
-  // Angle (radians) a unit should face: toward its combat target, else its move
-  // target, else "up". Gives vehicles/troops real orientation instead of a static blob.
-  function facingAngle(e: ReturnType<typeof simState.store.all>[number], pos: WorldPos): number {
+  // Angle (radians) a unit should face. Combat targeting first; otherwise the
+  // next path waypoint; otherwise observed interpolated travel. Idle keeps the
+  // last view-owned heading (never snaps north). Large turns are eased in the view.
+  function desiredFacing(
+    e: ReturnType<typeof simState.store.all>[number],
+    pos: WorldPos,
+    interp: WorldPos,
+    prevPos: WorldPos | undefined,
+  ): number | null {
     const combat = e.components.combat;
     if (combat?.targetId != null) {
       const t = simState.store.get(combat.targetId);
@@ -1235,8 +1289,45 @@ export function makeView(cfg: ViewConfig): View {
       if (tp) return Math.atan2(tp.wy - pos.wy, tp.wx - pos.wx);
     }
     const mv = e.components.movement;
-    if (mv?.target) return Math.atan2(mv.target.wy - pos.wy, mv.target.wx - pos.wx);
-    return -Math.PI / 2; // face up
+    const wp = mv?.path[0];
+    if (wp) return Math.atan2(wp.wy - interp.wy, wp.wx - interp.wx);
+    if (prevPos) {
+      const dx = interp.wx - prevPos.wx, dy = interp.wy - prevPos.wy;
+      if (dx * dx + dy * dy > 1) return Math.atan2(dy, dx);
+    }
+    return null;
+  }
+
+  function lerpAngle(from: number, to: number, t: number): number {
+    let d = to - from;
+    const TAU = Math.PI * 2;
+    d = ((d + Math.PI) % TAU + TAU) % TAU - Math.PI;
+    return from + d * t;
+  }
+
+  function facingAngle(
+    e: ReturnType<typeof simState.store.all>[number],
+    pos: WorldPos,
+    interp?: WorldPos,
+    prevPos?: WorldPos,
+  ): number {
+    const want = desiredFacing(e, pos, interp ?? pos, prevPos);
+    const prev = headingById.get(e.id);
+    if (want == null) return prev ?? -Math.PI / 2;
+    if (prev == null) {
+      headingById.set(e.id, want);
+      return want;
+    }
+    const t = 1 - Math.exp(-10 * (frameDtMs / 1000));
+    const next = lerpAngle(prev, want, t);
+    headingById.set(e.id, next);
+    return next;
+  }
+
+  function pruneHeadings(): void {
+    const alive = new Set<EntityId>();
+    for (const e of simState.store.all()) alive.add(e.id);
+    for (const id of headingById.keys()) if (!alive.has(id)) headingById.delete(id);
   }
 
   // Shells in flight (FG-3): a bright tracer dot + short motion trail.
@@ -1309,7 +1400,7 @@ export function makeView(cfg: ViewConfig): View {
 
       if (e.components.building) {
         // Baked lit body (S7-2) + live animated accents on top.
-        sprites.drawBuildingBody(context, kind, teamKey, sx, sy, frame, camera.zoom);
+        sprites.drawBuildingBody(context, kind, teamKey, sx, sy, Math.floor(animTick), camera.zoom);
         drawBuildingAccents(kind, sx, sy, style, camera.zoom);
         if (siteProgress < 100) { // TP-3: site progress bar
           const bw2 = 30 * camera.zoom;
@@ -1327,10 +1418,10 @@ export function makeView(cfg: ViewConfig): View {
           context.ellipse(sx, sy + 6 * camera.zoom, 10 * camera.zoom, 4 * camera.zoom, 0, 0, Math.PI * 2);
           context.fill();
           drawUnitUnderlay(e, kind, sx, sy - 14 * camera.zoom, camera.zoom);
-          sprites.drawUnit(context, kind, teamKey, undefined, facingAngle(e, interp), sx, sy - 14 * camera.zoom, frame, camera.zoom, unitAnim(e, pos, prevPos));
+          sprites.drawUnit(context, kind, teamKey, undefined, facingAngle(e, interp, interp, prevPos), sx, sy - 14 * camera.zoom, Math.floor(animTick), camera.zoom, unitAnim(e, pos, prevPos));
         } else {
           drawUnitUnderlay(e, kind, sx, sy, camera.zoom);
-          sprites.drawUnit(context, kind, teamKey, undefined, facingAngle(e, interp), sx, sy, frame, camera.zoom, unitAnim(e, pos, prevPos));
+          sprites.drawUnit(context, kind, teamKey, undefined, facingAngle(e, interp, interp, prevPos), sx, sy, Math.floor(animTick), camera.zoom, unitAnim(e, pos, prevPos));
         }
       }
       if (entityFilter !== 'none') context.filter = 'none';
@@ -1341,7 +1432,7 @@ export function makeView(cfg: ViewConfig): View {
   // What a unit is doing right now, for §0.6 animation-strip selection: firing
   // (window set by the muzzle detector) beats moving (interpolation delta) beats idle.
   function unitAnim(e: ReturnType<typeof simState.store.all>[number], pos: WorldPos, prevPos: WorldPos | undefined): UnitAnim {
-    if ((firingUntil.get(e.id) ?? 0) > frame) return 'firing';
+    if ((firingUntil.get(e.id) ?? 0) > animTick) return 'firing';
     const moving = !!prevPos && Math.abs(pos.wx - prevPos.wx) + Math.abs(pos.wy - prevPos.wy) > 0.01;
     return moving ? 'moving' : 'idle';
   }
@@ -1364,7 +1455,7 @@ export function makeView(cfg: ViewConfig): View {
   // Live animated accents drawn ON TOP of a building's baked body (the baked body
   // carries the static silhouette + shading; only motion lives here).
   function drawBuildingAccents(kind: string, sx: number, sy: number, style: TeamStyle, scale: number): void {
-    const S = TILE_SIZE_PX * scale, t = frame;
+    const S = TILE_SIZE_PX * scale, t = Math.floor(animTick);
     const big = kind === 'construction_yard' || kind === 'refinery';
     const halfH = (big ? S * 1.2 : S * 0.82) / 2;
     const top = sy - halfH * 0.6; // baked body is roughly centred; top-ish anchor
@@ -1392,8 +1483,8 @@ export function makeView(cfg: ViewConfig): View {
   }
 
   function render() {
-    frame += 1;
-    edgeScroll();   // move mouse to a screen edge → scroll the view (C&C/RA)
+    pruneHeadings();
+    edgeScroll(frameDtMs);   // move mouse to a screen edge → scroll the view (C&C/RA)
     clampCamera();  // keep the view on the map after any pan/zoom
     // Clear canvas
     context.fillStyle = '#000000';
@@ -1437,6 +1528,8 @@ export function makeView(cfg: ViewConfig): View {
 
     const dt = now - lastTime;
     lastTime = now;
+    frameDtMs = Math.max(0, Math.min(dt, 100));
+    animTick += (frameDtMs * 60) / 1000;
 
     // Pause the sim while the mission briefing is up — the field freezes so the
     // player reads the brief before any unit moves (and the dismiss-click grabs
@@ -1468,8 +1561,8 @@ export function makeView(cfg: ViewConfig): View {
       accMs = ran === steps ? remainderMs : 0;
     }
 
-    stepParticles();
-    stepDecals();
+    stepParticles(frameDtMs * 60 / 1000);
+    stepDecals(frameDtMs * 60 / 1000);
     render();
     requestAnimationFrame(loop);
   }
@@ -1496,6 +1589,7 @@ export function makeView(cfg: ViewConfig): View {
       centerOn(wx, wy);
     },
     spriteBank: sprites,
+    battlefieldRect,
     hudButtonAt: (sx, sy) => hud.buttonAt(sx, sy),
     hudAnyButtonAt: (sx, sy) => hud.anyButtonAt(sx, sy),
     hudDeniedAt: (sx, sy) => hud.deniedAt(sx, sy),

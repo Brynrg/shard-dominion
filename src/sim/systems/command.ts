@@ -12,9 +12,10 @@ import { refuseStructure } from '../buildRules.js';
 import { SIM_TICK_RATE } from '../loop.js';
 import type { Refinement } from '../../loaders/refinements.js';
 import type { CommandIntent } from '../../view/input.js';
-import { TILE_SUBUNITS, tileToWorldCenter, worldToTile } from '../coords.js';
+import { TILE_SUBUNITS, tileToWorldCenter, worldToTile, type WorldPos } from '../coords.js';
 import type { StructureDef } from '../../loaders/structures.js';
 import type { EntityId } from '../ids.js';
+import { formationTargets, type FormationMember } from '../formation.js';
 
 /** Confirmation marker: a short-lived visual at a target location (view reads this). */
 export interface ConfirmationMarker {
@@ -81,6 +82,34 @@ export interface CommandSystem {
 }
 
 const MARKER_LIFETIME = 10 as const; // ~0.5s at 20Hz
+
+/** Combat movers in the acting seat's selection, ascending entity id. */
+function selectedCombatMembers(state: SimState, actor: 'player' | 'enemy'): FormationMember[] {
+  const members: FormationMember[] = [];
+  for (const e of state.store.all()) {
+    if (!e.components.selection?.selected) continue;
+    if (e.components.faction?.team !== actor) continue;
+    if (e.components.building) continue;
+    if (!e.components.combat) continue;
+    if ((e.components.health?.hp ?? 1) <= 0) continue;
+    const pos = e.components.position;
+    if (!pos) continue;
+    members.push({ id: e.id, pos, flying: e.components.movement?.flying === true });
+  }
+  members.sort((a, b) => a.id - b.id);
+  return members;
+}
+
+/** Formation map when two or more combat units are selected; otherwise null (exact click). */
+function combatFormation(state: SimState, actor: 'player' | 'enemy', dest: WorldPos): Map<EntityId, WorldPos> | null {
+  const members = selectedCombatMembers(state, actor);
+  if (members.length < 2) return null;
+  return formationTargets(members, dest);
+}
+
+function destFor(id: EntityId, slots: Map<EntityId, WorldPos> | null, fallback: WorldPos): WorldPos {
+  return slots?.get(id) ?? fallback;
+}
 
 export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structures: StructureDef[], heroIds: readonly string[] = ['warden', 'vane'], refinements: readonly Refinement[] = [], units: readonly { id: string; cost: number; producedBy?: string | null }[] = [], teamFactions?: { player: { id?: string; costMult: number }; enemy: { id?: string; costMult: number } }): CommandSystem {
   const markers: ConfirmationMarker[] = [];
@@ -207,13 +236,14 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
           }
 
           case 'move': {
+            const moveSlots = combatFormation(state, actor, intent.target);
             for (const e of state.store.all()) {
               if (!e.components.selection?.selected) continue;
               if (e.components.building) continue; // buildings never move
               if (!e.components.movement) {
                 e.components.movement = { target: null, path: [], speed: 10 };
               }
-              e.components.movement.target = intent.target;
+              e.components.movement.target = destFor(e.id, moveSlots, intent.target);
               // A manual move suspends the harvester FSM (S2: keep it simple; full
               // order/FSM arbitration is a later slice). IDLE makes the harvest
               // system leave this unit alone so it obeys the player's order.
@@ -270,6 +300,9 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             }
 
             let accepted = 0; // units that took the order — no takers, no ack marker
+            const orderSlots = (!enemy && !isShard && !container && !ownRefinery)
+              ? combatFormation(state, actor, intent.target)
+              : null;
             for (const e of state.store.all()) {
               if (!e.components.selection?.selected) continue;
               if (e.components.faction?.team !== actor) continue;
@@ -313,15 +346,16 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
               } else {
                 if (!e.components.movement) e.components.movement = { target: null, path: [], speed: 10 };
                 const mv = e.components.movement;
+                const dest = destFor(e.id, orderSlots, intent.target);
                 if (intent.queued && mv.target) {
                   // Shift-queue (v0.51): append a waypoint; the unit keeps its
                   // current leg. Capped so a held key can't grow state unbounded.
                   mv.orderQueue = mv.orderQueue ?? [];
                   if (mv.orderQueue.length < ORDER_QUEUE_CAP) {
-                    mv.orderQueue.push({ wx: intent.target.wx, wy: intent.target.wy });
+                    mv.orderQueue.push({ wx: dest.wx, wy: dest.wy });
                   }
                 } else {
-                  mv.target = intent.target;
+                  mv.target = dest;
                   mv.orderQueue = []; // a plain order replaces the whole queue
                   mv.attackMove = false;
                 }
@@ -343,6 +377,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
           case 'attack-move': {
             // Advance to the point, HOLDING to fight anything combatTargeting acquires
             // en route (movement skips stepping while attackMove && combat.targetId).
+            const amSlots = combatFormation(state, actor, intent.target);
             for (const e of state.store.all()) {
               if (!e.components.selection?.selected) continue;
               if (e.components.faction?.team !== actor) continue;
@@ -350,13 +385,14 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
               if (!e.components.combat) continue; // only armed units attack-move
               if (!e.components.movement) e.components.movement = { target: null, path: [], speed: 10 };
               const mv = e.components.movement;
+              const dest = destFor(e.id, amSlots, intent.target);
               if (intent.queued && mv.target) {
                 mv.orderQueue = mv.orderQueue ?? [];
                 if (mv.orderQueue.length < ORDER_QUEUE_CAP) {
-                  mv.orderQueue.push({ wx: intent.target.wx, wy: intent.target.wy, attackMove: true });
+                  mv.orderQueue.push({ wx: dest.wx, wy: dest.wy, attackMove: true });
                 }
               } else {
-                mv.target = intent.target;
+                mv.target = dest;
                 mv.pathGoal = null; // force a fresh path
                 mv.attackMove = true;
                 mv.orderQueue = [];

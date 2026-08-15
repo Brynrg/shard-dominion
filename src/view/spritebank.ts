@@ -326,6 +326,8 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 }
 
 export interface SpriteBank {
+  /** `frame` is a 60 Hz-equivalent animation tick from elapsed VIEW wall-clock
+   *  (not a raw rAF count), so strips play at the same perceived rate at 30/60/120 Hz. */
   drawUnit(ctx: CanvasRenderingContext2D, kind: string, team: string, weaponType: string | undefined, angle: number, sx: number, sy: number, frame: number, scale: number, anim?: UnitAnim): void;
   drawBuildingBody(ctx: CanvasRenderingContext2D, kind: string, team: string, sx: number, sy: number, frame: number, scale: number): void;
   /** XP-3 faction skins: map team key → faction id so delivered faction re-renders
@@ -366,6 +368,8 @@ export function makeSpriteBank(teams: Record<string, TeamStyle>, neutral: TeamSt
   // Draw one frame of a delivered sheet centred on its pivot at (sx,sy).
   function drawReal(ctx: CanvasRenderingContext2D, rs: RealSprite, angle: number, sx: number, sy: number, frame: number, scale: number): void {
     const m = rs.meta;
+    // `frame` is a 60 Hz-equivalent tick (elapsedMs * 60 / 1000), so this is
+    // refresh-rate independent: the same fps strip advances in wall-clock time.
     const col = m.fps > 0 && m.frames > 1 ? Math.floor((frame * m.fps) / 60) % m.frames : 0;
     const dw = m.inGameWidthPx * scale;
     const dh = dw * (m.frameHeight / m.frameWidth);
