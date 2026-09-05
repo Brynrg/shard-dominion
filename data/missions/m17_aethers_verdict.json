@@ -23,7 +23,8 @@
     ],
     "objectives": [
       "End Director Halex — destroy the Directorate command bunker",
-      "HARNESS: keep the Chorus leashed — hold the binding site as it wakes (75s)"
+      "HARNESS: keep the Chorus leashed — hold the binding site as it wakes (75s)",
+      "Vane must survive (O selects, F1/F2 cast)"
     ]
   },
   "debrief": {
@@ -113,6 +114,11 @@
       }
     ],
     "units": [
+      {
+        "type": "vane",
+        "tx": 7,
+        "ty": 37
+      },
       {
         "type": "harvester",
         "tx": 8,
@@ -325,6 +331,11 @@
     {
       "type": "defeated",
       "team": "player"
+    },
+    {
+      "type": "defend",
+      "team": "player",
+      "kind": "vane"
     }
   ],
   "triggers": [
@@ -486,6 +497,24 @@
           "type": "grantCredits",
           "team": "player",
           "amount": 1500
+        }
+      ]
+    },
+    {
+      "id": "t_hero_dying",
+      "when": {
+        "hpBelow": {
+          "team": "player",
+          "kind": "vane",
+          "fraction": 0.35
+        }
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "I am not dying on this rock today, Warden. Cover me.",
+          "seconds": 8
         }
       ]
     }

@@ -16,6 +16,8 @@ import { TILE_SUBUNITS, tileToWorldCenter, worldToTile, type WorldPos } from '..
 import type { StructureDef } from '../../loaders/structures.js';
 import type { EntityId } from '../ids.js';
 import { formationTargets, type FormationMember } from '../formation.js';
+import { abilityOf, castAbility } from '../abilities.js';
+import type { AbilityDef } from '../../loaders/units.js';
 
 /** Confirmation marker: a short-lived visual at a target location (view reads this). */
 export interface ConfirmationMarker {
@@ -111,7 +113,7 @@ function destFor(id: EntityId, slots: Map<EntityId, WorldPos> | null, fallback: 
   return slots?.get(id) ?? fallback;
 }
 
-export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structures: StructureDef[], heroIds: readonly string[] = ['warden', 'vane'], refinements: readonly Refinement[] = [], units: readonly { id: string; cost: number; producedBy?: string | null }[] = [], teamFactions?: { player: { id?: string; costMult: number }; enemy: { id?: string; costMult: number } }): CommandSystem {
+export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structures: StructureDef[], heroIds: readonly string[] = ['warden', 'vane'], refinements: readonly Refinement[] = [], units: readonly { id: string; cost: number; producedBy?: string | null; abilities?: readonly AbilityDef[] }[] = [], teamFactions?: { player: { id?: string; costMult: number }; enemy: { id?: string; costMult: number } }): CommandSystem {
   const markers: ConfirmationMarker[] = [];
   const groups = new Map<string, EntityId[]>();
   // Idle-harvester cycling cursor per seat (like the groups map, this closure
@@ -804,6 +806,22 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
               damage: def.superweapon.damage,
             });
             markers.push({ target: intent.target, remaining: STRIKE_DELAY });
+            break;
+          }
+
+          case 'ability': {
+            // W4 hero kit: the first selected hero of `actor` that owns the ability casts it.
+            // Targeted kinds carry a point; a successful targeted cast leaves a marker.
+            for (const e of state.store.all()) {
+              if (!e.components.selection?.selected || e.components.faction?.team !== actor) continue;
+              const def = units.find(uu => uu.id === e.components.faction?.faction);
+              if (!def) continue;
+              const ab = abilityOf(def, intent.abilityId);
+              if (!ab) continue;
+              const target = intent.target ?? null;
+              if (castAbility(state, e, def, ab, target) && target) markers.push({ target, remaining: 10 });
+              break;
+            }
             break;
           }
 

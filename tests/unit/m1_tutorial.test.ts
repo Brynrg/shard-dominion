@@ -33,7 +33,9 @@ describe('M1 First Light — the tutorial teaches by doing', () => {
   it('starts with ONLY a ConYard + squad (nothing pre-built, nothing harvesting)', () => {
     const mission = loadMission(m1Data);
     expect(mission.player.buildings.map(b => b.type)).toEqual(['construction_yard']);
-    expect(mission.player.units.every(u => u.type === 'infantry')).toBe(true);
+    // W4b: the Warden (the player's own character) stands with the squad from M1 on.
+    expect(mission.player.units.every(u => u.type === 'infantry' || u.type === 'warden')).toBe(true);
+    expect(mission.player.units.some(u => u.type === 'warden')).toBe(true);
     // Enough credits for the full guided chain even with zero mining income:
     // power 400 + refinery 1200 + harvester 450 + barracks 300 = 2350.
     expect(mission.player.credits).toBeGreaterThanOrEqual(2350);

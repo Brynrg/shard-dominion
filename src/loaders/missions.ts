@@ -9,6 +9,7 @@
 // on-disk format doesn't churn once mission authoring begins.
 import { z } from 'zod';
 import type { Objective, Failure } from '../sim/systems/objectives.js';
+import type { MissionTrigger } from '../sim/systems/missionTriggers.js';
 
 const Team = z.enum(['player', 'enemy']);
 const Region = z.object({ tx: z.number(), ty: z.number(), r: z.number().positive() });
@@ -113,12 +114,21 @@ export const MissionSchema = z.object({
       credits: z.object({ team: Team, gte: z.number() }).optional(),
       objectiveComplete: z.string().optional(),
       choice: z.string().optional(), // XP-6: fires when the boot choice matches
+      unitEnters: z.object({ team: Team, region: Region }).optional(),
+      destroyed: z.object({ team: Team, kind: z.string() }).optional(),
+      hpBelow: z.object({ team: Team, kind: z.string(), fraction: z.number().gt(0).lte(1) }).optional(),
+      triggerFired: z.string().optional(),
+      delaySeconds: z.number().positive().optional(),
     }),
     actions: z.array(z.discriminatedUnion('type', [
-      z.object({ type: z.literal('message'), speaker: z.string().optional(), text: z.string() }),
+      z.object({ type: z.literal('message'), speaker: z.string().optional(), text: z.string(), seconds: z.number().positive().optional() }),
       z.object({ type: z.literal('spawn'), team: z.enum(['player', 'enemy', 'neutral']), units: z.array(z.object({ type: z.string(), tx: z.number().int(), ty: z.number().int() })), attackMoveTo: z.object({ tx: z.number().int(), ty: z.number().int() }).optional() }),
       z.object({ type: z.literal('grantCredits'), team: Team, amount: z.number() }),
-      z.object({ type: z.literal('reveal'), region: Region.optional() }),
+      z.object({ type: z.literal('addObjective'), objective: ObjectiveSchema }),
+      z.object({ type: z.literal('completeObjective'), id: z.string() }),
+      z.object({ type: z.literal('removeUnits'), team: z.enum(['player', 'enemy', 'neutral']), kind: z.string().optional(), region: Region.optional() }),
+      z.object({ type: z.literal('reveal'), region: Region, seconds: z.number().positive().optional() }),
+      z.object({ type: z.literal('panCamera'), tx: z.number().int(), ty: z.number().int() }),
     ])).min(1),
   })).default([]),
   // Secondary-objective rewards (FG-4): applied when starting the NEXT mission.
@@ -139,9 +149,10 @@ export function loadMission(raw: unknown): Mission {
   return result.data;
 }
 
-// Type-sync guards: the loader's objective/failure output MUST be assignable to the
-// sim's Objective/Failure types. `Loaded extends Sim` is a constraint — if the schemas
+// Type-sync guards: the loader's objective/failure/trigger output MUST be assignable to the
+// sim's Objective/Failure/MissionTrigger types. `Loaded extends Sim` is a constraint — if the schemas
 // drift so the loader output no longer fits the sim type, this fails to compile.
 type AssertAssignable<Sim, Loaded extends Sim> = Loaded;
 export type _ObjectiveSync = AssertAssignable<Objective, Mission['objectives'][number]>;
 export type _FailureSync = AssertAssignable<Failure, Mission['failure'][number]>;
+export type _TriggerSync = AssertAssignable<MissionTrigger, Mission['triggers'][number]>;

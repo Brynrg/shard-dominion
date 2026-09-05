@@ -46,9 +46,17 @@ const BRIEF_HOWTO: readonly string[] = [
 ];
 // Two lines — the single long line clipped off the briefing frame (playtest v0.53).
 const BRIEF_HINT = 'SCROLL: screen edge · wheel = zoom · radar click = jump';
-const BRIEF_HINT2 = 'Q army · I idle · O hero · Ctrl+1-9 groups (tap ×2 centres) · Shift+R-click queues';
+const BRIEF_HINT2 = 'Q army · I idle · O hero · F1/F2 abilities · Ctrl+1-9 groups (×2 centres)';
+// Shown instead of HOW TO PLAY once the player knows the controls (mission 3+).
+const BRIEF_HINT_SHORT = 'Hover a sidebar button for cost + requirements · the OBJECTIVES banner ticks off as you go.';
 
-export interface BriefingText { title: string; story: readonly string[]; objectives: readonly string[] }
+export interface BriefingText {
+  title: string;
+  story: readonly string[];
+  objectives: readonly string[];
+  /** W3: show the HOW TO PLAY block (main.ts sets it for the first two missions only). */
+  howto?: boolean;
+}
 
 // ── Briefing portraits (ART_HANDOFF §F) — derived from the story's speaker tags ──
 // Story lines read `Speaker: "…"`; the first line whose speaker we know picks the
@@ -237,34 +245,60 @@ export function makeOnboarding(
     const goal = brief?.objectives?.[0] ? `GOAL:  ${brief.objectives[0]}` : BRIEF_GOAL;
     ctx.fillText(goal, W / 2, pad + 120);
 
-    // Story, left-aligned.
+    // W3: BOUNDED layout. Act III/IV stories run 9-11 lines and used to push the
+    // HOW TO block under the portrait and the CTA. Everything below the GOAL banner
+    // must fit above `textBottom`; the hint lines + CTA sit at fixed frame positions.
+    const story = brief?.story ?? BRIEF_STORY;
+    const showHowto = brief?.howto !== false;
+    const longBrief = story.length > 6;
+    const textBottom = H - pad - 26 - 18 * 2 - 16;          // CTA + two hint lines + a gap
+    const howtoH = showHowto ? 8 + 24 + BRIEF_HOWTO.length * 22 : 8 + 18;
+    let lineH = 20, storyFont = '13px monospace';
+    const top = pad + 158;
+    if (top + story.length * lineH + howtoH > textBottom) { lineH = 17; storyFont = '12px monospace'; }
+    let shown = story.length;
+    if (top + shown * lineH + howtoH > textBottom) shown = Math.max(1, Math.floor((textBottom - howtoH - top) / lineH));
+
+    // Story, left-aligned (clipped with an ellipsis line when it still cannot fit).
     ctx.textAlign = 'left';
     ctx.fillStyle = '#cfc9bd';
-    ctx.font = '13px monospace';
-    let y = pad + 158;
-    for (const line of (brief?.story ?? BRIEF_STORY)) { ctx.fillText(line, pad + 34, y); y += 20; }
+    ctx.font = storyFont;
+    let y = top;
+    for (let i = 0; i < shown; i++) {
+      const last = i === shown - 1 && shown < story.length;
+      ctx.fillText(last ? '…' : (story[i] ?? ''), pad + 34, y); y += lineH;
+    }
 
-    // How to play — numbered steps (these ARE the controls).
-    y += 8;
-    ctx.fillStyle = '#00e5ff';
-    ctx.font = 'bold 13px monospace';
-    ctx.fillText('HOW TO PLAY', pad + 34, y); y += 24;
-    ctx.font = '13px monospace';
-    ctx.fillStyle = '#e7e2d6';
-    for (const line of BRIEF_HOWTO) { ctx.fillText(line, pad + 40, y); y += 22; }
+    if (showHowto) {
+      // How to play — numbered steps (these ARE the controls). First two missions only.
+      y += 8;
+      ctx.fillStyle = '#00e5ff';
+      ctx.font = 'bold 13px monospace';
+      ctx.fillText('HOW TO PLAY', pad + 34, y); y += 24;
+      ctx.font = '13px monospace';
+      ctx.fillStyle = '#e7e2d6';
+      for (const line of BRIEF_HOWTO) { ctx.fillText(line, pad + 40, y); y += 22; }
+    } else {
+      y += 8;
+      ctx.fillStyle = '#8894a4';
+      ctx.font = '12px monospace';
+      ctx.fillText(BRIEF_HINT_SHORT, pad + 34, y); y += 18;
+    }
 
-    // Camera hint.
-    y += 6;
+    // Camera + control hints: fixed frame positions, always inside the frame.
     ctx.fillStyle = '#8894a4';
     ctx.font = '12px monospace';
-    ctx.fillText(BRIEF_HINT, pad + 34, y); y += 18;
-    ctx.fillText(BRIEF_HINT2, pad + 34, y);
+    ctx.fillText(BRIEF_HINT, pad + 34, H - pad - 26 - 18 * 2 - 4);
+    ctx.fillText(BRIEF_HINT2, pad + 34, H - pad - 26 - 18 - 4);
 
     // Painted speaker portrait (ART_HANDOFF §F) — bottom-right of the frame like a
     // comm officer on the line; drawn LAST so it sits opaque over any long lines.
     if (portrait && portrait.complete && portrait.naturalWidth > 0) {
-      const ps = Math.min(170, (W - pad * 2) * 0.22, (H - pad * 2) * 0.34);
-      const px = W - pad - ps - 26, py = H - pad - ps - 40;
+      // Long briefs: a small portrait in the top-right corner beside the title, so it
+      // never sits over body text. Short briefs keep the bottom-right comm-officer frame.
+      const ps = longBrief ? 80 : Math.min(170, (W - pad * 2) * 0.22, (H - pad * 2) * 0.34);
+      const px = longBrief ? W - pad - ps - 10 : W - pad - ps - 26;
+      const py = longBrief ? pad + 10 : H - pad - ps - 40;
       ctx.fillStyle = 'rgba(6,5,10,0.9)';
       ctx.fillRect(px - 4, py - 4, ps + 8, ps + 8);
       ctx.drawImage(portrait, px, py, ps, ps);

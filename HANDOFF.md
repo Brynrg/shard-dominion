@@ -3,6 +3,21 @@
 > Paste into a fresh Claude Code session, or read cold. Orientation + current state + how to work.
 > Deep per-slice history lives in `PROGRESS.md`; read it too. (Old bake-off-era handoff → `HANDOFF.bakeoff-era.md`.)
 
+## ⭐ v0.62 WC3-PARITY BUILD-OUT (2026-09-05, branch `feat/wc3-parity` — READ FIRST, supersedes the v0.56 block below for "what's current")
+The 2026-09-05 review against WarCraft III and its four fixes are summarised at the top of
+`STATUS.md` (v0.62 block). Headlines: **heroes have an active kit** (`units[].abilities`,
+`src/sim/abilities.ts`, `systems/ability.ts`, F1/F2 + HUD bar, the Warden/Vane seeded in every
+campaign mission with a `defend` failure), **the trigger vocabulary is WC3-class**
+(`missionTriggers.ts`: unitEnters/destroyed/hpBelow/triggerFired/delaySeconds ·
+addObjective/completeObjective/removeUnits/panCamera · a REAL `reveal` via `fog.ts`), **Act IV
+branches on Seal/Harness** and its spore towers are real (`src/sim/neutralKinds.ts`), and the
+**campaign presentation** is fixed (bounded briefing, act-grouped mission select with difficulty,
+Act III/IV cards). Suite: 345 unit + 47 Playwright gates. **Built by the local coders under
+orchestration** — packets live in `packets/W*.md`; each coder-written file says so in its header
+and lists the corrections made in review. NOT deployed (operator-gated); `package.json` /
+`game.manifest.json` versions were not bumped. Known remaining WC3 gaps are listed at the end of
+the STATUS v0.62 block (allied AI side, cutscenes, items/revive, neutral shops).
+
 ## ⭐ v0.56 GAMEPLAY OVERHAUL (2026-07-30, branch `feat/gameplay-overhaul` — READ FIRST)
 The full review + plan is `docs/GAMEPLAY_OVERHAUL_PLAN.md`; the executed result is the
 v0.56 block at the top of `STATUS.md`. Headlines: the 20×-too-fast economy fixed

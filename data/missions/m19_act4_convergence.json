@@ -22,7 +22,8 @@
     ],
     "objectives": [
       "Destroy the three Directorate uplink batteries",
-      "Protect the convergence node (defend the Radar)"
+      "Protect the convergence node (defend the Radar)",
+      "Vane must survive (O selects, F1/F2 cast)"
     ]
   },
   "debrief": {
@@ -123,6 +124,11 @@
       }
     ],
     "units": [
+      {
+        "type": "vane",
+        "tx": 11,
+        "ty": 14
+      },
       {
         "type": "harvester",
         "tx": 12,
@@ -369,6 +375,11 @@
       "type": "defend",
       "team": "player",
       "kind": "radar"
+    },
+    {
+      "type": "defend",
+      "team": "player",
+      "kind": "vane"
     }
   ],
   "next": "m20_act4_genesis",
@@ -477,6 +488,24 @@
           "type": "message",
           "speaker": "MARSHAL CORR",
           "text": "Movement converging on the node from the deep tunnels. Whatever you're holding back — stop holding it back."
+        }
+      ]
+    },
+    {
+      "id": "t_hero_dying",
+      "when": {
+        "hpBelow": {
+          "team": "player",
+          "kind": "vane",
+          "fraction": 0.35
+        }
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "I am not dying on this rock today, Warden. Cover me.",
+          "seconds": 8
         }
       ]
     }

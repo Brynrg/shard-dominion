@@ -102,7 +102,11 @@ export function makeDamageSystem(weapons: WeaponsFile, refinements: readonly Ref
           // damage by 5% per rank, stacking with refinement armor.
           const defRank = veterancyRank(target.components.experience?.kills ?? 0);
           const defVetBonus = 1 - 0.05 * defRank;
+          // W4 hero kit: Rally Surge — a timed attacker buff on top of aura + veterancy.
+          const bf = e.components.buff;
+          const rallyBonus = bf && state.tick < bf.dmgUntilTick ? bf.dmgBonus : 0;
           let dmg = weapon.damage * mult * (1 + 0.15 * rank) * (1 + auraBonus) * atkBonus * defCut * defVetBonus;
+          dmg *= 1 + rallyBonus;
           // Concord shields (XP-5): the absorb pool eats damage first, then hp.
           const sh = target.components.shield;
           if (sh && sh.hp > 0) {

@@ -22,7 +22,8 @@
     ],
     "objectives": [
       "Destroy the last Directorate stronghold",
-      "Hold the genesis point above the Vein"
+      "Hold the genesis point above the Vein",
+      "Vane must survive (O selects, F1/F2 cast)"
     ]
   },
   "debrief": {
@@ -135,6 +136,11 @@
       }
     ],
     "units": [
+      {
+        "type": "vane",
+        "tx": 11,
+        "ty": 14
+      },
       {
         "type": "harvester",
         "tx": 12,
@@ -349,6 +355,11 @@
     {
       "type": "defeated",
       "team": "player"
+    },
+    {
+      "type": "defend",
+      "team": "player",
+      "kind": "vane"
     }
   ],
   "next": null,
@@ -459,6 +470,24 @@
           "type": "message",
           "speaker": "THE CHORUS",
           "text": "it is quiet... it is finally, mercifully quiet... rest now, small ones. we will keep the morning."
+        }
+      ]
+    },
+    {
+      "id": "t_hero_dying",
+      "when": {
+        "hpBelow": {
+          "team": "player",
+          "kind": "vane",
+          "fraction": 0.35
+        }
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "I am not dying on this rock today, Warden. Cover me.",
+          "seconds": 8
         }
       ]
     }

@@ -18,7 +18,8 @@
       "the ground under your quota is not asleep. It is counting. Come, then.\""
     ],
     "objectives": [
-      "Destroy Sera Vane's stronghold — leave nothing standing"
+      "Destroy Sera Vane's stronghold — leave nothing standing",
+      "The Warden must survive (O selects, F1/F2 cast)"
     ]
   },
   "debrief": {
@@ -73,6 +74,11 @@
       }
     ],
     "units": [
+      {
+        "type": "warden",
+        "tx": 9,
+        "ty": 25
+      },
       {
         "type": "harvester",
         "tx": 10,
@@ -167,6 +173,11 @@
           "type": "vehicle",
           "tx": 26,
           "ty": 11
+        },
+        {
+          "type": "vane",
+          "tx": 25,
+          "ty": 9
         }
       ],
       "fields": [
@@ -195,12 +206,25 @@
       "team": "enemy",
       "primary": true,
       "text": "Destroy Sera Vane's stronghold — leave nothing standing"
+    },
+    {
+      "type": "destroy",
+      "id": "obj_vane_hunt",
+      "team": "enemy",
+      "kind": "vane",
+      "primary": false,
+      "text": "Drive Sera Vane from the field"
     }
   ],
   "failure": [
     {
       "type": "defeated",
       "team": "player"
+    },
+    {
+      "type": "defend",
+      "team": "player",
+      "kind": "warden"
     }
   ],
   "triggers": [
@@ -318,6 +342,53 @@
           "type": "message",
           "speaker": "CORR",
           "text": "Storm front closing. Finish it, Warden — NOW."
+        }
+      ]
+    },
+    {
+      "id": "t_hero_dying",
+      "when": {
+        "hpBelow": {
+          "team": "player",
+          "kind": "warden",
+          "fraction": 0.35
+        }
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "MARSHAL CORR",
+          "text": "Warden — you are bleeding out. Pull back NOW; this war does not survive you.",
+          "seconds": 8
+        }
+      ]
+    },
+    {
+      "id": "t_vane_escapes",
+      "when": {
+        "hpBelow": {
+          "team": "enemy",
+          "kind": "vane",
+          "fraction": 0.3
+        }
+      },
+      "actions": [
+        {
+          "type": "removeUnits",
+          "team": "enemy",
+          "kind": "vane"
+        },
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "Not today, Concord. The sand keeps its own — and so do I.",
+          "seconds": 8
+        },
+        {
+          "type": "message",
+          "speaker": "CORR",
+          "text": "Her raiders pulled her out of the line. Finish the stronghold; she will keep.",
+          "seconds": 8
         }
       ]
     }

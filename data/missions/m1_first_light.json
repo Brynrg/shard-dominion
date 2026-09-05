@@ -21,7 +21,8 @@
     ],
     "objectives": [
       "Raise the landing-zone base: Power, Refinery, Harvester, Barracks",
-      "Destroy the Emberhand watch-post on the north-east ridge"
+      "Destroy the Emberhand watch-post on the north-east ridge",
+      "The Warden must survive (O selects, F1/F2 cast)"
     ]
   },
   "debrief": {
@@ -53,6 +54,11 @@
       }
     ],
     "units": [
+      {
+        "type": "warden",
+        "tx": 11,
+        "ty": 20
+      },
       {
         "type": "infantry",
         "tx": 12,
@@ -219,6 +225,12 @@
           "type": "grantCredits",
           "team": "player",
           "amount": 300
+        },
+        {
+          "type": "message",
+          "speaker": "Marshal Corr",
+          "text": "You are on the field yourself, Warden. Press O to select yourself, F1 to RALLY your troops (+35% damage) and F2 to shield them. Lead from the front — but do not die.",
+          "seconds": 12
         }
       ]
     },
@@ -267,12 +279,78 @@
           "text": "Movement on the ridge — a probe is coming. Keep a couple of Infantry home to meet it."
         }
       ]
+    },
+    {
+      "id": "t_hero_dying",
+      "when": {
+        "hpBelow": {
+          "team": "player",
+          "kind": "warden",
+          "fraction": 0.35
+        }
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "MARSHAL CORR",
+          "text": "Warden — you are bleeding out. Pull back NOW; this war does not survive you.",
+          "seconds": 8
+        }
+      ]
+    },
+    {
+      "id": "t_guide_look",
+      "when": {
+        "objectiveComplete": "obj_barracks",
+        "delaySeconds": 6
+      },
+      "actions": [
+        {
+          "type": "reveal",
+          "region": {
+            "tx": 24,
+            "ty": 8,
+            "r": 5
+          },
+          "seconds": 12
+        },
+        {
+          "type": "panCamera",
+          "tx": 24,
+          "ty": 8
+        },
+        {
+          "type": "message",
+          "speaker": "Marshal Corr",
+          "text": "There — the watch-post on the north-east ridge. That is your target.",
+          "seconds": 8
+        }
+      ]
+    },
+    {
+      "id": "t_guide_back",
+      "when": {
+        "triggerFired": "t_guide_look",
+        "delaySeconds": 4
+      },
+      "actions": [
+        {
+          "type": "panCamera",
+          "tx": 14,
+          "ty": 16
+        }
+      ]
     }
   ],
   "failure": [
     {
       "type": "defeated",
       "team": "player"
+    },
+    {
+      "type": "defend",
+      "team": "player",
+      "kind": "warden"
     }
   ],
   "next": "m2_lifeblood"

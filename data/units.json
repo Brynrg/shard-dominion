@@ -227,7 +227,32 @@
       "hotkey": "E",
       "shortName": "Warden ★",
       "factionLock": "concord",
-      "desc": "Concord hero. Aura empowers nearby troops; grows with kills."
+      "desc": "Concord hero. Aura empowers nearby troops; grows with kills.",
+      "abilities": [
+        {
+          "id": "rally_surge",
+          "name": "Rally Surge",
+          "key": "F1",
+          "kind": "rally",
+          "cooldownSeconds": 45,
+          "radiusTiles": 6,
+          "magnitude": 0.35,
+          "durationSeconds": 8,
+          "targeted": false,
+          "desc": "Nearby troops deal +35% damage for 8s."
+        },
+        {
+          "id": "aegis",
+          "name": "Aegis",
+          "key": "F2",
+          "kind": "ward",
+          "cooldownSeconds": 60,
+          "radiusTiles": 5,
+          "magnitude": 40,
+          "targeted": false,
+          "desc": "Nearby troops gain a 40-point absorb shield."
+        }
+      ]
     },
     {
       "id": "ghostwalker",
@@ -290,7 +315,31 @@
       "producedBy": "barracks",
       "hotkey": "E",
       "shortName": "Vane ★",
-      "desc": "Emberhand hero. Stealthed duelist with a kill aura."
+      "desc": "Emberhand hero. Stealthed duelist with a kill aura.",
+      "abilities": [
+        {
+          "id": "shadowstep",
+          "name": "Shadowstep",
+          "key": "F1",
+          "kind": "blink",
+          "cooldownSeconds": 30,
+          "radiusTiles": 8,
+          "magnitude": 0,
+          "targeted": true,
+          "desc": "Blink up to 8 tiles to a point."
+        },
+        {
+          "id": "ember_strike",
+          "name": "Ember Strike",
+          "key": "F2",
+          "kind": "nova",
+          "cooldownSeconds": 40,
+          "radiusTiles": 2.5,
+          "magnitude": 60,
+          "targeted": true,
+          "desc": "Burn everything hostile within 2.5 tiles of a point for 60."
+        }
+      ]
     },
     {
       "id": "longbow",
@@ -679,7 +728,32 @@
       "hotkey": "",
       "shortName": "Razor ★",
       "factionLock": "emberhand",
-      "desc": "Emberhand hero. Twin-laser skirmisher."
+      "desc": "Emberhand hero. Twin-laser skirmisher.",
+      "abilities": [
+        {
+          "id": "overcharge",
+          "name": "Overcharge",
+          "key": "F1",
+          "kind": "rally",
+          "cooldownSeconds": 45,
+          "radiusTiles": 5,
+          "magnitude": 0.3,
+          "durationSeconds": 8,
+          "targeted": false,
+          "desc": "Nearby troops deal +30% damage for 8s."
+        },
+        {
+          "id": "field_mend",
+          "name": "Field Mend",
+          "key": "F2",
+          "kind": "mend",
+          "cooldownSeconds": 50,
+          "radiusTiles": 5,
+          "magnitude": 35,
+          "targeted": false,
+          "desc": "Heal nearby troops for 35."
+        }
+      ]
     },
     {
       "id": "tempest",
@@ -711,7 +785,31 @@
       "producedBy": "barracks",
       "hotkey": "E",
       "shortName": "Tempest ★",
-      "desc": "Shardborn hero. Missile juggernaut."
+      "desc": "Shardborn hero. Missile juggernaut.",
+      "abilities": [
+        {
+          "id": "crystal_barrage",
+          "name": "Crystal Barrage",
+          "key": "F1",
+          "kind": "nova",
+          "cooldownSeconds": 45,
+          "radiusTiles": 3,
+          "magnitude": 80,
+          "targeted": true,
+          "desc": "Shatter everything hostile within 3 tiles of a point for 80."
+        },
+        {
+          "id": "crystal_ward",
+          "name": "Crystal Ward",
+          "key": "F2",
+          "kind": "ward",
+          "cooldownSeconds": 60,
+          "radiusTiles": 5,
+          "magnitude": 50,
+          "targeted": false,
+          "desc": "Nearby troops gain a 50-point living-crystal shield."
+        }
+      ]
     }
   ]
 }

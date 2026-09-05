@@ -1,11 +1,32 @@
-# Shard Dominion — Product Truth Table (v0.56, 2026-07-30)
+# Shard Dominion — Product Truth Table (v0.62, 2026-09-05)
 
 > The single current-state document. Three columns: what was promised, what is
 > implemented, what is machine-verified. The RFCs in `docs/` are HISTORICAL design
 > documents — this file supersedes their status lines.
-> Verification = 311 unit tests + 43 Playwright browser gates + the AI-vs-AI
+> Verification = 345 unit tests + 47 Playwright browser gates + the AI-vs-AI
 > balance harness (`BALANCE=1 npx vitest run tests/balance/sweep.test.ts`) + the
 > difficulty gate (`BALANCE_DIFFICULTY=1 npx vitest run tests/balance/difficulty.test.ts`).
+
+## v0.62 — THE WC3-PARITY BUILD-OUT (branch `feat/wc3-parity`, 2026-09-05; orchestrated: local coders wrote, Claude specified + corrected)
+
+A code-and-data review against WarCraft III (2026-09-05) found the gap concentrated in
+heroes, mission scripting, and campaign presentation. All four review priorities landed:
+
+| Gap (review) | Landed | Verified |
+|---|---|---|
+| Heroes were a passive aura; never on the field | **Hero kit** (W4): data-defined abilities on cooldowns (`units[].abilities`, 5 effect kinds: rally · mend · blink · nova · ward), cast with **F1/F2** or the HUD ability bar; the Warden/Vane is **seeded in all 20 campaign missions**, their death is mission failure, a dying-hero comm line fires at 35% HP; M1 teaches the kit; M6 gives Sera Vane a boss presence that escapes at 30% (she leads Act II) | `abilities.test.ts` (6) · `w4_hero.spec.ts` gate (boot hero, F1/F2 cast through real input) · stateHash covers cooldowns + buffs (determinism harness green) |
+| Trigger vocabulary was 4×4; `reveal` was a no-op; no camera control | **W2**: conditions `unitEnters · destroyed · hpBelow · triggerFired` + the `delaySeconds` modifier; actions `addObjective · completeObjective · removeUnits · panCamera` + a **real** `reveal` (fog.ts reads `activeReveals()`); camera requests are drained by the VIEW (the sim never holds camera state) | `w2_triggers.test.ts` (8) · loader `_TriggerSync` type guard · M7's scripted reveal now lights the ravine |
+| Act IV inherited the Seal/Harness choice but never branched; `spore_tower` existed in no roster | **W1**: m18–m20 branch (SEAL/HARNESS secondaries, choice-gated openers, HARNESS genesis primary); `src/sim/neutralKinds.ts` is the single neutral-kind list, validated by `missions.test.ts`; spore towers are capturable anchors with a designator | `actIV.spec.ts` gate (M18/M20 × seal/harness) |
+| Briefings overflowed on long stories; HOW TO PLAY on all 20 missions; act cards for I–II only; no campaign difficulty | **W3**: bounded briefing layout (story clips before the fixed hint/CTA rows; small top-right portrait on long briefs; HOW TO PLAY only on M1–M2); act-grouped scrollable mission select with blurbs and a persisted EASY/NORMAL/HARD toggle (`?difficulty=`); Act III/IV cards rendered by the art pipeline | `fg4_campaign` + `campaign` gates; visual pass |
+
+Local-coder lanes used: `hermes-ask code` (MacBook 27B — accurate but ~14 tok/s, one file per
+call), `hermes-ask cheap` (Mini MoE — fast; good on modules/tests given exact API notes, failed a
+view-layer layout task), `hermes-ask reason` (DGX — timed out at 600 s with thinking on). Every
+file was reviewed; corrections are noted in the file headers and in the packets under `packets/W*`.
+
+Still short of WC3 after this build (honest): no allied AI side (Corr's column is narrative only);
+no in-mission dialogue choices or cutscenes; heroes have 2 abilities each (no items, no revive);
+no neutral shops; `panCamera` is a jump, not a cinematic pan.
 
 ## v0.56 — THE GAMEPLAY OVERHAUL (docs/GAMEPLAY_OVERHAUL_PLAN.md, all phases A-C landed)
 

@@ -23,7 +23,8 @@
     ],
     "objectives": [
       "Take and hold the three spore towers (45s each)",
-      "Keep the Construction Yard standing until the towers are anchored"
+      "Keep the Construction Yard standing until the towers are anchored",
+      "Vane must survive (O selects, F1/F2 cast)"
     ]
   },
   "debrief": {
@@ -119,6 +120,11 @@
       }
     ],
     "units": [
+      {
+        "type": "vane",
+        "tx": 9,
+        "ty": 12
+      },
       {
         "type": "harvester",
         "tx": 10,
@@ -340,6 +346,11 @@
       "type": "defend",
       "team": "player",
       "kind": "construction_yard"
+    },
+    {
+      "type": "defend",
+      "team": "player",
+      "kind": "vane"
     }
   ],
   "next": "m19_act4_convergence",
@@ -474,6 +485,24 @@
           "type": "message",
           "speaker": "THE CHORUS",
           "text": "WE   DO   NOT   CONSENT   TO   THE   LEASH.   WE   HOLD   IT   ANYWAY.   FOR   NOW."
+        }
+      ]
+    },
+    {
+      "id": "t_hero_dying",
+      "when": {
+        "hpBelow": {
+          "team": "player",
+          "kind": "vane",
+          "fraction": 0.35
+        }
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "I am not dying on this rock today, Warden. Cover me.",
+          "seconds": 8
         }
       ]
     }

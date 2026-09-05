@@ -17,7 +17,9 @@ import type { SimState } from '../sim/state.js';
  *  multiplayer the lockstep layer tags every intent with its seat's team so ONE
  *  command system serves both players deterministically. */
 export type CommandIntent = { team?: 'player' | 'enemy' } & (
-  | { type: 'select'; worldRect?: { minWx: number; minWy: number; maxWx: number; maxWy: number }; target?: WorldPos }
+    // W4 hero kit: cast a hero ability (F1/F2 or the HUD bar); targeted kinds carry a point.
+  | { type: 'ability'; abilityId: string; target?: WorldPos }
+| { type: 'select'; worldRect?: { minWx: number; minWy: number; maxWx: number; maxWy: number }; target?: WorldPos }
   | { type: 'deselect' }
   | { type: 'move'; target: WorldPos }
   // Context-sensitive right-click: the command system resolves it to attack (enemy at
@@ -140,6 +142,8 @@ export function makeInputHandlers(
   /** Phase C1: build/train hotkeys come from DATA (`hotkey` on units/structures), so
    *  new content is keyboard-reachable without anyone editing this file. */
   hotkeyAction?: (key: string) => { kind: 'build' | 'train'; id: string } | null,
+  /** W4: resolve F1/F2/F3 against the selected hero's kit (main.ts owns the lookup). */
+  abilityForKey?: (key: string) => { id: string; targeted: boolean } | null,
 ): InputHandlers {
   let selectStart: ScreenPos | null = null;
   let selectCurrent: ScreenPos | null = null;
@@ -150,6 +154,7 @@ export function makeInputHandlers(
   let attackMoveMode = false;                          // 'A' pressed → next click = attack-move
   let strikeArmed = false;                             // XP-7: STRIKE armed → next click targets it
   let superweaponArmed: string | null = null;          // Phase C3: armed superweapon id
+  let abilityArmed: string | null = null;              // W4: targeted hero ability armed → next click is the point
   let lastClick: { at: number; sx: number; sy: number } | null = null; // dblclick detect
   let lastKeyTap: { key: string; at: number } | null = null;           // double-tap recall → centre camera
 
@@ -200,6 +205,11 @@ export function makeInputHandlers(
     if (kind === 'strike') { strikeArmed = true; return; }
     // Phase C3: arm a superweapon; the next left-click on the field is the target.
     if (kind === 'superweapon' && id) { superweaponArmed = id; return; }
+    // W4: HUD ability button — `ability:<id>:t` arms a targeted cast, otherwise cast now.
+    if (kind === 'ability' && id) {
+      if (action.split(':')[2] === 't') abilityArmed = id; else queue.push({ type: 'ability', abilityId: id });
+      return;
+    }
     if (kind === 'train' && id) queue.push({ type: 'train', unitId: id });
     else if (kind === 'tab' && (id === 'base' || id === 'def' || id === 'units' || id === 'tech')) hud?.setTab?.(id);
     else if (kind === 'page') {
@@ -220,7 +230,7 @@ export function makeInputHandlers(
   // buttons, cell in placement mode, grab while panning.
   function updateCursor(pos: ScreenPos): void {
     let c = 'default';
-    if (attackMoveMode) c = 'crosshair';
+    if (attackMoveMode || abilityArmed) c = 'crosshair';
     else if (placementMode) c = 'cell';
     else if (hud?.buttonAt(pos.sx, pos.sy)) c = 'pointer';
     else if (simStateRef) {
@@ -375,6 +385,11 @@ export function makeInputHandlers(
           sfx?.place();
           setPlacementMode(null); // Exit placement mode after placing
         }
+      } else if (abilityArmed) {
+        // W4: the armed hero ability resolves at the clicked point.
+        queue.push({ type: 'ability', abilityId: abilityArmed, target: screenToWorld(start, camera) });
+        sfx?.ack();
+        abilityArmed = null;
       } else if (superweaponArmed) {
         // Phase C3: the armed superweapon fires at the clicked point.
         queue.push({ type: 'superweapon', structureId: superweaponArmed, target: screenToWorld(start, camera) });
@@ -487,7 +502,16 @@ export function makeInputHandlers(
         setPlacementMode(null);
         attackMoveMode = false;
         superweaponArmed = null;
+        abilityArmed = null;
         return;
+      case 'F1': case 'F2': case 'F3': {
+        // W4 hero kit: cast the selected hero's ability; targeted kinds arm the next click.
+        const ab = abilityForKey?.(e.key);
+        if (!ab) return;
+        e.preventDefault();
+        if (ab.targeted) abilityArmed = ab.id; else queue.push({ type: 'ability', abilityId: ab.id });
+        return;
+      }
       case 'a': // Attack-move: next left-click = advance-and-engage (C&C/WC3 'A')
       case 'A':
         e.preventDefault();

@@ -208,10 +208,150 @@ function portraitChorus() {
     <g stroke="#b48bff" stroke-width="1.5" opacity="0.55" fill="none" filter="url(#glowS)"><path d="M256 200 Q 276 220 272 252"/><path d="M240 210 Q 232 240 244 264"/></g>`, '#0e0c14');
 }
 
+// Act III / IV cards — drafted by the local coder (hermes-ask cheap) to packets/W3c-act-cards.md.
+function actCard3() {
+  const r = rnd(31);
+  // Halex's Ash Court: black glass-flats, storm, cyan/ember silhouettes on SAME side
+  let bunker = '';
+  // Lightning-lit bunker structure (left-center)
+  bunker += `<g transform="translate(430, 220) scale(1.9)">
+    <polygon points="0,140 40,100 120,100 160,140 160,200 0,200" fill="#0a0a0c" stroke="#1a1a20" stroke-width="2"/>
+    <polygon points="40,100 120,100 100,60 60,60" fill="#111115"/>
+    <rect x="60" y="140" width="40" height="60" fill="#050505"/>
+    <!-- cyan glow from bunker interior -->
+    <ellipse cx="80" cy="170" rx="15" ry="20" fill="#00e5ff" opacity="0.4" filter="url(#glowS)"/>
+  </g>`;
+  
+  // Storm clouds
+  let storm = '';
+  for (let i = 0; i < 5; i++) {
+    const x = r() * W, y = 50 + r() * 150;
+    storm += `<ellipse cx="${x}" cy="${y}" rx="${120 + r() * 140}" ry="${40 + r() * 50}" fill="#2a2a3e" opacity="${0.5 + r() * 0.4}" filter="url(#soft)"/>`;
+  }
+  
+  // Lightning bolts
+  let lightning = '';
+  for (let i = 0; i < 3; i++) {
+    const x = 100 + r() * 1000, y1 = 0, y2 = 200 + r() * 200;
+    let path = `M${x} ${y1}`;
+    let px = x, py = y1;
+    for (let j = 0; j < 5; j++) {
+      px += (r() - 0.5) * 60;
+      py += 40 + r() * 60;
+      path += ` L${px.toFixed(0)} ${py.toFixed(0)}`;
+    }
+    lightning += `<path d="${path}" stroke="#e6f9ff" stroke-width="3" fill="none" opacity="${0.7 + r() * 0.3}" filter="url(#glowS)"/><path d="${path}" stroke="#00e5ff" stroke-width="7" fill="none" opacity="0.25" filter="url(#glow)"/>`;
+  }
+  
+  // Silhouettes: Concord (cyan) and Emberhand (ember) standing in ONE line — allies now.
+  let silhouettes = '';
+  for (let i = 0; i < 7; i++) {
+    const x = 150 + i * 110 + r() * 20, y = 560 + r() * 10, ember = i % 2 === 1;
+    const tint = ember ? '#ff8a3a' : '#00e5ff';
+    silhouettes += `<g transform="translate(${x}, ${y}) scale(1.6)">
+      <ellipse cx="0" cy="18" rx="14" ry="20" fill="${tint}" opacity="0.18" filter="url(#glow)"/>
+      <circle cx="0" cy="-12" r="5" fill="#000"/>
+      <polygon points="-8,-4 8,-4 10,34 -10,34" fill="#000"/>
+      <rect x="${ember ? 7 : -10}" y="-14" width="3" height="40" fill="#000" transform="rotate(${ember ? 18 : -14} 0 0)"/>
+    </g>`;
+  }
+
+  // Ash motes
+  let ashMotes = '';
+  for (let i = 0; i < 50; i++) {
+    const x = r() * W, y = r() * H;
+    ashMotes += `<circle cx="${x}" cy="${y}" r="${0.5 + r() * 1.5}" fill="#8a8a9a" opacity="${0.2 + r() * 0.4}"/>`;
+  }
+  
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>${GLOW}
+     <linearGradient id="sky3" x1="0" y1="0" x2="0" y2="1">
+       <stop offset="0" stop-color="#101020"/>
+       <stop offset="0.6" stop-color="#22223a"/>
+       <stop offset="1" stop-color="#0a0a12"/>
+     </linearGradient>
+     <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+       <stop offset="0" stop-color="#1a1a20"/>
+       <stop offset="1" stop-color="#0a0a0c"/>
+     </linearGradient>
+   </defs>
+   <rect width="${W}" height="${H}" fill="url(#sky3)"/>
+   ${storm}
+   ${lightning}
+   <!-- black glass-flats -->
+   <rect x="0" y="500" width="${W}" height="${H - 500}" fill="url(#glass)"/>
+   <path d="M0 520 Q 320 500 640 510 T 1280 500 L1280 720 L0 720 Z" fill="#0a0a0c" opacity="0.5"/>
+   ${bunker}
+   ${silhouettes}
+   ${ashMotes}
+   <!-- subtle cyan reflection on glass -->
+   <ellipse cx="340" cy="600" rx="100" ry="30" fill="#00e5ff" opacity="0.05" filter="url(#soft)"/>
+   </svg>`;
+}
+
+function actCard4() {
+  const r = rnd(41);
+  // Dawn over sealed/bound Vein; three tall crystal spore towers glowing violet/gold
+  let skyGrad = `<linearGradient id="sky4" x1="0" y1="0" x2="0" y2="1">
+     <stop offset="0" stop-color="#2a1a3a"/>
+     <stop offset="0.3" stop-color="#4a2a5a"/>
+     <stop offset="0.6" stop-color="#8a5a7a"/>
+     <stop offset="0.8" stop-color="#c98a6a"/>
+     <stop offset="1" stop-color="#e0a070"/>
+   </linearGradient>`;
+  
+  // Three tall crystal spore towers
+  let towers = '';
+  const towerPositions = [[300, 600], [640, 590], [980, 596]];
+  for (const [tx, ty] of towerPositions) {
+    const h = 300 + r() * 120;
+    // Main tower body
+    towers += `<g transform="translate(${tx}, ${ty})">
+      <polygon points="-20,0 20,0 10,-${h} -10,-${h}" fill="#1a0f28" stroke="#b48bff" stroke-width="1"/>
+      <!-- gold light seams -->
+      <path d="M0 0 L0 -${h}" stroke="#ffd34d" stroke-width="2" fill="none" opacity="0.6" filter="url(#glowS)"/>
+      <path d="M-10 -${h * 0.5} L10 -${h * 0.5}" stroke="#ffd34d" stroke-width="1" fill="none" opacity="0.4"/>
+      <!-- violet glow at top -->
+      <ellipse cx="0" cy="-${h}" rx="22" ry="14" fill="#b48bff" opacity="0.6" filter="url(#glow)"/>
+      <!-- grounding: a warm pool of light at the foot -->
+      <ellipse cx="0" cy="6" rx="70" ry="14" fill="#ffd34d" opacity="0.22" filter="url(#soft)"/>
+    </g>`;
+  }
+  
+  // Tiny figures at their feet
+  let figures = '';
+  for (let i = 0; i < 8; i++) {
+    const x = 200 + r() * 880, y = 580 + r() * 40;
+    figures += `<g transform="translate(${x}, ${y})">
+      <ellipse cx="0" cy="0" rx="2" ry="3" fill="#000"/>
+      <polygon points="-3,3 3,3 4,12 -4,12" fill="#000"/>
+    </g>`;
+  }
+  
+  // Calm sky gradient overlay
+  let calmSky = `<rect width="${W}" height="${H}" fill="url(#sky4)"/>`;
+  
+  // Vein ground
+  let veinGround = `<path d="M0 600 Q 320 580 640 590 T 1280 580 L1280 720 L0 720 Z" fill="#2a1a3a"/><path d="M0 640 Q 400 620 780 636 T 1280 630 L1280 720 L0 720 Z" fill="#1a0f28"/>${crystalSeams(44, 606, 12, 1)}`;
+  
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>${GLOW}
+     ${skyGrad}
+   </defs>
+   <rect width="${W}" height="${H}" fill="#0a0812"/>
+   ${calmSky}
+   ${veinGround}
+   ${towers}
+   ${figures}
+   <!-- subtle dawn glow -->
+   <ellipse cx="640" cy="650" rx="400" ry="100" fill="#ffd34d" opacity="0.1" filter="url(#soft)"/>
+   </svg>`;
+}
+
 const PIECES = [
   { file: 'title_backdrop', draw: titleBackdrop },
   { file: 'act1_card', draw: actCard1 },
   { file: 'act2_card', draw: actCard2 },
+  { file: 'act3_card', draw: actCard3 },
+  { file: 'act4_card', draw: actCard4 },
   { file: 'credits_backdrop', draw: creditsBackdrop },
   { file: 'portrait_warden', draw: portraitWarden },
   { file: 'portrait_corr', draw: portraitCorr },

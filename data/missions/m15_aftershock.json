@@ -20,7 +20,8 @@
       "vein, Warden. Corr's armour holds the north gate — everyone else, on me.\""
     ],
     "objectives": [
-      "Hold the line at the First Vein until the alliance regroups (5:30)"
+      "Hold the line at the First Vein until the alliance regroups (5:30)",
+      "Vane must survive (O selects, F1/F2 cast)"
     ]
   },
   "debrief": {
@@ -114,6 +115,11 @@
       }
     ],
     "units": [
+      {
+        "type": "vane",
+        "tx": 7,
+        "ty": 34
+      },
       {
         "type": "harvester",
         "tx": 8,
@@ -313,6 +319,11 @@
     {
       "type": "defeated",
       "team": "player"
+    },
+    {
+      "type": "defend",
+      "team": "player",
+      "kind": "vane"
     }
   ],
   "triggers": [
@@ -537,6 +548,24 @@
             "tx": 6,
             "ty": 32
           }
+        }
+      ]
+    },
+    {
+      "id": "t_hero_dying",
+      "when": {
+        "hpBelow": {
+          "team": "player",
+          "kind": "vane",
+          "fraction": 0.35
+        }
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "I am not dying on this rock today, Warden. Cover me.",
+          "seconds": 8
         }
       ]
     }

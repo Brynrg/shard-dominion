@@ -17,7 +17,8 @@
       "Intercepted — Sera Vane: \"That vein is the planet's artery. Cut it and see what wakes.\""
     ],
     "objectives": [
-      "Hold the central vein for 2:00 (continuous)"
+      "Hold the central vein for 2:00 (continuous)",
+      "The Warden must survive (O selects, F1/F2 cast)"
     ]
   },
   "debrief": {
@@ -71,6 +72,11 @@
       }
     ],
     "units": [
+      {
+        "type": "warden",
+        "tx": 10,
+        "ty": 26
+      },
       {
         "type": "harvester",
         "tx": 11,
@@ -174,6 +180,11 @@
     {
       "type": "defeated",
       "team": "player"
+    },
+    {
+      "type": "defend",
+      "team": "player",
+      "kind": "warden"
     }
   ],
   "triggers": [
@@ -238,6 +249,24 @@
             "tx": 16,
             "ty": 15
           }
+        }
+      ]
+    },
+    {
+      "id": "t_hero_dying",
+      "when": {
+        "hpBelow": {
+          "team": "player",
+          "kind": "warden",
+          "fraction": 0.35
+        }
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "MARSHAL CORR",
+          "text": "Warden — you are bleeding out. Pull back NOW; this war does not survive you.",
+          "seconds": 8
         }
       ]
     }

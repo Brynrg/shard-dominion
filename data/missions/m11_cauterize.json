@@ -18,7 +18,8 @@
       "way — whatever the Directorate throws, it lands here first.\""
     ],
     "objectives": [
-      "Survive the bombing runs for 5 minutes — keep the Refinery standing"
+      "Survive the bombing runs for 5 minutes — keep the Refinery standing",
+      "Vane must survive (O selects, F1/F2 cast)"
     ]
   },
   "debrief": {
@@ -71,6 +72,11 @@
       }
     ],
     "units": [
+      {
+        "type": "vane",
+        "tx": 8,
+        "ty": 27
+      },
       {
         "type": "harvester",
         "tx": 9,
@@ -169,6 +175,11 @@
     {
       "type": "defeated",
       "team": "player"
+    },
+    {
+      "type": "defend",
+      "team": "player",
+      "kind": "vane"
     }
   ],
   "triggers": [
@@ -276,6 +287,24 @@
             "tx": 7,
             "ty": 26
           }
+        }
+      ]
+    },
+    {
+      "id": "t_hero_dying",
+      "when": {
+        "hpBelow": {
+          "team": "player",
+          "kind": "vane",
+          "fraction": 0.35
+        }
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "I am not dying on this rock today, Warden. Cover me.",
+          "seconds": 8
         }
       ]
     }

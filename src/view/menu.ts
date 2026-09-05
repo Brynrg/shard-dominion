@@ -42,26 +42,108 @@ export function takeBonus(missionId: string): number {
   return b;
 }
 
-export interface MissionEntry { id: string; name: string; order: number; unlocked: boolean; completed: boolean }
+/** W3: act-grouped, scrollable mission select with blurbs + a persisted campaign difficulty.
+ *  Written by the local coder (hermes-ask cheap) to packets/W3b-mission-select.md; reviewed. */
+export interface MissionEntry { id: string; name: string; order: number; act: 1 | 2 | 3 | 4; blurb?: string; unlocked: boolean; completed: boolean }
+export type CampaignDifficulty = 'easy' | 'normal' | 'hard';
 
-/** Campaign mission-select screen (FG-4): linear unlock, checkmarks, replayable. */
-export function showMissionSelect(missions: readonly MissionEntry[], onPick: (id: string) => void, onBack: () => void): void {
+export function showMissionSelect(missions: readonly MissionEntry[], onPick: (id: string, difficulty: CampaignDifficulty) => void, onBack: () => void): void {
   const el = overlay();
   const panel = document.createElement('div');
   panel.style.textAlign = 'center';
   panel.innerHTML =
     '<div style="font-size:34px;font-weight:bold;color:#ffd34d;letter-spacing:2px;">CAMPAIGN</div>' +
     '<div style="color:#8fb7c9;margin:4px 0 20px;font-size:13px;">Operation: Aether Prime</div>';
-  // Act cards (ART_HANDOFF §F): Act I atop, Act II before its first mission (m8+).
-  panel.appendChild(actCard('act1_card'));
-  let act2Shown = false;
-  for (const m of [...missions].sort((a, b) => a.order - b.order)) {
-    if (!act2Shown && m.order > 6) { panel.appendChild(actCard('act2_card')); act2Shown = true; }
+
+  // Difficulty selector
+  const diffLabel = document.createElement('div');
+  diffLabel.textContent = 'DIFFICULTY';
+  diffLabel.style.cssText = 'color:#9fb4cc;font-size:11px;margin-bottom:8px;font-weight:bold;';
+  panel.appendChild(diffLabel);
+
+  const diffBtns = document.createElement('div');
+  diffBtns.style.cssText = 'display:flex;gap:6px;justify-content:center;margin-bottom:16px;';
+
+  const diffOpts: CampaignDifficulty[] = ['easy', 'normal', 'hard'];
+  let currentDiff: CampaignDifficulty = 'normal';
+  try {
+    const stored = localStorage.getItem('shardDominion.campaign.difficulty');
+    if (stored === 'easy' || stored === 'normal' || stored === 'hard') currentDiff = stored;
+  } catch { /* ignore */ }
+
+  const updateDiffUI = (d: CampaignDifficulty) => {
+    currentDiff = d;
+    try { localStorage.setItem('shardDominion.campaign.difficulty', d); } catch { /* ignore */ }
+    Array.from(diffBtns.children).forEach((btn) => {
+      const isActive = (btn as HTMLButtonElement).dataset.v === d;
+      (btn as HTMLButtonElement).style.cssText =
+        `font-family:monospace;font-size:12px;padding:6px 12px;cursor:pointer;border-radius:4px;border:1px solid ${isActive ? '#00e5ff' : '#3a4a5a'};background:${isActive ? 'rgba(0,229,255,0.14)' : 'rgba(20,26,34,0.9)'};color:${isActive ? '#00e5ff' : '#cfe0ee'};`;
+    });
+  };
+
+  diffOpts.forEach((opt) => {
+    const b = document.createElement('button');
+    b.textContent = opt.charAt(0).toUpperCase() + opt.slice(1);
+    b.dataset.v = opt;
+    b.style.cssText =
+      `font-family:monospace;font-size:12px;padding:6px 12px;cursor:pointer;border-radius:4px;border:1px solid #3a4a5a;background:rgba(20,26,34,0.9);color:#cfe0ee;`;
+    b.onclick = () => updateDiffUI(opt);
+    diffBtns.appendChild(b);
+  });
+  updateDiffUI(currentDiff);
+  panel.appendChild(diffBtns);
+
+  // Scrollable mission list
+  const listContainer = document.createElement('div');
+  listContainer.style.cssText = 'max-height:82vh;overflow-y:auto;padding:0 12px;';
+
+  const sorted = [...missions].sort((a, b) => a.order - b.order);
+  let lastAct: number | null = null;
+
+  for (const m of sorted) {
+    // Act card and heading
+    if (m.act !== lastAct) {
+      lastAct = m.act;
+      listContainer.appendChild(actCard(`act${m.act}_card`));
+      const actNames: Record<number, string> = {
+        1: 'ACT I · THE LANDING',
+        2: 'ACT II · THE TURN',
+        3: 'ACT III · THE VERDICT',
+        4: 'ACT IV · GENESIS',
+      };
+      const heading = document.createElement('div');
+      heading.textContent = actNames[m.act] || `ACT ${m.act}`;
+      heading.style.cssText = 'font-size:12px;letter-spacing:2px;color:#8fb7c9;margin:8px 0 12px;';
+      listContainer.appendChild(heading);
+    }
+
+    // Mission row
+    const row = document.createElement('div');
+    row.style.cssText = 'margin:8px 0;';
+
     const b = button(`${m.completed ? '✔ ' : ''}Mission ${m.order}: ${m.name}${m.unlocked ? '' : '  🔒'}`, m.unlocked && !m.completed);
-    if (!m.unlocked) { b.disabled = true; b.style.opacity = '0.45'; b.style.cursor = 'default'; }
-    else b.onclick = () => onPick(m.id);
-    panel.appendChild(b);
+    if (!m.unlocked) {
+      b.disabled = true;
+      b.style.opacity = '0.45';
+      b.style.cursor = 'default';
+    } else {
+      b.onclick = () => onPick(m.id, currentDiff);
+    }
+    row.appendChild(b);
+
+    // Blurb
+    if (m.blurb && m.unlocked) {
+      const blurb = document.createElement('div');
+      blurb.textContent = m.blurb;
+      blurb.style.cssText = 'font-size:11px;color:#8894a4;max-width:420px;margin:-6px auto 8px;';
+      row.appendChild(blurb);
+    }
+
+    listContainer.appendChild(row);
   }
+
+  panel.appendChild(listContainer);
+
   const back = button('BACK');
   back.onclick = () => { el.remove(); onBack(); };
   panel.appendChild(back);

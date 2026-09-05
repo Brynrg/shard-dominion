@@ -17,7 +17,8 @@
       "VANE: \"…Park them where I can see them, Marshal.\""
     ],
     "objectives": [
-      "Destroy the Directorate forward base — and keep Corr's armor alive"
+      "Destroy the Directorate forward base — and keep Corr's armor alive",
+      "Vane must survive (O selects, F1/F2 cast)"
     ]
   },
   "debrief": {
@@ -70,6 +71,11 @@
       }
     ],
     "units": [
+      {
+        "type": "vane",
+        "tx": 7,
+        "ty": 28
+      },
       {
         "type": "harvester",
         "tx": 8,
@@ -176,6 +182,11 @@
     {
       "type": "defeated",
       "team": "player"
+    },
+    {
+      "type": "defend",
+      "team": "player",
+      "kind": "vane"
     }
   ],
   "triggers": [
@@ -263,6 +274,24 @@
             "tx": 10,
             "ty": 27
           }
+        }
+      ]
+    },
+    {
+      "id": "t_hero_dying",
+      "when": {
+        "hpBelow": {
+          "team": "player",
+          "kind": "vane",
+          "fraction": 0.35
+        }
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "I am not dying on this rock today, Warden. Cover me.",
+          "seconds": 8
         }
       ]
     }

@@ -17,7 +17,8 @@
       "we need it ANGRY, not awake.\""
     ],
     "objectives": [
-      "Destroy the three lattice spires"
+      "Destroy the three lattice spires",
+      "Vane must survive (O selects, F1/F2 cast)"
     ]
   },
   "debrief": {
@@ -70,6 +71,11 @@
       }
     ],
     "units": [
+      {
+        "type": "vane",
+        "tx": 6,
+        "ty": 29
+      },
       {
         "type": "harvester",
         "tx": 7,
@@ -177,6 +183,11 @@
     {
       "type": "defeated",
       "team": "player"
+    },
+    {
+      "type": "defend",
+      "team": "player",
+      "kind": "vane"
     }
   ],
   "triggers": [
@@ -225,6 +236,24 @@
               "ty": 15
             }
           ]
+        }
+      ]
+    },
+    {
+      "id": "t_hero_dying",
+      "when": {
+        "hpBelow": {
+          "team": "player",
+          "kind": "vane",
+          "fraction": 0.35
+        }
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "I am not dying on this rock today, Warden. Cover me.",
+          "seconds": 8
         }
       ]
     }

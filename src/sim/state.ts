@@ -119,6 +119,11 @@ export function stateHash(state: SimState): number {
     if (box) { ints.push(box.stored.length); for (const u of box.stored) ints.push(q(u.hp)); }
     const xp = e.components.experience;
     if (xp) ints.push(xp.kills);
+    // W4 hero kit: ability cooldowns (sorted keys) + rally buff are authoritative state.
+    const ab = e.components.ability;
+    if (ab) { const keys = Object.keys(ab.cooldowns).sort(); ints.push(keys.length); for (const k of keys) ints.push(strCode(k), ab.cooldowns[k] ?? 0); }
+    const bf = e.components.buff;
+    if (bf) ints.push(q(bf.dmgBonus), bf.dmgUntilTick);
     const prod = e.components.production;
     if (prod) { ints.push(prod.queue.length, q(prod.progress)); for (const k of prod.queue) ints.push(k.length); }
     const hv = e.components.harvest;

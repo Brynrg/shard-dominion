@@ -23,7 +23,8 @@
     ],
     "objectives": [
       "Refuse the purge — survive the Directorate until the cordon breaks (5:00)",
-      "Link up with Vane's raiders at the eastern ravine"
+      "Link up with Vane's raiders at the eastern ravine",
+      "The Warden must survive (O selects, F1/F2 cast)"
     ]
   },
   "debrief": {
@@ -102,6 +103,11 @@
       }
     ],
     "units": [
+      {
+        "type": "warden",
+        "tx": 8,
+        "ty": 27
+      },
       {
         "type": "harvester",
         "tx": 9,
@@ -270,6 +276,11 @@
     {
       "type": "defeated",
       "team": "player"
+    },
+    {
+      "type": "defend",
+      "team": "player",
+      "kind": "warden"
     }
   ],
   "triggers": [
@@ -439,6 +450,24 @@
           "type": "message",
           "speaker": "MARSHAL CORR",
           "text": "Cordon's thinning — they're pulling flights back to the ridge. Hold, Warden. You're almost out from under them."
+        }
+      ]
+    },
+    {
+      "id": "t_hero_dying",
+      "when": {
+        "hpBelow": {
+          "team": "player",
+          "kind": "warden",
+          "fraction": 0.35
+        }
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "MARSHAL CORR",
+          "text": "Warden — you are bleeding out. Pull back NOW; this war does not survive you.",
+          "seconds": 8
         }
       ]
     }

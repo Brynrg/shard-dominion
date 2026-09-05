@@ -20,7 +20,8 @@
       "rest is just cleanup and grief.\""
     ],
     "objectives": [
-      "Destroy the Directorate forward command (their Construction Yard)"
+      "Destroy the Directorate forward command (their Construction Yard)",
+      "Vane must survive (O selects, F1/F2 cast)"
     ]
   },
   "debrief": {
@@ -100,6 +101,11 @@
       }
     ],
     "units": [
+      {
+        "type": "vane",
+        "tx": 7,
+        "ty": 33
+      },
       {
         "type": "harvester",
         "tx": 8,
@@ -285,6 +291,11 @@
     {
       "type": "defeated",
       "team": "player"
+    },
+    {
+      "type": "defend",
+      "team": "player",
+      "kind": "vane"
     }
   ],
   "triggers": [
@@ -447,6 +458,24 @@
           "type": "grantCredits",
           "team": "player",
           "amount": 1200
+        }
+      ]
+    },
+    {
+      "id": "t_hero_dying",
+      "when": {
+        "hpBelow": {
+          "team": "player",
+          "kind": "vane",
+          "fraction": 0.35
+        }
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "I am not dying on this rock today, Warden. Cover me.",
+          "seconds": 8
         }
       ]
     }

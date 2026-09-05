@@ -2,6 +2,20 @@
 // Loads and validates units.json. Never hardcode these values in systems.
 import { z } from 'zod';
 
+export const AbilitySchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  key: z.enum(['F1', 'F2', 'F3']),
+  kind: z.enum(['rally', 'mend', 'blink', 'nova', 'ward']),
+  cooldownSeconds: z.number().positive(),
+  radiusTiles: z.number().positive(),
+  magnitude: z.number().nonnegative(),
+  durationSeconds: z.number().positive().optional(),
+  targeted: z.boolean().default(false),
+  desc: z.string().optional(),
+});
+export type AbilityDef = z.infer<typeof AbilitySchema>;
+
 export const UnitSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -41,6 +55,8 @@ export const UnitSchema = z.object({
   /** XP-5 air: shots per sortie; rearm at a Skypad (1 Cell). */
   ammo: z.number().int().positive().optional(),
   team: z.enum(['player', 'enemy', 'neutral']),
+  /** W4: hero kit — two DATA-defined abilities on cooldowns. */
+  abilities: z.array(AbilitySchema).default([]),
   graphics: z.object({
     sprite_id: z.string().min(1),
     fallback_geometry: z.object({

@@ -713,6 +713,43 @@ export function makeHUD(cfg: HUDConfig): {
         by += 30;
       }
 
+      // W4 hero kit: ability bar for the first selected own unit that carries a kit.
+      // When shown it takes the legend's rows at the panel foot (hero controls replace the generic legend).
+      let abilityBarShown = false;
+      // Action `ability:<id>[:t]` — the :t suffix tells input.ts the cast needs a point.
+      {
+        let heroDef: UnitDef | null = null; let heroCooldowns: Record<string, number> | null = null;
+        for (const e of simState.store.all()) {
+          if (!e.components.selection?.selected || e.components.faction?.team !== viewerTeam) continue;
+          const d = (cfg.units ?? []).find(u => u.id === e.components.faction?.faction);
+          if (d && d.abilities.length > 0) { heroDef = d; heroCooldowns = e.components.ability?.cooldowns ?? {}; break; }
+        }
+        if (heroDef && heroCooldowns) {
+          abilityBarShown = true;
+          for (const ab of heroDef.abilities) {
+            const ticksLeft = heroCooldowns[ab.id] ?? 0;
+            const ready = ticksLeft <= 0;
+            rects.push({ action: `ability:${ab.id}${ab.targeted ? ':t' : ''}`, x: px + 8, y: by, w: bw, h: 26, enabled: ready });
+            context.fillStyle = ready ? 'rgba(0,229,255,0.22)' : 'rgba(40,48,60,0.35)';
+            context.fillRect(px + 8, by, bw, 26);
+            if (!ready) { // cooldown sweep: the un-swept fraction stays dark
+              const total = Math.max(1, Math.round(ab.cooldownSeconds * SIM_TICK_RATE));
+              context.fillStyle = 'rgba(0,229,255,0.16)';
+              context.fillRect(px + 8, by, bw * (1 - ticksLeft / total), 26);
+            }
+            context.strokeStyle = ready ? '#00e5ff' : '#3a4a5a';
+            context.strokeRect(px + 8.5, by + 0.5, bw - 1, 25);
+            context.fillStyle = ready ? '#d8f6ff' : '#8894a4';
+            context.font = 'bold 12px monospace'; context.textBaseline = 'top';
+            context.fillText(`${ab.key}  ${ab.name}`, px + 16, by + 7);
+            const right = ready ? 'READY' : `${Math.ceil(ticksLeft / SIM_TICK_RATE)}s`;
+            context.fillStyle = ready ? COLORS.success : '#ffe9b0';
+            context.fillText(right, px + 8 + bw - 8 - context.measureText(right).width, by + 7);
+            by += 30;
+          }
+        }
+      }
+
       // Repair button (FG-2): shown while a damaged player building is selected.
       let repairTarget: { repairing: boolean } | null = null;
       for (const e of simState.store.all()) {
@@ -754,15 +791,17 @@ export function makeHUD(cfg: HUDConfig): {
         context.fillText('$ SELL  (50% refund, demolishes)', px + 16, by + 7);
       }
 
-      // Legend (footer).
-      context.fillStyle = '#8894a4';
-      context.font = '10px monospace';
-      // Short lines only — longer ones clip at the panel edge (playtest v0.53).
-      context.fillText('L select · R order · S stop', px + 10, py + ph - 66);
-      context.fillText('A atkmove · Shift queue', px + 10, py + ph - 54);
-      context.fillText('Q army · I idle · O hero', px + 10, py + ph - 42);
-      context.fillText('Ctrl+1-9 group · ×2 centre', px + 10, py + ph - 30);
-      context.fillText('X stance · U unload · P pause', px + 10, py + ph - 18);
+      // Legend (footer) — yields to the hero ability bar (W4) when one is showing.
+      if (!abilityBarShown) {
+        context.fillStyle = '#8894a4';
+        context.font = '10px monospace';
+        // Short lines only — longer ones clip at the panel edge (playtest v0.53).
+        context.fillText('L select · R order · S stop', px + 10, py + ph - 66);
+        context.fillText('A atkmove · Shift queue', px + 10, py + ph - 54);
+        context.fillText('Q army · I idle · O hero', px + 10, py + ph - 42);
+        context.fillText('Ctrl+1-9 group · ×2 centre', px + 10, py + ph - 30);
+        context.fillText('X stance · U unload · P pause', px + 10, py + ph - 18);
+      }
 
       // Overflow warning (below panel, hard to miss).
       if (refinery && refinery.storage >= refinery.maxStorage) {

@@ -19,7 +19,8 @@
     ],
     "objectives": [
       "Bank 1,500 credits",
-      "Keep the Refinery operational"
+      "Keep the Refinery operational",
+      "The Warden must survive (O selects, F1/F2 cast)"
     ]
   },
   "debrief": {
@@ -68,6 +69,11 @@
       }
     ],
     "units": [
+      {
+        "type": "warden",
+        "tx": 11,
+        "ty": 21
+      },
       {
         "type": "harvester",
         "tx": 12,
@@ -156,6 +162,11 @@
     {
       "type": "defeated",
       "team": "player"
+    },
+    {
+      "type": "defend",
+      "team": "player",
+      "kind": "warden"
     }
   ],
   "triggers": [
@@ -256,6 +267,24 @@
             "tx": 12,
             "ty": 20
           }
+        }
+      ]
+    },
+    {
+      "id": "t_hero_dying",
+      "when": {
+        "hpBelow": {
+          "team": "player",
+          "kind": "warden",
+          "fraction": 0.35
+        }
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "MARSHAL CORR",
+          "text": "Warden — you are bleeding out. Pull back NOW; this war does not survive you.",
+          "seconds": 8
         }
       ]
     }

@@ -15,7 +15,7 @@ export interface FogSystem {
   readonly explored: Set<string>;
 }
 
-export function makeFogSystem(viewerTeam: 'player' | 'enemy' = 'player'): FogSystem {
+export function makeFogSystem(viewerTeam: 'player' | 'enemy' = 'player', extraVisible?: () => readonly { tx: number; ty: number; r: number }[]): FogSystem {
   const visible = new Set<string>();
   const explored = new Set<string>();
 
@@ -51,6 +51,26 @@ export function makeFogSystem(viewerTeam: 'player' | 'enemy' = 'player'): FogSys
             // Add to visible only if within circular radius
             if (distSq <= VISION_TILES * VISION_TILES) {
               visible.add(`${tx},${ty}`);
+            }
+          }
+        }
+      }
+
+      // Extra visible regions (e.g. from trigger reveals)
+      const regions = extraVisible?.() ?? [];
+      for (const region of regions) {
+        const minTx = Math.max(0, Math.floor(region.tx - region.r));
+        const maxTx = Math.min(state.grid.width - 1, Math.ceil(region.tx + region.r));
+        const minTy = Math.max(0, Math.floor(region.ty - region.r));
+        const maxTy = Math.min(state.grid.height - 1, Math.ceil(region.ty + region.r));
+
+        for (let ty = minTy; ty <= maxTy; ty++) {
+          for (let tx = minTx; tx <= maxTx; tx++) {
+            const dx = tx - region.tx;
+            const dy = ty - region.ty;
+            if (dx * dx + dy * dy <= region.r * region.r) {
+              visible.add(`${tx},${ty}`);
+              explored.add(`${tx},${ty}`);
             }
           }
         }

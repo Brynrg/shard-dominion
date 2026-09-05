@@ -14,13 +14,11 @@
 import type { SimState } from '../state.js';
 import { makeDefeatTracker } from '../defeat.js';
 import { SIM_TICK_RATE } from '../loop.js';
-import { tileToWorldCenter, TILE_SUBUNITS } from '../coords.js';
-import { makeTriggerRunner, type MissionTrigger, type MissionMessage } from './missionTriggers.js';
+import { makeTriggerRunner, anyLiving, anyExists, teamUnitInRegion, type MissionTrigger, type MissionMessage, type Region, type Team, type TriggerHost } from './missionTriggers.js';
 import type { UnitDef } from '../../loaders/units.js';
 import type { TeamFactions } from '../factions.js';
 
-export type Team = 'player' | 'enemy';
-export interface Region { tx: number; ty: number; r: number } // radius r in TILES
+export type { Region, Team, MissionTrigger, MissionMessage } from './missionTriggers.js';
 
 export type Objective =
   | { type: 'destroy'; id?: string; team: Team; kind?: string; primary?: boolean; text: string; onlyIfChoice?: string }
@@ -39,7 +37,7 @@ export type Failure =
 
 export interface ObjectiveStatus { id?: string; text: string; primary: boolean; complete: boolean }
 export interface ObjectivesResult { objectives: ObjectiveStatus[]; won: boolean; lost: boolean }
-export type { MissionTrigger, MissionMessage } from './missionTriggers.js';
+
 // The system's canonical name is the reserved 'mission' slot in SYSTEM_ORDER (runs early,
 // right after command) — evaluation lags actual deaths by one tick, which is immaterial
 // for win/lose and keeps the pinned loop contract untouched.
@@ -51,30 +49,10 @@ export interface ObjectivesSystem {
   messages: MissionMessage[];
   /** Dev kit (XP-1): trigger ids that have fired. */
   firedTriggerIds(): string[];
-}
-
-// A living entity matching (team, kind?) — hp<=0 counts as dead (cull-timing safe).
-function anyLiving(state: SimState, team: Team, kind?: string): boolean {
-  for (const e of state.store.all()) {
-    const f = e.components.faction;
-    if (!f || f.team !== team) continue;
-    if (kind && f.faction !== kind) continue;
-    const h = e.components.health;
-    if (h && h.hp <= 0) continue;
-    return true;
-  }
-  return false;
-}
-
-// Whether a (team, kind?) entity has EVER been present (existence, ignoring hp).
-function anyExists(state: SimState, team: Team, kind?: string): boolean {
-  for (const e of state.store.all()) {
-    const f = e.components.faction;
-    if (!f || f.team !== team) continue;
-    if (kind && f.faction !== kind) continue;
-    return true;
-  }
-  return false;
+  /** Active reveal regions (fog.ts reads this). */
+  activeReveals(): readonly Region[];
+  /** Camera pan requests (drained by main.ts). */
+  cameraRequests: { tx: number; ty: number; tick: number }[];
 }
 
 function teamCredits(state: SimState, team: Team): number {
@@ -95,20 +73,6 @@ function teamIsFinished(state: SimState, team: Team): boolean {
   return defeatTracker.isDefeated(state, team);
 }
 
-// A living team UNIT (has movement or combat) inside the region (world distance ≤ r tiles).
-function teamUnitInRegion(state: SimState, team: Team, region: Region): boolean {
-  const c = tileToWorldCenter({ tx: region.tx, ty: region.ty });
-  const rWorld = region.r * TILE_SUBUNITS;
-  for (const e of state.store.all()) {
-    const f = e.components.faction; const p = e.components.position;
-    if (!f || f.team !== team || !p) continue;
-    if (!e.components.movement && !e.components.combat) continue; // a UNIT, not a static field/marker
-    if ((e.components.health?.hp ?? 1) <= 0) continue;
-    if (Math.hypot(p.wx - c.wx, p.wy - c.wy) <= rWorld) return true;
-  }
-  return false;
-}
-
 export function makeObjectivesSystem(
   objectives: readonly Objective[],
   failures: readonly Failure[] = [],
@@ -121,6 +85,8 @@ export function makeObjectivesSystem(
 ): ObjectivesSystem {
   const triggerRunner = makeTriggerRunner(triggers, units, factions, bootChoice);
   const completedIds = new Set<string>(); // last-known complete objective ids (for trigger conditions)
+  const forced = new Set<string>(); // force-completed objective ids (via trigger actions)
+  const live: Objective[] = [...objectives]; // live objective list (triggers can append)
   // Latches for momentary / cumulative conditions (deterministic closure state).
   const everSeen = new Map<number, boolean>();   // destroy/defend: target has existed
   const everReached = new Map<number, boolean>(); // reach: region entered
@@ -128,6 +94,7 @@ export function makeObjectivesSystem(
   const result: ObjectivesResult = { objectives: [], won: false, lost: false };
 
   function completed(o: Objective, i: number, state: SimState): boolean {
+    if (o.id && forced.has(o.id)) return true;
     switch (o.type) {
       case 'destroy': {
         if (anyExists(state, o.team, o.kind)) everSeen.set(i, true);
@@ -185,15 +152,23 @@ export function makeObjectivesSystem(
     }
   }
 
+  const host: TriggerHost = {
+    isObjectiveComplete: (id) => completedIds.has(id),
+    addObjective: (o) => { live.push(o); },
+    forceComplete: (id) => { forced.add(id); },
+  };
+
   return {
     name: 'mission' as const,
     result,
     messages: triggerRunner.messages,
+    cameraRequests: triggerRunner.cameraRequests,
+    activeReveals: () => triggerRunner.activeReveals(),
     firedTriggerIds: triggerRunner.firedIds,
     run(state: SimState): void {
       if (result.won || result.lost) return; // decision is sticky
-      triggerRunner.run(state, (id) => completedIds.has(id));
-      const statuses: ObjectiveStatus[] = objectives.map((o, i) => ({
+      triggerRunner.run(state, host);
+      const statuses: ObjectiveStatus[] = live.map((o, i) => ({
         id: o.id, text: o.text, primary: o.primary ?? true, complete: completed(o, i, state),
       }));
       result.objectives = statuses;

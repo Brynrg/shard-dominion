@@ -18,7 +18,8 @@
     ],
     "objectives": [
       "Build a War Factory",
-      "Destroy the Emberhand forward barracks"
+      "Destroy the Emberhand forward barracks",
+      "The Warden must survive (O selects, F1/F2 cast)"
     ]
   },
   "debrief": {
@@ -72,6 +73,11 @@
       }
     ],
     "units": [
+      {
+        "type": "warden",
+        "tx": 8,
+        "ty": 18
+      },
       {
         "type": "harvester",
         "tx": 9,
@@ -190,6 +196,11 @@
     {
       "type": "defeated",
       "team": "player"
+    },
+    {
+      "type": "defend",
+      "team": "player",
+      "kind": "warden"
     }
   ],
   "triggers": [
@@ -254,6 +265,24 @@
             "tx": 6,
             "ty": 16
           }
+        }
+      ]
+    },
+    {
+      "id": "t_hero_dying",
+      "when": {
+        "hpBelow": {
+          "team": "player",
+          "kind": "warden",
+          "fraction": 0.35
+        }
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "MARSHAL CORR",
+          "text": "Warden — you are bleeding out. Pull back NOW; this war does not survive you.",
+          "seconds": 8
         }
       ]
     }

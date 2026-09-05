@@ -17,7 +17,8 @@
       "THE CHORUS (through a shard-touched prisoner): \"You walk quietly. IT LISTENS ANYWAY.\""
     ],
     "objectives": [
-      "Slip a unit to the deep-vein survey site"
+      "Slip a unit to the deep-vein survey site",
+      "Vane must survive (O selects, F1/F2 cast)"
     ]
   },
   "debrief": {
@@ -65,6 +66,11 @@
       }
     ],
     "units": [
+      {
+        "type": "vane",
+        "tx": 6,
+        "ty": 29
+      },
       {
         "type": "harvester",
         "tx": 7,
@@ -182,6 +188,11 @@
     {
       "type": "defeated",
       "team": "player"
+    },
+    {
+      "type": "defend",
+      "team": "player",
+      "kind": "vane"
     }
   ],
   "triggers": [
@@ -219,6 +230,24 @@
           "type": "message",
           "speaker": "VANE",
           "text": "Ghostwalkers cloak while quiet. Radar, scouts, and point-blank eyes see through it."
+        }
+      ]
+    },
+    {
+      "id": "t_hero_dying",
+      "when": {
+        "hpBelow": {
+          "team": "player",
+          "kind": "vane",
+          "fraction": 0.35
+        }
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "I am not dying on this rock today, Warden. Cover me.",
+          "seconds": 8
         }
       ]
     }

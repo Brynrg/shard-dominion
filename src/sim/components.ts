@@ -144,6 +144,11 @@ export interface ContainerComponent { capacity: number; stored: { kind: string; 
 /** Concord shields (XP-5): an absorb pool hit before hp; regenerates out of combat. */
 export interface ShieldComponent { hp: number; max: number; regenDelay: number }
 
+/** W4 hero kit: per-entity ability cooldowns (abilityId → ticks left; 0 = ready). */
+export interface AbilityComponent { cooldowns: Record<string, number> }
+/** W4 hero kit: a timed damage buff (Rally Surge) — +dmgBonus while tick < dmgUntilTick. */
+export interface BuffComponent { dmgBonus: number; dmgUntilTick: number }
+
 export interface Components {
   position?: PositionComponent;
   velocity?: VelocityComponent;
@@ -167,6 +172,8 @@ export interface Components {
   stealth?: StealthComponent;
   container?: ContainerComponent;
   shield?: ShieldComponent;
+  ability?: AbilityComponent;
+  buff?: BuffComponent;
 }
 
 export type ComponentKey = keyof Components;

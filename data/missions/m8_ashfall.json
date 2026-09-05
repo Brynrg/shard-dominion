@@ -17,7 +17,8 @@
       "Intercepted — DIRECTOR HALEX: \"Initiate Project Cauterize survey flights.\""
     ],
     "objectives": [
-      "Bank 900 credits from the wreck fields and Shard"
+      "Bank 900 credits from the wreck fields and Shard",
+      "Vane must survive (O selects, F1/F2 cast)"
     ]
   },
   "debrief": {
@@ -59,6 +60,11 @@
       }
     ],
     "units": [
+      {
+        "type": "vane",
+        "tx": 8,
+        "ty": 25
+      },
       {
         "type": "harvester",
         "tx": 9,
@@ -174,6 +180,11 @@
     {
       "type": "defeated",
       "team": "player"
+    },
+    {
+      "type": "defend",
+      "team": "player",
+      "kind": "vane"
     }
   ],
   "triggers": [
@@ -228,6 +239,24 @@
             "tx": 13,
             "ty": 20
           }
+        }
+      ]
+    },
+    {
+      "id": "t_hero_dying",
+      "when": {
+        "hpBelow": {
+          "team": "player",
+          "kind": "vane",
+          "fraction": 0.35
+        }
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "I am not dying on this rock today, Warden. Cover me.",
+          "seconds": 8
         }
       ]
     }

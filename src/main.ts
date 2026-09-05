@@ -28,6 +28,7 @@ import { makeCombatTargetingSystem } from './sim/systems/combatTargeting.js';
 import { makeDamageSystem } from './sim/systems/damage.js';
 import { makeVictorySystem } from './sim/systems/victory.js';
 import { makeFogSystem } from './sim/systems/fog.js';
+import { makeAbilitySystem } from './sim/systems/ability.js';
 import { makeProductionSystem } from './sim/systems/production.js';
 import { makeAiSystem } from './sim/systems/ai.js';
 import { makeObjectivesSystem } from './sim/systems/objectives.js';
@@ -114,6 +115,8 @@ declare global {
     __debugResonance?: () => { player: number; enemy: number };
     __debugForceEnd?: (winner: 'player' | 'enemy') => void;
     __debugMessages?: () => { speaker: string; text: string }[];
+    /** W4: the viewer's living hero (kind, hp, ability cooldowns) or null. */
+    __debugHero?: () => { kind: string; hp: number; cooldowns: Record<string, number> } | null;
     __debugRiftmaws?: () => number;
     __debugMp?: () => { seat: number; desynced: boolean; peerLeft: boolean };
     __debugUnitScreenPos?: (kind: string) => { x: number; y: number } | null;
@@ -287,7 +290,6 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
 
   // Register systems (command runs FIRST per SYSTEM_ORDER; 'mission' objectives run in
   // their reserved slot). One AI per enemy side; victory still owns culling.
-  const fogSystem = makeFogSystem(viewerTeam);
   const victorySystem = makeVictorySystem(units);
   // XP-6: the finale CHOICE — read what the panel stored; filter branch objectives.
   if (params.get('continue') === '1' && mission.choice) {
@@ -304,6 +306,8 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     : (mission.inheritsChoice ? localStorage.getItem('shardDominion.choice.campaign') : null);
   const liveObjectives = mission.objectives.filter(o => !o.onlyIfChoice || o.onlyIfChoice === bootChoice);
   const objectivesSystem = makeObjectivesSystem(liveObjectives, mission.failure, mission.triggers, units, teamFactions, bootChoice);
+  // W2: scripted `reveal` regions light the viewer's fog (the runner prunes them by tick).
+  const fogSystem = makeFogSystem(viewerTeam, () => objectivesSystem.activeReveals());
   // Difficulty is now a BEHAVIOUR profile (aiPersonality.ts), not three numbers that
   // moved the attack clock by 54 seconds. A mission's own `ai` block still overrides
   // any individual field, so authored missions keep their hand-tuned pacing.
@@ -326,6 +330,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     makeProjectileSystem(weapons),
     makeDamageSystem(weapons, refinements),
     makeHeroSystem(units),
+    makeAbilitySystem(),
     makeRegenSystem(teamFactions),
     makeProductionSystem(units, teamFactions, mission.id.startsWith('m') ? (loadProgress().heroKills ?? 0) : 0, refinements),
     makeStealthSystem(),
@@ -349,7 +354,8 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   canvas.height = 600;
 
   // Onboarding: per-mission briefing (sim paused until dismissed) + objective banner.
-  const onboarding = makeOnboarding(mission.briefing, () => objectivesSystem.result.objectives, () => objectivesSystem.messages);
+  // W3: the HOW TO PLAY block teaches on the first two missions only; later briefings get the room.
+  const onboarding = makeOnboarding({ ...mission.briefing, howto: mission.order <= 2 }, () => objectivesSystem.result.objectives, () => objectivesSystem.messages);
 
   // Accessibility (view-level): screen-reader announcer + persisted settings.
   const a11y = makeA11ySettings();
@@ -447,8 +453,19 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
             replay.li++;
           }
         },
-    onAfterTick: mp ? (t) => mp.lockstep.afterTick(t, stateHash(state)) : undefined,
+    onAfterTick: (t) => {
+      if (mp) mp.lockstep.afterTick(t, stateHash(state));
+      // W2: scripted panCamera requests → the view camera (a view action; the sim only queues them).
+      const reqs = objectivesSystem.cameraRequests;
+      while (cameraDrained < reqs.length) {
+        const r = reqs[cameraDrained++]!;
+        const w = tileToWorldCenter({ tx: r.tx, ty: r.ty });
+        view.centerOn(w.wx, w.wy);
+      }
+    },
   });
+
+  let cameraDrained = 0; // W2: how many scripted camera requests the view has consumed
 
   // Camera panning is a pure view action — never a sim command.
   const panCamera = (dx: number, dy: number): void => {
@@ -495,6 +512,16 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   (key: string) => {
     const item = itemForHotkey(key, units, structures, teamFactions.player.id);
     return item ? { kind: item.kind, id: item.id } : null;
+  },
+  // W4 hero kit: F1/F2/F3 → the selected hero's ability (targeted kinds arm the next click).
+  (key: string) => {
+    for (const e of state.store.all()) {
+      if (!e.components.selection?.selected || e.components.faction?.team !== viewerTeam) continue;
+      const def = units.find(u => u.id === e.components.faction?.faction);
+      const ab = def?.abilities.find(a => a.key === key);
+      if (ab) return { id: ab.id, targeted: ab.targeted };
+    }
+    return null;
   });
   // ── Continue (FG-6): replay the saved command log tick-for-tick, then go live.
   // Determinism makes the fast-forward EXACT (same mission + same log → same state).
@@ -993,6 +1020,15 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
 
   // Trigger comm messages (FG-4 gate).
   window.__debugMessages = () => objectivesSystem.messages.map(m => ({ speaker: m.speaker, text: m.text }));
+  window.__debugHero = () => {
+    for (const e of state.store.all()) {
+      if (e.components.faction?.team !== viewerTeam) continue;
+      const def = units.find(u => u.id === e.components.faction?.faction);
+      if (!def?.hero || (e.components.health?.hp ?? 0) <= 0) continue;
+      return { kind: def.id, hp: e.components.health?.hp ?? 0, cooldowns: { ...(e.components.ability?.cooldowns ?? {}) } };
+    }
+    return null;
+  };
 
   // XP-1: tech tier + sidebar rect hooks (gates use these).
   window.__debugTier = () => ({ player: teamTier(state, 'player'), enemy: teamTier(state, 'enemy') });
@@ -1085,27 +1121,27 @@ const MISSIONS: Record<string, unknown> = {
   m20_act4_genesis: m20Data,
 };
 /** Campaign order (linear unlock: each mission unlocks the next). */
-const CAMPAIGN: { id: string; name: string; order: number }[] = [
-  { id: 'm1_first_light', name: 'First Light', order: 1 },
-  { id: 'm2_lifeblood', name: 'Lifeblood', order: 2 },
-  { id: 'm3_hold_the_line', name: 'Hold the Line', order: 3 },
-  { id: 'm4_the_vein', name: 'The Vein', order: 4 },
-  { id: 'm5_iron_ash', name: 'Iron & Ash', order: 5 },
-  { id: 'm6_ashen_warlord', name: 'The Ashen Warlord', order: 6 },
-  { id: 'm7_the_turn', name: 'The Turn', order: 7 },
-  { id: 'm8_ashfall', name: 'Act II · Ashfall', order: 8 },
-  { id: 'm9_the_exchange', name: 'Act II · The Exchange', order: 9 },
-  { id: 'm10_stormline', name: 'Act II · Stormline', order: 10 },
-  { id: 'm11_cauterize', name: 'Act II · Cauterize', order: 11 },
-  { id: 'm12_renegade', name: 'Act II · The Renegade', order: 12 },
-  { id: 'm13_choir_of_glass', name: 'Act II · Choir of Glass', order: 13 },
-  { id: 'm14_first_vein', name: 'Act II · The First Vein', order: 14 },
-  { id: 'm15_aftershock', name: 'Act III · Aftershock', order: 15 },
-  { id: 'm16_ash_court', name: 'Act III · The Ash Court', order: 16 },
-  { id: 'm17_aethers_verdict', name: 'Act III · Aether\'s Verdict', order: 17 },
-  { id: 'm18_act4_ruins', name: 'Act IV · Ruins of the Vein', order: 18 },
-  { id: 'm19_act4_convergence', name: 'Act IV · Convergence', order: 19 },
-  { id: 'm20_act4_genesis', name: 'FINALE · Genesis', order: 20 },
+const CAMPAIGN: { id: string; name: string; order: number; act: 1 | 2 | 3 | 4; blurb: string }[] = [
+  { id: 'm1_first_light', name: 'First Light', order: 1, act: 1, blurb: 'Raise the landing-zone base and take the watch-post.' },
+  { id: 'm2_lifeblood', name: 'Lifeblood', order: 2, act: 1, blurb: 'Meet the Shard quota while raiders hunt your harvesters.' },
+  { id: 'm3_hold_the_line', name: 'Hold the Line', order: 3, act: 1, blurb: 'Dig in at Canyon Reach until relief arrives.' },
+  { id: 'm4_the_vein', name: 'The Vein', order: 4, act: 1, blurb: 'Take and hold the vein at the canyon\'s heart.' },
+  { id: 'm5_iron_ash', name: 'Iron & Ash', order: 5, act: 1, blurb: 'Field armour and crack a fortified ridge.' },
+  { id: 'm6_ashen_warlord', name: 'The Ashen Warlord', order: 6, act: 1, blurb: 'Assault Sera Vane\'s stronghold as the storm builds.' },
+  { id: 'm7_the_turn', name: 'The Turn', order: 7, act: 1, blurb: 'Refuse the purge. Survive the Directorate. Turn.' },
+  { id: 'm8_ashfall', name: 'Act II · Ashfall', order: 8, act: 2, blurb: 'Rebuild the Emberhand from a graveyard of machines.' },
+  { id: 'm9_the_exchange', name: 'Act II · The Exchange', order: 9, act: 2, blurb: 'Hold the Syndicate relay — trust the broker like a thrown knife.' },
+  { id: 'm10_stormline', name: 'Act II · Stormline', order: 10, act: 2, blurb: 'Ghostwalkers past the picket line to the deep vein.' },
+  { id: 'm11_cauterize', name: 'Act II · Cauterize', order: 11, act: 2, blurb: 'Put AA steel in the sky\'s way as Cauterize begins.' },
+  { id: 'm12_renegade', name: 'Act II · The Renegade', order: 12, act: 2, blurb: 'Corr defects. Two armies under one storm-wall.' },
+  { id: 'm13_choir_of_glass', name: 'Act II · Choir of Glass', order: 13, act: 2, blurb: 'Burn the Choir\'s growth; spare the deep root.' },
+  { id: 'm14_first_vein', name: 'Act II · The First Vein', order: 14, act: 2, blurb: 'Seal the Deep, or Harness the Chorus. Choose.' },
+  { id: 'm15_aftershock', name: 'Act III · Aftershock', order: 15, act: 3, blurb: 'Survive the answer to what you chose.' },
+  { id: 'm16_ash_court', name: 'Act III · The Ash Court', order: 16, act: 3, blurb: 'Break Halex\'s court on the glass-flats.' },
+  { id: 'm17_aethers_verdict', name: 'Act III · Aether\'s Verdict', order: 17, act: 3, blurb: 'One stronghold. One man. End him.' },
+  { id: 'm18_act4_ruins', name: 'Act IV · Ruins of the Vein', order: 18, act: 4, blurb: 'Take the three spore towers before the crust tears.' },
+  { id: 'm19_act4_convergence', name: 'Act IV · Convergence', order: 19, act: 4, blurb: 'Silence the Directorate\'s uplink batteries.' },
+  { id: 'm20_act4_genesis', name: 'FINALE · Genesis', order: 20, act: 4, blurb: 'The last stronghold above the Vein. End the war.' },
 ];
 
 function openMissionSelect(): void {
@@ -1117,7 +1153,7 @@ function openMissionSelect(): void {
   }));
   // BACK returns through openTitle() so SKIRMISH always routes via the setup screen
   // (a divergent inline callback here used to bypass it — QA BUG-1).
-  showMissionSelect(entries, id => { location.search = `?mission=${id}`; }, () => openTitle());
+  showMissionSelect(entries, (id, difficulty) => { location.search = `?mission=${id}&difficulty=${difficulty}`; }, () => openTitle());
 }
 
 // Title menu: Campaign → mission select; Skirmish → setup (map/faction/difficulty).
