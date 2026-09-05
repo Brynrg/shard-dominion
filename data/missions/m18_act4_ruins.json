@@ -1,6 +1,6 @@
 {
   "id": "m18_act4_ruins",
-  "name": "Act IV \u00b7 The Ruins",
+  "name": "Act IV · The Ruins",
   "order": 18,
   "inheritsChoice": true,
   "map": {
@@ -11,31 +11,31 @@
   "briefing": {
     "title": "THE RUINS",
     "story": [
-      "Halex is gone. The Directorate falls like sand. But Aether Prime does not forgive,",
-      "and the planet is still awake \u2014 a god that walked, not slept. The Chorus stirs",
-      "beneath the glass-flats, and the crust is fracturing.",
+      "Halex is dead and the Directorate on Aether Prime is a headless thing — but it",
+      "has not stopped moving. Its last flights are digging in on the glass-flats above",
+      "the Vein, and the ground under them has not finished answering the Warden.",
       "",
-      "SERA VANE: \"The binding holds, but it's not perfect. We need to stabilize the",
-      "convergence zones before the whole continent splits. That means we secure the",
-      "ruins and the remaining spore towers \u2014 they are anchors, and they're ours now.\"",
+      "SERA VANE: \"Three spore towers. The planet grew them itself, long before us — every",
+      "thread of what you did at the Vein runs through them. Whoever holds the towers",
+      "holds the wound. Right now the Directorate does.\"",
       "",
-      "MARSHAL CORR: \"One more campaign. One more, and we bring Aether Prime to heel.\""
+      "MARSHAL CORR: \"One more campaign, Warden. Then we find out what we bought.\""
     ],
     "objectives": [
-      "Secure the three spore tower sites (hold each for 45s)",
-      "Defend the binding site at the Vein (must survive entire battle)"
+      "Take and hold the three spore towers (45s each)",
+      "Keep the Construction Yard standing until the towers are anchored"
     ]
   },
   "debrief": {
     "win": [
-      "The towers sing now in harmony with the waking god. The convergence zones stabilize,",
-      "and Aether Prime ceases its violent thrashing. The continent holds. The Chorus dreams",
-      "on, bound by your choice at the First Vein, held by the towers you claimed.",
-      "The real work begins now: learning to live with a world that thinks."
+      "The towers hum in a chord the planet chose. The fracture lines slow, then stop.",
+      "The continent holds — for now — and the Directorate survivors pull back toward",
+      "the last uplink batteries on the far flats.",
+      "CORR: \"Anchored. Whatever you decided at the Vein, it just held.\""
     ],
     "lose": [
-      "The towers fall silent. The convergence accelerates, and the crust opens into",
-      "a chasm that swallows whole cities. Aether Prime, uncontrolled, becomes a tomb."
+      "The towers fall silent one by one. The crust opens along the fracture lines,",
+      "and Aether Prime — sealed or bound, it no longer matters — becomes a tomb."
     ]
   },
   "naturalShardDensity": 250,
@@ -270,7 +270,7 @@
       },
       "seconds": 45,
       "primary": true,
-      "text": "Hold the north spore tower",
+      "text": "Take and hold the north spore tower (45s)",
       "id": "obj_north"
     },
     {
@@ -283,7 +283,7 @@
       },
       "seconds": 45,
       "primary": true,
-      "text": "Hold the east spore tower",
+      "text": "Take and hold the east spore tower (45s)",
       "id": "obj_east"
     },
     {
@@ -296,7 +296,7 @@
       },
       "seconds": 45,
       "primary": true,
-      "text": "Hold the south spore tower",
+      "text": "Take and hold the south spore tower (45s)",
       "id": "obj_south"
     },
     {
@@ -304,8 +304,31 @@
       "team": "player",
       "seconds": 300,
       "primary": true,
-      "text": "Keep the binding site secure",
+      "text": "Survive until the towers are anchored (5:00)",
       "id": "obj_bind"
+    },
+    {
+      "type": "destroy",
+      "id": "obj_seal_radar",
+      "team": "enemy",
+      "kind": "radar",
+      "primary": false,
+      "onlyIfChoice": "seal",
+      "text": "SEAL: blind the Directorate survey — destroy their radar before they map the charges"
+    },
+    {
+      "type": "hold",
+      "id": "obj_harness_bind",
+      "team": "player",
+      "region": {
+        "tx": 20,
+        "ty": 20,
+        "r": 4
+      },
+      "seconds": 60,
+      "primary": false,
+      "onlyIfChoice": "harness",
+      "text": "HARNESS: keep the Chorus leashed — hold the binding site (60s)"
     }
   ],
   "failure": [
@@ -322,6 +345,43 @@
   "next": "m19_act4_convergence",
   "triggers": [
     {
+      "id": "t18_seal_open",
+      "when": {
+        "choice": "seal"
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "MARSHAL CORR",
+          "text": "The Vein is sealed and the sand is quiet — too quiet for the Directorate. Their survey teams are mapping your charges from that radar. Blind them, then take the towers."
+        }
+      ]
+    },
+    {
+      "id": "t18_harness_open",
+      "when": {
+        "choice": "harness"
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "THE CHORUS",
+          "text": "YOU   HOLD   THE   LEASH.   HOLD   IT   WELL.   THE   TOWERS   ARE   OUR   SPINE."
+        },
+        {
+          "type": "spawn",
+          "team": "neutral",
+          "units": [
+            {
+              "type": "riftmaw",
+              "tx": 20,
+              "ty": 24
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "t_open",
       "when": {
         "timeSeconds": 4
@@ -330,20 +390,20 @@
         {
           "type": "message",
           "speaker": "SERA VANE",
-          "text": "The binding is a stitched wound, Warden. Three spore towers hold the thread. Lose one and the planet tears itself open."
+          "text": "Three towers, Warden. Lose one and the planet tears itself open — and it will not care which of us it takes."
         }
       ]
     },
     {
-      "id": "t_chorus_stir",
+      "id": "t18_seal_stir",
       "when": {
-        "timeSeconds": 75
+        "choice": "seal"
       },
       "actions": [
         {
           "type": "message",
           "speaker": "THE CHORUS",
-          "text": "WE   DO   NOT   CONSENT   TO   SLEEP."
+          "text": "...dreaming... the small ones walk on our sleep... let them..."
         }
       ]
     },
@@ -369,7 +429,7 @@
         {
           "type": "message",
           "speaker": "SERA VANE",
-          "text": "East thread anchored. The fracture lines are slowing. Whatever you're doing \u2014 keep doing it."
+          "text": "East thread anchored. The fracture lines are slowing. Whatever you're doing — keep doing it."
         }
       ]
     },
@@ -395,12 +455,25 @@
         {
           "type": "message",
           "speaker": "SERA VANE",
-          "text": "Emberhand caches, west ridge. They're yours now \u2014 the dead don't bank."
+          "text": "Emberhand caches, west ridge. They're yours now — the dead don't bank."
         },
         {
           "type": "grantCredits",
           "team": "player",
           "amount": 400
+        }
+      ]
+    },
+    {
+      "id": "t18_harness_stir",
+      "when": {
+        "choice": "harness"
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "THE CHORUS",
+          "text": "WE   DO   NOT   CONSENT   TO   THE   LEASH.   WE   HOLD   IT   ANYWAY.   FOR   NOW."
         }
       ]
     }

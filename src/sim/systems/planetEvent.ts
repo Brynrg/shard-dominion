@@ -152,11 +152,12 @@ export function makePlanetEventSystem(units: readonly UnitDef[], refinements: re
         }
       }
 
-      // ── 3) Derricks: lone-team capture + owner income ────────────────────────
+      // ── 3) Capturable neutrals: lone-team capture + owner income ─────────────
+      // derrick pays credits, relay pays Cells, spore_tower (Act IV) is an anchor with no income.
       for (const derrick of state.store.all()) {
         const factionC = derrick.components.faction;
         const kindHere = factionC?.faction;
-        if (!factionC || (kindHere !== 'derrick' && kindHere !== 'relay')) continue;
+        if (!factionC || (kindHere !== 'derrick' && kindHere !== 'relay' && kindHere !== 'spore_tower')) continue; // Act IV: spore towers are capturable anchors (no income)
         const dp = derrick.components.position;
         if (!dp) continue;
         const owner = factionC.team;

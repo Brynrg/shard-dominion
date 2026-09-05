@@ -1,6 +1,6 @@
 {
   "id": "m19_act4_convergence",
-  "name": "Act IV \u00b7 Convergence",
+  "name": "Act IV · Convergence",
   "order": 19,
   "inheritsChoice": true,
   "map": {
@@ -11,32 +11,30 @@
   "briefing": {
     "title": "CONVERGENCE",
     "story": [
-      "The towers sing. The planet listens. But the Chorus is waking all the way now,",
-      "and Aether Prime's own defensive instinct is kicking in \u2014 the old, automated",
-      "systems that have slept for centuries are stirring in the deep places.",
+      "The towers sing. The Directorate remnant has answered the only way it knows:",
+      "three uplink batteries on the northern flats, aimed at the towers, waiting for a",
+      "fleet that will never come. Their fire control runs through your convergence node.",
       "",
-      "SERA VANE: \"We're getting energy spikes across the continent. The Chorus is",
-      "calling up the old defenses \u2014 automated installations that want to shut down",
-      "anything moving. We have to take them offline, or the whole binding collapses.\"",
+      "SERA VANE: \"Every battery they raise is another thread cut. Take them offline —",
+      "all three — or the continent finishes what the Vein started.\"",
       "",
-      "MARSHAL CORR: \"Then we move. We end this. No more sitting on the defensive.\""
+      "MARSHAL CORR: \"Then we move. No more sitting on the defensive. The node holds; we go.\""
     ],
     "objectives": [
-      "Destroy the three defense installations (orbital cannons)",
-      "Protect the convergence node (your task anchor \u2014 defend the radar)"
+      "Destroy the three Directorate uplink batteries",
+      "Protect the convergence node (defend the Radar)"
     ]
   },
   "debrief": {
     "win": [
-      "The cannons fall silent. Aether Prime's ancient reflexes tire, then sleep.",
-      "The Chorus settles, bound now not just by choice, but by the orchestrated harmony",
-      "of tower, cannon, and binding. The planet rests. The work of healing can begin.",
+      "The batteries fall silent. The last Directorate command on Aether Prime is a",
+      "single fortified crater above the Vein, and every gun it has left is pointed at you.",
       "",
-      "VANE: \"We did it. Against every odd, every god, every enemy... we did it.\""
+      "VANE: \"One door left. Whatever is behind it, we open it together.\""
     ],
     "lose": [
-      "The cannons fire endlessly. The convergence node collapses under the onslaught.",
-      "The binding, fragmented, fails. Aether Prime wakes fully, and nothing remains."
+      "The batteries fire until the towers crack. The convergence node collapses,",
+      "the threads go slack, and Aether Prime wakes into nothing at all."
     ]
   },
   "naturalShardDensity": 280,
@@ -311,7 +309,7 @@
       "team": "enemy",
       "kind": "barracks",
       "primary": true,
-      "text": "Destroy the north defense installation",
+      "text": "Destroy the north uplink battery",
       "id": "obj_inst_north"
     },
     {
@@ -319,7 +317,7 @@
       "team": "enemy",
       "kind": "barracks",
       "primary": true,
-      "text": "Destroy the east defense installation",
+      "text": "Destroy the east uplink battery",
       "id": "obj_inst_east"
     },
     {
@@ -327,7 +325,7 @@
       "team": "enemy",
       "kind": "war_factory",
       "primary": true,
-      "text": "Destroy the south defense installation",
+      "text": "Destroy the south uplink battery",
       "id": "obj_inst_south"
     },
     {
@@ -335,8 +333,31 @@
       "team": "player",
       "seconds": 420,
       "primary": true,
-      "text": "Protect the convergence node",
+      "text": "Protect the convergence node (7:00)",
       "id": "obj_node"
+    },
+    {
+      "type": "accumulate",
+      "id": "obj_seal_bank",
+      "team": "player",
+      "credits": 7000,
+      "primary": false,
+      "onlyIfChoice": "seal",
+      "text": "SEAL: the fields are thinning — bank 7,000 credits before the sand goes cold"
+    },
+    {
+      "type": "hold",
+      "id": "obj_harness_node",
+      "team": "player",
+      "region": {
+        "tx": 22,
+        "ty": 22,
+        "r": 4
+      },
+      "seconds": 90,
+      "primary": false,
+      "onlyIfChoice": "harness",
+      "text": "HARNESS: keep the Chorus leashed — hold the convergence node (90s)"
     }
   ],
   "failure": [
@@ -353,6 +374,48 @@
   "next": "m20_act4_genesis",
   "triggers": [
     {
+      "id": "t19_seal_open",
+      "when": {
+        "choice": "seal"
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "MARSHAL CORR",
+          "text": "The Vein is a grave and the planet sleeps on it. Those batteries are the Directorate trying to dig it back up with a fleet’s worth of ordnance. Break them."
+        }
+      ]
+    },
+    {
+      "id": "t19_harness_open",
+      "when": {
+        "choice": "harness"
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "THE CHORUS",
+          "text": "THEY   AIM   AT   OUR   SPINE.   WE   FEEL   EVERY   SHELL.   END   THEM,   WARDEN,   OR   WE   WILL   —   AND   YOU   WILL   NOT   LIKE   HOW."
+        },
+        {
+          "type": "spawn",
+          "team": "neutral",
+          "units": [
+            {
+              "type": "riftmaw",
+              "tx": 22,
+              "ty": 30
+            },
+            {
+              "type": "riftmaw",
+              "tx": 30,
+              "ty": 22
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "t_open",
       "when": {
         "timeSeconds": 4
@@ -361,20 +424,7 @@
         {
           "type": "message",
           "speaker": "MARSHAL CORR",
-          "text": "Those installations predate every map we own. The planet built its own garrison. Burn them out, Warden \u2014 the convergence node cannot fall."
-        }
-      ]
-    },
-    {
-      "id": "t_deep_wake",
-      "when": {
-        "timeSeconds": 90
-      },
-      "actions": [
-        {
-          "type": "message",
-          "speaker": "THE CHORUS",
-          "text": "OLD   HANDS   WAKE   IN   THE   DEEP   PLACES.   THEY   DO   NOT   KNOW   THE   WAR   IS   OVER."
+          "text": "Those installations predate every map we own. The planet built its own garrison. Burn them out, Warden — the convergence node cannot fall."
         }
       ]
     },
@@ -387,7 +437,7 @@
         {
           "type": "message",
           "speaker": "MARSHAL CORR",
-          "text": "North installation is slag. Its guns were aimed at the towers \u2014 the planet's own reflexes are fighting the cure."
+          "text": "North installation is slag. Its guns were aimed at the towers — the planet's own reflexes are fighting the cure."
         }
       ]
     },
@@ -426,7 +476,7 @@
         {
           "type": "message",
           "speaker": "MARSHAL CORR",
-          "text": "Movement converging on the node from the deep tunnels. Whatever you're holding back \u2014 stop holding it back."
+          "text": "Movement converging on the node from the deep tunnels. Whatever you're holding back — stop holding it back."
         }
       ]
     }

@@ -58,7 +58,7 @@ const DESIGNATOR: Record<string, string> = {
   construction_yard: 'CY', barracks: 'BK', refinery: 'RF', power_node: 'PW',
   war_factory: 'WF', defense_turret: 'DT', aa_turret: 'AA', radar: 'RD',
   processing_plant: 'PP', skypad: 'SK', wall: 'WL', gate: 'GT', bunker: 'BN',
-  infirmary: 'IF', machine_shop: 'MS', derrick: 'DK', relay: 'RL', wreck: 'WK',
+  infirmary: 'IF', machine_shop: 'MS', derrick: 'DK', relay: 'RL', wreck: 'WK', spore_tower: 'ST',
   concrete_slab: 'SL', generic_structure: 'GN',
   assault_tank: 'AT', scout_vehicle: 'SV', longbow: 'LB', skimmer_apc: 'AP',
   gunship: 'GS', harvester: 'HV', infantry: 'IN', rocket_trooper: 'RT', vehicle: 'VH',

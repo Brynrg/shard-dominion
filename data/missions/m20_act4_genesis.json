@@ -1,6 +1,6 @@
 {
   "id": "m20_act4_genesis",
-  "name": "Act IV \u00b7 Genesis",
+  "name": "Act IV · Genesis",
   "order": 20,
   "inheritsChoice": true,
   "map": {
@@ -11,41 +11,35 @@
   "briefing": {
     "title": "GENESIS",
     "story": [
-      "The defenses fall. The towers sing in harmony. The binding holds firm, and Aether Prime",
-      "settles into a new equilibrium \u2014 not the sleep of ages, but the waking rest of a god",
-      "that has learned consent, learned partnership with the fragile things that walk its crust.",
+      "One crater. One last enemy. The Directorate remnant has pulled everything it has",
+      "left into a fortress on the lip of the First Vein — the wound the Warden closed,",
+      "or leashed, a lifetime ago — and it means to finish the argument with fire.",
       "",
-      "But there is one last threat. The Chorus itself has fragments, splinters of consciousness",
-      "that were never part of the binding. They rage at the edges of the planet, calling to the",
-      "deep places, trying to break free. One final push, one last battle. Then, peace.",
+      "SERA VANE: \"This is it. Everything we buried on this rock was spent to buy this",
+      "morning. Take the field. End the war. And let something new begin.\"",
       "",
-      "SERA VANE: \"This is it. Everything we've fought for comes down to this single moment.",
-      "Take the field. Seal the cracks in the world. End this war. And let something new begin.\""
+      "MARSHAL CORR: \"Every name on my ledger is watching, Warden. Spend it well.\""
     ],
     "objectives": [
-      "Achieve total victory \u2014 destroy all enemy forces",
-      "Secure the genesis point (control the center of the map for 60s)"
+      "Destroy the last Directorate stronghold",
+      "Hold the genesis point above the Vein"
     ]
   },
   "debrief": {
     "win": [
-      "The last fragments of Aether Prime's fractured consciousness are sealed away,",
-      "integrated into the binding, made whole. The planet rests, truly rests, for the first time",
-      "in a thousand years. And on its surface, two factions \u2014 enemies for so long \u2014 stand",
-      "together in the ruins of the old world, looking toward something new.",
+      "The last Directorate guns fall silent above the Vein. On its lip, two armies",
+      "that spent a year killing each other stand together in the ruins of the old world,",
+      "and beneath them the planet does what the Warden decided it would do: sleeps, or",
+      "listens. Either way, it is theirs to live with now.",
       "",
-      "MARSHAL CORR: \"We came to fight a god. We leave as something more \u2014 something that",
-      "helped create the world that's coming next.\"",
-      "",
-      "SERA VANE: \"The war is over. The real work begins now. Aether Prime is listening.",
-      "Let's give it something worth hearing.\""
+      "MARSHAL CORR: \"We came to take a world. We leave having been taken by one.\"",
+      "SERA VANE: \"The war is over. The real work begins. Aether Prime is listening —",
+      "or dreaming. Let’s give it something worth the difference.\""
     ],
     "lose": [
-      "The fragments break free. The binding shatters like glass. Aether Prime wakes",
-      "fully, and in that waking, the world ends. You fought with honor, fought with courage \u2014",
-      "but some things are too powerful, too vast, to ever truly defeat.",
-      "",
-      "Your sacrifice will echo in the ruins, remembered by no one."
+      "The stronghold holds. The Directorate cracks the Vein with everything it has left,",
+      "and what comes up through the crack does not distinguish between the sides.",
+      "You fought with honour. The planet did not notice."
     ]
   },
   "naturalShardDensity": 300,
@@ -332,8 +326,23 @@
       },
       "seconds": 60,
       "primary": true,
-      "text": "Secure the genesis point",
-      "id": "obj_genesis"
+      "text": "HARNESS: hold the genesis point — the Chorus must feel you there (60s)",
+      "id": "obj_genesis",
+      "onlyIfChoice": "harness"
+    },
+    {
+      "type": "hold",
+      "id": "obj_seal_watch",
+      "team": "player",
+      "region": {
+        "tx": 23,
+        "ty": 23,
+        "r": 4
+      },
+      "seconds": 45,
+      "primary": false,
+      "onlyIfChoice": "seal",
+      "text": "SEAL: stand watch over the sealed Vein (45s)"
     }
   ],
   "failure": [
@@ -345,6 +354,32 @@
   "next": null,
   "triggers": [
     {
+      "id": "t20_seal_open",
+      "when": {
+        "choice": "seal"
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "SERA VANE",
+          "text": "They are drilling into the seal, Warden. If they crack it, the planet wakes angry and none of us leave. Burn the fortress before the drills bite."
+        }
+      ]
+    },
+    {
+      "id": "t20_harness_open",
+      "when": {
+        "choice": "harness"
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "THE CHORUS",
+          "text": "WE   ARE   AWAKE.   WE   ARE   LEASHED.   STAND   ON   THE   GENESIS   POINT   AND   WE   WILL   KNOW   WHOSE   HAND   HOLDS   US."
+        }
+      ]
+    },
+    {
       "id": "t_open",
       "when": {
         "timeSeconds": 4
@@ -353,7 +388,7 @@
         {
           "type": "message",
           "speaker": "MARSHAL CORR",
-          "text": "Last field, Warden. Everything we buried on this rock \u2014 every name on my ledger \u2014 was spent to buy this morning. Spend it well."
+          "text": "Last field, Warden. Everything we buried on this rock was spent to buy this morning."
         }
       ]
     },
@@ -371,28 +406,28 @@
       ]
     },
     {
-      "id": "t_chorus_watch",
-      "when": {
-        "timeSeconds": 60
-      },
-      "actions": [
-        {
-          "type": "message",
-          "speaker": "THE CHORUS",
-          "text": "WE   WATCH.   WE   DO   NOT   INTERVENE.   THIS   QUARREL   IS   YOURS   TO   END."
-        }
-      ]
-    },
-    {
-      "id": "t_genesis_held",
+      "id": "t20_genesis_held",
       "when": {
         "objectiveComplete": "obj_genesis"
       },
       "actions": [
         {
           "type": "message",
-          "speaker": "SERA VANE",
-          "text": "Genesis point is ours. The ground under it is WARM, Warden \u2014 it's listening. Finish this."
+          "speaker": "THE CHORUS",
+          "text": "we feel you there... yes... that hand. that one. finish it."
+        }
+      ]
+    },
+    {
+      "id": "t20_seal_watch",
+      "when": {
+        "objectiveComplete": "obj_seal_watch"
+      },
+      "actions": [
+        {
+          "type": "message",
+          "speaker": "MARSHAL CORR",
+          "text": "Seal is intact. The sand under it is cold and it is going to stay cold. Now go end the last man who wants it warm."
         }
       ]
     },
@@ -405,7 +440,7 @@
         {
           "type": "message",
           "speaker": "MARSHAL CORR",
-          "text": "Their line is cracking. One more push and this war is history \u2014 the kind we get to write."
+          "text": "Their line is cracking. One more push and this war is history — the kind we get to write."
         },
         {
           "type": "grantCredits",

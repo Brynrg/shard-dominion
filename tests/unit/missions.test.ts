@@ -6,6 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { loadMission, type Mission } from '../../src/loaders/missions.js';
 import { loadUnits } from '../../src/loaders/units.js';
 import { loadStructures } from '../../src/loaders/structures.js';
+import { isNeutralKind } from '../../src/sim/neutralKinds.js';
 import unitsData from '../../data/units.json' with { type: 'json' };
 import structuresData from '../../data/structures.json' with { type: 'json' };
 import skirmish from '../../data/missions/skirmish.json' with { type: 'json' };
@@ -83,6 +84,17 @@ describe('missions — schema + integrity', () => {
       for (const f of fields) {
         expect(inBounds(f.tx, f.ty), `${m.id}: field origin out of bounds`).toBe(true);
         expect(inBounds(f.tx + f.w - 1, f.ty + f.h - 1), `${m.id}: field extent out of bounds`).toBe(true);
+      }
+    }
+  });
+
+  it('neutral map features use known neutral kinds and sit in bounds', () => {
+    for (const m of missions) {
+      const { width, height } = m.map;
+      const inBounds = (tx: number, ty: number) => tx >= 0 && tx < width && ty >= 0 && ty < height;
+      for (const n of m.neutrals) {
+        expect(isNeutralKind(n.type), `${m.id}: unknown neutral kind "${n.type}"`).toBe(true);
+        expect(inBounds(n.tx, n.ty), `${m.id}: neutral "${n.type}" at (${n.tx},${n.ty}) out of bounds`).toBe(true);
       }
     }
   });
