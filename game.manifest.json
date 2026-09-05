@@ -9,5 +9,7 @@
   "framework": "vite-canvas2d",
   "supportsMobile": false,
   "emoji": "🎮",
-  "version": "0.62.0"
+  "version": "0.62.0",
+  "assetsDocumented": true,
+  "assetLicenseSummary": "All assets project-generated, no third-party files: unit/building sprites via xAI Grok Imagine from the repo's own prompts (project-owned), terrain + cards + portraits code-drawn, audio procedural. See ASSETS.md."
 }

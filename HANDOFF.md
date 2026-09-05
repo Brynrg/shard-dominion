@@ -135,6 +135,7 @@ determinism harness** (`tests/unit/determinism.test.ts` — the lockstep-MP subs
    See memory [[project_speedrungames_deploy]].
 
 ## Art pipeline — NOW CODE-DRAWN (2026-07-11)
+> **Provenance correction (2026-09-05):** units + buildings were re-shipped on 2026-07-19 as Grok-generated painted sprites (`scripts/gen-art-grok.mjs`); terrain + presentation stay code-drawn. `ASSETS.md` is the authority for per-bucket provenance/licensing.
 **All game art is generated as SVG/canvas → transparent-PNG by `scripts/art-gen/`
 (`kit.mjs` helpers · `shapes.mjs` every unit/building shape · `render.mjs` sprites ·
 `terrain.mjs` seamless tiles · `strips.mjs` walk/drive/fire anim · `presentation.mjs`
