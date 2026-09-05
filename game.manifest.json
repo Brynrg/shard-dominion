@@ -2,7 +2,7 @@
   "slug": "shard-dominion",
   "title": "Shard Dominion",
   "description": "Late-90s Westwood-style RTS: a 20-mission four-act campaign with a branching Seal/Harness choice, 3 mechanically distinct factions, a prerequisite-gated tech tree with stacking research, buildable superweapons (Ion Cannon / Resonance Device), a living planet that hunts the greedy, saves/replays, and experimental 1v1/2v2 lockstep. v0.56 GAMEPLAY OVERHAUL: real RA-pace economy (tier 2 ~1 min, tier 3 ~2-3 min), 15-25 minute matches on a 48x48 map with contested expansions, three true AI difficulty personalities that build bases, expand, retreat and play behind fog-of-war, an RA-style win condition (no more hunting the last rifleman), and the full 24-unit / 23-structure roster reachable from a paged data-driven sidebar. v0.62 WC3-PARITY BUILD-OUT: heroes have an active kit (two abilities each on cooldowns, F1/F2 or the HUD bar) and the Warden/Vane leads every campaign mission in person (hero death is defeat); mission scripting gained WC3-class beats (unit-enters/destroyed/low-HP/chained triggers with delays, add/complete objectives, remove units, real fog reveals, camera jumps); Act IV now branches on the Seal/Harness choice; campaign presentation fixed (bounded briefings, act-grouped mission select with difficulty, Act III/IV cards).",
-  "repo": "Brynrg/speedrungames",
+  "repo": "Brynrg/shard-dominion",
   "playUrl": "/games/shard-dominion/",
   "category": "strategy",
   "status": "live",

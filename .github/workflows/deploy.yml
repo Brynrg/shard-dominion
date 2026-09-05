@@ -1,0 +1,25 @@
+name: Deploy to speedrungames.net
+
+# The established path (portal AGENTS.md §0/§2): every push to main builds here and
+# calls the portal's reusable workflow — canonical ingest → auto-merging portal PR that
+# lands only when the portal's validate-and-build + Netlify deploy preview pass.
+# Never hand-copy build output into the portal.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    uses: Brynrg/speedrungames/.github/workflows/deploy-game.yml@main
+    with:
+      slug: shard-dominion
+      build-command: npm run build
+      dist-dir: dist
+      status: live
+    secrets:
+      SPEEDRUNGAMES_TOKEN: ${{ secrets.SPEEDRUNGAMES_TOKEN }}

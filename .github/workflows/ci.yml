@@ -1,0 +1,30 @@
+name: CI
+
+# Typecheck + lint + the unit suite on every push/PR (mirrors `pnpm run verify`).
+# The Playwright liveness gates run locally before a slice ships (see AGENTS.md §6);
+# they are not on the CI critical path yet.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run verify
