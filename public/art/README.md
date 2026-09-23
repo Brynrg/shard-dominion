@@ -12,7 +12,14 @@ with the built-in procedural art — so you can add assets one at a time.
 2. Add its path (no extension) to `manifest.json` → `sheets`.
 3. Reload — the engine swaps it in automatically. No code changes needed.
 
-There is **no `manifest.json` yet on purpose** — until one exists the game stays fully
-procedural. Copy `manifest.example.json` to `manifest.json` when the first asset lands.
+`manifest.json` currently registers 199 sprite sheets (141 unit animation sheets and
+58 building sheets), plus 12 presentation images. The renderer also loads 13 terrain
+textures. Procedural rendering remains the fallback for unavailable sheets.
+
+The presentation PNGs were replaced in the September 2026 art pass using original
+generated illustrations. Their stable filenames preserve campaign and portrait
+routing. `scripts/art-gen/presentation.mjs` is the older procedural fallback generator;
+running it over this directory would replace the new paintings with that older style.
+See `docs/ART_REVIEW_2026-09.md` for scope and validation.
 
 Folders: `units/ buildings/ terrain/ fx/ projectiles/ ui/`

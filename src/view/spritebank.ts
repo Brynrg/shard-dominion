@@ -5,6 +5,7 @@
 // look — instead of a vector shape whose shading spins with it. IP-clean: every pixel
 // is generated procedurally here; no external art assets. View-only (DOM allowed).
 import type { WeaponsFile } from '../loaders/schemas.js';
+import { clipFrame, unitMotion } from './motion.js';
 
 export interface TeamStyle { hull: string; hullDark: string; accent: string; stripe: string; }
 
@@ -326,6 +327,8 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 }
 
 export interface SpriteBank {
+  /** Successfully decoded and installed sheets, excluding procedural fallbacks. */
+  loadedSheetCount(): number;
   /** `frame` is a 60 Hz-equivalent animation tick from elapsed VIEW wall-clock
    *  (not a raw rAF count), so strips play at the same perceived rate at 30/60/120 Hz. */
   drawUnit(ctx: CanvasRenderingContext2D, kind: string, team: string, weaponType: string | undefined, angle: number, sx: number, sy: number, frame: number, scale: number, anim?: UnitAnim): void;
@@ -364,13 +367,14 @@ export function makeSpriteBank(teams: Record<string, TeamStyle>, neutral: TeamSt
   const realBldg = new Map<string, RealSprite>();             // delivered building sheets, same key shape
   let factionIds: Record<string, string> = {};                // team key → faction id (XP-3 skins)
   const terrainTiles = new Map<string, CanvasImageSource>(); // delivered seamless ground tiles, key = tile name
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
   // Draw one frame of a delivered sheet centred on its pivot at (sx,sy).
-  function drawReal(ctx: CanvasRenderingContext2D, rs: RealSprite, angle: number, sx: number, sy: number, frame: number, scale: number): void {
+  function drawReal(ctx: CanvasRenderingContext2D, rs: RealSprite, angle: number, sx: number, sy: number, frame: number, scale: number, once = false): void {
     const m = rs.meta;
     // `frame` is a 60 Hz-equivalent tick (elapsedMs * 60 / 1000), so this is
     // refresh-rate independent: the same fps strip advances in wall-clock time.
-    const col = m.fps > 0 && m.frames > 1 ? Math.floor((frame * m.fps) / 60) % m.frames : 0;
+    const col = clipFrame(frame / 60, m.fps, m.frames, once);
     const dw = m.inGameWidthPx * scale;
     const dh = dw * (m.frameHeight / m.frameWidth);
 
@@ -452,6 +456,7 @@ export function makeSpriteBank(teams: Record<string, TeamStyle>, neutral: TeamSt
 
   return {
     U, BLDG,
+    loadedSheetCount: () => realUnit.size + realBldg.size,
     installSheet,
     setFactionIds(map) { factionIds = map; },
     async loadTerrain(baseUrl = 'art') {
@@ -497,30 +502,43 @@ export function makeSpriteBank(teams: Record<string, TeamStyle>, neutral: TeamSt
     drawUnit(ctx, kind, team, _weaponType, angle, sx, sy, frame, scale, anim = 'idle') {
       const u = U * scale;
       // contact shadow (world-down; shared by real + procedural so units feel grounded)
-      ctx.fillStyle = 'rgba(0,0,0,0.32)';
-      ctx.beginPath(); ctx.ellipse(sx + 2, sy + u * 0.22, u * 0.28, u * 0.13, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,0,0.16)';
+      ctx.beginPath(); ctx.ellipse(sx + 3 * scale, sy + u * 0.18, u * 0.34, u * 0.17, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,0,0.30)';
+      ctx.beginPath(); ctx.ellipse(sx + 2 * scale, sy + u * 0.18, u * 0.24, u * 0.10, 0, 0, Math.PI * 2); ctx.fill();
 
-      const real = findReal(realUnit, kind, team, anim);
+      const pose = unitMotion(kind, anim, frame / 60, reducedMotion.matches);
+      ctx.save();
+      ctx.translate(sx - Math.cos(angle) * pose.recoil * scale, sy + pose.bob * scale - Math.sin(angle) * pose.recoil * scale);
+      ctx.rotate(pose.roll);
+      let real = findReal(realUnit, kind, team, anim);
+      // A completed fire clip returns to the base pose instead of flashing again.
+      if (real && anim === 'firing' && real.state === 'fire' && real.rs.meta.fps > 0
+        && frame / 60 >= real.rs.meta.frames / real.rs.meta.fps) real = findReal(realUnit, kind, team, 'idle');
       if (real) {
         // An idle unit on a strip sheet (no base art delivered) freezes on frame 0.
-        drawReal(ctx, real.rs, angle, sx, sy, anim === 'idle' && real.state !== 'base' ? 0 : frame, scale);
+        drawReal(ctx, real.rs, angle, 0, 0, anim === 'idle' && real.state !== 'base' ? 0 : frame, scale, anim === 'firing');
+        ctx.restore();
         return;
       }
 
       const k = unitFrames.has(`${kind}|${team}`) ? kind : 'generic';
       const t = unitFrames.has(`${k}|${team}`) ? team : 'neutral';
       const frames = unitFrames.get(`${k}|${t}`);
-      if (!frames) return;
+      if (!frames) { ctx.restore(); return; }
       let d = Math.round((angle / (Math.PI * 2)) * DIRS) % DIRS;
       if (d < 0) d += DIRS;
       const f = frames[d] ?? frames[0];
-      if (f) ctx.drawImage(f, sx - u / 2, sy - u / 2, u, u);
+      if (f) ctx.drawImage(f, -u / 2, -u / 2, u, u);
+      ctx.restore();
     },
     drawBuildingBody(ctx, kind, team, sx, sy, frame, scale) {
       const b = BLDG * scale;
       // grounding shadow
-      ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      ctx.fillRect(sx - b * 0.3, sy + b * 0.18, b * 0.6, 6 * scale);
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.beginPath(); ctx.ellipse(sx + 4 * scale, sy + b * 0.23, b * 0.48, b * 0.22, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,0,0.32)';
+      ctx.beginPath(); ctx.ellipse(sx + 2 * scale, sy + b * 0.23, b * 0.34, b * 0.12, 0, 0, Math.PI * 2); ctx.fill();
 
       const real = findReal(realBldg, kind, team, 'idle');
       if (real) { drawReal(ctx, real.rs, 0, sx, sy, frame, scale); return; }

@@ -1,5 +1,45 @@
 # PROGRESS — Shard Dominion
 
+## Animation follow-up — 2026-09-22
+
+User request: Update the animations as well. Keep the game muted while working.
+
+- Added individual unit phases, stride/suspension, aircraft hover, and settling recoil.
+- Firing strips start at the shot and play once; particles and headings follow pause
+  and game speed. Particle travel matches at 30/60/120 Hz.
+- Layered explosion flash/ring/debris/smoke, bounded the particle pool, smoothed
+  refinery exhaust and building lights, and added menu entrances/press feedback.
+- Reduced-motion support suppresses cosmetic motion. All changes remain view-only.
+- Pass: `pnpm run verify` (typecheck + lint; 64 test files passed, 5 skipped;
+  348 tests passed, 20 skipped).
+- Pass: `pnpm run test:live --workers=4`: 52 passed, 2 skipped (4.5m).
+- Pass: final animation suite: 3 passed (12.1s), including rendered firing pixels,
+  pause/resume without a jump, and reduced-motion presentation.
+- Skill client: two inspected gameplay screenshots, no console-error files.
+  Preview left paused and muted; no deployment or Git publication.
+
+## Visual review — 2026-09-22
+
+Original prompt: review and improve all graphics and images and art on this game.
+Follow-up: mute the game while working (confirmed through the pause menu's UNMUTE state).
+
+- Replaced all 12 presentation PNGs: title, credits, four acts, six character portraits.
+- Reworked title composition and responsive typography; added hover/focus treatments.
+- Reduced terrain/HUD texture noise, softened tile transitions, fixed contour overdraw,
+  added layered contact shadows, and sorted sprites consistently by depth.
+- Fixed opacity leaking from culled entities, faction accent mismatch, and HUD alignment
+  inherited from world labels. Preserved sim contracts, controls, balance, and sprite IDs.
+- Audited 199 registered sheets and 13 terrain images. Added presentation decoding,
+  responsive menu, full sheet installation, and HUD alignment browser checks.
+- `pnpm run verify`: typecheck + lint pass; 63 files passed, 5 skipped;
+  345 tests passed, 20 skipped. Final full liveness run: 50 passed, 2 skipped (4.5m).
+- Final liveness results and review details: `docs/ART_REVIEW_2026-09.md`.
+- Existing `FINDINGS.agent-runtime.md` preserved. No deployment or Git publication.
+
+The procedural presentation generator is historical fallback art and will overwrite
+the new paintings if pointed at `public/art/presentation`; see that directory's README.
+
+
 > **REPO MOVED (2026-07-01):** canonical path is now `~/Code/games/shard-dominion` (was `~/projects/shard-dominion`).
 > The operator relocated it as part of a file-system reorganization (games live under `~/Code/games`). The in-flight
 > S4A-2 worker runs just found the old `/projects` path empty and blocked — no work lost; repo intact here. The empty
