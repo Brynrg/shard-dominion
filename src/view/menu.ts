@@ -3,6 +3,8 @@
 // win/lose debrief. Navigation between missions is reload-based (set location) so
 // each match starts from a clean sim — no in-page teardown to leak listeners.
 
+import './presentation.css';
+
 export interface CampaignProgress { version: number; completed: string[]; bonus?: Record<string, number>; heroKills?: number; reserve?: number }
 const PROGRESS_KEY = 'shardDominion.campaign';
 
@@ -266,12 +268,14 @@ function overlay(): HTMLDivElement {
 // the gradient alone — visually identical to today's flat dim, so no art = no change.
 function backdrop(el: HTMLDivElement, name: string): void {
   el.style.background =
-    `linear-gradient(rgba(6,5,10,0.5), rgba(6,5,10,0.88)), url("art/presentation/${name}.png") center / cover no-repeat rgba(6,5,10,0.92)`;
+    `linear-gradient(90deg, rgba(5,12,22,0.9), rgba(5,12,22,0.48) 42%, rgba(5,12,22,0.08)), url("art/presentation/${name}.png") center / cover no-repeat #080e18`;
 }
 
 // An act-card banner (mission select). Removes itself unless the art exists.
 function actCard(name: string): HTMLImageElement {
   const img = document.createElement('img');
+  img.className = 'sd-act-card';
+  img.alt = name.replace(/_/g, ' ');
   img.src = `art/presentation/${name}.png`;
   img.style.cssText = 'display:block;width:340px;max-width:86vw;margin:10px auto 6px;border:1px solid rgba(0,229,255,0.4);border-radius:4px;';
   img.onerror = (): void => img.remove();
@@ -292,12 +296,14 @@ function escapeHtml(s: string): string {
 /** The title screen: Campaign vs Skirmish. `onSelect(missionId)` starts that match. */
 export function showTitleMenu(onSelect: (missionId: string | { _challenge: string }) => void, campaignMissionId = 'm1_first_light'): void {
   const el = overlay();
+  el.classList.add('sd-title');
   backdrop(el, 'title_backdrop');
   const panel = document.createElement('div');
-  panel.style.textAlign = 'center';
+  panel.className = 'sd-title-panel';
   panel.innerHTML =
-    '<div style="font-size:46px;font-weight:bold;color:#ffd34d;letter-spacing:3px;">SHARD DOMINION</div>' +
-    '<div style="color:#8fb7c9;margin:6px 0 28px;">Aether Prime — the war for Shard</div>';
+    '<div class="sd-eyebrow">AETHER PRIME · COMMAND INTERFACE</div>' +
+    '<h1>SHARD <span>DOMINION</span></h1>' +
+    '<p class="sd-subtitle">The world beneath us is waking.<br>Command the war for Shard.</p>';
   const campaign = button('▶  CAMPAIGN', true);
   const skirmish = button('SKIRMISH');
   const challenges = button('⭐  CHALLENGES');
@@ -311,6 +317,10 @@ export function showTitleMenu(onSelect: (missionId: string | { _challenge: strin
   panel.appendChild(skirmish);
   panel.appendChild(challenges);
   panel.appendChild(multi);
+  const footer = document.createElement('div');
+  footer.className = 'sd-title-footer';
+  footer.textContent = 'BUILD YOUR BASE. COMMAND YOUR FACTION.';
+  panel.appendChild(footer);
   // REPLAYS (XP-7): the save history — pick one, it becomes the quick save + boots.
   try {
     const hist = JSON.parse(localStorage.getItem('shardDominion.saves') ?? '[]') as { label: string; payload: { missionId: string; faction?: string; difficulty?: string } }[];

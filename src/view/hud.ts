@@ -210,7 +210,7 @@ export function makeHUD(cfg: HUDConfig): {
     const c = cv.getContext('2d') as CanvasRenderingContext2D;
     c.fillStyle = '#0e1015'; c.fillRect(0, 0, cv.width, cv.height);
     shatterFacetRect(c, 0, 0, cv.width, cv.height, {
-      seed: hashStr(`hud-panel|${key}`), facetScale: 18, baseColor: '#14161c', valueJitter: 0.10, jitter: 0.4,
+      seed: hashStr(`hud-panel|${key}`), facetScale: 48, baseColor: '#17202b', valueJitter: 0.025, jitter: 0.4,
     });
     panelTexture = cv; panelTextureKey = key;
     return cv;
@@ -350,6 +350,10 @@ export function makeHUD(cfg: HUDConfig): {
       return null;
     },
     draw() {
+      // World labels and objective pointers change alignment; HUD coordinates
+      // are left-anchored and must not inherit that drawing state.
+      context.textAlign = 'left';
+      context.textBaseline = 'alphabetic';
       rects.length = 0; // rebuild the clickable rects each frame
       const harvester = getHarvester();
       const refinery = getRefinery();

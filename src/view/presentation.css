@@ -1,0 +1,24 @@
+.sd-overlay button { transition: background .16s ease, border-color .16s ease, box-shadow .16s ease; }
+.sd-overlay button:not(:disabled):hover { background: #253e51 !important; border-color: #9ce8f4 !important; }
+.sd-overlay button:focus-visible { outline: 2px solid #e6c888; outline-offset: 4px; }
+.sd-title { align-items: center !important; justify-content: flex-start !important; padding: 48px 8vw !important; }
+.sd-title-panel { text-align: left; width: min(420px, 100%); }
+.sd-eyebrow { font: 600 11px/1.6 system-ui, sans-serif; letter-spacing: 4px; color: #9fc6d6; margin-bottom: 24px; }
+.sd-title h1 { font: 800 clamp(46px, 6vw, 78px)/.94 system-ui, sans-serif; letter-spacing: -3px; margin: 0; color: #f0eee5; text-shadow: 0 3px 30px #050b16; }
+.sd-title h1 span { display: block; color: #e9c47d; }
+.sd-subtitle { color: #bdcbd5; font: 14px/1.8 system-ui, sans-serif; margin: 24px 0 30px; max-width: 310px; }
+.sd-title button { margin: 9px 0 !important; width: min(300px, 100%) !important; text-align: left; padding: 15px 20px !important; font: 600 13px system-ui, sans-serif !important; letter-spacing: 2px; border-width: 1px !important; border-radius: 2px !important; }
+.sd-title-footer { margin-top: 28px; color: #89a1b4; font: 10px/1.8 system-ui, sans-serif; letter-spacing: 2px; }
+.sd-act-card { aspect-ratio: 16 / 9; object-fit: cover; box-shadow: 0 12px 36px #0008; }
+@media (max-width: 600px) { .sd-title { padding: 32px 7vw !important; background-position: 62% center !important; } .sd-title h1 { letter-spacing: -2px; } }
+@media (prefers-reduced-motion: reduce) { .sd-overlay button { transition: none; } }
+@keyframes sd-arrive { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.sd-title-panel { animation: sd-arrive .65s cubic-bezier(.2,.7,.2,1) both; }
+.sd-act-card { animation: sd-arrive .45s ease-out both; }
+.sd-overlay button { transition: background .16s ease, border-color .16s ease, box-shadow .16s ease, transform .16s ease; }
+.sd-overlay button:not(:disabled):active { transform: translateY(2px); }
+@media (prefers-reduced-motion: reduce) {
+  .sd-title-panel, .sd-act-card { animation: none; }
+  .sd-overlay button { transition: none; }
+  .sd-overlay button:not(:disabled):active { transform: none; }
+}

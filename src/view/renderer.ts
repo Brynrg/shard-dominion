@@ -5,6 +5,7 @@ import type { Camera, WorldPos, TilePos } from '../sim/coords.js';
 import { worldToScreen, tileToWorldCenter, worldToTile } from '../sim/coords.js';
 import { TILE_SIZE_PX, TILE_SUBUNITS } from '../sim/coords.js';
 import { accumulate, runTick, STEP_MS, type SimSystem } from '../sim/loop.js';
+import { dampedTravel } from './motion.js';
 import { makeHUD } from './hud.js';
 import { validatePlacement, type ConfirmationMarker } from '../sim/systems/command.js';
 import type { StructureDef } from '../loaders/structures.js';
@@ -192,6 +193,8 @@ export function makeView(cfg: ViewConfig): View {
   /** 60 Hz-equivalent animation tick derived from elapsed view wall-clock (not rAF count). */
   let animTick = 0;
   let frameDtMs = 1000 / 60;
+  let animationDtMs = 0;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   /** View-owned last heading per entity — never written to SimState. */
   const headingById = new Map<EntityId, number>();
 
@@ -340,6 +343,7 @@ export function makeView(cfg: ViewConfig): View {
     }
 
     // Viewport rectangle (where the main camera is looking). Width scales with zoom.
+    if (particles.length > 512) particles.splice(0, particles.length - 512);
     const WPP = TILE_SUBUNITS / TILE_SIZE_PX;
     const vx = x + (camera.x / worldW) * w;
     const vy = y + (camera.y / worldH) * h;
@@ -421,6 +425,7 @@ export function makeView(cfg: ViewConfig): View {
   // Keep the view on the map. A viewport larger than the map centres that axis
   // instead of sliding into a black void; ordinary pan may peek a quarter-tile.
   function clampCamera(): void {
+    if (particles.length > 512) particles.splice(0, particles.length - 512);
     const WPP = TILE_SUBUNITS / TILE_SIZE_PX;
     const visW = (canvas.width * WPP) / camera.zoom, visH = (canvas.height * WPP) / camera.zoom;
     const pad = TILE_SUBUNITS * 0.25;
@@ -444,7 +449,7 @@ export function makeView(cfg: ViewConfig): View {
   // wall-clock + randomness (the sim may not) — particles live here, not in sim.
   interface Particle {
     wx: number; wy: number; vx: number; vy: number;
-    life: number; max: number; size: number; kind: 'flash' | 'debris' | 'ring' | 'beam' | 'spark';
+    life: number; max: number; size: number; kind: 'flash' | 'debris' | 'ring' | 'beam' | 'spark' | 'smoke';
     hue: string;
     bx?: number; by?: number; // beam endpoint (world), for 'beam' tracers
   }
@@ -457,7 +462,12 @@ export function makeView(cfg: ViewConfig): View {
   let fxSeeded = false;
 
   function spawnExplosion(wx: number, wy: number, big: boolean): void {
-    const n = big ? 22 : 12;
+    const n = reducedMotion.matches ? 5 : big ? 22 : 12;
+    particles.push({ wx, wy, vx: 0, vy: 0, life: 9, max: 9, size: big ? 23 : 12, kind: 'flash', hue: '#fff0ba' });
+    for (let i = 0; i < (big ? 5 : 3); i++) {
+      particles.push({ wx, wy, vx: (i - 2) * 0.35, vy: -0.7 - i * 0.12,
+        life: 40 + i * 5, max: 40 + i * 5, size: big ? 13 : 7, kind: 'smoke', hue: '#44404b' });
+    }
     particles.push({ wx, wy, vx: 0, vy: 0, life: big ? 26 : 16, max: big ? 26 : 16, size: big ? 30 : 17, kind: 'ring', hue: '#ffd36b' });
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2;
@@ -620,13 +630,14 @@ export function makeView(cfg: ViewConfig): View {
   }
 
   function stepParticles(tickAmt: number): void {
+    if (particles.length > 512) particles.splice(0, particles.length - 512);
     const WPP = TILE_SUBUNITS / TILE_SIZE_PX;
     const damp = Math.pow(0.9, tickAmt);
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
       if (!p) continue;
-      p.wx += p.vx * WPP * tickAmt;
-      p.wy += p.vy * WPP * tickAmt;
+      p.wx += dampedTravel(p.vx, tickAmt) * WPP;
+      p.wy += dampedTravel(p.vy, tickAmt) * WPP;
       p.vx *= damp; p.vy *= damp;
       p.life -= tickAmt;
       if (p.life <= 0) particles.splice(i, 1);
@@ -642,12 +653,23 @@ export function makeView(cfg: ViewConfig): View {
         context.strokeStyle = p.hue;
         context.lineWidth = 2.5;
         context.beginPath();
-        context.arc(s.sx, s.sy, p.size * (1 - t) + 3, 0, Math.PI * 2);
+        context.arc(s.sx, s.sy, (p.size * (1 - t * t) + 3) * camera.zoom, 0, Math.PI * 2);
         context.stroke();
-      } else if (p.kind === 'flash') {
+      } else if (p.kind === 'smoke') {
+        context.globalAlpha = Math.sin(Math.PI * (1 - t)) * 0.3;
         context.fillStyle = p.hue;
         context.beginPath();
-        context.arc(s.sx, s.sy, p.size * (0.6 + t * 0.6), 0, Math.PI * 2);
+        context.ellipse(s.sx, s.sy, p.size * (1.3 - t) * camera.zoom, p.size * (1 - t * 0.6) * camera.zoom, 0, 0, Math.PI * 2);
+        context.fill();
+      } else if (p.kind === 'flash') {
+        const radius = p.size * (0.6 + t * 0.6) * camera.zoom;
+        const glow = context.createRadialGradient(s.sx, s.sy, 0, s.sx, s.sy, radius);
+        glow.addColorStop(0, '#fff9df');
+        glow.addColorStop(0.35, p.hue);
+        glow.addColorStop(1, 'rgba(255,140,50,0)');
+        context.fillStyle = glow;
+        context.beginPath();
+        context.arc(s.sx, s.sy, radius, 0, Math.PI * 2);
         context.fill();
       } else if (p.kind === 'beam') {
         // Tracer line muzzle → target.
@@ -1048,6 +1070,12 @@ export function makeView(cfg: ViewConfig): View {
         const tile = sprites.getTerrainTile(type, tileHash(tx, ty, 7) < 0.5 ? 0 : 1, density);
         if (tile) {
           c.drawImage(tile, px, py, S, S);
+          // Quiet high-frequency albedo so infantry reads above the ground.
+          // Crystal deposits retain their bright resource identity.
+          c.fillStyle = (TERRAIN[type] ?? TERRAIN_FALLBACK).base;
+          c.globalAlpha = type === 'SHARD' ? 0.12 : 0.58;
+          c.fillRect(px, py, S, S);
+          c.globalAlpha = 1;
         } else {
           // Procedural fallback: shatterFacet basalt field + per-terrain detail.
           const style = TERRAIN[type] ?? TERRAIN_FALLBACK;
@@ -1060,7 +1088,13 @@ export function makeView(cfg: ViewConfig): View {
           });
           bakeTerrainDetail(c, type, style, tx, ty, px, py);
         }
-        bakeTerrainEdges(c, type, tx, ty, px, py, width, height);
+      }
+    }
+    // Paint contours after every tile: the next tile must not erase an edge.
+    for (let ty = 0; ty < height; ty++) {
+      for (let tx = 0; tx < width; tx++) {
+        bakeTerrainEdges(c, simState.grid.terrainAt({ tx, ty }), tx, ty,
+          tx * TILE_SIZE_PX, ty * TILE_SIZE_PX, width, height);
       }
     }
     return cv;
@@ -1082,8 +1116,12 @@ export function makeView(cfg: ViewConfig): View {
       if (nt === type) continue;
       const nStyle = TERRAIN[nt] ?? TERRAIN_FALLBACK;
 
-      c.fillStyle = mix(style.base, nStyle.base, 0.5);
-      c.globalAlpha = 0.45;
+      const x0 = dx === 1 ? px + S : px, y0 = dy === 1 ? py + S : py;
+      const edge = c.createLinearGradient(x0, y0, x0 - dx * B, y0 - dy * B);
+      edge.addColorStop(0, mix(style.base, nStyle.base, 0.5));
+      edge.addColorStop(1, 'transparent');
+      c.fillStyle = edge;
+      c.globalAlpha = 0.55;
       if (dx === 1) c.fillRect(px + S - B, py, B, S);
       else if (dx === -1) c.fillRect(px, py, B, S);
       else if (dy === 1) c.fillRect(px, py + S - B, S, B);
@@ -1318,7 +1356,7 @@ export function makeView(cfg: ViewConfig): View {
       headingById.set(e.id, want);
       return want;
     }
-    const t = 1 - Math.exp(-10 * (frameDtMs / 1000));
+    const t = 1 - Math.exp(-10 * (animationDtMs / 1000));
     const next = lerpAngle(prev, want, t);
     headingById.set(e.id, next);
     return next;
@@ -1353,7 +1391,9 @@ export function makeView(cfg: ViewConfig): View {
     const fog = getFog?.();
     // Draw buildings first (units render on top of their footprints).
     const ordered = [...simState.store.all()].sort((a, b) =>
-      (a.components.building ? 0 : 1) - (b.components.building ? 0 : 1));
+      (a.components.building ? 0 : 1) - (b.components.building ? 0 : 1)
+      || (a.components.position?.wy ?? 0) - (b.components.position?.wy ?? 0)
+      || a.id - b.id);
 
     for (const e of ordered) {
       const pos = e.components.position;
@@ -1365,16 +1405,17 @@ export function makeView(cfg: ViewConfig): View {
       const cloaked = e.components.stealth?.cloaked === true;
       const mine = e.components.faction?.team === (cfg.viewerTeam ?? 'player');
       if (cloaked && !mine) continue;
-      if (cloaked && mine) { context.globalAlpha = 0.45; }
       // TP-3: construction sites render as translucent scaffolding.
       const siteProgress = e.components.building?.buildProgress ?? 100;
-      if (e.components.building && siteProgress < 100) context.globalAlpha = 0.55;
 
       // Hide entities in unseen fog (player units always sit in visible tiles).
       if (fog) {
         const t = worldToTile(pos);
         if (!fog.visible.has(`${t.tx},${t.ty}`)) continue;
       }
+      // Set per-entity opacity only after visibility culling, so a hidden site
+      // or cloaked unit cannot leave the next visible sprite translucent.
+      context.globalAlpha = cloaked && mine ? 0.45 : siteProgress < 100 ? 0.55 : 1;
 
       // Interpolate for smooth movement.
       const prevPos = simState.prevPositions.get(e.id);
@@ -1386,7 +1427,7 @@ export function makeView(cfg: ViewConfig): View {
 
       const team = e.components.faction?.team;
       const teamKey = team ?? 'neutral';
-      const style = (team && TEAM[team]) ? TEAM[team] : NEUTRAL_TEAM;
+      const style = teamStyles[teamKey] ?? NEUTRAL_TEAM;
       const kind = e.components.faction?.faction ?? '';
 
       // Hunter events (Riftmaw = the planet's punishing hunter, always neutral):
@@ -1401,7 +1442,7 @@ export function makeView(cfg: ViewConfig): View {
       if (e.components.building) {
         // Baked lit body (S7-2) + live animated accents on top.
         sprites.drawBuildingBody(context, kind, teamKey, sx, sy, Math.floor(animTick), camera.zoom);
-        drawBuildingAccents(kind, sx, sy, style, camera.zoom);
+        drawBuildingAccents(kind, sx, sy, style, camera.zoom, e.id);
         if (siteProgress < 100) { // TP-3: site progress bar
           const bw2 = 30 * camera.zoom;
           context.fillStyle = 'rgba(10,14,20,0.8)';
@@ -1418,15 +1459,20 @@ export function makeView(cfg: ViewConfig): View {
           context.ellipse(sx, sy + 6 * camera.zoom, 10 * camera.zoom, 4 * camera.zoom, 0, 0, Math.PI * 2);
           context.fill();
           drawUnitUnderlay(e, kind, sx, sy - 14 * camera.zoom, camera.zoom);
-          sprites.drawUnit(context, kind, teamKey, undefined, facingAngle(e, interp, interp, prevPos), sx, sy - 14 * camera.zoom, Math.floor(animTick), camera.zoom, unitAnim(e, pos, prevPos));
+          sprites.drawUnit(context, kind, teamKey, undefined, facingAngle(e, interp, interp, prevPos), sx, sy - 14 * camera.zoom, unitFrame(e.id), camera.zoom, unitAnim(e, pos, prevPos));
         } else {
           drawUnitUnderlay(e, kind, sx, sy, camera.zoom);
-          sprites.drawUnit(context, kind, teamKey, undefined, facingAngle(e, interp, interp, prevPos), sx, sy, Math.floor(animTick), camera.zoom, unitAnim(e, pos, prevPos));
+          sprites.drawUnit(context, kind, teamKey, undefined, facingAngle(e, interp, interp, prevPos), sx, sy, unitFrame(e.id), camera.zoom, unitAnim(e, pos, prevPos));
         }
       }
       if (entityFilter !== 'none') context.filter = 'none';
       context.globalAlpha = 1; // reset the stealth ghosting (XP-3)
     }
+  }
+
+  function unitFrame(id: EntityId): number {
+    const deadline = firingUntil.get(id) ?? 0;
+    return deadline > animTick ? Math.max(0, animTick - (deadline - 24)) : animTick + (id % 17) * 7;
   }
 
   // What a unit is doing right now, for §0.6 animation-strip selection: firing
@@ -1454,32 +1500,38 @@ export function makeView(cfg: ViewConfig): View {
 
   // Live animated accents drawn ON TOP of a building's baked body (the baked body
   // carries the static silhouette + shading; only motion lives here).
-  function drawBuildingAccents(kind: string, sx: number, sy: number, style: TeamStyle, scale: number): void {
-    const S = TILE_SIZE_PX * scale, t = Math.floor(animTick);
+  function drawBuildingAccents(kind: string, sx: number, sy: number, style: TeamStyle, scale: number, id: EntityId): void {
+    context.save();
+    const S = TILE_SIZE_PX * scale, t = reducedMotion.matches ? 0 : animTick + (id % 17) * 7;
     const big = kind === 'construction_yard' || kind === 'refinery';
     const halfH = (big ? S * 1.2 : S * 0.82) / 2;
     const top = sy - halfH * 0.6; // baked body is roughly centred; top-ish anchor
 
     if (kind === 'refinery') {
-      const puff = (t % 90) / 90;                       // exhaust rising + fading
-      context.globalAlpha = (1 - puff) * 0.4;
-      context.fillStyle = '#cfc6bb';
-      context.beginPath(); context.arc(sx - S * 0.28, top - puff * 16, 3 + puff * 5, 0, Math.PI * 2); context.fill();
-      context.globalAlpha = 1;
+      const opacity = context.globalAlpha;
+      for (let i = 0; i < 3; i++) {
+        const puff = ((t + i * 30) % 90) / 90;
+        context.globalAlpha = opacity * Math.sin(puff * Math.PI) * 0.25;
+        context.fillStyle = '#b9b2bf';
+        context.beginPath();
+        context.arc(sx - S * 0.28 + Math.sin(puff * 3) * 3 * scale, top - puff * 20 * scale, (2 + puff * 5) * scale, 0, Math.PI * 2);
+        context.fill();
+      }
     } else if (kind === 'construction_yard') {
       context.strokeStyle = mix(style.accent, '#000', 0.1); context.lineWidth = 2.5;   // crane arm
       context.beginPath(); context.moveTo(sx - S * 0.5, top + 4); context.lineTo(sx + S * 0.55, top - S * 0.28); context.stroke();
       const hook = sx - S * 0.5 + (Math.sin(t * 0.04) * 0.5 + 0.5) * (S * 1.05);        // sweeping hook
       context.strokeStyle = '#3a352a'; context.lineWidth = 1.5;
       context.beginPath(); context.moveTo(hook, top); context.lineTo(hook, top + S * 0.3); context.stroke();
-      context.fillStyle = (t % 40) < 20 ? '#ff4a3d' : '#5a1a14';                        // beacon blink
+      context.fillStyle = mix('#5a1a14', '#ff4a3d', (Math.sin(t * 0.08) + 1) / 2);                        // beacon blink
       context.beginPath(); context.arc(sx + S * 0.55, top - S * 0.28, 3, 0, Math.PI * 2); context.fill();
     } else if (kind === 'power_node') {
       context.strokeStyle = mix(style.accent, '#000', 0.1); context.lineWidth = 2;      // mast
       context.beginPath(); context.moveTo(sx, top); context.lineTo(sx, top - S * 0.34); context.stroke();
-      context.fillStyle = (t % 60) < 30 ? '#00e5ff' : '#0a5563';                        // pulse
+      context.fillStyle = mix('#0a5563', '#00e5ff', (Math.sin(t * 0.06) + 1) / 2);                        // pulse
       context.fillRect(sx - 2, top - S * 0.34 - 3, 4, 4);
     }
+    context.restore();
   }
 
   function render() {
@@ -1529,7 +1581,10 @@ export function makeView(cfg: ViewConfig): View {
     const dt = now - lastTime;
     lastTime = now;
     frameDtMs = Math.max(0, Math.min(dt, 100));
-    animTick += (frameDtMs * 60) / 1000;
+    const visualScale = onboarding?.briefingActive() || (cfg.canRunTick && !cfg.canRunTick(simState.tick))
+      ? 0 : getTimeScale?.() ?? 1;
+    animationDtMs = frameDtMs * visualScale;
+    animTick += (animationDtMs * 60) / 1000;
 
     // Pause the sim while the mission briefing is up — the field freezes so the
     // player reads the brief before any unit moves (and the dismiss-click grabs
@@ -1561,8 +1616,8 @@ export function makeView(cfg: ViewConfig): View {
       accMs = ran === steps ? remainderMs : 0;
     }
 
-    stepParticles(frameDtMs * 60 / 1000);
-    stepDecals(frameDtMs * 60 / 1000);
+    stepParticles(animationDtMs * 60 / 1000);
+    stepDecals(animationDtMs * 60 / 1000);
     render();
     requestAnimationFrame(loop);
   }

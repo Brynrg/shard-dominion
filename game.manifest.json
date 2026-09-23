@@ -8,8 +8,8 @@
   "status": "live",
   "framework": "vite-canvas2d",
   "supportsMobile": false,
-  "emoji": "🎮",
+  "emoji": "\ud83c\udfae",
   "version": "0.62.0",
   "assetsDocumented": true,
-  "assetLicenseSummary": "All assets project-generated, no third-party files: unit/building sprites via xAI Grok Imagine from the repo's own prompts (project-owned), terrain + cards + portraits code-drawn, audio procedural. See ASSETS.md."
+  "assetLicenseSummary": "All assets project-generated, no third-party files: unit/building sprites via xAI Grok Imagine, presentation illustrations via OpenAI image generation, terrain code-drawn, audio procedural. See ASSETS.md."
 }
