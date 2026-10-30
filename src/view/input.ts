@@ -19,7 +19,7 @@ import type { SimState } from '../sim/state.js';
 export type CommandIntent = { team?: 'player' | 'enemy' } & (
     // W4 hero kit: cast a hero ability (F1/F2 or the HUD bar); targeted kinds carry a point.
   | { type: 'ability'; abilityId: string; target?: WorldPos }
-| { type: 'select'; worldRect?: { minWx: number; minWy: number; maxWx: number; maxWy: number }; target?: WorldPos }
+| { type: 'select'; additive?: boolean; worldRect?: { minWx: number; minWy: number; maxWx: number; maxWy: number }; target?: WorldPos }
   | { type: 'deselect' }
   | { type: 'move'; target: WorldPos }
   // Context-sensitive right-click: the command system resolves it to attack (enemy at
@@ -104,6 +104,8 @@ export interface InputHandlers {
   getCursor(): ScreenPos | null;
   /** True while 'A' has armed attack-move (next click engages). */
   getAttackMoveMode(): boolean;
+  hasTargetMode(): boolean;
+  getCommandHint(): string | null;
 }
 
 export function makeInputHandlers(
@@ -144,6 +146,11 @@ export function makeInputHandlers(
   hotkeyAction?: (key: string) => { kind: 'build' | 'train'; id: string } | null,
   /** W4: resolve F1/F2/F3 against the selected hero's kit (main.ts owns the lookup). */
   abilityForKey?: (key: string) => { id: string; targeted: boolean } | null,
+  controls?: {
+    enabled(): boolean;
+    battlefield(): { x: number; y: number; w: number; h: number };
+    visible?(pos: WorldPos): boolean;
+  },
 ): InputHandlers {
   let selectStart: ScreenPos | null = null;
   let selectCurrent: ScreenPos | null = null;
@@ -157,6 +164,32 @@ export function makeInputHandlers(
   let abilityArmed: string | null = null;              // W4: targeted hero ability armed → next click is the point
   let lastClick: { at: number; sx: number; sy: number } | null = null; // dblclick detect
   let lastKeyTap: { key: string; at: number } | null = null;           // double-tap recall → centre camera
+
+  function hasTargetMode(): boolean {
+    return !!(placementMode || attackMoveMode || abilityArmed || superweaponArmed || strikeArmed);
+  }
+  function cancelTargetMode(): void {
+    placementMode = null; attackMoveMode = false; abilityArmed = null;
+    superweaponArmed = null; strikeArmed = false;
+    selectStart = null; selectCurrent = null; lastClick = null;
+    if (lastCursor) updateCursor(lastCursor);
+  }
+  function onBattlefield(pos: ScreenPos): boolean {
+    const r = controls?.battlefield();
+    return !r || (pos.sx >= r.x && pos.sy >= r.y && pos.sx < r.x + r.w && pos.sy < r.y + r.h);
+  }
+  function blocked(): boolean { return !!briefing?.active() || controls?.enabled() === false; }
+  function resetGesture(): void {
+    selectStart = null; selectCurrent = null; panLast = null; lastCursor = null;
+  }
+  function centerOnBase(): void {
+    const base = simStateRef?.store.all().find(e => e.components.faction?.team === viewerTeam
+      && e.components.faction.faction === 'construction_yard');
+    if (!base?.components.position) return;
+    const rect = controls?.battlefield() ?? { x: 0, y: 0, w: canvas.width, h: canvas.height };
+    const point = screenToWorld({ sx: rect.x + rect.w / 2, sy: rect.y + rect.h / 2 }, camera);
+    panCamera(base.components.position.wx - point.wx, base.components.position.wy - point.wy);
+  }
 
   // Double-tap a recall key (1-9 / Q / I / O) → centre the camera on the current
   // selection (WC3 feel). Pure view action: reads selection, writes the camera.
@@ -202,11 +235,19 @@ export function makeInputHandlers(
 
   function doBuildAction(action: string): void {
     const [kind, id] = action.split(':');
-    if (kind === 'strike') { strikeArmed = true; return; }
+    if (kind === 'command') {
+      cancelTargetMode();
+      if (id === 'attack') attackMoveMode = true;
+      else if (id === 'stop') queue.push({ type: 'stop' });
+      else if (id === 'army') queue.push({ type: 'select-army' });
+      return;
+    }
+    if (kind === 'strike') { cancelTargetMode(); strikeArmed = true; return; }
     // Phase C3: arm a superweapon; the next left-click on the field is the target.
-    if (kind === 'superweapon' && id) { superweaponArmed = id; return; }
+    if (kind === 'superweapon' && id) { cancelTargetMode(); superweaponArmed = id; return; }
     // W4: HUD ability button — `ability:<id>:t` arms a targeted cast, otherwise cast now.
     if (kind === 'ability' && id) {
+      cancelTargetMode();
       if (action.split(':')[2] === 't') abilityArmed = id; else queue.push({ type: 'ability', abilityId: id });
       return;
     }
@@ -230,7 +271,7 @@ export function makeInputHandlers(
   // buttons, cell in placement mode, grab while panning.
   function updateCursor(pos: ScreenPos): void {
     let c = 'default';
-    if (attackMoveMode || abilityArmed) c = 'crosshair';
+    if (attackMoveMode || abilityArmed || superweaponArmed || strikeArmed) c = 'crosshair';
     else if (placementMode) c = 'cell';
     else if (hud?.buttonAt(pos.sx, pos.sy)) c = 'pointer';
     else if (simStateRef) {
@@ -238,10 +279,10 @@ export function makeInputHandlers(
       let enemy = false, own = false;
       for (const e of simStateRef.store.all()) {
         const p = e.components.position;
-        if (!p) continue;
+        if (!p || (controls?.visible && !controls.visible(p))) continue;
         if (Math.hypot(p.wx - w.wx, p.wy - w.wy) < 180) { // ~0.7 tile
           const team = e.components.faction?.team;
-          if (team === 'enemy') enemy = true; else if (team === 'player') own = true;
+          if (team === viewerTeam) own = true; else if (team === (viewerTeam === 'player' ? 'enemy' : 'player')) enemy = true;
         }
       }
       c = enemy ? 'crosshair' : own ? 'pointer' : 'default';
@@ -259,7 +300,9 @@ export function makeInputHandlers(
   }
   function onWheel(e: WheelEvent): void {
     e.preventDefault();
+    if (blocked()) return;
     const pos = getMousePos(e);
+    if (!onBattlefield(pos)) return;
     zoomAt(pos.sx, pos.sy, e.deltaY < 0 ? 1.12 : 1 / 1.12);
   }
   function scaleXY(): { sx: number; sy: number } {
@@ -267,7 +310,7 @@ export function makeInputHandlers(
     return { sx: rect.width > 0 ? canvas.width / rect.width : 1, sy: rect.height > 0 ? canvas.height / rect.height : 1 };
   }
   // End a middle-drag even if the button is released outside the canvas.
-  function onWindowMouseUp(e: MouseEvent): void { if (e.button === 1) panLast = null; }
+  function onWindowMouseUp(e: MouseEvent): void { if (e.button === 1) panLast = null; if (e.button === 0 && e.target !== canvas) resetGesture(); }
   // Cursor left the canvas → stop edge-scroll (clear the tracked cursor).
   function onMouseLeave(): void { lastCursor = null; panLast = null; }
 
@@ -291,7 +334,7 @@ export function makeInputHandlers(
     if (!simStateRef) return false;
     for (const e of simStateRef.store.all()) {
       const faction = e.components.faction;
-      if (faction?.faction === 'construction_yard') {
+      if (faction?.faction === 'construction_yard' && faction.team === viewerTeam) {
         return true;
       }
     }
@@ -299,6 +342,8 @@ export function makeInputHandlers(
   }
 
   function onMouseDown(e: MouseEvent): void {
+    if (controls?.enabled() === false) return;
+    canvas.focus();
     if (e.button === 1) { // middle button → grab-drag pan
       e.preventDefault();
       panLast = { x: e.clientX, y: e.clientY };
@@ -340,6 +385,7 @@ export function makeInputHandlers(
       selectCurrent = null;
       return;
     }
+    if (!onBattlefield(pos)) return;
     selectStart = pos;
     selectCurrent = pos;
     // Snap the placement tile to the click point (so click-to-place lands where clicked).
@@ -347,6 +393,7 @@ export function makeInputHandlers(
   }
 
   function onMouseMove(e: MouseEvent): void {
+    if (blocked()) { resetGesture(); return; }
     if (panLast) { // middle-drag pan: shift the camera opposite the drag (grab feel)
       const s = scaleXY();
       const dx = (e.clientX - panLast.x) * s.sx, dy = (e.clientY - panLast.y) * s.sy;
@@ -363,14 +410,16 @@ export function makeInputHandlers(
   }
 
   function onMouseUp(e: MouseEvent): void {
+    if (blocked()) { resetGesture(); return; }
     if (e.button === 1 || panLast) { panLast = null; return; } // end middle-drag pan
     if (!selectStart) return;
     e.preventDefault();
     const start = selectStart;
-    const end = selectCurrent ?? start;
+    const end = getMousePos(e);
     selectStart = null;
     selectCurrent = null;
 
+    if (!onBattlefield(end)) return;
     const dragDistance = Math.sqrt((end.sx - start.sx) ** 2 + (end.sy - start.sy) ** 2);
     if (dragDistance < 5) {
       // Single click → check if in placement mode
@@ -408,13 +457,13 @@ export function makeInputHandlers(
       } else {
         // Single click → select; a fast second click nearby = select-all-of-type.
         const now = performance.now();
-        if (lastClick && now - lastClick.at < 350 &&
+        if (!e.shiftKey && lastClick && now - lastClick.at < 350 &&
             Math.hypot(start.sx - lastClick.sx, start.sy - lastClick.sy) < 12) {
           queue.push({ type: 'select-type', target: screenToWorld(start, camera) });
           lastClick = null;
         } else {
-          queue.push({ type: 'select', target: screenToWorld(start, camera) });
-          lastClick = { at: now, sx: start.sx, sy: start.sy };
+          queue.push({ type: 'select', target: screenToWorld(start, camera), additive: e.shiftKey || undefined });
+          lastClick = e.shiftKey ? null : { at: now, sx: start.sx, sy: start.sy };
         }
         sfx?.select();
       }
@@ -425,6 +474,7 @@ export function makeInputHandlers(
       const b = screenToWorld(end, camera);
       queue.push({
         type: 'select',
+        additive: e.shiftKey || undefined,
         worldRect: {
           minWx: Math.min(a.wx, b.wx),
           minWy: Math.min(a.wy, b.wy),
@@ -438,6 +488,8 @@ export function makeInputHandlers(
 
   function onContextMenu(e: MouseEvent): void {
     e.preventDefault();
+    if (blocked()) return;
+    if (hasTargetMode()) { cancelTargetMode(); return; }
     // RA (v0.55): right-click on a sidebar button CANCELS — a structure job
     // (full refund, incl. READY) or the last queued copy of a unit. Uses the
     // any-state hit-test: the in-progress button is disabled but must respond.
@@ -446,11 +498,13 @@ export function makeInputHandlers(
     if (raction) {
       const [kind, id] = raction.split(':');
       if (kind === 'build') {
-        if (structureJob?.()) { queue.push({ type: 'cancel-structure' }); sfx?.click(); setPlacementMode(null); }
+        if (structureJob?.()?.structureId === id) { queue.push({ type: 'cancel-structure' }); sfx?.click(); setPlacementMode(null); }
         return; // a right-click on the sidebar never becomes a field order
       }
       if (kind === 'train' && id) { queue.push({ type: 'cancel-train', unitId: id }); sfx?.click(); return; }
+      return;
     }
+    if (!onBattlefield(rpos)) return;
     // If in placement mode, cancel it; otherwise issue a context-sensitive order
     // (the command system decides attack / harvest / move from what's at the point).
     if (placementMode) {
@@ -471,6 +525,11 @@ export function makeInputHandlers(
   }
 
   function onKeyDown(e: KeyboardEvent): void {
+    if (blocked() || e.defaultPrevented) return;
+    const target = e.target;
+    if (target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(target.tagName))) return;
+    if ((e.ctrlKey || e.metaKey || e.altKey) && !(/^[1-9]$/.test(e.key) && !e.altKey)) return;
+    if (e.repeat && !e.key.startsWith('Arrow')) return;
     const pan = 64; // world units per keypress
     let dx = 0;
     let dy = 0;
@@ -497,45 +556,49 @@ export function makeInputHandlers(
         e.preventDefault();
         queue.push({ type: 'unload' });
         break;
-      case 'Escape': // Cancel placement / attack-move mode
-        e.preventDefault();
-        setPlacementMode(null);
-        attackMoveMode = false;
-        superweaponArmed = null;
-        abilityArmed = null;
-        return;
+      case 'Home':
+        e.preventDefault(); centerOnBase(); return;
+      case 'Escape':
+        e.preventDefault(); cancelTargetMode(); return;
       case 'F1': case 'F2': case 'F3': {
         // W4 hero kit: cast the selected hero's ability; targeted kinds arm the next click.
         const ab = abilityForKey?.(e.key);
         if (!ab) return;
         e.preventDefault();
+        cancelTargetMode();
         if (ab.targeted) abilityArmed = ab.id; else queue.push({ type: 'ability', abilityId: ab.id });
         return;
       }
       case 'a': // Attack-move: next left-click = advance-and-engage (C&C/WC3 'A')
       case 'A':
         e.preventDefault();
+        cancelTargetMode();
         attackMoveMode = true;
+        if (lastCursor) updateCursor(lastCursor);
         return;
       case 's': // Stop: halt selected units, drop orders + targets
       case 'S':
         e.preventDefault();
+        cancelTargetMode();
         queue.push({ type: 'stop' });
         sfx?.ack();
         return;
       case 'q': // Select the whole army (every combat unit) — double-tap centres
       case 'Q':
         e.preventDefault();
+        cancelTargetMode();
         if (!isDoubleTap('q')) queue.push({ type: 'select-army' });
         return;
       case 'i': // Cycle idle harvesters (the WC3 idle-worker button) — double-tap centres
       case 'I':
         e.preventDefault();
+        cancelTargetMode();
         if (!isDoubleTap('i')) queue.push({ type: 'select-idle-harvester' });
         return;
       case 'o': // Select the hero — double-tap centres on them
       case 'O':
         e.preventDefault();
+        cancelTargetMode();
         if (!isDoubleTap('o')) queue.push({ type: 'select-hero' });
         return;
       case '1': case '2': case '3': case '4': case '5':
@@ -571,6 +634,7 @@ export function makeInputHandlers(
   // Expose placement mode control
   function setPlacementMode(structureId: string | null): void {
     if (structureId) {
+      cancelTargetMode();
       // Find the structure definition
       const structure = structures.find((s) => s.id === structureId);
       if (structure) {
@@ -597,6 +661,7 @@ export function makeInputHandlers(
       canvas.addEventListener('wheel', onWheel, { passive: false });
       canvas.addEventListener('mouseleave', onMouseLeave);
       window.addEventListener('mouseup', onWindowMouseUp);
+      window.addEventListener('blur', resetGesture);
       window.addEventListener('keydown', onKeyDown);
     },
     stop(): void {
@@ -605,6 +670,7 @@ export function makeInputHandlers(
       canvas.removeEventListener('wheel', onWheel);
       canvas.removeEventListener('mouseleave', onMouseLeave);
       window.removeEventListener('mouseup', onWindowMouseUp);
+      window.removeEventListener('blur', resetGesture);
       canvas.removeEventListener('mouseup', onMouseUp);
       canvas.removeEventListener('contextmenu', onContextMenu);
       window.removeEventListener('keydown', onKeyDown);
@@ -624,5 +690,10 @@ export function makeInputHandlers(
     setSimState,
     getCursor: () => lastCursor,
     getAttackMoveMode: () => attackMoveMode,
+    hasTargetMode,
+    getCommandHint: () => placementMode ? 'Place structure · Right-click / Esc cancels'
+      : attackMoveMode ? 'ATTACK-MOVE · Click ground · Shift queues'
+      : abilityArmed ? 'TARGET ABILITY · Right-click / Esc cancels'
+      : superweaponArmed || strikeArmed ? 'TARGET STRIKE · Right-click / Esc cancels' : null,
   };
 }

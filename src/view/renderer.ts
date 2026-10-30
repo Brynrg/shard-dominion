@@ -78,6 +78,7 @@ const VALID_GHOST_COLOR = 'rgba(0, 255, 0, 0.5)';
 const INVALID_GHOST_COLOR = 'rgba(255, 0, 0, 0.5)';
 
 export interface ViewConfig {
+  getCommandHint?: () => string | null;
   canvas: HTMLCanvasElement;
   simState: SimState;
   systems: readonly SimSystem[];
@@ -166,6 +167,7 @@ export interface View {
   hudDeniedAt(sx: number, sy: number): 'funds' | 'tier' | 'prereq' | 'cells' | 'busy' | null;
   /** Switch the sidebar tab (XP-1: STRUCT / UNITS). */
   hudSetTab(tab: 'base' | 'def' | 'units' | 'tech'): void;
+  hudTurnPage(tab: 'base' | 'def' | 'units' | 'tech', dir: 'prev' | 'next'): void;
   /** The live rect of a sidebar button by action id (gates + tools). */
   hudButtonRect(action: string): { x: number; y: number; w: number; h: number } | null;
   /** The sprite bank (exposed for the real-asset loader + tests). */
@@ -1534,6 +1536,37 @@ export function makeView(cfg: ViewConfig): View {
     context.restore();
   }
 
+  function drawOrderPlans(): void {
+    context.save();
+    context.lineWidth = 1;
+    context.setLineDash([4, 5]);
+    for (const entity of simState.store.all()) {
+      if (!entity.components.selection?.selected || entity.components.faction?.team !== (cfg.viewerTeam ?? 'player')) continue;
+      const pos = entity.components.position;
+      if (!pos) continue;
+      const mv = entity.components.movement;
+      const rally = entity.components.production?.rally;
+      const points = rally ? [rally] : mv?.target ? [mv.target, ...(mv.orderQueue ?? [])] : [];
+      if (!points.length) continue;
+      const start = worldToScreen(pos, camera);
+      context.strokeStyle = rally ? '#e8c985aa' : '#84cfed88';
+      context.fillStyle = rally ? '#ffe0a0' : '#b4e7fa';
+      context.beginPath(); context.moveTo(start.sx, start.sy);
+      for (const point of points) {
+        const end = worldToScreen(point, camera);
+        context.lineTo(end.sx, end.sy);
+      }
+      context.stroke();
+      for (let i = 0; i < points.length; i++) {
+        const end = worldToScreen(points[i]!, camera);
+        context.beginPath(); context.arc(end.sx, end.sy, 4, 0, Math.PI * 2); context.stroke();
+        context.font = '10px monospace'; context.textAlign = 'left';
+        context.fillText(rally ? 'RALLY' : String(i + 1), end.sx + 7, end.sy - 5);
+      }
+    }
+    context.restore();
+  }
+
   function render() {
     pruneHeadings();
     edgeScroll(frameDtMs);   // move mouse to a screen edge → scroll the view (C&C/RA)
@@ -1551,6 +1584,7 @@ export function makeView(cfg: ViewConfig): View {
     drawParticles();
     drawRankChevrons();
     drawTeamShapeMarkers();
+    drawOrderPlans();
     drawSelectionRings();
     drawBoxSelection();
     drawConfirmationMarkers();
@@ -1567,6 +1601,18 @@ export function makeView(cfg: ViewConfig): View {
     // COMMAND panel doesn't bleed past the briefing frame.
     const briefing = onboarding?.briefingActive() ?? false;
     if (!briefing) { drawObjectivePointer(); hud.draw(); drawMinimap(); }
+
+    const hint = cfg.getCommandHint?.();
+    if (!briefing && hint) {
+      const field = battlefieldRect();
+      context.save();
+      context.fillStyle = '#0b1728ee';
+      context.fillRect(204, canvas.height - 33, field.w - 212, 27);
+      context.fillStyle = '#ffe0a0'; context.font = '11px monospace';
+      context.textAlign = 'left'; context.textBaseline = 'middle';
+      context.fillText(hint, 212, canvas.height - 19, field.w - 228);
+      context.restore();
+    }
 
     // Onboarding overlays (briefing + objective banner) sit on top of everything.
     if (onboarding) {
@@ -1649,6 +1695,7 @@ export function makeView(cfg: ViewConfig): View {
     hudAnyButtonAt: (sx, sy) => hud.anyButtonAt(sx, sy),
     hudDeniedAt: (sx, sy) => hud.deniedAt(sx, sy),
     hudSetTab: (tab) => hud.setTab(tab),
+    hudTurnPage: (tab, dir) => hud.turnPage(tab, dir),
     hudButtonRect: (action) => hud.rectOf(action),
     minimapRect,
     minimapJump(sx: number, sy: number): boolean {

@@ -5,7 +5,7 @@
 // renderer to draw — they are NOT stashed on SimState.
 import type { SimState } from '../state.js';
 import { teamTier } from '../tech.js';
-import { structureComponents } from '../factory.js';
+import { structureComponents, isOperational } from '../factory.js';
 import { teamCredits, teamCells, spendCredits, spendCells, grantCredits } from '../ledger.js';
 import { teamLedger } from './research.js';
 import { refuseStructure } from '../buildRules.js';
@@ -205,7 +205,7 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
                 const inside = inRect(pos) && (!hasMilitary || military);
                 if (inside) {
                   e.components.selection = { selected: true };
-                } else if (e.components.selection) {
+                } else if (!intent.additive && e.components.selection) {
                   e.components.selection.selected = false;
                 }
               }
@@ -223,9 +223,9 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
                 }
               }
               for (const e of state.store.all()) {
-                if (e.components.selection && e.components.faction?.team === actor) e.components.selection.selected = false;
+                if (!intent.additive && e.components.selection && e.components.faction?.team === actor) e.components.selection.selected = false;
               }
-              if (closest) closest.components.selection = { selected: true };
+              if (closest) closest.components.selection = { selected: intent.additive ? !closest.components.selection?.selected : true };
             }
             break;
           }
@@ -499,10 +499,14 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
           case 'cancel-train': {
             // Right-click a unit button (RA): pop the LAST queued (unpaid) copy;
             // if only the in-production one remains, cancel it and refund.
-            for (const e of state.store.all()) {
-              if (e.components.faction?.team !== actor) continue;
-              const prod = e.components.production;
-              if (!prod) continue;
+            const candidates = state.store.all().filter(e => e.components.faction?.team === actor && e.components.production)
+              .sort((a, b) => {
+                const ap = a.components.production!, bp = b.components.production!;
+                return Number(bp.queue.includes(intent.unitId)) - Number(ap.queue.includes(intent.unitId))
+                  || bp.queue.length - ap.queue.length || a.id - b.id;
+              });
+            for (const e of candidates) {
+              const prod = e.components.production!;
               const qi = prod.queue.lastIndexOf(intent.unitId);
               if (qi >= 0) {
                 const nq = [...prod.queue];
@@ -841,10 +845,15 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             const unitDef = units.find(uu => uu.id === intent.unitId);
             const producerFaction = unitDef?.producedBy ?? null;
             if (!producerFaction) break; // not player-producible (creeps)
-            const producer = state.store.all().find(e =>
+            const producer = state.store.all().filter(e =>
               e.components.faction?.team === actor &&
               e.components.faction?.faction === producerFaction &&
-              e.components.production);
+              e.components.production && (e.components.health?.hp ?? 1) > 0)
+              .sort((a, b) => {
+                const ap = a.components.production!, bp = b.components.production!;
+                const load = (ap.queue.length + (ap.current ? 1 : 0)) - (bp.queue.length + (bp.current ? 1 : 0));
+                return Number(isOperational(b)) - Number(isOperational(a)) || load || (bp.progress - ap.progress) || a.id - b.id;
+              })[0];
             if (producer && producer.components.production) {
               const p = producer.components.production;
               producer.components.production = { ...p, queue: [...p.queue, intent.unitId] };
