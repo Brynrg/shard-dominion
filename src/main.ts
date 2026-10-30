@@ -109,6 +109,7 @@ declare global {
     __debugTick?: () => number;
     __debugTier?: () => { player: number; enemy: number };
     __debugButtonRect?: (action: string) => { x: number; y: number; w: number; h: number } | null;
+    __debugRectOverlaps?: () => [string, string][];
     __debugTriggersFired?: () => string[];
     __debugStorm?: () => boolean;
     __debugCells?: () => { player: number; enemy: number };
@@ -1043,6 +1044,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // XP-1: tech tier + sidebar rect hooks (gates use these).
   window.__debugTier = () => ({ player: teamTier(state, 'player'), enemy: teamTier(state, 'enemy') });
   window.__debugButtonRect = (action: string) => view.hudButtonRect(action);
+  window.__debugRectOverlaps = () => view.hudOverlaps();
   window.__debugTriggersFired = () => objectivesSystem.firedTriggerIds();
   window.__debugStorm = () => isStormActive(state.tick);
   // XP-2: Cells + Resonance telemetry.

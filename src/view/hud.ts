@@ -76,6 +76,9 @@ export function makeHUD(cfg: HUDConfig): {
   draw(): void;
   buttonAt(sx: number, sy: number): BuildAction | null;
   anyButtonAt(sx: number, sy: number): BuildAction | null;
+  /** Enabled rects that overlap each other. Must stay empty: when two rects
+   *  share pixels the one pushed first silently wins buttonAt(). */
+  overlappingActions(): [BuildAction, BuildAction][];
   deniedAt(sx: number, sy: number): DenyReason | null;
   panelRect(): { x: number; y: number; w: number; h: number };
   setTab(tab: MenuTab): void;
@@ -348,6 +351,17 @@ export function makeHUD(cfg: HUDConfig): {
     buttonAt(sx: number, sy: number): BuildAction | null {
       for (const r of rects) if (r.enabled && sx >= r.x && sx <= r.x + r.w && sy >= r.y && sy <= r.y + r.h) return r.action;
       return null;
+    },
+    overlappingActions(): [BuildAction, BuildAction][] {
+      const live = rects.filter(r => r.enabled);
+      const pairs: [BuildAction, BuildAction][] = [];
+      for (let i = 0; i < live.length; i++) {
+        for (let j = i + 1; j < live.length; j++) {
+          const a = live[i]!, b = live[j]!;
+          if (a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h) pairs.push([a.action, b.action]);
+        }
+      }
+      return pairs;
     },
     draw() {
       // World labels and objective pointers change alignment; HUD coordinates

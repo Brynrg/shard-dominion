@@ -94,3 +94,24 @@ test('Home centres base in playable space; pause guide and held pause key are sa
   await page.keyboard.press('q');
   await expect.poll(() => selected(page)).toBe(2); // keyboard focus restored
 });
+
+test('footer command buttons are not overlapped by the sell/repair/strike rect', async ({ page }) => {
+  // Regression: at ROWS_PER_PAGE = 9 the STRUCT tab's HQ-tier row + 9 build rows
+  // + the pager pushed the flow cursor into the fixed footer band. The
+  // sell/repair/strike rect is pushed BEFORE the command buttons, and buttonAt
+  // returns the first match, so clicking ARMY demolished the selected building.
+  await boot(page);
+  const conyard = await page.evaluate(() => window.__debugConYardScreenPos?.());
+  expect(conyard).toBeTruthy();
+  const box = (await page.locator('#game-canvas').boundingBox())!;
+  await page.mouse.click(box.x + conyard!.x, box.y + conyard!.y);
+  // Selecting our own Construction Yard is what pushes `sell:selected`.
+  await expect.poll(() => page.evaluate(() => window.__debugButtonRect?.('sell:selected'))).toBeTruthy();
+
+  expect(await page.evaluate(() => window.__debugRectOverlaps?.())).toEqual([]);
+
+  const before = (await page.evaluate(() => window.__debugBuildingCount?.()))!.conyard;
+  await action(page, 'command:army');
+  await expect.poll(() => selected(page)).toBeGreaterThan(0);
+  expect((await page.evaluate(() => window.__debugBuildingCount?.()))!.conyard).toBe(before);
+});

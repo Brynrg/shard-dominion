@@ -241,6 +241,11 @@ export function makeCommandSystem(queue: { drain(): CommandIntent[] }, structure
             const moveSlots = combatFormation(state, actor, intent.target);
             for (const e of state.store.all()) {
               if (!e.components.selection?.selected) continue;
+              // Seat scope: both seats can hold a selection at once, so an
+              // actor must never retarget the other seat's units. Every other
+              // order path ('order', 'attack-move', 'stop', 'stance') already
+              // filters on actor; this one did not.
+              if (e.components.faction?.team !== actor) continue;
               if (e.components.building) continue; // buildings never move
               if (!e.components.movement) {
                 e.components.movement = { target: null, path: [], speed: 10 };

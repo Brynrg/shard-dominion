@@ -170,6 +170,7 @@ export interface View {
   hudTurnPage(tab: 'base' | 'def' | 'units' | 'tech', dir: 'prev' | 'next'): void;
   /** The live rect of a sidebar button by action id (gates + tools). */
   hudButtonRect(action: string): { x: number; y: number; w: number; h: number } | null;
+  hudOverlaps(): [string, string][];
   /** The sprite bank (exposed for the real-asset loader + tests). */
   readonly spriteBank: SpriteBank;
   /** Playable battlefield in canvas pixels (excludes the command sidebar + objective banner). */
@@ -1697,6 +1698,7 @@ export function makeView(cfg: ViewConfig): View {
     hudSetTab: (tab) => hud.setTab(tab),
     hudTurnPage: (tab, dir) => hud.turnPage(tab, dir),
     hudButtonRect: (action) => hud.rectOf(action),
+    hudOverlaps: () => hud.overlappingActions(),
     minimapRect,
     minimapJump(sx: number, sy: number): boolean {
       if (onboarding?.briefingActive()) return false;

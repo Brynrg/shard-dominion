@@ -97,3 +97,20 @@ describe('selection and parallel production', () => {
   });
 
 });
+
+describe('seat scope on the move order path', () => {
+  it('a move intent never retargets the other seat’s selected units', () => {
+    const state = makeSimState({ seed: 1, mapWidth: 32, mapHeight: 32 });
+    const queue = makeCommandQueue();
+    const command = makeCommandSystem(queue, []);
+    const add = (tx: number, team: 'player' | 'enemy') => state.store.create({
+      position: tileToWorldCenter({ tx, ty: 8 }), faction: { team, faction: 'infantry' },
+      selection: { selected: true }, movement: { target: null, path: [], speed: 10 },
+    });
+    const mine = add(4, 'player'), theirs = add(12, 'enemy');
+    queue.push({ type: 'move', target: tileToWorldCenter({ tx: 20, ty: 20 }) });
+    command.run(state);
+    expect(state.store.get(mine)!.components.movement!.target).not.toBeNull();
+    expect(state.store.get(theirs)!.components.movement!.target).toBeNull();
+  });
+});
