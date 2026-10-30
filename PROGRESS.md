@@ -1,5 +1,28 @@
 # PROGRESS — Shard Dominion
 
+## Gameplay and controls review — 2026-09-23
+
+User request: deeply review the game and improve gameplay and user controls.
+
+- Fixed disconnected menu paging, unsafe paused/briefing input, repeated discrete
+  hotkeys, sidebar click-through, abandoned drags, and inconsistent targeting cancellation.
+- Added Shift-selection, Attack/Stop/Army buttons, selected-unit count, Home-to-base,
+  visible targeting hints, a controls/tactics guide, and persistent selected-unit routes/rallies.
+- Training now uses multiple completed factories; HUD aggregates queues and cancellation
+  removes waiting copies before interrupting an active paid job.
+- Tests cover actual player actions, deterministic seat-scoped selection, producer routing,
+  cancellation priority, and two barracks finishing two units in one production cycle.
+- Review detail: docs/GAMEPLAY_REVIEW_2026-09.md.
+- Pass: `pnpm run verify`: 65 files passed, 5 skipped; 353 tests passed, 20 skipped.
+- Pass: full `pnpm run test:live --workers=4`: 57 passed, 2 skipped (4.7m).
+- An initial full run caught lost training requests during construction; fixed by
+  preserving pending requests when no completed producer exists, with a regression test.
+- Scripted playtest and manual rendered review confirmed routes, selection, command
+  buttons, guide, and corrected build instructions. No browser console errors observed.
+- Final production-build controls/onboarding recheck: 5 passed (30.9s).
+- Retained captures: screenshots/controls-review/. Changes remain local.
+- Preview muted. Unrelated FINDINGS.agent-runtime.md preserved.
+
 ## Animation follow-up — 2026-09-22
 
 User request: Update the animations as well. Keep the game muted while working.

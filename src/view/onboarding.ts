@@ -22,7 +22,7 @@ interface Step { key: string; text: string }
 const STEPS: readonly Step[] = [
   { key: 'select', text: 'LEFT-CLICK one of your units to select it (yellow ring)' },
   { key: 'move',   text: 'RIGHT-CLICK to command: open ground = move, enemy = attack, Shard = mine' },
-  { key: 'build',  text: 'Press  B  and place a BARRACKS near your base (300 credits)' },
+  { key: 'build',  text: 'Press B to build a BARRACKS; when READY, press B again and place it' },
   { key: 'train',  text: 'Press  T  to train Infantry from the Barracks — raise an army' },
   { key: 'attack', text: 'Send your army north-east and destroy the RED enemy base' },
 ];
@@ -38,15 +38,15 @@ const BRIEF_STORY: readonly string[] = [
 // guided objectives say power first — the two contradicted each other on screen).
 const BRIEF_HOWTO: readonly string[] = [
   '1.  Build from the SIDEBAR: click a button (or its hotkey) — it builds there.',
-  '2.  When the button flashes READY, click open ground near your base to place.',
+  '2.  When READY, click that button again, then click open ground to place.',
   '3.  HOVER any sidebar button to see its cost and what it does.',
   '4.  Harvesters mine Shard into credits (◈ top-right) on their own.',
-  '5.  Drag a box to select troops · RIGHT-CLICK to move or attack.',
+  '5.  Drag to select · SHIFT adds troops or queues RIGHT-CLICK orders.',
   '6.  Follow the OBJECTIVES banner up top — it ticks off as you go.',
 ];
 // Two lines — the single long line clipped off the briefing frame (playtest v0.53).
 const BRIEF_HINT = 'SCROLL: screen edge · wheel = zoom · radar click = jump';
-const BRIEF_HINT2 = 'Q army · I idle · O hero · F1/F2 abilities · Ctrl+1-9 groups (×2 centres)';
+const BRIEF_HINT2 = 'A attack-move · S stop · Q army · Home base · Right-click / Esc cancels';
 // Shown instead of HOW TO PLAY once the player knows the controls (mission 3+).
 const BRIEF_HINT_SHORT = 'Hover a sidebar button for cost + requirements · the OBJECTIVES banner ticks off as you go.';
 

@@ -467,6 +467,30 @@ export function showPauseMenu(o: PauseOpts): () => void {
     panel.appendChild(evaRow);
   }
 
+  panel.style.maxHeight = '90vh';
+  panel.style.overflowY = 'auto';
+  const guide = document.createElement('details');
+  guide.style.cssText = 'text-align:left;max-width:400px;margin:12px auto;color:#cfe0ee;font:12px/1.7 system-ui;';
+  const summary = document.createElement('summary');
+  summary.textContent = 'CONTROLS & TACTICS';
+  summary.style.cssText = 'cursor:pointer;color:#e9c47d;padding:8px 0;';
+  guide.appendChild(summary);
+  const tips = document.createElement('div');
+  tips.innerHTML = [
+    '<b>Select:</b> click or drag; Shift-click toggles a unit; Shift-drag adds troops.',
+    '<b>Order:</b> right-click to move, attack, mine, or set a selected factory’s rally point. Shift queues routes.',
+    '<b>Fight:</b> A then click for attack-move; S stops; X cycles stance; U unloads.',
+    '<b>Find:</b> Q army, I idle harvester, O hero; Home returns to base.',
+    '<b>Groups:</b> Ctrl/Cmd + 1–9 saves; 1–9 recalls; double-tap centres.',
+    '<b>Heroes:</b> F1/F2 abilities; right-click or Esc cancels targeting.',
+    '<b>Build:</b> select a sidebar item, wait for READY, click it again and place. Right-click its button to cancel/refund.',
+    '<b>Camera:</b> arrows, screen edges, middle-drag, mouse-wheel zoom; radar click jumps.',
+    '<b>Match:</b> P pauses, M mutes, +/− changes speed.',
+    '<b>Tactics:</b> protect harvesters, expand power before factories, and use multiple production buildings to train in parallel.',
+  ].map(line => `<p style="margin:6px 0">${line}</p>`).join('');
+  guide.appendChild(tips);
+  panel.appendChild(guide);
+
   const resume = button('▶  RESUME', true);
   resume.onclick = () => o.onResume();
   if (o.onSave) {

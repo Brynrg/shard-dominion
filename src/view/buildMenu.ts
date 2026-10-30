@@ -34,8 +34,11 @@ export interface MenuItem {
   buildTimeSeconds: number;
 }
 
-/** How many build rows fit on one sidebar page. */
-export const ROWS_PER_PAGE = 9;
+/** How many build rows fit on one sidebar page.
+ *  8, not 9: at 9 the STRUCT tab's HQ-tier row + 9 rows + the pager cursor
+ *  reached the fixed footer band, so the sell/repair/strike rect overlapped the
+ *  ATTACK/STOP/ARMY buttons and — being pushed first — won the hit test. */
+export const ROWS_PER_PAGE = 8;
 
 function unitItem(u: UnitDef): MenuItem {
   return {

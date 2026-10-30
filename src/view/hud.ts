@@ -76,6 +76,9 @@ export function makeHUD(cfg: HUDConfig): {
   draw(): void;
   buttonAt(sx: number, sy: number): BuildAction | null;
   anyButtonAt(sx: number, sy: number): BuildAction | null;
+  /** Enabled rects that overlap each other. Must stay empty: when two rects
+   *  share pixels the one pushed first silently wins buttonAt(). */
+  overlappingActions(): [BuildAction, BuildAction][];
   deniedAt(sx: number, sy: number): DenyReason | null;
   panelRect(): { x: number; y: number; w: number; h: number };
   setTab(tab: MenuTab): void;
@@ -152,18 +155,18 @@ export function makeHUD(cfg: HUDConfig): {
   // A player producer building's live production state, looked up by its faction id
   // ('barracks' → combat units, 'refinery' → Harvesters). Drives the build-button
   // progress fill + queue count for whichever unit that building makes.
-  function getProducer(faction: string): { queue: readonly string[]; progress: number; current: string | null } | null {
-    for (const e of simState.store.all()) {
-      if (e.components.faction?.team === viewerTeam &&
-          e.components.faction?.faction === faction && e.components.production) {
-        return {
-          queue: e.components.production.queue ?? [],
-          progress: e.components.production.progress ?? 0,
-          current: e.components.production.current ?? null,
-        };
-      }
-    }
-    return null;
+  function getProducer(faction: string, unitId: string): { queue: readonly string[]; progress: number; current: string | null } | null {
+    const producers = simState.store.all().filter(e => e.components.faction?.team === viewerTeam
+      && e.components.faction.faction === faction && e.components.production);
+    if (!producers.length) return null;
+    const active = producers.map(e => e.components.production!).filter(p => p.current === unitId)
+      .sort((a, b) => b.progress - a.progress);
+    return {
+      queue: producers.flatMap(e => e.components.production!.queue)
+        .concat(active.slice(1).map(() => unitId)),
+      progress: active[0]?.progress ?? 0,
+      current: active[0]?.current ?? null,
+    };
   }
 
   function drawBox(x: number, y: number, width: number, height: number, color: string): void {
@@ -348,6 +351,17 @@ export function makeHUD(cfg: HUDConfig): {
     buttonAt(sx: number, sy: number): BuildAction | null {
       for (const r of rects) if (r.enabled && sx >= r.x && sx <= r.x + r.w && sy >= r.y && sy <= r.y + r.h) return r.action;
       return null;
+    },
+    overlappingActions(): [BuildAction, BuildAction][] {
+      const live = rects.filter(r => r.enabled);
+      const pairs: [BuildAction, BuildAction][] = [];
+      for (let i = 0; i < live.length; i++) {
+        for (let j = i + 1; j < live.length; j++) {
+          const a = live[i]!, b = live[j]!;
+          if (a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h) pairs.push([a.action, b.action]);
+        }
+      }
+      return pairs;
     },
     draw() {
       // World labels and objective pointers change alignment; HUD coordinates
@@ -575,7 +589,7 @@ export function makeHUD(cfg: HUDConfig): {
         // Producer comes from DATA (`units[].producedBy`) — the same field the sim
         // uses to accept or refuse the queue entry, so the button can never promise
         // something production will drop.
-        const producer = item.kind === 'train' && item.producedBy ? getProducer(item.producedBy) : null;
+        const producer = item.kind === 'train' && item.producedBy ? getProducer(item.producedBy, item.id) : null;
         // Prereq: units need their producer standing; structures need every
         // `prerequisites` entry standing.
         const missing = item.requires.filter(r => !standing(r));
@@ -799,12 +813,21 @@ export function makeHUD(cfg: HUDConfig): {
       if (!abilityBarShown) {
         context.fillStyle = '#8894a4';
         context.font = '10px monospace';
-        // Short lines only — longer ones clip at the panel edge (playtest v0.53).
-        context.fillText('L select · R order · S stop', px + 10, py + ph - 66);
-        context.fillText('A atkmove · Shift queue', px + 10, py + ph - 54);
-        context.fillText('Q army · I idle · O hero', px + 10, py + ph - 42);
-        context.fillText('Ctrl+1-9 group · ×2 centre', px + 10, py + ph - 30);
-        context.fillText('X stance · U unload · P pause', px + 10, py + ph - 18);
+        const commands = [['attack', 'A ATTACK'], ['stop', 'S STOP'], ['army', 'Q ARMY']] as const;
+        const selected = simState.store.all().filter(e => e.components.selection?.selected && e.components.faction?.team === viewerTeam).length;
+        for (let i = 0; i < commands.length; i++) {
+          const [id, label] = commands[i]!;
+          const x = px + 8 + i * 57, y = py + ph - 68;
+          rects.push({ action: `command:${id}`, x, y, w: 54, h: 23, enabled: true });
+          context.fillStyle = '#22364a'; context.fillRect(x, y, 54, 23);
+          context.strokeStyle = '#58758b'; context.strokeRect(x + .5, y + .5, 53, 22);
+          context.fillStyle = '#e0edf5'; context.font = '9px monospace';
+          context.fillText(label, x + 4, y + 8);
+        }
+        context.font = '10px monospace'; context.fillStyle = '#a6b8c9';
+        context.fillText(`${selected} selected · Shift adds`, px + 10, py + ph - 40);
+        context.fillText('R order · Shift queues', px + 10, py + ph - 28);
+        context.fillText('Home base · P pause · M mute', px + 10, py + ph - 16);
       }
 
       // Overflow warning (below panel, hard to miss).

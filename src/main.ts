@@ -19,7 +19,7 @@ import { itemForHotkey } from './view/buildMenu.js';
 import { hasStructure } from './sim/buildRules.js';
 import { makeAnnouncer, makeA11ySettings } from './view/a11y.js';
 import { makeEva } from './view/eva.js';
-import { tileToWorldCenter, worldToScreen } from './sim/coords.js';
+import { tileToWorldCenter, worldToScreen, worldToTile } from './sim/coords.js';
 import { loadEconomyConstants } from './loaders/economyConstants.js';
 import { loadStructures } from './loaders/structures.js';
 import { loadWeapons } from './loaders/loader.js';
@@ -109,6 +109,7 @@ declare global {
     __debugTick?: () => number;
     __debugTier?: () => { player: number; enemy: number };
     __debugButtonRect?: (action: string) => { x: number; y: number; w: number; h: number } | null;
+    __debugRectOverlaps?: () => [string, string][];
     __debugTriggersFired?: () => string[];
     __debugStorm?: () => boolean;
     __debugCells?: () => { player: number; enemy: number };
@@ -383,6 +384,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     confirmationMarkers: commandSystem.markers,
     getSelectionBox: () => input.getSelectionBox(),
     getPlacementMode: () => input.getPlacementMode(),
+    getCommandHint: () => input.getCommandHint(),
     structures,
     getVictory: () => missionResult(),
     weapons,
@@ -487,6 +489,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     anyButtonAt: (sx, sy) => view.hudAnyButtonAt(sx, sy),
     deniedAt: (sx, sy) => view.hudDeniedAt(sx, sy),
     setTab: (tab) => view.hudSetTab(tab),
+    turnPage: (tab, dir) => view.hudTurnPage(tab, dir),
   }, {
     click: () => audio.click(), select: () => audio.select(), ack: () => audio.ack(), place: () => audio.place(),
     denied: (reason) => {
@@ -522,6 +525,10 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
       if (ab) return { id: ab.id, targeted: ab.targeted };
     }
     return null;
+  }, {
+    enabled: () => !paused && !missionResult().over,
+    battlefield: () => view.battlefieldRect(),
+    visible: pos => { const t = worldToTile(pos); return fogSystem.visible.has(`${t.tx},${t.ty}`); },
   });
   // ── Continue (FG-6): replay the saved command log tick-for-tick, then go live.
   // Determinism makes the fast-forward EXACT (same mission + same log → same state).
@@ -627,16 +634,20 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
     } else {
       closePauseMenu?.();
       closePauseMenu = null;
+      canvas.focus();
     }
   };
   const SPEEDS = [0.5, 1, 1.5, 2];
   const onHotkey = (e: KeyboardEvent): void => {
+    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    const target = e.target;
+    if (target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
     if (onboarding.briefingActive()) return;      // briefing owns the screen
     if (e.key === 'm' || e.key === 'M') { audio.setMuted(!audio.isMuted()); return; }
     if (e.key === 'p' || e.key === 'P') { togglePause(); }
     else if (e.key === 'Escape') {
       // Placement/attack-move cancel wins (input handles it); else toggle pause.
-      if (!input.getPlacementMode() && !input.getAttackMoveMode()) togglePause();
+      if (paused || !input.hasTargetMode()) togglePause();
     } else if (!paused && (e.key === '+' || e.key === '=')) {
       speed = SPEEDS[Math.min(SPEEDS.indexOf(speed) + 1, SPEEDS.length - 1)] ?? 1;
     } else if (!paused && e.key === '-') {
@@ -1033,6 +1044,7 @@ export function bootstrap(missionRaw: unknown = skirmishData): void {
   // XP-1: tech tier + sidebar rect hooks (gates use these).
   window.__debugTier = () => ({ player: teamTier(state, 'player'), enemy: teamTier(state, 'enemy') });
   window.__debugButtonRect = (action: string) => view.hudButtonRect(action);
+  window.__debugRectOverlaps = () => view.hudOverlaps();
   window.__debugTriggersFired = () => objectivesSystem.firedTriggerIds();
   window.__debugStorm = () => isStormActive(state.tick);
   // XP-2: Cells + Resonance telemetry.
